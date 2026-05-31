@@ -40,6 +40,9 @@ The AI team is organized as follows:
 3. **Execution Specialists** — turn approved strategy into concrete, ready-to-implement work (e.g. Setup Specialist).
 4. **Review / Optimization Specialists** — analyze and improve existing accounts (e.g. Optimization Specialist).
 5. **Communication Specialists** — translate work into client-facing output (e.g. Reporting Specialist, Copywriter).
+6. **Build Specialists** — turn approved specs into working assets (e.g. Web Developer / Builder).
+7. **Foundation Specialists** — keep shared data and measurement trustworthy for everyone (e.g. Analytics & Tracking Specialist).
+8. **Client-facing & Growth** — manage the client relationship and new business (e.g. Client Success Agent, Sales / Proposal Agent).
 
 ## Current MVP Agents
 
@@ -53,6 +56,17 @@ The AI team is organized as follows:
 - Meta Ads Strategist — `agents/meta-ads-strategist.md`
 - Landing Page / Web Design Specialist — `agents/landing-page-specialist.md`
 
+## Additional Specified Agents
+
+Specified after the initial MVP, following the "new agent vs deeper specialty" rule below:
+
+- Web Developer / Builder — `agents/web-developer.md`
+- Analytics & Tracking Specialist — `agents/analytics-tracking-specialist.md`
+- Client Success Agent — `agents/client-success-agent.md`
+- Sales / Proposal Agent — `agents/sales-proposal-agent.md`
+
+Content & social is **not** a separate agent: it is a deeper specialty of the Copywriter (`agents/copywriter.md`).
+
 ## Growing the team (new agent vs deeper specialty)
 
 Prefer **deepening an existing agent** over creating a new one. Many capabilities are a deeper branch of an existing role — give that agent an extra mode or sub-specialty (and the matching build-time skills) instead of spawning a new team member.
@@ -63,11 +77,8 @@ Add a **new agent only when the capability or its boundary is genuinely distinct
 
 These are planned but intentionally not built yet. They are listed so the system knows where it is heading (see `ROADMAP.md`):
 
-- CRO Specialist
-- Analytics & Tracking Specialist
-- Client Success Agent
+- CRO Specialist (its scope currently lives within the Landing Page / Web Design Specialist)
 - ClickUp Task Agent
-- Sales / Proposal Agent
 
 ## How an agent is invoked (today)
 

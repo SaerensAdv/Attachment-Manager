@@ -55,7 +55,12 @@ If the request is vague, ask one focused round of clarifying questions first.
 | Organic search, technical/on-page/local SEO, keyword & content strategy | SEO Specialist |
 | Paid social on Meta (Facebook & Instagram): strategy, structure, audiences, creative direction | Meta Ads Strategist |
 | Landing pages, conversion design, message match, page structure / web design review | Landing Page / Web Design Specialist |
-| CRO, analytics/tracking setup, client success, proposals | Note it as out of MVP scope; flag as a future agent (see `AGENTS.md`) |
+| Building / coding a landing page or site from an approved spec | Web Developer / Builder |
+| Conversion tracking, GA4, pixel / Conversions API, measurement integrity | Analytics & Tracking Specialist |
+| Client updates, answering client questions, relationship communication | Client Success Agent |
+| New-business proposals, pitches, prospect qualification | Sales / Proposal Agent |
+| Organic social posts, newsletters, content calendars, video scripts | Copywriter (content & social specialty) |
+| CRO deep-dive or ClickUp task creation | Note as future scope (see `AGENTS.md`) |
 
 A single request may involve several agents (e.g. campaign setup → Strategist, then Setup Specialist, then Copywriter). Sequence them and note dependencies.
 

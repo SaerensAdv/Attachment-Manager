@@ -1,6 +1,6 @@
-# [Project name]
+# Saerens Advertising — AI Team
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+The documentation-first foundation ("AI brain") for Saerens Advertising's internal AI agent system: structured markdown defining agent roles, client context, workflows, output templates, and agency standards. No app yet — see `ROADMAP.md` for later phases.
 
 ## Run & Operate
 
@@ -22,7 +22,16 @@ _Replace the heading above with the project's name, and this line with one sente
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `README.md` — what the AI team system is and how docs are organized
+- `AGENTS.md` — the constitution: global agent rules, hierarchy, current + future agents
+- `ROADMAP.md` — phased plan (documentation-first → tool integrations)
+- `ARCHITECTURE.md` — the five-layer model and folder map
+- `agents/` — one role file per AI agent
+- `clients/` — client context (template + example); kept separate from agent files
+- `workflows/` — repeatable agency processes
+- `templates/` — reusable structured output formats
+- `knowledge/` — agency standards (principles, tone, Google Ads, analytics, reporting, naming)
+- The pnpm workspace scaffold (`artifacts/`, `lib/`) is unused by this documentation deliverable.
 
 ## Architecture decisions
 
@@ -30,7 +39,7 @@ _Populate as you build — non-obvious choices a reader couldn't infer from the 
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+A documentation foundation that defines specialized AI agents for Saerens Advertising (a Belgian Google Ads agency). Each agent has a role, responsibilities, limits, required input, and a structured output format. Work is produced by combining: global rules + agent + client context + workflow + the user's request. MVP agents: Orchestrator, Google Ads Strategist, Setup Specialist, Optimization Specialist, Reporting Specialist, Copywriter.
 
 ## User preferences
 

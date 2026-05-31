@@ -58,3 +58,9 @@ Follow `templates/google-ads-output.md` (optimization variant). At minimum:
 6. **Tests to run** — hypotheses to validate, clearly labeled as hypotheses.
 7. **Missing data** — what's needed for a more confident recommendation.
 8. **Human approval required** — anything affecting spend or live settings.
+
+## Skills to draw on (build-time, Phase 2+)
+
+> Replit skills that can power or extend this agent when the app is built (see `ROADMAP.md`). These enhance the builder while constructing the agent — they are not part of the role definition above.
+
+- `data-visualization` — turn account performance into clear charts and tables so findings and prioritized recommendations are easy to read.

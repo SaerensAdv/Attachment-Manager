@@ -175,28 +175,3 @@
     animation: none;
   }
 }
-
-/* Ambient "breathing" halo on agent nodes in the live atlas backdrop, so the
-   map reads as gently alive even when no run is in progress. */
-@keyframes atlas-idle-pulse {
-  0%,
-  100% {
-    opacity: 0.08;
-    transform: scale(0.92);
-  }
-  50% {
-    opacity: 0.22;
-    transform: scale(1.08);
-  }
-}
-.atlas-idle-pulse {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: atlas-idle-pulse 3.6s ease-in-out infinite;
-}
-@media (prefers-reduced-motion: reduce) {
-  .atlas-idle-pulse {
-    animation: none;
-    opacity: 0.12;
-  }
-}

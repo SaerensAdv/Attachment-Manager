@@ -32,7 +32,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { streamGenerateTeam } from "@/lib/generate";
 import { routeRequest, type RoutingResult } from "@/lib/route";
 import { fetchIntake, type IntakeField } from "@/lib/intake";
-import LiveAtlas from "@/components/LiveAtlas";
 
 interface Option {
   path: string;
@@ -45,10 +44,6 @@ interface AgentSegment {
   role: "lead" | "member";
   content: string;
   status: "queued" | "working" | "done";
-  // Client-side timing so the run-flow view can show per-agent durations
-  // without any backend change.
-  startedAt?: number;
-  endedAt?: number;
 }
 
 // Shared editorial styling for the restyled shadcn selects.
@@ -342,7 +337,6 @@ export default function Generate() {
               role: info.role,
               content: next[info.index]?.content ?? "",
               status: "working",
-              startedAt: next[info.index]?.startedAt ?? Date.now(),
             };
             return next;
           }),
@@ -355,9 +349,7 @@ export default function Generate() {
         onAgentDone: (index) =>
           setSegments((prev) =>
             prev.map((s, i) =>
-              i === index
-                ? { ...s, status: "done", endedAt: Date.now() }
-                : s,
+              i === index ? { ...s, status: "done" } : s,
             ),
           ),
         onDone: (archived) => {
@@ -392,47 +384,6 @@ export default function Generate() {
         .join("\n\n---\n\n"),
     [segments],
   );
-
-  // ── Live atlas backdrop wiring ──────────────────────────────────────────
-  // Map agent doc paths to graph node ids so the run can light up the very same
-  // nodes the user sees on the "Kaart" page.
-  const idByPath = useMemo(() => {
-    const m = new Map<string, string>();
-    for (const n of graphData?.nodes ?? []) m.set(n.path, n.id);
-    return m;
-  }, [graphData]);
-
-  const orchestratorId = useMemo(
-    () => idByPath.get("agents/orchestrator.md") ?? null,
-    [idByPath],
-  );
-
-  // The working team (lead + members) in execution order, by node id.
-  const teamIds = useMemo(
-    () => teamPaths.map((p) => idByPath.get(p)).filter((id): id is string => !!id),
-    [teamPaths, idByPath],
-  );
-
-  // Whoever is actively working: the orchestrator while routing, otherwise the
-  // agent whose segment is currently streaming.
-  const activeNodeId = useMemo(() => {
-    if (routing) return orchestratorId;
-    const working = segments.find((s) => s.status === "working");
-    if (working) return idByPath.get(working.path) ?? null;
-    return null;
-  }, [routing, segments, orchestratorId, idByPath]);
-
-  const doneNodeIds = useMemo(() => {
-    const ids = segments
-      .filter((s) => s.status === "done")
-      .map((s) => idByPath.get(s.path))
-      .filter((id): id is string => !!id);
-    // Once routing is confirmed the orchestrator's hand-off is complete.
-    if (isRouted && orchestratorId) ids.push(orchestratorId);
-    return ids;
-  }, [segments, idByPath, isRouted, orchestratorId]);
-
-  const atlasActive = routing || isStreaming || segments.length > 0 || !!result;
 
   const handleStop = () => {
     abortRef.current?.abort();
@@ -961,29 +912,9 @@ export default function Generate() {
         {/* ============================================================== */}
         {/* RIGHT COLUMN — DRUKPROEF                                        */}
         {/* ============================================================== */}
-        <div className="relative w-full lg:w-7/12 xl:w-[66%] bg-card flex flex-col min-h-[60vh]">
-          {/* Living Operations Atlas — the very same map from "Kaart", here as a
-              breathing backdrop. It pulses gently at rest and lights up the
-              orchestrator + the working team while a run streams, showing the
-              team look up and hand off the work. Pinned so it stays in view as
-              the proof scrolls. */}
-          <div className="absolute inset-0 z-0 pointer-events-none" aria-hidden="true">
-            <div className="sticky top-16 h-[calc(100dvh-4rem)] w-full" data-testid="live-atlas">
-              <LiveAtlas
-                nodes={graphData.nodes}
-                edges={graphData.edges}
-                orchestratorId={orchestratorId}
-                teamIds={teamIds}
-                activeId={activeNodeId}
-                doneIds={doneNodeIds}
-                active={atlasActive}
-                baseOpacity={combinedOutput.length > 400 ? 0.16 : atlasActive ? 0.6 : 0.42}
-              />
-            </div>
-          </div>
-
+        <div className="w-full lg:w-7/12 xl:w-[66%] bg-card flex flex-col min-h-[60vh]">
           {/* Status bar */}
-          <div className="relative z-10 sticky top-16 bg-card/90 backdrop-blur-sm border-b border-foreground/10 px-8 lg:px-12 py-4 flex items-center justify-between gap-4">
+          <div className="sticky top-16 z-10 bg-card/90 backdrop-blur-sm border-b border-foreground/10 px-8 lg:px-12 py-4 flex items-center justify-between gap-4">
             <div className="flex items-center gap-6 min-w-0">
               <span className="font-['Space_Mono'] text-xs uppercase tracking-widest flex items-center gap-2 shrink-0">
                 <Loader2
@@ -1058,7 +989,7 @@ export default function Generate() {
           </div>
 
           {/* Output canvas */}
-          <div className="relative z-10 px-8 lg:px-12 py-12 lg:py-16 max-w-3xl mx-auto w-full">
+          <div className="px-8 lg:px-12 py-12 lg:py-16 max-w-3xl mx-auto w-full">
             {streamError && (
               <div className="mb-10 border-l-2 border-destructive bg-destructive/5 px-4 py-3 text-sm text-destructive font-['Inter']">
                 {streamError}
@@ -1066,17 +997,15 @@ export default function Generate() {
             )}
 
             {segments.length === 0 && !isStreaming && !streamError && (
-              <div className="h-[58vh] flex flex-col items-center justify-center text-center gap-4">
-                <div className="inline-flex flex-col items-center gap-4 bg-card/70 backdrop-blur-sm px-8 py-7 border border-foreground/10">
-                  <span className="font-['Space_Mono'] text-[10px] uppercase tracking-[0.3em] text-accent">
-                    {atlasActive ? "De redactie schikt zich" : "Redactie standby"}
-                  </span>
-                  <p className="max-w-sm text-sm text-muted-foreground font-['Inter']">
-                    De kaart toont het volledige team. Zodra je een opdracht
-                    start, licht de orchestrator op en geeft het werk knoop voor
-                    knoop door aan de redactie — de drukproef verschijnt hier.
-                  </p>
-                </div>
+              <div className="h-[40vh] flex flex-col items-center justify-center text-center gap-4">
+                <span className="font-['Playfair_Display'] text-5xl font-black italic text-foreground/10">
+                  SA
+                </span>
+                <p className="max-w-sm text-sm text-muted-foreground font-['Inter']">
+                  De drukproef verschijnt hier. De redactie werkt na elkaar —
+                  elke bijdrage is een eerste versie die een teamlid moet
+                  nakijken voor publicatie.
+                </p>
               </div>
             )}
 

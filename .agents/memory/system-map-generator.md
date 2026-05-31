@@ -108,7 +108,23 @@ the review card; filled answers are appended to the request as a
 - Re-fetches on agent/workflow override (effect keyed on routed+agent+workflow+
   client), preserving already-typed answers for still-relevant keys.
 
-## Scope boundary
-No persistence in Phase 2 (deliberately — that's Phase 4). The conversations/
-messages DB tables from the anthropic integration template were NOT copied; only
+## Persistence + Archive ("Archief", Phase 4 foundation)
+Finished generations are now persisted (own `generations` table) and browsable in
+an "Archief" tab — a clients-style vertical slice (db schema+index → api-server
+store+routes → openapi+orval codegen → frontend page+route+TabNav). List endpoint
+omits the heavy markdown body; detail endpoint returns full `finalMarkdown`.
+- **Save happens on stream completion and is non-blocking.** The run is saved
+  right before the final SSE event, inside try/catch; a DB failure logs and still
+  finishes the stream so the user keeps their result. **Why:** persistence must
+  never destroy a successful generation.
+- **The `done` SSE event carries `archived: boolean`.** The UI only shows
+  "Bewaard in archief" + invalidates the archive list when `archived === true`,
+  so it never claims a save that silently failed. **Why:** a code review caught
+  the UI asserting success on every `done`, even when the DB write threw.
+- Stored titles are stripped of their doc prefixes (`Client: `, `Workflow: `) for
+  clean archive display.
+
+## Earlier scope note
+Phase 2 had no persistence by design. The conversations/messages DB tables from
+the anthropic integration template were NOT copied; only
 `lib/integrations-anthropic-ai` is used.

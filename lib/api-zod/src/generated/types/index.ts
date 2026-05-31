@@ -15,5 +15,8 @@ export * from './docEdge';
 export * from './docGraph';
 export * from './docNode';
 export * from './errorResponse';
+export * from './generation';
+export * from './generationList';
+export * from './generationSummary';
 export * from './getDocContentParams';
 export * from './healthStatus';

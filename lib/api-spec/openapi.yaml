@@ -14,6 +14,8 @@ tags:
     description: Documentation system-map operations
   - name: clients
     description: Client profile management (persisted)
+  - name: generations
+    description: Saved AI team generations (archive/history)
 paths:
   /healthz:
     get:
@@ -185,6 +187,61 @@ paths:
           description: Deleted
         "404":
           description: Client not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /generations:
+    get:
+      operationId: getGenerations
+      tags: [generations]
+      summary: List all saved generations (newest first)
+      responses:
+        "200":
+          description: The archive of generations
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenerationList"
+  /generations/{id}:
+    get:
+      operationId: getGeneration
+      tags: [generations]
+      summary: Get a single generation with its full markdown body
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: The generation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Generation"
+        "404":
+          description: Generation not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteGeneration
+      tags: [generations]
+      summary: Delete a generation from the archive
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Generation not found
           content:
             application/json:
               schema:
@@ -364,6 +421,87 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Client"
+    GenerationSummary:
+      type: object
+      required:
+        - id
+        - clientName
+        - workflowTitle
+        - leadAgentTitle
+        - teamTitles
+        - requestText
+        - createdAt
+      properties:
+        id:
+          type: integer
+        clientName:
+          type: string
+        workflowTitle:
+          type: string
+        leadAgentTitle:
+          type: string
+        teamTitles:
+          type: array
+          items:
+            type: string
+        requestText:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+    Generation:
+      type: object
+      required:
+        - id
+        - clientName
+        - workflowTitle
+        - leadAgentTitle
+        - teamTitles
+        - requestText
+        - createdAt
+        - clientPath
+        - workflowPath
+        - leadAgentPath
+        - teamPaths
+        - finalMarkdown
+      properties:
+        id:
+          type: integer
+        clientName:
+          type: string
+        workflowTitle:
+          type: string
+        leadAgentTitle:
+          type: string
+        teamTitles:
+          type: array
+          items:
+            type: string
+        requestText:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        clientPath:
+          type: string
+        workflowPath:
+          type: string
+        leadAgentPath:
+          type: string
+        teamPaths:
+          type: array
+          items:
+            type: string
+        finalMarkdown:
+          type: string
+    GenerationList:
+      type: object
+      required: [generations]
+      properties:
+        generations:
+          type: array
+          items:
+            $ref: "#/components/schemas/GenerationSummary"
     ErrorResponse:
       type: object
       required: [error]

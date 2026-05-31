@@ -1,5 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useGetDocGraph } from "@workspace/api-client-react";
+import { Link } from "wouter";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  useGetDocGraph,
+  getGetGenerationsQueryKey,
+} from "@workspace/api-client-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
@@ -51,6 +56,10 @@ const selectItemClass =
 
 export default function Generate() {
   const { data: graphData, isLoading, error } = useGetDocGraph();
+  const queryClient = useQueryClient();
+  // True once a completed run has been archived server-side, so we can confirm
+  // it and link the user to the archive.
+  const [justSaved, setJustSaved] = useState(false);
 
   const [clientPath, setClientPath] = useState("");
   const [request, setRequest] = useState("");
@@ -297,6 +306,7 @@ export default function Generate() {
       })),
     );
     setStreamError(null);
+    setJustSaved(false);
     setIsStreaming(true);
     startedAtRef.current = Date.now();
     setElapsed(0);
@@ -342,9 +352,17 @@ export default function Generate() {
               i === index ? { ...s, status: "done" } : s,
             ),
           ),
-        onDone: () => {
+        onDone: (archived) => {
           setIsStreaming(false);
           abortRef.current = null;
+          // Only confirm + refresh the archive when the server actually
+          // persisted the run, so we never claim a save that didn't happen.
+          setJustSaved(archived);
+          if (archived) {
+            queryClient.invalidateQueries({
+              queryKey: getGetGenerationsQueryKey(),
+            });
+          }
         },
         onError: (message) => {
           setStreamError(message);
@@ -929,7 +947,18 @@ export default function Generate() {
             </div>
 
             {combinedOutput && !isStreaming && (
-              <div className="flex items-center gap-1 shrink-0">
+              <div className="flex items-center gap-3 shrink-0">
+                {justSaved && (
+                  <Link
+                    href="/history"
+                    data-testid="link-saved-archive"
+                    className="flex items-center gap-1.5 font-['Space_Mono'] text-[10px] uppercase tracking-widest text-green-700 hover:text-accent transition-colors"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    Bewaard in archief
+                  </Link>
+                )}
+                <div className="flex items-center gap-1">
                 <button
                   type="button"
                   onClick={handleCopy}
@@ -954,6 +983,7 @@ export default function Generate() {
                 >
                   <Download className="w-4 h-4 group-hover:text-accent" />
                 </button>
+                </div>
               </div>
             )}
           </div>

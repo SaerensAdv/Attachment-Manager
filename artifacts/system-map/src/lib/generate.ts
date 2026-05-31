@@ -17,7 +17,7 @@ export interface TeamStreamHandlers {
   onAgentStart: (info: AgentStartInfo) => void;
   onDelta: (index: number, text: string) => void;
   onAgentDone: (index: number) => void;
-  onDone: () => void;
+  onDone: (archived: boolean) => void;
   onError: (message: string) => void;
   signal?: AbortSignal;
 }
@@ -30,6 +30,7 @@ interface StreamEvent {
   role?: "lead" | "member";
   content?: string;
   done?: boolean;
+  archived?: boolean;
   error?: string;
 }
 
@@ -103,7 +104,7 @@ export async function streamGenerateTeam(
           }
           if (parsed.done) {
             seenDone = true;
-            onDone();
+            onDone(parsed.archived === true);
             return;
           }
           if (parsed.type === "agent_start" && parsed.agent) {
@@ -129,7 +130,7 @@ export async function streamGenerateTeam(
       }
     }
     if (seenDone) {
-      onDone();
+      onDone(false);
     } else {
       onError("Stream onverwacht beëindigd");
     }

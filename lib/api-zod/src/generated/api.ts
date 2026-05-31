@@ -198,3 +198,50 @@ export const DeleteClientParams = zod.object({
 })
 
 
+/**
+ * @summary List all saved generations (newest first)
+ */
+export const GetGenerationsResponse = zod.object({
+  "generations": zod.array(zod.object({
+  "id": zod.number(),
+  "clientName": zod.string(),
+  "workflowTitle": zod.string(),
+  "leadAgentTitle": zod.string(),
+  "teamTitles": zod.array(zod.string()),
+  "requestText": zod.string(),
+  "createdAt": zod.coerce.date()
+}))
+})
+
+
+/**
+ * @summary Get a single generation with its full markdown body
+ */
+export const GetGenerationParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetGenerationResponse = zod.object({
+  "id": zod.number(),
+  "clientName": zod.string(),
+  "workflowTitle": zod.string(),
+  "leadAgentTitle": zod.string(),
+  "teamTitles": zod.array(zod.string()),
+  "requestText": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "clientPath": zod.string(),
+  "workflowPath": zod.string(),
+  "leadAgentPath": zod.string(),
+  "teamPaths": zod.array(zod.string()),
+  "finalMarkdown": zod.string()
+})
+
+
+/**
+ * @summary Delete a generation from the archive
+ */
+export const DeleteGenerationParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+

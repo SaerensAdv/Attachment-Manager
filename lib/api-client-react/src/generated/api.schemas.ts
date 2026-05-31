@@ -130,6 +130,35 @@ export interface ClientList {
   clients: Client[];
 }
 
+export interface GenerationSummary {
+  id: number;
+  clientName: string;
+  workflowTitle: string;
+  leadAgentTitle: string;
+  teamTitles: string[];
+  requestText: string;
+  createdAt: string;
+}
+
+export interface Generation {
+  id: number;
+  clientName: string;
+  workflowTitle: string;
+  leadAgentTitle: string;
+  teamTitles: string[];
+  requestText: string;
+  createdAt: string;
+  clientPath: string;
+  workflowPath: string;
+  leadAgentPath: string;
+  teamPaths: string[];
+  finalMarkdown: string;
+}
+
+export interface GenerationList {
+  generations: GenerationSummary[];
+}
+
 export interface ErrorResponse {
   error: string;
 }

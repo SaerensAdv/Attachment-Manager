@@ -26,6 +26,8 @@ import type {
   DocContent,
   DocGraph,
   ErrorResponse,
+  Generation,
+  GenerationList,
   GetDocContentParams,
   HealthStatus
 } from './api.schemas';
@@ -649,5 +651,229 @@ export const useDeleteClient = <TError = ErrorType<ErrorResponse>,
         TContext
       > => {
       return useMutation(getDeleteClientMutationOptions(options));
+    }
+
+export const getGetGenerationsUrl = () => {
+
+
+
+
+  return `/api/generations`
+}
+
+/**
+ * @summary List all saved generations (newest first)
+ */
+export const getGenerations = async ( options?: RequestInit): Promise<GenerationList> => {
+
+  return customFetch<GenerationList>(getGetGenerationsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetGenerationsQueryKey = () => {
+    return [
+    `/api/generations`
+    ] as const;
+    }
+
+
+export const getGetGenerationsQueryOptions = <TData = Awaited<ReturnType<typeof getGenerations>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGenerations>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetGenerationsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getGenerations>>> = ({ signal }) => getGenerations({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getGenerations>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetGenerationsQueryResult = NonNullable<Awaited<ReturnType<typeof getGenerations>>>
+export type GetGenerationsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List all saved generations (newest first)
+ */
+
+export function useGetGenerations<TData = Awaited<ReturnType<typeof getGenerations>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGenerations>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetGenerationsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetGenerationUrl = (id: number,) => {
+
+
+
+
+  return `/api/generations/${id}`
+}
+
+/**
+ * @summary Get a single generation with its full markdown body
+ */
+export const getGeneration = async (id: number, options?: RequestInit): Promise<Generation> => {
+
+  return customFetch<Generation>(getGetGenerationUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetGenerationQueryKey = (id: number,) => {
+    return [
+    `/api/generations/${id}`
+    ] as const;
+    }
+
+
+export const getGetGenerationQueryOptions = <TData = Awaited<ReturnType<typeof getGeneration>>, TError = ErrorType<ErrorResponse>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGeneration>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetGenerationQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getGeneration>>> = ({ signal }) => getGeneration(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getGeneration>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetGenerationQueryResult = NonNullable<Awaited<ReturnType<typeof getGeneration>>>
+export type GetGenerationQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary Get a single generation with its full markdown body
+ */
+
+export function useGetGeneration<TData = Awaited<ReturnType<typeof getGeneration>>, TError = ErrorType<ErrorResponse>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGeneration>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetGenerationQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getDeleteGenerationUrl = (id: number,) => {
+
+
+
+
+  return `/api/generations/${id}`
+}
+
+/**
+ * @summary Delete a generation from the archive
+ */
+export const deleteGeneration = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteGenerationUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteGenerationMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteGeneration>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteGeneration>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteGeneration'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteGeneration>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteGeneration(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteGenerationMutationResult = NonNullable<Awaited<ReturnType<typeof deleteGeneration>>>
+
+    export type DeleteGenerationMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Delete a generation from the archive
+ */
+export const useDeleteGeneration = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteGeneration>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteGeneration>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteGenerationMutationOptions(options));
     }
 

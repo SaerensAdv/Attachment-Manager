@@ -3,6 +3,7 @@ import { anthropic } from "@workspace/integrations-anthropic-ai";
 import { buildGenerationContext } from "../lib/generate-context";
 import { getDocFile, type DocFile } from "../lib/docs";
 import { loadClientDocs } from "../lib/clients-store";
+import { saveGeneration } from "../lib/generations-store";
 
 const router: IRouter = Router();
 
@@ -174,7 +175,36 @@ router.post("/generate", async (req, res) => {
     }
 
     if (!clientGone) {
-      send({ done: true });
+      // Persist the finished run to the archive. This must never break a
+      // successful generation: on any DB error we log and still finish the
+      // stream so the user keeps their result. `archived` tells the client
+      // whether persistence actually succeeded, so the UI never claims a run
+      // was saved when it wasn't.
+      let archived = false;
+      try {
+        const clientTitle = (
+          getDocFile(clientPath, clientDocs)?.title ?? clientPath
+        ).replace(/^Client:\s*/i, "");
+        await saveGeneration({
+          clientPath,
+          clientName: clientTitle,
+          workflowPath,
+          workflowTitle: (
+            getDocFile(workflowPath)?.title ?? workflowPath
+          ).replace(/^Workflow:\s*/i, ""),
+          leadAgentPath: teamPaths[0],
+          leadAgentTitle: memberTitles[0],
+          teamPaths: JSON.stringify(teamPaths),
+          teamTitles: JSON.stringify(memberTitles),
+          requestText: request,
+          finalMarkdown: priorWork.trim(),
+        });
+        archived = true;
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        console.error("Kon generatie niet opslaan in archief:", message);
+      }
+      send({ done: true, archived });
       res.end();
     }
   } catch (err) {

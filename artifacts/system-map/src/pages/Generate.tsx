@@ -197,6 +197,9 @@ export default function Generate() {
     isRouted &&
     !!clientPath &&
     !!workflowPath &&
+    // A lead agent is required — members alone can't generate. Overriding the
+    // workflow clears agentPath, so guard against members-only state here.
+    !!agentPath &&
     teamPaths.length > 0 &&
     request.trim().length > 0;
 

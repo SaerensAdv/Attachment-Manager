@@ -75,6 +75,9 @@ export default function GraphViewer({
   const simNodesRef = useRef<SimNode[]>([]);
   // Guards the one-time auto-fit so it only fires after a fresh dataset settles.
   const didAutoFitRef = useRef(false);
+  // Bumped when the simulation cools down, so the auto-fit waits for the final
+  // (now larger, spread-out) layout instead of framing a half-settled one.
+  const [settleNonce, setSettleNonce] = useState(0);
 
   // Update dimensions on resize
   useEffect(() => {
@@ -105,18 +108,70 @@ export default function GraphViewer({
     // A new node/edge set means the layout will shift, so re-arm the auto-fit.
     didAutoFitRef.current = false;
 
-    const simulation = d3.forceSimulation<SimNode>(simNodesData)
-      .force("link", d3.forceLink<SimNode, SimEdge>(simEdgesData).id(d => d.id).distance(100))
-      .force("charge", d3.forceManyBody().strength(-400))
-      .force("center", d3.forceCenter(dimensions.width / 2, dimensions.height / 2))
-      .force("collide", d3.forceCollide().radius(50));
+    // Count how many edges touch each node. The densest core docs (README,
+    // ARCHITECTURE, …) accumulate many links whose attraction otherwise crams
+    // their neighborhoods into an unreadable knot, so we scale the repulsion
+    // and personal space of each node by its connectivity: hubs claim more room
+    // and push their many neighbors out into a legible fan instead of a pile.
+    const degree = new Map<string, number>();
+    for (const e of simEdgesData) {
+      degree.set(e.source as string, (degree.get(e.source as string) ?? 0) + 1);
+      degree.set(e.target as string, (degree.get(e.target as string) ?? 0) + 1);
+    }
+    const degreeOf = (n: SimNode) => degree.get(n.id) ?? 0;
 
-    // Update state on each tick
-    simulation.on("tick", () => {
-      // Force React re-render by creating new arrays
-      setSimNodes([...simNodesData]);
-      setSimEdges([...simEdgesData]);
-    });
+    // Visual radius of a node circle (16) — collision keeps at least this much
+    // clear space plus a per-degree margin so labels in the dense center don't
+    // collide even when zoomed in.
+    const NODE_RADIUS = 16;
+
+    const simulation = d3.forceSimulation<SimNode>(simNodesData)
+      // Longer links give connected nodes breathing room; hubs get extra so
+      // their many spokes don't bunch up at a single distance.
+      .force(
+        "link",
+        d3.forceLink<SimNode, SimEdge>(simEdgesData)
+          .id(d => d.id)
+          .distance(link => {
+            const d = Math.max(
+              degreeOf(link.source as SimNode),
+              degreeOf(link.target as SimNode),
+            );
+            return 130 + Math.min(d, 12) * 12;
+          }),
+      )
+      // Repulsion grows with connectivity so highly-linked cores spread their
+      // neighbors out instead of collapsing inward.
+      .force(
+        "charge",
+        d3.forceManyBody<SimNode>().strength(n => -500 - degreeOf(n) * 90),
+      )
+      .force("center", d3.forceCenter(dimensions.width / 2, dimensions.height / 2))
+      // Hard minimum spacing, also scaled by degree and run for several
+      // iterations so overlaps in the dense region are resolved firmly.
+      .force(
+        "collide",
+        d3.forceCollide<SimNode>()
+          .radius(n => NODE_RADIUS + 34 + Math.min(degreeOf(n), 12) * 3)
+          .strength(1)
+          .iterations(3),
+      )
+      .stop();
+
+    // Run the layout to completion synchronously rather than animating it tick
+    // by tick. The dense core needs many iterations to fully relax, and showing
+    // each intermediate (still-overlapping) frame both looks jittery and makes
+    // the auto-fit frame a half-expanded layout. Computing the final positions
+    // in one pass yields a stable, spread-out graph immediately.
+    const ticks = Math.ceil(
+      Math.log(simulation.alphaMin()) / Math.log(1 - simulation.alphaDecay()),
+    );
+    for (let i = 0; i < ticks; i++) simulation.tick();
+
+    setSimNodes([...simNodesData]);
+    setSimEdges([...simEdgesData]);
+    // Signal the auto-fit now that the final, settled layout is ready.
+    setSettleNonce((n) => n + 1);
 
     return () => {
       simulation.stop();
@@ -176,14 +231,16 @@ export default function GraphViewer({
   }, [selectedNodeId, focusNonce, focusOnNode]);
 
   // Auto-fit once the layout has settled for a fresh dataset, so the user always
-  // starts from a readable full overview rather than an arbitrary crop.
+  // starts from a readable full overview rather than an arbitrary crop. Keyed on
+  // settleNonce (bumped when the simulation ends) so it frames the final,
+  // fully-spread layout instead of a mid-expansion snapshot.
   useEffect(() => {
     if (didAutoFitRef.current) return;
     if (!simNodes.length || selectedNodeId) return;
+    if (settleNonce === 0) return;
     didAutoFitRef.current = true;
-    const id = window.setTimeout(fitView, 400);
-    return () => window.clearTimeout(id);
-  }, [simNodes, selectedNodeId, fitView]);
+    fitView();
+  }, [settleNonce, simNodes, selectedNodeId, fitView]);
 
   // Derived styling helpers
   const lowerSearchQuery = searchQuery.toLowerCase();

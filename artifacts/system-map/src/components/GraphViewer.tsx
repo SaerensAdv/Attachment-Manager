@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import * as d3 from "d3-force";
 import {
   TransformWrapper,
@@ -30,10 +30,10 @@ const EDGE_STYLE: Record<
   string,
   { color: string; width: number; dash: string; opacity: number; marker: string }
 > = {
-  routing: { color: "hsl(var(--cat-agent))", width: 2, dash: "none", opacity: 0.75, marker: "arrow-routing" },
-  flow: { color: "hsl(var(--cat-core))", width: 2, dash: "none", opacity: 0.7, marker: "arrow-flow" },
-  reference: { color: "hsl(var(--foreground))", width: 1, dash: "none", opacity: 0.35, marker: "arrow-reference" },
-  mention: { color: "hsl(var(--foreground))", width: 1, dash: "4,4", opacity: 0.2, marker: "arrow-mention" },
+  routing: { color: "hsl(var(--cat-agent))", width: 1.75, dash: "none", opacity: 0.7, marker: "arrow-routing" },
+  flow: { color: "hsl(var(--cat-core))", width: 1.75, dash: "none", opacity: 0.65, marker: "arrow-flow" },
+  reference: { color: "hsl(var(--foreground))", width: 1, dash: "none", opacity: 0.26, marker: "arrow-reference" },
+  mention: { color: "hsl(var(--foreground))", width: 1, dash: "3,5", opacity: 0.14, marker: "arrow-mention" },
 };
 const edgeStyleFor = (kind: string) => EDGE_STYLE[kind] ?? EDGE_STYLE.mention;
 
@@ -257,6 +257,21 @@ export default function GraphViewer({
     return false;
   };
 
+  // Connectivity per node, used to scale node size: hub documents read as larger
+  // "seals" than leaf docs, giving the atlas a clear visual hierarchy.
+  const degreeMap = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const e of simEdges) {
+      const s = typeof e.source === "string" ? e.source : (e.source as SimNode).id;
+      const t = typeof e.target === "string" ? e.target : (e.target as SimNode).id;
+      m.set(s, (m.get(s) ?? 0) + 1);
+      m.set(t, (m.get(t) ?? 0) + 1);
+    }
+    return m;
+  }, [simEdges]);
+
+  const radiusOf = (node: SimNode) => 12 + Math.min(degreeMap.get(node.id) ?? 0, 14);
+
   return (
     <div ref={containerRef} className="w-full h-full bg-background relative overflow-hidden">
       {/* Grid Pattern Background — faint ink dots on cream paper */}
@@ -279,26 +294,27 @@ export default function GraphViewer({
         <TransformComponent wrapperClass="!w-full !h-full" contentClass="!w-full !h-full">
           <svg width={dimensions.width} height={dimensions.height} className="overflow-visible">
             <defs>
-              {/* Routing edge arrow (orchestrator hand-off) */}
-              <marker id="arrow-routing" viewBox="0 -5 10 10" refX="25" refY="0" markerWidth="6" markerHeight="6" orient="auto">
-                <path d="M0,-5L10,0L0,5" fill="hsl(var(--cat-agent))" opacity={0.85} />
+              {/* Relationship arrowheads — refined, sit just off each node rim */}
+              <marker id="arrow-routing" viewBox="0 -5 10 10" refX="8" refY="0" markerWidth="7" markerHeight="7" orient="auto">
+                <path d="M0,-4L8,0L0,4" fill="hsl(var(--cat-agent))" opacity={0.9} />
               </marker>
-              {/* Flow edge arrow (five-layer pipeline) */}
-              <marker id="arrow-flow" viewBox="0 -5 10 10" refX="25" refY="0" markerWidth="6" markerHeight="6" orient="auto">
-                <path d="M0,-5L10,0L0,5" fill="hsl(var(--cat-core))" opacity={0.85} />
+              <marker id="arrow-flow" viewBox="0 -5 10 10" refX="8" refY="0" markerWidth="7" markerHeight="7" orient="auto">
+                <path d="M0,-4L8,0L0,4" fill="hsl(var(--cat-core))" opacity={0.9} />
               </marker>
-              {/* Reference edge arrow */}
-              <marker id="arrow-reference" viewBox="0 -5 10 10" refX="25" refY="0" markerWidth="6" markerHeight="6" orient="auto">
-                <path d="M0,-5L10,0L0,5" fill="hsl(var(--foreground))" opacity={0.5} />
+              <marker id="arrow-reference" viewBox="0 -5 10 10" refX="8" refY="0" markerWidth="6" markerHeight="6" orient="auto">
+                <path d="M0,-4L8,0L0,4" fill="hsl(var(--foreground))" opacity={0.5} />
               </marker>
-              {/* Mention edge arrow */}
-              <marker id="arrow-mention" viewBox="0 -5 10 10" refX="25" refY="0" markerWidth="6" markerHeight="6" orient="auto">
-                <path d="M0,-5L10,0L0,5" fill="hsl(var(--foreground))" opacity={0.3} />
+              <marker id="arrow-mention" viewBox="0 -5 10 10" refX="8" refY="0" markerWidth="6" markerHeight="6" orient="auto">
+                <path d="M0,-4L8,0L0,4" fill="hsl(var(--foreground))" opacity={0.3} />
               </marker>
+              {/* Soft lift for the node "seals" */}
+              <filter id="node-shadow" x="-60%" y="-60%" width="220%" height="220%">
+                <feDropShadow dx="0" dy="2.5" stdDeviation="3" floodColor="#1A1A1A" floodOpacity="0.20" />
+              </filter>
             </defs>
 
             {/* Edges Layer */}
-            <g className="edges">
+            <g className="edges" fill="none">
               {simEdges.map((edge, i) => {
                 const source = edge.source as SimNode;
                 const target = edge.target as SimNode;
@@ -308,20 +324,41 @@ export default function GraphViewer({
                 const isEdgeHighlighted = selectedNodeId && (source.id === selectedNodeId || target.id === selectedNodeId);
                 const isEdgeDimmed = selectedNodeId && !isEdgeHighlighted;
 
+                // Trim the endpoints to each node's rim and bow the line into a
+                // gentle arc so the dense graph reads as elegant curves rather
+                // than a mechanical web.
+                const dx = target.x - source.x;
+                const dy = target.y - source.y;
+                const len = Math.hypot(dx, dy) || 1;
+                const ux = dx / len;
+                const uy = dy / len;
+                const x1 = source.x + ux * (radiusOf(source) + 2);
+                const y1 = source.y + uy * (radiusOf(source) + 2);
+                const x2 = target.x - ux * (radiusOf(target) + 7);
+                const y2 = target.y - uy * (radiusOf(target) + 7);
+                const bow = Math.min(len * 0.12, 56);
+                const cx = (x1 + x2) / 2 - uy * bow;
+                const cy = (y1 + y2) / 2 + ux * bow;
+                const d = `M${x1},${y1} Q${cx},${cy} ${x2},${y2}`;
+
+                const opacity = isEdgeDimmed ? 0.06 : isEdgeHighlighted ? 0.95 : style.opacity;
+                const width = isEdgeHighlighted ? style.width + 0.75 : style.width;
+
                 return (
-                  <line
-                    key={`edge-${i}`}
-                    x1={source.x}
-                    y1={source.y}
-                    x2={target.x}
-                    y2={target.y}
-                    stroke={style.color}
-                    strokeWidth={isEdgeHighlighted ? style.width + 1 : style.width}
-                    strokeDasharray={style.dash}
-                    opacity={isEdgeDimmed ? 0.08 : isEdgeHighlighted ? 0.9 : style.opacity}
-                    markerEnd={`url(#${style.marker})`}
-                    className="transition-opacity duration-300"
-                  />
+                  <g key={`edge-${i}`} className="transition-opacity duration-300">
+                    {isEdgeHighlighted && (
+                      <path d={d} stroke={style.color} strokeWidth={width + 5} opacity={0.14} strokeLinecap="round" />
+                    )}
+                    <path
+                      d={d}
+                      stroke={style.color}
+                      strokeWidth={width}
+                      strokeDasharray={style.dash === "none" ? undefined : style.dash}
+                      opacity={opacity}
+                      markerEnd={`url(#${style.marker})`}
+                      strokeLinecap="round"
+                    />
+                  </g>
                 );
               })}
             </g>
@@ -330,44 +367,51 @@ export default function GraphViewer({
             <g className="nodes">
               {simNodes.map((node) => {
                 if (node.x === undefined || node.y === undefined) return null;
-                
+
                 const isHighlighted = isNodeHighlighted(node);
                 const isDimmed = isNodeDimmed(node);
                 const color = getCategoryColor(node.category);
+                const r = radiusOf(node);
 
                 return (
-                  <g 
+                  <g
                     key={node.id}
-                    transform={`translate(${node.x},${node.y})`}
                     onClick={() => onSelectNode(node.id)}
                     className="cursor-pointer transition-all duration-300"
-                    style={{ 
+                    style={{
                       opacity: isDimmed ? 0.2 : 1,
-                      transform: `translate(${node.x}px,${node.y}px) scale(${isHighlighted ? 1.2 : 1})`
+                      transform: `translate(${node.x}px,${node.y}px) scale(${isHighlighted ? 1.15 : 1})`,
                     }}
                   >
-                    {/* Glow effect for highlighted nodes */}
+                    {/* Soft halo for the highlighted/selected node */}
                     {isHighlighted && (
-                      <circle r={24} fill={color} opacity={0.18} className="animate-pulse" />
+                      <circle r={r + 10} fill={color} opacity={0.16} className="animate-pulse" />
                     )}
-                    
-                    {/* Main Node Circle — filled with the category accent on cream,
-                        with an ink hairline ring for editorial contrast. */}
-                    <circle 
-                      r={16} 
-                      fill={color}
-                      stroke="hsl(var(--foreground))"
-                      strokeWidth={isHighlighted ? 3 : 1.5}
-                      className="transition-all duration-300"
-                    />
-                    
-                    {/* Inner paper core for a printed, ringed look */}
-                    <circle r={6} fill="hsl(var(--card))" opacity={isHighlighted ? 1 : 0.9} />
+
+                    {/* Editorial "press seal": a paper disc lifted with a soft
+                        shadow, ringed in the category accent. */}
+                    <g filter="url(#node-shadow)">
+                      <circle
+                        r={r}
+                        fill="hsl(var(--card))"
+                        stroke={color}
+                        strokeWidth={isHighlighted ? 3.5 : 2.5}
+                        className="transition-all duration-300"
+                      />
+                    </g>
+
+                    {/* Ink double-frame when active */}
+                    {isHighlighted && (
+                      <circle r={r + 5} fill="none" stroke="hsl(var(--foreground))" strokeWidth={1} opacity={0.85} />
+                    )}
+
+                    {/* Category core dot */}
+                    <circle r={Math.max(3, r * 0.4)} fill={color} />
 
                     {/* Node Label — hidden when zoomed out so the overview stays
                         legible, always shown for the highlighted/selected node. */}
                     <text
-                      dy={30}
+                      dy={r + 16}
                       textAnchor="middle"
                       fill={isHighlighted ? "hsl(var(--foreground))" : "hsl(var(--muted-foreground))"}
                       className={`font-['Space_Mono'] text-[11px] uppercase tracking-wider transition-opacity duration-300 ${isHighlighted ? 'font-bold' : ''}`}

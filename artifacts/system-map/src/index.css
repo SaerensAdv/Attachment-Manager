@@ -176,26 +176,27 @@
   }
 }
 
-/* Run-flow hand-off beads — the HTML analog of the atlas pipeline, streaming
-   light dots from one agent to the next while a hand-off is active. */
-@keyframes flow-beads {
-  to {
-    background-position: 14px 50%;
+/* Ambient "breathing" halo on agent nodes in the live atlas backdrop, so the
+   map reads as gently alive even when no run is in progress. */
+@keyframes atlas-idle-pulse {
+  0%,
+  100% {
+    opacity: 0.08;
+    transform: scale(0.92);
+  }
+  50% {
+    opacity: 0.22;
+    transform: scale(1.08);
   }
 }
-.flow-beads {
-  background-image: radial-gradient(
-    circle,
-    hsl(var(--accent)) 0 2px,
-    transparent 2.5px
-  );
-  background-size: 14px 6px;
-  background-position: 0 50%;
-  background-repeat: repeat-x;
-  animation: flow-beads 1s linear infinite;
+.atlas-idle-pulse {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: atlas-idle-pulse 3.6s ease-in-out infinite;
 }
 @media (prefers-reduced-motion: reduce) {
-  .flow-beads {
+  .atlas-idle-pulse {
     animation: none;
+    opacity: 0.12;
   }
 }

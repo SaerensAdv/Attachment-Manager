@@ -14,6 +14,7 @@ import {
   Users,
   X,
   Clock,
+  ClipboardList,
 } from "lucide-react";
 import {
   Select,
@@ -25,9 +26,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { streamGenerateTeam } from "@/lib/generate";
 import { routeRequest, type RoutingResult } from "@/lib/route";
+import { fetchIntake, type IntakeField } from "@/lib/intake";
 
 interface Option {
   path: string;
@@ -59,6 +62,13 @@ export default function Generate() {
   const [agentPath, setAgentPath] = useState("");
   // The supporting team (in execution order), editable before generating.
   const [memberPaths, setMemberPaths] = useState<string[]>([]);
+
+  // Smart intake — after routing, detect which essential inputs are still
+  // missing so the user can supply them before the specialist generates.
+  const [intakeFields, setIntakeFields] = useState<IntakeField[]>([]);
+  const [intakeAnswers, setIntakeAnswers] = useState<Record<string, string>>({});
+  const [intakeLoading, setIntakeLoading] = useState(false);
+  const intakeAbortRef = useRef<AbortController | null>(null);
 
   // Generation state — one segment per agent in the team.
   const [segments, setSegments] = useState<AgentSegment[]>([]);
@@ -122,6 +132,11 @@ export default function Generate() {
     setMemberPaths([]);
     setSegments([]);
     setStreamError(null);
+    intakeAbortRef.current?.abort();
+    intakeAbortRef.current = null;
+    setIntakeFields([]);
+    setIntakeAnswers({});
+    setIntakeLoading(false);
   };
 
   const hasActiveFlow =
@@ -172,6 +187,52 @@ export default function Generate() {
     }
   };
 
+  // Once a routing is confirmed (and whenever the agent/workflow override
+  // changes), ask the backend which essential inputs are still missing so we
+  // can collect them before generating. Best-effort: failures fall back to no
+  // extra fields rather than blocking the flow.
+  useEffect(() => {
+    if (!isRouted || !agentPath || !clientPath) return;
+    const controller = new AbortController();
+    intakeAbortRef.current = controller;
+    setIntakeLoading(true);
+    fetchIntake(
+      {
+        agentPath,
+        workflowPath: workflowPath || null,
+        clientPath,
+        request: request.trim(),
+      },
+      controller.signal,
+    )
+      .then((fields) => {
+        // Ignore a stale response if a newer intake fetch has superseded this
+        // one (agent/workflow override) — otherwise it could overwrite fresher
+        // fields.
+        if (intakeAbortRef.current !== controller) return;
+        setIntakeFields(fields);
+        // Keep any answers the user already typed for keys that still apply.
+        setIntakeAnswers((prev) => {
+          const next: Record<string, string> = {};
+          for (const f of fields) next[f.key] = prev[f.key] ?? "";
+          return next;
+        });
+      })
+      .catch((err) => {
+        if ((err as Error)?.name === "AbortError") return;
+        if (intakeAbortRef.current !== controller) return;
+        setIntakeFields([]);
+      })
+      .finally(() => {
+        if (intakeAbortRef.current === controller) {
+          intakeAbortRef.current = null;
+          setIntakeLoading(false);
+        }
+      });
+    return () => controller.abort();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isRouted, agentPath, workflowPath, clientPath]);
+
   // Full team in execution order: lead first, then members (deduped).
   const teamPaths = useMemo(() => {
     const out: string[] = [];
@@ -203,6 +264,21 @@ export default function Generate() {
     teamPaths.length > 0 &&
     request.trim().length > 0;
 
+  // Fold any filled-in intake answers into the request so the specialist works
+  // from concrete data instead of guessing. Empty fields are left out (the
+  // agent will mark them as [AAN TE VULLEN]).
+  const composeRequest = () => {
+    const base = request.trim();
+    const lines = intakeFields
+      .map((f) => {
+        const v = intakeAnswers[f.key]?.trim();
+        return v ? `- ${f.label}: ${v}` : "";
+      })
+      .filter(Boolean);
+    if (lines.length === 0) return base;
+    return `${base}\n\n## Aanvullende gegevens (door gebruiker aangeleverd)\n${lines.join("\n")}`;
+  };
+
   const handleGenerate = async () => {
     if (!canGenerate || isStreaming) return;
     // Show the whole team as a queue up front so the user immediately sees who
@@ -229,7 +305,7 @@ export default function Generate() {
         additionalAgentPaths: memberPaths,
         clientPath,
         workflowPath,
-        request: request.trim(),
+        request: composeRequest(),
       },
       {
         onAgentStart: (info) =>
@@ -298,6 +374,7 @@ export default function Generate() {
     return () => {
       abortRef.current?.abort();
       routeAbortRef.current?.abort();
+      intakeAbortRef.current?.abort();
     };
   }, []);
 
@@ -571,6 +648,59 @@ export default function Generate() {
                   ))}
                 </ol>
               </div>
+
+              {(intakeLoading || intakeFields.length > 0) && (
+                <div
+                  className="flex flex-col gap-3 rounded-lg border border-card-border bg-background/40 p-4"
+                  data-testid="intake-block"
+                >
+                  <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-muted-foreground">
+                    <ClipboardList className="w-3.5 h-3.5 shrink-0" />
+                    Aanvullende info nodig
+                    {intakeLoading && (
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                    )}
+                  </div>
+
+                  {intakeFields.length > 0 && (
+                    <>
+                      <p className="text-xs text-muted-foreground -mt-1">
+                        Vul aan wat je weet zodat het team niet hoeft te gokken.
+                        Leeg laten mag — dan markeert de specialist het als{" "}
+                        <span className="font-mono">[AAN TE VULLEN]</span>.
+                      </p>
+                      {intakeFields.map((f) => (
+                        <div key={f.key} className="flex flex-col gap-1">
+                          <label
+                            htmlFor={`intake-${f.key}`}
+                            className="text-xs font-medium"
+                          >
+                            {f.label}
+                          </label>
+                          <Input
+                            id={`intake-${f.key}`}
+                            value={intakeAnswers[f.key] ?? ""}
+                            onChange={(e) =>
+                              setIntakeAnswers((prev) => ({
+                                ...prev,
+                                [f.key]: e.target.value,
+                              }))
+                            }
+                            placeholder={f.example ? `bv. ${f.example}` : ""}
+                            disabled={isStreaming}
+                            data-testid={`input-intake-${f.key}`}
+                          />
+                          {f.hint && (
+                            <span className="text-[11px] text-muted-foreground">
+                              {f.hint}
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                    </>
+                  )}
+                </div>
+              )}
 
               {isStreaming ? (
                 <Button

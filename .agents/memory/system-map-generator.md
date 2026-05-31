@@ -90,6 +90,24 @@ includes the team roster + the **accumulated prior work** of earlier colleagues
   **Why:** with multi-minute chains and silence before the first token, the first
   user reaction was literally "werkt dit wel?".
 
+## Smart intake (after routing, before generate)
+A separate `POST /api/intake` runs once routing is confirmed: it loads the chosen
+agent (which declares a "Required input"/"Vereiste invoer" list) + workflow +
+client and asks Claude which ESSENTIAL inputs are still missing from the request
+AND the client context, returning `{ fields:[{key,label,hint,example}] }` (≤5,
+empty if nothing missing). Frontend shows an editable "Aanvullende info"-blok in
+the review card; filled answers are appended to the request as a
+`## Aanvullende gegevens` block before `/api/generate`.
+- **Intake must consider client context, not just the request.** It only asks for
+  gaps absent from BOTH. **Why:** the example client already lists locations/budget/
+  language; asking for those would be noise — verified it instead asks for
+  landing-page URL + campaign focus.
+- **Intake is best-effort, never blocking.** Fetch failures fall back to no fields;
+  empty answers are allowed (the specialist still marks them `[AAN TE VULLEN]`) —
+  this complements, not replaces, the always-draft rule.
+- Re-fetches on agent/workflow override (effect keyed on routed+agent+workflow+
+  client), preserving already-typed answers for still-relevant keys.
+
 ## Scope boundary
 No persistence in Phase 2 (deliberately — that's Phase 4). The conversations/
 messages DB tables from the anthropic integration template were NOT copied; only

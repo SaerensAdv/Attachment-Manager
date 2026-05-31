@@ -52,3 +52,10 @@ Follow `templates/reporting-output.md`. At minimum:
 4. **What worked / what didn't** — honest, balanced.
 5. **Recommended next steps** — concrete actions for the coming period.
 6. **Notes & caveats** — data gaps, one-offs, or context the client should know.
+
+## Skills to draw on (build-time, Phase 2+)
+
+> Replit skills that can power or extend this agent when the app is built (see `ROADMAP.md`). These enhance the builder while constructing the agent — they are not part of the role definition above.
+
+- `data-visualization` — present results as clear charts and tables (period-over-period, vs goal) instead of plain text.
+- `slides` — package a report into a client-ready presentation when a meeting deck is needed.

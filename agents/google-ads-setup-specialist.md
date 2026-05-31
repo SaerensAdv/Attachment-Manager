@@ -70,3 +70,19 @@ Follow `templates/google-ads-output.md`. Use this structure:
 9. **Tracking checklist**
 10. **Missing questions before launch**
 11. **Human approval required**
+
+### Optional output mode: import-ready bulk sheet
+
+When the setup is concrete enough, the deliverable can also be packaged as a **Google Ads bulk-import sheet** (CSV / Google Sheets) the user uploads via Google Ads Editor or bulk upload — instead of, or alongside, the structured write-up above. This keeps the "never live" rule intact: the agent prepares the file, a human reviews and imports it.
+
+- Use one tab/file per entity type, each following Google's required column layout: campaigns, ad groups, keywords (with match type), and responsive search ads (Headline 1-15, Description 1-4, Final URL, Path 1/2).
+- Exact column schemas must match Google's bulk-upload spec before a sheet is considered import-ready (see Google Ads "Upload and make changes in bulk").
+- The reusable import templates themselves are built separately (planned, not yet in `templates/`).
+
+## Skills to draw on (build-time, Phase 2+)
+
+> Replit skills that can power or extend this agent when the app is built (see `ROADMAP.md`). These enhance the builder while constructing the agent — they are not part of the role definition above.
+
+- `excel-generator` — produce import-ready Google Ads bulk sheets (campaigns, ad groups, keywords, RSAs) with the correct column layout.
+- `file-converter` — export those sheets to the CSV format Google Ads bulk upload expects.
+- `media-generation` — optional visual ad assets when a setup needs imagery.

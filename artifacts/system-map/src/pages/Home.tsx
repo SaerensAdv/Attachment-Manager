@@ -12,6 +12,14 @@ export default function Home() {
   const [selectedNodePath, setSelectedNodePath] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [hiddenCategories, setHiddenCategories] = useState<Set<string>>(new Set());
+  // Bumped whenever a node should be (re)focused, so re-selecting the same node
+  // still pans/zooms to it.
+  const [focusNonce, setFocusNonce] = useState(0);
+
+  const selectNodeByPath = (path: string) => {
+    setSelectedNodePath(path);
+    setFocusNonce((n) => n + 1);
+  };
 
   const toggleCategory = (categoryId: string) => {
     setHiddenCategories((prev) => {
@@ -42,6 +50,16 @@ export default function Home() {
     if (!graphData || !selectedNodePath) return null;
     return graphData.nodes.find(n => n.path === selectedNodePath) || null;
   }, [graphData, selectedNodePath]);
+
+  const focusFirstMatch = () => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q || !graphData) return;
+    const match =
+      activeNodes.find((n) => n.title.toLowerCase() === q) ??
+      activeNodes.find((n) => n.title.toLowerCase().includes(q)) ??
+      activeNodes.find((n) => n.id.toLowerCase().includes(q));
+    if (match) selectNodeByPath(match.path);
+  };
 
   if (isLoading) {
     return (
@@ -76,9 +94,10 @@ export default function Home() {
           selectedNodeId={selectedNode?.id || null}
           onSelectNode={(nodeId) => {
             const node = graphData.nodes.find(n => n.id === nodeId);
-            if (node) setSelectedNodePath(node.path);
+            if (node) selectNodeByPath(node.path);
           }}
           searchQuery={searchQuery}
+          focusNonce={focusNonce}
         />
       </div>
 
@@ -101,6 +120,7 @@ export default function Home() {
               <GraphSearch 
                 query={searchQuery} 
                 onQueryChange={setSearchQuery} 
+                onSubmit={focusFirstMatch}
               />
             </div>
             
@@ -121,6 +141,9 @@ export default function Home() {
               path={selectedNodePath} 
               onClose={() => setSelectedNodePath(null)}
               node={selectedNode}
+              nodes={graphData.nodes}
+              edges={graphData.edges}
+              onSelectPath={selectNodeByPath}
             />
           )}
         </div>

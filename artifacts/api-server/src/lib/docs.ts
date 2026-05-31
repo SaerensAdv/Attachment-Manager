@@ -9,10 +9,12 @@ export interface DocNode {
   summary: string | null;
 }
 
+export type DocEdgeKind = "reference" | "routing" | "flow" | "mention";
+
 export interface DocEdge {
   source: string;
   target: string;
-  kind: "reference" | "mention";
+  kind: DocEdgeKind;
 }
 
 export interface DocCategory {
@@ -157,41 +159,108 @@ function textMentions(text: string, title: string): boolean {
   return false;
 }
 
+/** Extract the body of a `## Heading` section, up to the next `##`/`#` heading. */
+function extractSection(content: string, headingMatch: RegExp): string | null {
+  const lines = content.split("\n");
+  let start = -1;
+  for (let i = 0; i < lines.length; i++) {
+    if (/^#{1,6}\s/.test(lines[i]) && headingMatch.test(lines[i])) {
+      start = i + 1;
+      break;
+    }
+  }
+  if (start === -1) return null;
+  const out: string[] = [];
+  for (let i = start; i < lines.length; i++) {
+    if (/^#{1,6}\s/.test(lines[i])) break;
+    out.push(lines[i]);
+  }
+  return out.join("\n");
+}
+
+/**
+ * Edge priority: when the same directed pair is produced by more than one pass,
+ * keep the most specific/structural relationship. routing (explicit hand-off) and
+ * flow (layer pipeline) are derived from dedicated parsers and outrank a generic
+ * backtick reference, which in turn outranks an incidental title mention.
+ */
+const EDGE_PRIORITY: Record<DocEdgeKind, number> = {
+  routing: 4,
+  flow: 3,
+  reference: 2,
+  mention: 1,
+};
+
 function deriveEdges(files: DocFile[]): DocEdge[] {
   const idSet = new Set(files.map((f) => f.id));
-  const edges: DocEdge[] = [];
-  const seen = new Set<string>();
-  const referencePairs = new Set<string>();
+  const byId = new Map(files.map((f) => [f.id, f] as const));
+  // Best edge per directed pair, chosen by EDGE_PRIORITY.
+  const best = new Map<string, DocEdge>();
+  const consider = (source: string, target: string, kind: DocEdgeKind) => {
+    if (source === target) return;
+    if (!idSet.has(source) || !idSet.has(target)) return;
+    const key = `${source}|${target}`;
+    const existing = best.get(key);
+    if (!existing || EDGE_PRIORITY[kind] > EDGE_PRIORITY[existing.kind]) {
+      best.set(key, { source, target, kind });
+    }
+  };
+
+  const agents = files.filter((f) => f.category === "agent");
 
   // Pass 1: reference edges from inline backtick file references.
   for (const file of files) {
     const refs = file.content.match(/`([^`]+)`/g) ?? [];
     for (const raw of refs) {
       const ref = raw.slice(1, -1).trim();
-      if (ref === file.id) continue;
-      if (!idSet.has(ref)) continue;
-      const key = `${file.id}|${ref}|reference`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      referencePairs.add(`${file.id}|${ref}`);
-      edges.push({ source: file.id, target: ref, kind: "reference" });
+      consider(file.id, ref, "reference");
     }
   }
 
-  // Pass 2: mention edges where a doc names another doc by its exact title.
+  // Pass 2: routing edges — explicitly parsed from the Orchestrator's routing
+  // table. Each "Route to" entry names a specialist by its title; we link the
+  // orchestrator to every agent it can hand off to.
+  const orchestrator = byId.get("agents/orchestrator.md");
+  if (orchestrator) {
+    const routing =
+      extractSection(orchestrator.content, /Routing\s+guide/i) ??
+      orchestrator.content;
+    for (const agent of agents) {
+      if (agent.id === orchestrator.id) continue;
+      if (textMentions(routing, agent.title)) {
+        consider(orchestrator.id, agent.id, "routing");
+      }
+    }
+  }
+
+  // Pass 3: flow edges — the five-layer model in ARCHITECTURE.md states that
+  // layer 1 (global rules, AGENTS.md) feeds layer 2 (every agent). We only emit
+  // these once that model is actually present in the docs, so the relationship
+  // stays derived from content rather than hardcoded.
+  const architecture = byId.get("ARCHITECTURE.md");
+  const agentsConstitution = byId.get("AGENTS.md");
+  const describesLayers =
+    architecture !== undefined &&
+    /five[- ]layer/i.test(architecture.content) &&
+    architecture.content.includes("AGENTS.md") &&
+    /agents\//.test(architecture.content);
+  if (describesLayers && agentsConstitution) {
+    for (const agent of agents) {
+      consider(agentsConstitution.id, agent.id, "flow");
+    }
+  }
+
+  // Pass 4: mention edges where a doc names another doc by its exact title.
   for (const source of files) {
     for (const target of files) {
       if (source.id === target.id) continue;
-      if (referencePairs.has(`${source.id}|${target.id}`)) continue;
-      if (!textMentions(source.content, target.title)) continue;
-      const key = `${source.id}|${target.id}|mention`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      edges.push({ source: source.id, target: target.id, kind: "mention" });
+      if (textMentions(source.content, target.title)) {
+        consider(source.id, target.id, "mention");
+      }
     }
   }
 
-  return edges;
+  return [...best.values()];
 }
 
 function buildCategories(files: DocFile[]): DocCategory[] {

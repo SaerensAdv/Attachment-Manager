@@ -1,6 +1,10 @@
-import { useEffect, useRef, useState, useMemo } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import * as d3 from "d3-force";
-import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
+import {
+  TransformWrapper,
+  TransformComponent,
+  type ReactZoomPanPinchRef,
+} from "react-zoom-pan-pinch";
 import type { DocNode, DocEdge, DocCategory } from "@workspace/api-client-react";
 
 interface GraphViewerProps {
@@ -10,7 +14,22 @@ interface GraphViewerProps {
   selectedNodeId: string | null;
   onSelectNode: (nodeId: string) => void;
   searchQuery: string;
+  focusNonce?: number;
 }
+
+// Visual style per relationship kind. routing (orchestrator hand-off) and flow
+// (five-layer pipeline) get their own colors so the structural backbone reads
+// distinctly from generic references and incidental mentions.
+const EDGE_STYLE: Record<
+  string,
+  { color: string; width: number; dash: string; opacity: number; marker: string }
+> = {
+  routing: { color: "hsl(var(--cat-agent))", width: 2.5, dash: "none", opacity: 0.7, marker: "arrow-routing" },
+  flow: { color: "hsl(var(--cat-core))", width: 2.5, dash: "none", opacity: 0.6, marker: "arrow-flow" },
+  reference: { color: "hsl(var(--muted-foreground))", width: 2, dash: "none", opacity: 0.4, marker: "arrow-reference" },
+  mention: { color: "hsl(var(--muted-foreground))", width: 1, dash: "4,4", opacity: 0.2, marker: "arrow-mention" },
+};
+const edgeStyleFor = (kind: string) => EDGE_STYLE[kind] ?? EDGE_STYLE.mention;
 
 interface SimNode extends d3.SimulationNodeDatum, DocNode {
   x?: number;
@@ -34,12 +53,17 @@ export default function GraphViewer({
   categories,
   selectedNodeId,
   onSelectNode,
-  searchQuery
+  searchQuery,
+  focusNonce,
 }: GraphViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const transformRef = useRef<ReactZoomPanPinchRef | null>(null);
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
   const [simNodes, setSimNodes] = useState<SimNode[]>([]);
   const [simEdges, setSimEdges] = useState<SimEdge[]>([]);
+  // Live reference to the simulation node objects (mutated in place by d3), so
+  // focusing can read current positions without retriggering on every tick.
+  const simNodesRef = useRef<SimNode[]>([]);
 
   // Update dimensions on resize
   useEffect(() => {
@@ -66,6 +90,7 @@ export default function GraphViewer({
 
     const simNodesData: SimNode[] = nodes.map(n => ({ ...n }));
     const simEdgesData: SimEdge[] = edges.map(e => ({ ...e }));
+    simNodesRef.current = simNodesData;
 
     const simulation = d3.forceSimulation<SimNode>(simNodesData)
       .force("link", d3.forceLink<SimNode, SimEdge>(simEdgesData).id(d => d.id).distance(100))
@@ -84,6 +109,26 @@ export default function GraphViewer({
       simulation.stop();
     };
   }, [nodes, edges, dimensions.width, dimensions.height]);
+
+  // Smoothly pan/zoom the viewport so the given node sits in the center.
+  const focusOnNode = useCallback((nodeId: string) => {
+    const node = simNodesRef.current.find((n) => n.id === nodeId);
+    if (!node || node.x === undefined || node.y === undefined) return;
+    const api = transformRef.current;
+    if (!api) return;
+    const scale = 1.4;
+    const x = dimensions.width / 2 - node.x * scale;
+    const y = dimensions.height / 2 - node.y * scale;
+    api.setTransform(x, y, scale, 600, "easeOut");
+  }, [dimensions.width, dimensions.height]);
+
+  // Focus when a node is selected, or when search requests a focus (nonce bump).
+  useEffect(() => {
+    if (!selectedNodeId) return;
+    // Wait a frame so the simulation has positioned freshly-filtered nodes.
+    const id = requestAnimationFrame(() => focusOnNode(selectedNodeId));
+    return () => cancelAnimationFrame(id);
+  }, [selectedNodeId, focusNonce, focusOnNode]);
 
   // Derived styling helpers
   const lowerSearchQuery = searchQuery.toLowerCase();
@@ -111,6 +156,7 @@ export default function GraphViewer({
       />
 
       <TransformWrapper
+        ref={transformRef}
         initialScale={1}
         minScale={0.1}
         maxScale={4}
@@ -120,6 +166,14 @@ export default function GraphViewer({
         <TransformComponent wrapperClass="!w-full !h-full" contentClass="!w-full !h-full">
           <svg width={dimensions.width} height={dimensions.height} className="overflow-visible">
             <defs>
+              {/* Routing edge arrow (orchestrator hand-off) */}
+              <marker id="arrow-routing" viewBox="0 -5 10 10" refX="25" refY="0" markerWidth="6" markerHeight="6" orient="auto">
+                <path d="M0,-5L10,0L0,5" fill="hsl(var(--cat-agent))" opacity={0.85} />
+              </marker>
+              {/* Flow edge arrow (five-layer pipeline) */}
+              <marker id="arrow-flow" viewBox="0 -5 10 10" refX="25" refY="0" markerWidth="6" markerHeight="6" orient="auto">
+                <path d="M0,-5L10,0L0,5" fill="hsl(var(--cat-core))" opacity={0.85} />
+              </marker>
               {/* Reference edge arrow */}
               <marker id="arrow-reference" viewBox="0 -5 10 10" refX="25" refY="0" markerWidth="6" markerHeight="6" orient="auto">
                 <path d="M0,-5L10,0L0,5" fill="hsl(var(--muted-foreground))" opacity={0.6} />
@@ -137,7 +191,7 @@ export default function GraphViewer({
                 const target = edge.target as SimNode;
                 if (source.x === undefined || source.y === undefined || target.x === undefined || target.y === undefined) return null;
 
-                const isReference = edge.kind === "reference";
+                const style = edgeStyleFor(edge.kind);
                 const isEdgeHighlighted = selectedNodeId && (source.id === selectedNodeId || target.id === selectedNodeId);
                 const isEdgeDimmed = selectedNodeId && !isEdgeHighlighted;
 
@@ -148,11 +202,11 @@ export default function GraphViewer({
                     y1={source.y}
                     x2={target.x}
                     y2={target.y}
-                    stroke="hsl(var(--muted-foreground))"
-                    strokeWidth={isReference ? 2 : 1}
-                    strokeDasharray={isReference ? "none" : "4,4"}
-                    opacity={isEdgeDimmed ? 0.1 : isEdgeHighlighted ? 0.8 : (isReference ? 0.4 : 0.2)}
-                    markerEnd={`url(#arrow-${isReference ? 'reference' : 'mention'})`}
+                    stroke={style.color}
+                    strokeWidth={isEdgeHighlighted ? style.width + 1 : style.width}
+                    strokeDasharray={style.dash}
+                    opacity={isEdgeDimmed ? 0.08 : isEdgeHighlighted ? 0.9 : style.opacity}
+                    markerEnd={`url(#${style.marker})`}
                     className="transition-opacity duration-300"
                   />
                 );

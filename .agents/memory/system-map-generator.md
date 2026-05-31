@@ -39,6 +39,33 @@ the quality bar (agency-principles, tone-of-voice, naming-conventions).
 - Validate selected paths by **doc category** (agent/client/workflow), not just
   non-empty, to avoid wrong/partial context.
 
+## Auto-routing (orchestrator picks workflow + agent)
+The "Genereren" tab no longer asks the user to pick workflow/agent manually. The
+user picks a **client** (still an explicit dropdown — deliberate) + types a
+request; `POST /api/route` runs the Orchestrator (Lotte) prompt and returns
+`{ needsClarification, clarification, taskType, reasoning, workflow, agent,
+additionalAgents }`. Frontend shows a review card (reasoning + editable
+workflow/agent selects + "Mogelijk ook betrokken") before the existing
+`/api/generate` stream runs. `route-request.ts` builds the prompt from
+`orchestrator.md` + live workflow/agent lists; `parseRoutingJson` is a tolerant
+extractor.
+
+- **Clarification fires ONLY when the AARD (type) of work is unclear.** Missing
+  *content* data (cijfers/namen/USP's) must NOT trigger clarification — the
+  specialist drafts with `[AAN TE VULLEN]`. **Why:** same principle as the
+  generator; an earlier prompt asked for clarification on sparse data, blocking
+  every real request. Verified: rapportage/copy/SEO route through, only "Doe
+  iets" asks for clarification.
+- **Orchestrator is never a valid executor.** `/route`'s `resolve()` rejects
+  `agents/orchestrator.md` for the `agent` category (not just excluded from the
+  candidate list) — it routes work, it doesn't do it.
+- **Reset-on-change must abort BOTH controllers.** Changing client/request must
+  abort in-flight routing *and* generation (guarded by a `hasActiveFlow` flag),
+  or a stale route/stream leaks into a newer request.
+- Foundation only: real multi-agent chained TEAMWORK (several agents work before
+  a result appears) is the intended next step — `additionalAgents` already
+  surfaces the chain but execution is still single-agent.
+
 ## Scope boundary
 No persistence in Phase 2 (deliberately — that's Phase 4). The conversations/
 messages DB tables from the anthropic integration template were NOT copied; only

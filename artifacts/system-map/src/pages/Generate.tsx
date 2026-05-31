@@ -2,7 +2,17 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useGetDocGraph } from "@workspace/api-client-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { Loader2, Sparkles, Copy, Download, Check, Square } from "lucide-react";
+import {
+  Loader2,
+  Sparkles,
+  Copy,
+  Download,
+  Check,
+  Square,
+  Wand2,
+  RotateCcw,
+  Users,
+} from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -15,6 +25,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { streamGenerate } from "@/lib/generate";
+import { routeRequest, type RoutingResult } from "@/lib/route";
 
 interface Option {
   path: string;
@@ -25,10 +36,19 @@ export default function Generate() {
   const { data: graphData, isLoading, error } = useGetDocGraph();
 
   const [clientPath, setClientPath] = useState("");
-  const [workflowPath, setWorkflowPath] = useState("");
-  const [agentPath, setAgentPath] = useState("");
   const [request, setRequest] = useState("");
 
+  // Routing state — the Orchestrator decides workflow + agent from the request.
+  const [routing, setRouting] = useState(false);
+  const [routeError, setRouteError] = useState<string | null>(null);
+  const [result, setResult] = useState<RoutingResult | null>(null);
+  const routeAbortRef = useRef<AbortController | null>(null);
+
+  // Detected choices, editable as an override before generating.
+  const [workflowPath, setWorkflowPath] = useState("");
+  const [agentPath, setAgentPath] = useState("");
+
+  // Generation state.
   const [output, setOutput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamError, setStreamError] = useState<string | null>(null);
@@ -50,7 +70,7 @@ export default function Generate() {
   );
 
   // Agents connected to the chosen workflow in the doc graph are surfaced as
-  // recommendations, but the user can still pick any agent.
+  // recommendations when overriding, but the user can still pick any agent.
   const recommendedPaths = useMemo(() => {
     if (!workflowPath || !graphData) return new Set<string>();
     const ids = new Set<string>();
@@ -66,8 +86,70 @@ export default function Generate() {
   const recommendedAgents = allAgents.filter((a) => recommendedPaths.has(a.path));
   const otherAgents = allAgents.filter((a) => !recommendedPaths.has(a.path));
 
+  const isRouted = !!result && !result.needsClarification;
+
+  // Tear down everything tied to the current request: abort any in-flight
+  // routing AND generation, and clear all derived state. Called whenever the
+  // client or request changes so a stale routing/stream can never leak into a
+  // newer request.
+  const resetFlow = () => {
+    routeAbortRef.current?.abort();
+    routeAbortRef.current = null;
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setRouting(false);
+    setIsStreaming(false);
+    setResult(null);
+    setRouteError(null);
+    setWorkflowPath("");
+    setAgentPath("");
+    setOutput("");
+    setStreamError(null);
+  };
+
+  const hasActiveFlow =
+    routing || isStreaming || !!result || !!output || !!routeError || !!streamError;
+
+  const canRoute = !!clientPath && request.trim().length > 0 && !routing;
+
+  const handleRoute = async () => {
+    if (!canRoute) return;
+    routeAbortRef.current?.abort();
+    const controller = new AbortController();
+    routeAbortRef.current = controller;
+    setRouting(true);
+    setRouteError(null);
+    setResult(null);
+    setWorkflowPath("");
+    setAgentPath("");
+    setOutput("");
+    setStreamError(null);
+
+    try {
+      const r = await routeRequest(
+        { clientPath, request: request.trim() },
+        controller.signal,
+      );
+      setResult(r);
+      if (!r.needsClarification) {
+        setWorkflowPath(r.workflow?.path ?? "");
+        setAgentPath(r.agent?.path ?? "");
+      }
+    } catch (err) {
+      if ((err as Error)?.name === "AbortError") return;
+      setRouteError(err instanceof Error ? err.message : "Routering mislukt");
+    } finally {
+      if (routeAbortRef.current === controller) routeAbortRef.current = null;
+      setRouting(false);
+    }
+  };
+
   const canGenerate =
-    !!clientPath && !!workflowPath && !!agentPath && request.trim().length > 0;
+    isRouted &&
+    !!clientPath &&
+    !!workflowPath &&
+    !!agentPath &&
+    request.trim().length > 0;
 
   const handleGenerate = async () => {
     if (!canGenerate || isStreaming) return;
@@ -101,9 +183,12 @@ export default function Generate() {
     setIsStreaming(false);
   };
 
-  // Abort any in-flight generation when leaving the page.
+  // Abort any in-flight work when leaving the page.
   useEffect(() => {
-    return () => abortRef.current?.abort();
+    return () => {
+      abortRef.current?.abort();
+      routeAbortRef.current?.abort();
+    };
   }, []);
 
   const handleCopy = async () => {
@@ -161,8 +246,8 @@ export default function Generate() {
               Genereren
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Kies klant, workflow en agent, beschrijf je opdracht en laat het
-              team een eerste versie schrijven.
+              Kies de klant en beschrijf je opdracht. Het team bepaalt zelf wie
+              eraan werkt — jij bevestigt of past de keuze aan.
             </p>
           </div>
 
@@ -171,7 +256,13 @@ export default function Generate() {
               <label className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
                 Klant
               </label>
-              <Select value={clientPath} onValueChange={setClientPath}>
+              <Select
+                value={clientPath}
+                onValueChange={(v) => {
+                  setClientPath(v);
+                  if (hasActiveFlow) resetFlow();
+                }}
+              >
                 <SelectTrigger data-testid="select-client">
                   <SelectValue placeholder="Kies een klant" />
                 </SelectTrigger>
@@ -187,68 +278,14 @@ export default function Generate() {
 
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
-                Workflow
-              </label>
-              <Select
-                value={workflowPath}
-                onValueChange={(v) => {
-                  setWorkflowPath(v);
-                  setAgentPath("");
-                }}
-              >
-                <SelectTrigger data-testid="select-workflow">
-                  <SelectValue placeholder="Kies een workflow" />
-                </SelectTrigger>
-                <SelectContent>
-                  {workflows.map((w) => (
-                    <SelectItem key={w.path} value={w.path}>
-                      {w.title}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
-                Agent
-              </label>
-              <Select value={agentPath} onValueChange={setAgentPath}>
-                <SelectTrigger data-testid="select-agent">
-                  <SelectValue placeholder="Kies een agent" />
-                </SelectTrigger>
-                <SelectContent>
-                  {recommendedAgents.length > 0 && (
-                    <SelectGroup>
-                      <SelectLabel>Aanbevolen voor deze workflow</SelectLabel>
-                      {recommendedAgents.map((a) => (
-                        <SelectItem key={a.path} value={a.path}>
-                          {a.title}
-                        </SelectItem>
-                      ))}
-                    </SelectGroup>
-                  )}
-                  <SelectGroup>
-                    {recommendedAgents.length > 0 && (
-                      <SelectLabel>Overige agents</SelectLabel>
-                    )}
-                    {otherAgents.map((a) => (
-                      <SelectItem key={a.path} value={a.path}>
-                        {a.title}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
                 Opdracht
               </label>
               <Textarea
                 value={request}
-                onChange={(e) => setRequest(e.target.value)}
+                onChange={(e) => {
+                  setRequest(e.target.value);
+                  if (hasActiveFlow) resetFlow();
+                }}
                 placeholder="Bv. Schrijf een maandelijkse update-mail over de Google Ads-resultaten van vorige maand."
                 rows={6}
                 className="resize-none"
@@ -256,26 +293,162 @@ export default function Generate() {
               />
             </div>
 
-            {isStreaming ? (
-              <Button
-                variant="secondary"
-                onClick={handleStop}
-                data-testid="button-stop"
+            {routeError && (
+              <div className="text-sm text-destructive">⚠️ {routeError}</div>
+            )}
+
+            {result?.needsClarification && (
+              <div
+                className="text-sm rounded-md border border-amber-500/40 bg-amber-500/10 text-amber-300 px-3 py-2"
+                data-testid="text-clarification"
               >
-                <Square className="w-4 h-4" />
-                Stoppen
-              </Button>
-            ) : (
+                <span className="font-medium">Even verduidelijken: </span>
+                {result.clarification}
+              </div>
+            )}
+
+            {/* Routing trigger — shown until we have a confident routing. */}
+            {!isRouted && (
               <Button
-                onClick={handleGenerate}
-                disabled={!canGenerate}
-                data-testid="button-generate"
+                onClick={handleRoute}
+                disabled={!canRoute}
+                data-testid="button-route"
               >
-                <Sparkles className="w-4 h-4" />
-                Genereer
+                {routing ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Wand2 className="w-4 h-4" />
+                )}
+                {routing ? "Bezig met herkennen..." : "Herken taak"}
               </Button>
             )}
           </div>
+
+          {/* Routing review — detected workflow + agent, editable before generating. */}
+          {isRouted && (
+            <div className="flex flex-col gap-4 bg-card/60 border border-card-border rounded-lg p-5">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
+                  Herkend door het team
+                </span>
+                {result?.taskType && (
+                  <span className="text-[11px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-full bg-cat-agent/15 text-cat-agent border border-cat-agent/30">
+                    {result.taskType}
+                  </span>
+                )}
+              </div>
+
+              {result?.reasoning && (
+                <p
+                  className="text-sm text-muted-foreground"
+                  data-testid="text-reasoning"
+                >
+                  {result.reasoning}
+                </p>
+              )}
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
+                  Workflow
+                </label>
+                <Select
+                  value={workflowPath}
+                  onValueChange={(v) => {
+                    setWorkflowPath(v);
+                    setAgentPath("");
+                  }}
+                >
+                  <SelectTrigger data-testid="select-workflow">
+                    <SelectValue placeholder="Geen specifieke workflow" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {workflows.map((w) => (
+                      <SelectItem key={w.path} value={w.path}>
+                        {w.title}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
+                  Agent
+                </label>
+                <Select value={agentPath} onValueChange={setAgentPath}>
+                  <SelectTrigger data-testid="select-agent">
+                    <SelectValue placeholder="Kies een agent" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {recommendedAgents.length > 0 && (
+                      <SelectGroup>
+                        <SelectLabel>Aanbevolen voor deze workflow</SelectLabel>
+                        {recommendedAgents.map((a) => (
+                          <SelectItem key={a.path} value={a.path}>
+                            {a.title}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    )}
+                    <SelectGroup>
+                      {recommendedAgents.length > 0 && (
+                        <SelectLabel>Overige agents</SelectLabel>
+                      )}
+                      {otherAgents.map((a) => (
+                        <SelectItem key={a.path} value={a.path}>
+                          {a.title}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {result && result.additionalAgents.length > 0 && (
+                <div
+                  className="flex items-start gap-2 text-xs text-muted-foreground"
+                  data-testid="text-additional-agents"
+                >
+                  <Users className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                  <span>
+                    Mogelijk ook betrokken:{" "}
+                    {result.additionalAgents.map((a) => a.title).join(", ")}
+                  </span>
+                </div>
+              )}
+
+              {isStreaming ? (
+                <Button
+                  variant="secondary"
+                  onClick={handleStop}
+                  data-testid="button-stop"
+                >
+                  <Square className="w-4 h-4" />
+                  Stoppen
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleGenerate}
+                  disabled={!canGenerate}
+                  data-testid="button-generate"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  Genereer
+                </Button>
+              )}
+
+              <button
+                type="button"
+                onClick={handleRoute}
+                disabled={routing || isStreaming}
+                className="self-start inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+                data-testid="button-reroute"
+              >
+                <RotateCcw className="w-3 h-3" />
+                Opnieuw herkennen
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Output panel */}

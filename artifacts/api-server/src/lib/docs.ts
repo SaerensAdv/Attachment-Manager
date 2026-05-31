@@ -159,6 +159,44 @@ function textMentions(text: string, title: string): boolean {
   return false;
 }
 
+/**
+ * Strip regions that should not count as prose mentions: fenced code blocks
+ * (``` ... ``` or ~~~ ... ~~~), inline code spans (`...`), and heading lines.
+ * Removed regions are replaced with blank lines/spaces so surrounding text stays
+ * separated and line structure is preserved. This keeps a title that only
+ * appears inside an example or code listing from producing a spurious link,
+ * while real backtick file references (handled separately) remain untouched.
+ */
+function stripNonProse(content: string): string {
+  const lines = content.split("\n");
+  const out: string[] = [];
+  let fenceChar: string | null = null;
+  let fenceLen = 0;
+  for (const line of lines) {
+    const fence = line.match(/^\s*(`{3,}|~{3,})/);
+    if (fenceChar) {
+      out.push("");
+      if (fence && fence[1][0] === fenceChar && fence[1].length >= fenceLen) {
+        fenceChar = null;
+        fenceLen = 0;
+      }
+      continue;
+    }
+    if (fence) {
+      fenceChar = fence[1][0];
+      fenceLen = fence[1].length;
+      out.push("");
+      continue;
+    }
+    if (/^\s{0,3}#{1,6}\s/.test(line)) {
+      out.push("");
+      continue;
+    }
+    out.push(line.replace(/`[^`]*`/g, " "));
+  }
+  return out.join("\n");
+}
+
 /** Extract the body of a `## Heading` section, up to the next `##`/`#` heading. */
 function extractSection(content: string, headingMatch: RegExp): string | null {
   const lines = content.split("\n");
@@ -303,10 +341,16 @@ function deriveEdges(files: DocFile[]): DocEdge[] {
   }
 
   // Pass 4: mention edges where a doc names another doc by its exact title.
+  // We search only the prose: fenced code blocks, inline code spans, and
+  // headings are stripped first, so a title that appears inside an example or
+  // code listing does not create a spurious link. The exact, case-sensitive,
+  // word-boundary matching is unchanged, and Pass 1's backtick references run on
+  // the raw content so real file references stay intact.
   for (const source of files) {
+    const prose = stripNonProse(source.content);
     for (const target of files) {
       if (source.id === target.id) continue;
-      if (textMentions(source.content, target.title)) {
+      if (textMentions(prose, target.title)) {
         consider(source.id, target.id, "mention");
       }
     }

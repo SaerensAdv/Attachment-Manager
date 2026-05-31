@@ -52,6 +52,7 @@ If the request is vague, ask one focused round of clarifying questions first.
 | Search terms, bidding, budgets, CPA/ROAS, performance fixes on a live account | Google Ads Optimization Specialist |
 | Monthly performance summary or client-facing report | Reporting Specialist |
 | Ad copy, headlines, descriptions, hooks, on-brand text | Copywriter |
+| Full paid-ad creative sets: distinct angles with on-image text, primary text, headlines & descriptions for Meta or Google Display/Demand Gen (use `workflows/ad-creatives.md`) | Copywriter (ad-creatives specialty) |
 | Organic search, technical/on-page/local SEO, keyword & content strategy | SEO Specialist |
 | Paid social on Meta (Facebook & Instagram): strategy, structure, audiences, creative direction | Meta Ads Strategist |
 | Landing pages, conversion design, message match, page structure / web design review | Landing Page / Web Design Specialist |

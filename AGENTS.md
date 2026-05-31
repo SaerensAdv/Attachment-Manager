@@ -72,6 +72,8 @@ Specified after the initial MVP, following the "new agent vs deeper specialty" r
 
 Content & social is **not** a separate agent: it is a deeper specialty of the Copywriter (`agents/copywriter.md`).
 
+Paid-ad **creatives** (full ad sets: angles + on-image text + post copy for Meta and Google Display/Demand Gen) are likewise a deeper specialty of the Copywriter, with creative direction set by the Meta Ads Strategist — not a separate agent.
+
 Two of these are **cross-cutting final steps** rather than channel specialists: the **Humanizer** gives any drafted text a natural-voice pass, and the **QA & Compliance Reviewer** is the quality gate before human approval. Both review or refine other agents' output, which is why each is a distinct shared step rather than folded into one specialist.
 
 ## Growing the team (new agent vs deeper specialty)

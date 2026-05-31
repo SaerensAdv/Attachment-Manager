@@ -72,6 +72,7 @@ saerens-ai-team/
 │   ├── web-build.md
 │   ├── tracking-setup.md
 │   ├── client-update.md
+│   ├── ad-creatives.md
 │   └── sales-proposal.md
 │
 ├── templates/           # Reusable output formats
@@ -79,6 +80,7 @@ saerens-ai-team/
 │   ├── google-ads-output.md
 │   ├── reporting-output.md
 │   ├── client-email.md
+│   ├── ad-creative-output.md
 │   └── task-output.md
 │
 └── knowledge/           # Agency standards (the quality bar)
@@ -87,6 +89,7 @@ saerens-ai-team/
     ├── agent-personas.md
     ├── google-ads-standards.md
     ├── meta-ads-standards.md
+    ├── ad-creative-standards.md
     ├── seo-standards.md
     ├── landing-page-standards.md
     ├── analytics-standards.md

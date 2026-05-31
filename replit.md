@@ -43,7 +43,9 @@ A documentation foundation that defines specialized AI agents for Saerens Advert
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+- Builds and deploys exclusively on Replit. Do NOT recommend or assume external platforms (WordPress, Webflow, Squarespace, Vercel, Netlify, etc.). Keep all solutions native to Replit (its hosting, deployments, integrations, database).
+- Thinks future-oriented — favor durable, forward-looking approaches over quick throwaway fixes.
+- Communicate in Dutch (Vlaams).
 
 ## Gotchas
 

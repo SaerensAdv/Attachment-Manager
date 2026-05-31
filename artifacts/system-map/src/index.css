@@ -175,3 +175,27 @@
     animation: none;
   }
 }
+
+/* Run-flow hand-off beads — the HTML analog of the atlas pipeline, streaming
+   light dots from one agent to the next while a hand-off is active. */
+@keyframes flow-beads {
+  to {
+    background-position: 14px 50%;
+  }
+}
+.flow-beads {
+  background-image: radial-gradient(
+    circle,
+    hsl(var(--accent)) 0 2px,
+    transparent 2.5px
+  );
+  background-size: 14px 6px;
+  background-position: 0 50%;
+  background-repeat: repeat-x;
+  animation: flow-beads 1s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .flow-beads {
+    animation: none;
+  }
+}

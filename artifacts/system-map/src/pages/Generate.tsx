@@ -32,6 +32,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { streamGenerateTeam } from "@/lib/generate";
 import { routeRequest, type RoutingResult } from "@/lib/route";
 import { fetchIntake, type IntakeField } from "@/lib/intake";
+import TeamFlow from "@/components/TeamFlow";
 
 interface Option {
   path: string;
@@ -44,6 +45,10 @@ interface AgentSegment {
   role: "lead" | "member";
   content: string;
   status: "queued" | "working" | "done";
+  // Client-side timing so the run-flow view can show per-agent durations
+  // without any backend change.
+  startedAt?: number;
+  endedAt?: number;
 }
 
 // Shared editorial styling for the restyled shadcn selects.
@@ -68,6 +73,8 @@ export default function Generate() {
   const [routing, setRouting] = useState(false);
   const [routeError, setRouteError] = useState<string | null>(null);
   const [result, setResult] = useState<RoutingResult | null>(null);
+  // How long the Orchestrator took to route, surfaced in the run-flow recap.
+  const [routingMs, setRoutingMs] = useState<number | null>(null);
   const routeAbortRef = useRef<AbortController | null>(null);
 
   // Detected choices, editable as an override before generating.
@@ -139,6 +146,7 @@ export default function Generate() {
     setRouting(false);
     setIsStreaming(false);
     setResult(null);
+    setRoutingMs(null);
     setRouteError(null);
     setWorkflowPath("");
     setAgentPath("");
@@ -170,17 +178,20 @@ export default function Generate() {
     setRouting(true);
     setRouteError(null);
     setResult(null);
+    setRoutingMs(null);
     setWorkflowPath("");
     setAgentPath("");
     setMemberPaths([]);
     setSegments([]);
     setStreamError(null);
 
+    const routeStartedAt = Date.now();
     try {
       const r = await routeRequest(
         { clientPath, request: request.trim() },
         controller.signal,
       );
+      setRoutingMs(Date.now() - routeStartedAt);
       setResult(r);
       if (!r.needsClarification) {
         setWorkflowPath(r.workflow?.path ?? "");
@@ -337,6 +348,7 @@ export default function Generate() {
               role: info.role,
               content: next[info.index]?.content ?? "",
               status: "working",
+              startedAt: next[info.index]?.startedAt ?? Date.now(),
             };
             return next;
           }),
@@ -349,7 +361,9 @@ export default function Generate() {
         onAgentDone: (index) =>
           setSegments((prev) =>
             prev.map((s, i) =>
-              i === index ? { ...s, status: "done" } : s,
+              i === index
+                ? { ...s, status: "done", endedAt: Date.now() }
+                : s,
             ),
           ),
         onDone: (archived) => {
@@ -382,6 +396,20 @@ export default function Generate() {
         )
         .filter(Boolean)
         .join("\n\n---\n\n"),
+    [segments],
+  );
+
+  // The team in hand-off order, with per-agent durations, for the run-flow view.
+  const flowAgents = useMemo(
+    () =>
+      segments.map((s) => ({
+        path: s.path,
+        title: s.title,
+        role: s.role,
+        status: s.status,
+        durationMs:
+          s.startedAt && s.endedAt ? s.endedAt - s.startedAt : undefined,
+      })),
     [segments],
   );
 
@@ -1006,6 +1034,19 @@ export default function Generate() {
                   elke bijdrage is een eerste versie die een teamlid moet
                   nakijken voor publicatie.
                 </p>
+              </div>
+            )}
+
+            {segments.length > 0 && (
+              <div className="mb-14" data-testid="team-flow-wrap">
+                <TeamFlow
+                  agents={flowAgents}
+                  orchestrator={{
+                    taskType: result?.taskType ?? null,
+                    durationMs: routingMs,
+                  }}
+                  isStreaming={isStreaming}
+                />
               </div>
             )}
 

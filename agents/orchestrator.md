@@ -69,3 +69,9 @@ A single request may involve several agents (e.g. campaign setup → Strategist,
 6. **Missing information** — clarifying questions, if any (ask these before proceeding).
 7. **Prepared brief** — a clean handoff brief for the specialist.
 8. **Human approval required** — note if the eventual work affects live spend, tracking, or accounts.
+
+## Skills to draw on (build-time, Phase 2+)
+
+> Replit skills that power this agent when the app is built (see `ROADMAP.md`). These enhance the builder while constructing the agent — they are not part of the role definition above.
+
+- `ai-integrations-openai` / `ai-integrations-anthropic` / `ai-integrations-gemini` — the LLM engine behind every agent, available through Replit's proxy (no API key required). Models differ in strengths (e.g. reasoning and coding vs image generation), so the engine can be chosen per agent or per task type rather than forcing one model on the whole team.

@@ -1,0 +1,115 @@
+.evening-wrapper {
+  --sa-ink: #1A1A1A;
+  --sa-paper: #F4F4F0;
+  --sa-accent: #726CEA;
+  --sa-gray: #4A4A4A;
+  --sa-border: #333333;
+
+  background-color: var(--sa-ink);
+  color: var(--sa-paper);
+  min-height: 100dvh;
+  font-family: 'Inter', sans-serif;
+  selection: bg-[var(--sa-accent)] text-white;
+}
+
+.evening-wrapper ::selection {
+  background-color: var(--sa-accent);
+  color: var(--sa-paper);
+}
+
+.evening-font-serif {
+  font-family: 'Playfair Display', serif;
+}
+
+.evening-font-mono {
+  font-family: 'Space Mono', monospace;
+}
+
+.evening-hairline {
+  border-bottom: 1px solid var(--sa-border);
+}
+
+.evening-hairline-t {
+  border-top: 1px solid var(--sa-border);
+}
+
+.evening-hairline-l {
+  border-left: 1px solid var(--sa-border);
+}
+
+.evening-hairline-r {
+  border-right: 1px solid var(--sa-border);
+}
+
+.evening-glass {
+  background: rgba(26, 26, 26, 0.8);
+  backdrop-filter: blur(8px);
+}
+
+.evening-input {
+  background: transparent;
+  border: 1px solid var(--sa-border);
+  color: var(--sa-paper);
+  border-radius: 0;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.evening-input:focus {
+  border-color: var(--sa-accent);
+}
+
+.evening-btn {
+  background: transparent;
+  border: 1px solid var(--sa-paper);
+  color: var(--sa-paper);
+  border-radius: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.evening-btn:hover {
+  background: var(--sa-paper);
+  color: var(--sa-ink);
+}
+
+.evening-btn-primary {
+  background: var(--sa-accent);
+  border-color: var(--sa-accent);
+  color: var(--sa-paper);
+}
+
+.evening-btn-primary:hover {
+  background: #5b55d6;
+  border-color: #5b55d6;
+  color: var(--sa-paper);
+}
+
+@keyframes evening-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.evening-cursor {
+  display: inline-block;
+  width: 8px;
+  height: 1em;
+  background-color: var(--sa-accent);
+  vertical-align: middle;
+  animation: evening-blink 1s step-end infinite;
+}
+
+.evening-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.evening-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.evening-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--sa-border);
+}
+.evening-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--sa-gray);
+}

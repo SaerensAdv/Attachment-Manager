@@ -1,2 +1,1 @@
-- [Orval required query params](orval-query-param-coercion.md) — generated query-param zod uses `zod.coerce.string()`, so a missing required param parses as the string `"undefined"` instead of failing; add an explicit presence guard to return 400.
-- [Screenshot captures mid-animation](screenshot-captures-mid-animation.md) — app_preview screenshots reload the page and capture right after load; animated/delayed states (e.g. d3-force settling) never appear, so render final state synchronously to verify it.
+- [Architect skill-registry blindspot](architect-skill-registry.md) — code-review/architect subagent can't see the live Replit skill list and will falsely flag valid skill names as non-existent.

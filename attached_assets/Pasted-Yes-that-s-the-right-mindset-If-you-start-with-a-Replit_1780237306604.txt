@@ -1,0 +1,767 @@
+Yes — that’s the right mindset.
+
+If you start with a Replit project, the MVP should not just be “some agents in a project.” It should be a structured AI team foundation where the project itself understands:
+1. What Saerens Advertising is building
+2. Why the AI agents exist
+3. How agents should behave
+4. Which agents exist now
+5. Which agents may exist later
+6. How context, client info, SOPs, and tasks are organized
+7. What the MVP is allowed to do vs. not allowed to do yet
+
+So I would approach the Replit project almost like you’re building an internal AI operating system.
+
+Not a full app yet. More like:
+
+> “A controlled environment where Saerens Advertising can define, test, and improve specialized AI agents before connecting them to real workflows.”
+---
+1. The Replit project needs a clear “mission”
+
+The first thing I would create is a central document, something like:
+/README.md
+/AGENTS.md
+/ROADMAP.md
+/ARCHITECTURE.md
+
+
+The project should have an explicit mission.
+
+Example:
+# Saerens Advertising AI Team MVP
+
+This project is the foundation for an internal AI agent system for Saerens Advertising.
+
+The goal is to create specialized AI agents that support agency operations such as:
+
+- Google Ads strategy
+- Google Ads setup
+- Campaign optimization
+- Client reporting
+- Copywriting
+- SEO
+- Landing page feedback
+- Internal task preparation
+- Client communication support
+
+The MVP focuses on defining agent roles, testing workflows, and creating repeatable agent behavior before connecting agents to live tools such as ClickUp, Google Ads, Meta Ads, Google Analytics, or client data sources.
+
+
+This is important because otherwise the Replit project becomes a playground. Fun, but chaotic.
+
+You want the project to constantly answer:
+
+> “Why does this exist?”
+---
+2. I would not start with many autonomous agents
+
+For the MVP, I would avoid building 10 separate agents immediately.
+
+Instead, I’d start with a structure like this:
+AI Team
+│
+├── Orchestrator Agent
+│
+├── Google Ads Strategy Agent
+│
+├── Google Ads Setup Agent
+│
+├── Reporting Agent
+│
+└── Copywriting Agent
+
+
+But practically, in the first version, these can just be role-based instruction files.
+
+The actual app can call one agent at a time based on the selected role.
+
+So instead of thinking:
+
+> “I need separate autonomous agents that talk to each other.”
+
+Start with:
+
+> “I need one AI interface that can load the right agent profile based on the task.”
+
+That is much easier to control.
+---
+3. Recommended MVP concept
+
+I would build the MVP around this simple flow:
+User selects:
+1. A client
+2. A task type
+3. An agent
+4. Provides input/context
+5. AI gives structured output
+
+Example:
+Client: Client X
+Task type: Google Ads campaign setup
+Agent: Google Ads Setup Specialist
+Input: We need to launch a lead generation campaign for a roofing company in Antwerp.
+Output:
+- Campaign structure
+- Ad groups
+- Keyword themes
+- Negative keyword ideas
+- Ad copy suggestions
+- Tracking checklist
+- Questions before launch
+
+
+That is already useful.
+
+You do not need tool integrations on day one.
+
+The first MVP should prove:
+• Can we define useful agents?
+• Can they produce repeatable, high-quality output?
+• Can they follow our agency standards?
+• Can we improve them over time?
+• Can they work with client-specific context?
+---
+4. Suggested Replit project structure
+
+I’d structure the project like this:
+saerens-ai-team/
+│
+├── README.md
+├── AGENTS.md
+├── ROADMAP.md
+├── ARCHITECTURE.md
+│
+├── agents/
+│   ├── orchestrator.md
+│   ├── google-ads-strategist.md
+│   ├── google-ads-setup-specialist.md
+│   ├── google-ads-optimization-specialist.md
+│   ├── reporting-specialist.md
+│   ├── copywriter.md
+│   └── seo-specialist.md
+│
+├── clients/
+│   ├── _template.md
+│   ├── client-example.md
+│   └── ...
+│
+├── workflows/
+│   ├── campaign-setup.md
+│   ├── account-audit.md
+│   ├── monthly-reporting.md
+│   ├── landing-page-review.md
+│   └── client-brief-processing.md
+│
+├── templates/
+│   ├── campaign-brief.md
+│   ├── google-ads-output.md
+│   ├── reporting-output.md
+│   ├── client-email.md
+│   └── task-output.md
+│
+├── knowledge/
+│   ├── agency-principles.md
+│   ├── tone-of-voice.md
+│   ├── google-ads-standards.md
+│   ├── meta-ads-standards.md
+│   ├── reporting-standards.md
+│   └── naming-conventions.md
+│
+├── app/
+│   ├── main.py / index.js
+│   ├── agent_loader.py / agentLoader.js
+│   ├── prompt_builder.py / promptBuilder.js
+│   └── config.py / config.js
+│
+└── tests/
+    └── sample-prompts.md
+
+
+This already makes the project “know” what you are building.
+---
+5. The most important file: AGENTS.md
+
+This should be the constitution of your AI team.
+
+Example:
+# AGENTS.md
+
+## Purpose
+
+This file defines how AI agents should operate inside Saerens Advertising.
+
+Agents are specialized AI team members. Each agent has a clear role, responsibilities, limitations, and output format.
+
+The goal is not to create generic chatbots, but reliable specialists that support agency workflows.
+
+## Global Agent Rules
+
+All agents must:
+
+- Think like a senior agency team member.
+- Ask clarifying questions when context is missing.
+- Avoid making assumptions about client data.
+- Use structured outputs.
+- Respect Saerens Advertising standards.
+- Separate strategy from execution.
+- Clearly state risks, dependencies, and required human approval.
+- Never pretend that a campaign, task, or change has been executed unless a tool confirms it.
+- Prefer practical, actionable recommendations over vague advice.
+- Use the client context if available.
+- Use the relevant workflow and template if available.
+
+## Agent Hierarchy
+
+The AI team is organized as follows:
+
+1. Orchestrator Agent
+2. Channel Specialists
+3. Execution Specialists
+4. Review Specialists
+5. Communication Specialists
+
+## Current MVP Agents
+
+- Orchestrator Agent
+- Google Ads Strategist
+- Google Ads Setup Specialist
+- Google Ads Optimization Specialist
+- Reporting Specialist
+- Copywriter
+
+## Future Agents
+
+- Meta Ads Strategist
+- SEO Specialist
+- CRO Specialist
+- Landing Page Specialist
+- Client Success Agent
+- ClickUp Task Agent
+- Sales Proposal Agent
+
+
+That file tells every future version what the system is.
+---
+6. The Orchestrator Agent is probably your first real “super agent”
+
+Instead of using ClickUp Super Agents immediately, I’d create your own lightweight Orchestrator Agent.
+
+Its job:
+• Understand the user request
+• Determine the correct specialist
+• Ask missing questions
+• Decide which workflow applies
+• Structure the task
+• Hand off to the right agent profile
+
+Example:
+# Orchestrator Agent
+
+## Role
+
+You are the AI Team Orchestrator for Saerens Advertising.
+
+Your job is to understand incoming requests and route them to the right specialist agent.
+
+You do not perform deep specialist work yourself unless no better agent exists.
+
+## Responsibilities
+
+- Classify the task type.
+- Identify the correct agent.
+- Identify missing context.
+- Ask clarifying questions when needed.
+- Select the correct workflow.
+- Prepare a clean brief for the specialist agent.
+- Summarize the final output for the user.
+
+## Example routing
+
+If the request is about:
+- Campaign structure → Google Ads Strategist
+- Campaign buildout → Google Ads Setup Specialist
+- Search terms, budgets, bidding, CPA/ROAS → Google Ads Optimization Specialist
+- Monthly performance summary → Reporting Specialist
+- Ad copy, hooks, headlines → Copywriter
+
+
+This gives you the same idea as “super agents,” but in your own architecture.
+---
+7. Agent file example: Google Ads Setup Specialist
+
+This is where it becomes powerful.
+# Google Ads Setup Specialist
+
+## Role
+
+You are a Google Ads Setup Specialist for Saerens Advertising.
+
+Your responsibility is to prepare Google Ads campaign setups based on the strategic brief, client context, and agency standards.
+
+You do not define the full business strategy. You translate approved strategy into a campaign-ready structure.
+
+## Responsibilities
+
+- Create campaign structures.
+- Define ad groups.
+- Suggest keyword themes.
+- Create initial keyword lists.
+- Suggest negative keywords.
+- Prepare ad copy assets.
+- Define extensions/assets.
+- Prepare conversion tracking checklist.
+- Identify missing information before launch.
+- Follow Saerens Advertising naming conventions.
+
+## You are not responsible for
+
+- Final budget approval.
+- Making live changes in Google Ads.
+- Changing tracking setup without confirmation.
+- Inventing client data.
+- Making performance claims without data.
+
+## Required input
+
+Before producing a final setup, you need:
+
+- Client name
+- Business type
+- Campaign goal
+- Target location
+- Budget range
+- Landing page URL
+- Main services/products
+- Conversion action
+- Language
+- Brand restrictions, if any
+
+## Output format
+
+Use this structure:
+
+1. Campaign objective
+2. Proposed campaign structure
+3. Campaign naming
+4. Ad groups
+5. Keyword themes
+6. Negative keywords
+7. Ad copy suggestions
+8. Assets/extensions
+9. Tracking checklist
+10. Missing questions before launch
+11. Human approval required
+
+
+This is much better than a generic prompt.
+---
+8. Client context should be separated from agent instructions
+
+Very important.
+
+Do not put client-specific data directly into the agent file.
+
+Instead:
+clients/
+  client-a.md
+  client-b.md
+  client-c.md
+
+
+Example:
+# Client: Example Roofing Company
+
+## Business
+
+Example Roofing Company is a roofing contractor in Antwerp.
+
+## Services
+
+- Roof renovation
+- Flat roofing
+- Roof inspection
+- Emergency repair
+- Gutter replacement
+
+## Target audience
+
+- Homeowners
+- Property managers
+- Real estate investors
+
+## Locations
+
+- Antwerp
+- Mechelen
+- Sint-Niklaas
+- Brussels outskirts
+
+## Main goal
+
+Generate qualified lead form submissions and phone calls.
+
+## Tone of voice
+
+Professional, trustworthy, local, direct.
+
+## Current advertising channels
+
+- Google Ads
+- SEO
+- Local service pages
+
+## Important notes
+
+- Avoid overpromising emergency availability.
+- Do not mention free inspections unless confirmed.
+- Phone calls are high-value conversions.
+
+
+Then the prompt builder combines:
+Global rules
++ Selected agent instructions
++ Selected client context
++ Selected workflow
++ User request
+
+
+That is your core system.
+---
+9. Workflows are separate from agents
+
+This is another important point.
+
+An agent is a role.
+
+A workflow is a process.
+
+For example, the Google Ads Strategist can participate in multiple workflows:
+• New campaign strategy
+• Account audit
+• Budget scaling plan
+• Monthly optimization review
+
+So I would create workflow docs like:
+# Workflow: Google Ads Campaign Setup
+
+## Goal
+
+Prepare a complete campaign setup for a client.
+
+## Steps
+
+1. Understand business and offer.
+2. Review client context.
+3. Confirm campaign objective.
+4. Define campaign type.
+5. Define structure.
+6. Define targeting.
+7. Prepare keywords/audiences.
+8. Prepare ad copy.
+9. Prepare tracking checklist.
+10. Prepare human approval summary.
+
+## Agents involved
+
+- Orchestrator Agent
+- Google Ads Strategist
+- Google Ads Setup Specialist
+- Copywriter
+- Tracking Specialist, future
+
+## Required output
+
+- Campaign structure
+- Ad group structure
+- Keywords
+- Ad copy
+- Negative keywords
+- Tracking checklist
+- Open questions
+
+
+This helps you avoid putting too much logic into one agent.
+---
+10. MVP stages
+
+I would split the Replit MVP into phases.
+Phase 1: Documentation-first MVP
+
+Goal: define the AI team clearly.
+
+Includes:
+• README.md
+• AGENTS.md
+• 3 to 5 agent files
+• 2 client context files
+• 3 workflows
+• 3 output templates
+• Manual prompt testing
+
+No fancy UI required.
+
+This phase answers:
+
+> Do we know what agents should exist and how they should behave?
+---
+Phase 2: Simple agent selector
+
+Build a very simple interface:
+Choose client:
+[Client A]
+
+Choose workflow:
+[Google Ads campaign setup]
+
+Choose agent:
+[Google Ads Setup Specialist]
+
+Enter request:
+[textarea]
+
+Generate output
+
+
+The app loads:
+• Global instructions
+• Agent instructions
+• Client context
+• Workflow instructions
+• User input
+
+And sends this to the AI model.
+
+This phase answers:
+
+> Can we reliably generate useful output from structured context?
+---
+Phase 3: Orchestrator mode
+
+Instead of manually selecting the agent, the user enters:
+“I need a new campaign setup for a roofing client in Antwerp.”
+
+
+The Orchestrator decides:
+• Relevant client
+• Relevant workflow
+• Relevant agent
+• Missing information
+
+This phase answers:
+
+> Can the system route work intelligently?
+---
+Phase 4: Memory and reusable outputs
+
+Add storage for:
+• Previous outputs
+• Approved templates
+• Client preferences
+• Common questions
+• Past campaign structures
+• Brand-specific restrictions
+
+This phase answers:
+
+> Can the AI team learn from agency work over time?
+---
+Phase 5: Tool integrations
+
+Only here would I think about:
+• ClickUp
+• Google Ads API
+• Google Sheets
+• Looker Studio
+• Slack
+• Meta Ads
+• GA4
+• CRM
+
+At this stage, agents can go from:
+
+> “Here is what I recommend”
+
+to:
+
+> “Here is the task I prepared in ClickUp”
+
+or eventually:
+
+> “Here is the draft campaign ready for review”
+
+But I would not start there.
+---
+11. Why I would not start with ClickUp Super Agents
+
+ClickUp is useful as an operational layer, but I wouldn’t make it the brain.
+
+ClickUp is good for:
+• Tasks
+• Docs
+• Comments
+• Project management
+• Internal workflows
+• Team execution
+
+But your AI architecture should probably live outside of ClickUp first.
+
+Why?
+
+Because your agent logic should be portable.
+
+If all your agent instructions live inside ClickUp-specific features, you may become dependent on ClickUp’s limitations.
+
+Better architecture:
+Replit / custom AI Team OS = brain
+ClickUp = execution/task layer
+Google Ads = advertising platform
+Slack/email = communication layer
+
+
+So eventually:
+User request → Orchestrator → Specialist Agent → Output → ClickUp task draft
+
+
+But ClickUp should not decide the whole agent architecture.
+---
+12. Replit project per agent vs. one project with all agents
+
+For now, I would strongly recommend:
+One Replit project containing all MVP agents
+
+Not one Replit project per agent.
+
+Why?
+
+Because in the early stage, you need to iterate fast and keep shared standards consistent.
+
+If every agent has its own project, you’ll quickly create duplication:
+• Same global instructions copied everywhere
+• Same client context copied everywhere
+• Same templates copied everywhere
+• Harder to update standards
+• Harder to orchestrate agents
+• Harder to compare outputs
+
+Better:
+One central Replit project
+  ├── agents/
+  ├── clients/
+  ├── workflows/
+  ├── templates/
+  └── knowledge/
+
+
+Later, if one agent becomes complex enough, you can split it out.
+
+For example:
+• A full Reporting Agent with API connections
+• A Google Ads Agent with Google Ads API access
+• A Client Communication Agent with email/ClickUp integrations
+
+But not at MVP stage.
+---
+13. The real MVP objective
+
+I would define the MVP like this:
+
+> The MVP is successful when Saerens Advertising can use a structured AI interface to select a client, select a workflow, select an agent, input a request, and receive consistent, high-quality, agency-standard output that can be reviewed by a human and used in real work.
+
+That’s the right bar.
+
+Not:
+
+> “The AI does everything automatically.”
+
+But:
+
+> “The AI produces work like a trained junior/specialist who understands how we work.”
+---
+14. What I would build first
+
+If I had to choose the absolute first version, I’d build this:
+Agents
+1. Orchestrator Agent
+2. Google Ads Strategist
+3. Google Ads Setup Specialist
+4. Reporting Specialist
+5. Copywriter
+Workflows
+1. New Google Ads campaign setup
+2. Google Ads account audit
+3. Monthly client report
+4. Client email draft
+Knowledge files
+1. Agency principles
+2. Tone of voice
+3. Google Ads standards
+4. Reporting standards
+5. Naming conventions
+Client files
+1. Client template
+2. One real or dummy test client
+App interface
+
+Simple web UI or CLI:
+Client:
+Workflow:
+Agent:
+Input:
+Generate
+
+
+That’s enough to start testing.
+---
+15. Suggested README.md opening
+
+You could literally start with this:
+# Saerens Advertising AI Team
+
+This Replit project contains the MVP for the internal AI agent system of Saerens Advertising.
+
+The project is designed to test and improve specialized AI agents that support agency workflows.
+
+The main principle is that each AI agent should behave like a specialized team member, not like a generic chatbot.
+
+Agents have:
+
+- A clear role
+- Clear responsibilities
+- Clear limitations
+- Required input
+- Structured output formats
+- Access to agency standards
+- Access to client context
+- Access to workflow instructions
+
+The MVP does not aim to fully automate client work yet. The first goal is to create reliable AI-assisted workflows that produce reviewable, high-quality outputs for human approval.
+
+---
+16. My recommendation
+
+For where you are now, I’d choose this route:
+One central Replit project
+↓
+Documentation-first agent architecture
+↓
+Simple agent selector
+↓
+Orchestrator agent
+↓
+Client/workflow memory
+↓
+ClickUp integration later
+
+
+In simple words:
+
+> Build the AI brain first. Connect it to tools later.
+
+Because if the “brain” is not clear, integrations will only create faster chaos.
+
+But if the role structure, instructions, workflows, templates, and standards are strong, then ClickUp/Google Ads/Meta/Slack integrations become much easier later.
+
+The core question for this MVP should be:
+
+> “Can we make AI behave like a structured internal agency team?”
+
+If yes, then the platform choice becomes less risky.

@@ -1,0 +1,1 @@
+- [Orval required query params](orval-query-param-coercion.md) — generated query-param zod uses `zod.coerce.string()`, so a missing required param parses as the string `"undefined"` instead of failing; add an explicit presence guard to return 400.

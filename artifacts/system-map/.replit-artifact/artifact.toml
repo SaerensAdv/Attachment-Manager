@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "AI Team System Map"
+version = "1.0.0"
+id = "artifacts/system-map"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 24226
+
+[services.development]
+run = "pnpm --filter @workspace/system-map run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/system-map", "run", "build" ]
+publicDir = "artifacts/system-map/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "24226"
+BASE_PATH = "/"

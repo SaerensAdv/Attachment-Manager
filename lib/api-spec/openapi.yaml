@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: docs
+    description: Documentation system-map operations
 paths:
   /healthz:
     get:
@@ -24,6 +26,54 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /docs/graph:
+    get:
+      operationId: getDocGraph
+      tags: [docs]
+      summary: Get the documentation graph
+      description: >
+        Scans the documentation folders on disk at request time and returns the
+        nodes (one per document), the edges (relationships derived from the
+        documents themselves), and category metadata.
+      responses:
+        "200":
+          description: The current documentation graph
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocGraph"
+  /docs/content:
+    get:
+      operationId: getDocContent
+      tags: [docs]
+      summary: Get the raw markdown content of a document
+      description: Returns the raw markdown for a single known document, identified by its path.
+      parameters:
+        - name: path
+          in: query
+          required: true
+          description: The document path relative to the documentation root (e.g. agents/orchestrator.md).
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The document content
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocContent"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Document not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +83,82 @@ components:
           type: string
       required:
         - status
-
+    DocNode:
+      type: object
+      required: [id, path, title, category, summary]
+      properties:
+        id:
+          type: string
+          description: Stable identifier, equal to the path relative to the docs root.
+        path:
+          type: string
+          description: Path relative to the docs root (e.g. knowledge/tone-of-voice.md).
+        title:
+          type: string
+          description: The document's first heading, or the filename if none.
+        category:
+          type: string
+          description: One of core, agent, client, workflow, template, knowledge.
+        summary:
+          type: ["string", "null"]
+          description: First paragraph of the document, if any.
+    DocEdge:
+      type: object
+      required: [source, target, kind]
+      properties:
+        source:
+          type: string
+          description: The id of the document the relationship starts from.
+        target:
+          type: string
+          description: The id of the document the relationship points to.
+        kind:
+          type: string
+          description: The relationship type (reference or mention).
+    DocCategory:
+      type: object
+      required: [id, label, count]
+      properties:
+        id:
+          type: string
+        label:
+          type: string
+        count:
+          type: integer
+    DocGraph:
+      type: object
+      required: [nodes, edges, categories]
+      properties:
+        nodes:
+          type: array
+          items:
+            $ref: "#/components/schemas/DocNode"
+        edges:
+          type: array
+          items:
+            $ref: "#/components/schemas/DocEdge"
+        categories:
+          type: array
+          items:
+            $ref: "#/components/schemas/DocCategory"
+    DocContent:
+      type: object
+      required: [id, path, title, category, content]
+      properties:
+        id:
+          type: string
+        path:
+          type: string
+        title:
+          type: string
+        category:
+          type: string
+        content:
+          type: string
+          description: The raw markdown content of the document.
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string

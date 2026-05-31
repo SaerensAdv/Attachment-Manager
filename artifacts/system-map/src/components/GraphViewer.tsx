@@ -5,7 +5,13 @@ import {
   TransformComponent,
   type ReactZoomPanPinchRef,
 } from "react-zoom-pan-pinch";
+import { Maximize2, Plus, Minus } from "lucide-react";
 import type { DocNode, DocEdge, DocCategory } from "@workspace/api-client-react";
+
+// Below this zoom level labels are hidden to keep the dense overview readable;
+// zooming in past it fades them in so individual nodes can be inspected. The
+// per-node focus zoom (1.4) and a small manual zoom both clear this threshold.
+const LABEL_VISIBLE_SCALE = 1.15;
 
 interface GraphViewerProps {
   nodes: DocNode[];
@@ -61,9 +67,14 @@ export default function GraphViewer({
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
   const [simNodes, setSimNodes] = useState<SimNode[]>([]);
   const [simEdges, setSimEdges] = useState<SimEdge[]>([]);
+  // Current viewport zoom level, kept in sync via onTransformed so labels can be
+  // shown only when zoomed in close enough to read them.
+  const [scale, setScale] = useState(1);
   // Live reference to the simulation node objects (mutated in place by d3), so
   // focusing can read current positions without retriggering on every tick.
   const simNodesRef = useRef<SimNode[]>([]);
+  // Guards the one-time auto-fit so it only fires after a fresh dataset settles.
+  const didAutoFitRef = useRef(false);
 
   // Update dimensions on resize
   useEffect(() => {
@@ -91,6 +102,8 @@ export default function GraphViewer({
     const simNodesData: SimNode[] = nodes.map(n => ({ ...n }));
     const simEdgesData: SimEdge[] = edges.map(e => ({ ...e }));
     simNodesRef.current = simNodesData;
+    // A new node/edge set means the layout will shift, so re-arm the auto-fit.
+    didAutoFitRef.current = false;
 
     const simulation = d3.forceSimulation<SimNode>(simNodesData)
       .force("link", d3.forceLink<SimNode, SimEdge>(simEdgesData).id(d => d.id).distance(100))
@@ -122,6 +135,38 @@ export default function GraphViewer({
     api.setTransform(x, y, scale, 600, "easeOut");
   }, [dimensions.width, dimensions.height]);
 
+  // Pan/zoom so the entire graph fits within the viewport — the "overview".
+  const fitView = useCallback(() => {
+    const api = transformRef.current;
+    const positioned = simNodesRef.current.filter(
+      (n) => n.x !== undefined && n.y !== undefined,
+    );
+    if (!api || !positioned.length) return;
+
+    const xs = positioned.map((n) => n.x as number);
+    const ys = positioned.map((n) => n.y as number);
+    const minX = Math.min(...xs);
+    const maxX = Math.max(...xs);
+    const minY = Math.min(...ys);
+    const maxY = Math.max(...ys);
+
+    const padding = 90;
+    const graphWidth = maxX - minX + padding * 2;
+    const graphHeight = maxY - minY + padding * 2;
+
+    const fitScale = Math.min(
+      dimensions.width / graphWidth,
+      dimensions.height / graphHeight,
+    );
+    const clampedScale = Math.max(0.1, Math.min(fitScale, 2));
+
+    const centerX = (minX + maxX) / 2;
+    const centerY = (minY + maxY) / 2;
+    const x = dimensions.width / 2 - centerX * clampedScale;
+    const y = dimensions.height / 2 - centerY * clampedScale;
+    api.setTransform(x, y, clampedScale, 600, "easeOut");
+  }, [dimensions.width, dimensions.height]);
+
   // Focus when a node is selected, or when search requests a focus (nonce bump).
   useEffect(() => {
     if (!selectedNodeId) return;
@@ -129,6 +174,16 @@ export default function GraphViewer({
     const id = requestAnimationFrame(() => focusOnNode(selectedNodeId));
     return () => cancelAnimationFrame(id);
   }, [selectedNodeId, focusNonce, focusOnNode]);
+
+  // Auto-fit once the layout has settled for a fresh dataset, so the user always
+  // starts from a readable full overview rather than an arbitrary crop.
+  useEffect(() => {
+    if (didAutoFitRef.current) return;
+    if (!simNodes.length || selectedNodeId) return;
+    didAutoFitRef.current = true;
+    const id = window.setTimeout(fitView, 400);
+    return () => window.clearTimeout(id);
+  }, [simNodes, selectedNodeId, fitView]);
 
   // Derived styling helpers
   const lowerSearchQuery = searchQuery.toLowerCase();
@@ -162,6 +217,7 @@ export default function GraphViewer({
         maxScale={4}
         centerOnInit
         limitToBounds={false}
+        onTransformed={(_ref, state) => setScale(state.scale)}
       >
         <TransformComponent wrapperClass="!w-full !h-full" contentClass="!w-full !h-full">
           <svg width={dimensions.width} height={dimensions.height} className="overflow-visible">
@@ -250,13 +306,17 @@ export default function GraphViewer({
                     {/* Inner core color */}
                     <circle r={8} fill={color} opacity={isHighlighted ? 1 : 0.8} />
 
-                    {/* Node Label */}
+                    {/* Node Label — hidden when zoomed out so the overview stays
+                        legible, always shown for the highlighted/selected node. */}
                     <text
                       dy={28}
                       textAnchor="middle"
                       fill={isHighlighted ? "hsl(var(--foreground))" : "hsl(var(--muted-foreground))"}
-                      className={`font-mono text-xs transition-colors duration-300 ${isHighlighted ? 'font-bold' : ''}`}
-                      style={{ pointerEvents: 'none' }}
+                      className={`font-mono text-xs transition-opacity duration-300 ${isHighlighted ? 'font-bold' : ''}`}
+                      style={{
+                        pointerEvents: 'none',
+                        opacity: isHighlighted || scale >= LABEL_VISIBLE_SCALE ? 1 : 0,
+                      }}
                     >
                       {node.title}
                     </text>
@@ -267,6 +327,40 @@ export default function GraphViewer({
           </svg>
         </TransformComponent>
       </TransformWrapper>
+
+      {/* Navigation controls: fit-to-view (reset overview) + zoom in/out. */}
+      <div className="absolute bottom-6 right-6 z-20 flex flex-col gap-2">
+        <button
+          type="button"
+          onClick={fitView}
+          title="Zoom to fit"
+          aria-label="Zoom to fit"
+          className="flex items-center justify-center w-10 h-10 rounded-lg bg-card/80 backdrop-blur-md border border-card-border shadow-2xl text-muted-foreground hover:text-cat-agent hover:border-cat-agent transition-colors"
+        >
+          <Maximize2 className="w-4 h-4" />
+        </button>
+        <div className="flex flex-col rounded-lg bg-card/80 backdrop-blur-md border border-card-border shadow-2xl overflow-hidden">
+          <button
+            type="button"
+            onClick={() => transformRef.current?.zoomIn(0.3)}
+            title="Zoom in"
+            aria-label="Zoom in"
+            className="flex items-center justify-center w-10 h-10 text-muted-foreground hover:text-cat-agent transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+          </button>
+          <div className="h-px bg-card-border" />
+          <button
+            type="button"
+            onClick={() => transformRef.current?.zoomOut(0.3)}
+            title="Zoom out"
+            aria-label="Zoom out"
+            className="flex items-center justify-center w-10 h-10 text-muted-foreground hover:text-cat-agent transition-colors"
+          >
+            <Minus className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

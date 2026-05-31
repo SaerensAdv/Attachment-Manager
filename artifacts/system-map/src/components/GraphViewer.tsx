@@ -67,6 +67,9 @@ export default function GraphViewer({
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
   const [simNodes, setSimNodes] = useState<SimNode[]>([]);
   const [simEdges, setSimEdges] = useState<SimEdge[]>([]);
+  // The node currently under the cursor; drives neighbour highlighting so the
+  // dense graph becomes instantly legible on hover, without a click.
+  const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
   // Current viewport zoom level, kept in sync via onTransformed so labels can be
   // shown only when zoomed in close enough to read them.
   const [scale, setScale] = useState(1);
@@ -242,16 +245,27 @@ export default function GraphViewer({
     fitView();
   }, [settleNonce, simNodes, selectedNodeId, fitView]);
 
+  // Clear a stale hover when the hovered node leaves the current dataset (e.g.
+  // category filtering removes it), otherwise hoverSet would keep dimming the
+  // whole graph until the next hover event.
+  useEffect(() => {
+    if (hoveredNodeId && !simNodes.some((n) => n.id === hoveredNodeId)) {
+      setHoveredNodeId(null);
+    }
+  }, [simNodes, hoveredNodeId]);
+
   // Derived styling helpers
   const lowerSearchQuery = searchQuery.toLowerCase();
   
   const isNodeHighlighted = (node: SimNode) => {
+    if (hoveredNodeId) return node.id === hoveredNodeId;
     if (selectedNodeId) return node.id === selectedNodeId;
     if (lowerSearchQuery) return node.title.toLowerCase().includes(lowerSearchQuery);
     return false;
   };
 
   const isNodeDimmed = (node: SimNode) => {
+    if (hoverSet) return !hoverSet.has(node.id);
     if (selectedNodeId) return node.id !== selectedNodeId;
     if (lowerSearchQuery) return !node.title.toLowerCase().includes(lowerSearchQuery);
     return false;
@@ -271,6 +285,33 @@ export default function GraphViewer({
   }, [simEdges]);
 
   const radiusOf = (node: SimNode) => 12 + Math.min(degreeMap.get(node.id) ?? 0, 14);
+
+  // Adjacency for hover highlighting: each node mapped to its directly connected
+  // neighbours.
+  const neighborMap = useMemo(() => {
+    const m = new Map<string, Set<string>>();
+    const add = (a: string, b: string) => {
+      if (!m.has(a)) m.set(a, new Set());
+      m.get(a)!.add(b);
+    };
+    for (const e of simEdges) {
+      const s = typeof e.source === "string" ? e.source : (e.source as SimNode).id;
+      const t = typeof e.target === "string" ? e.target : (e.target as SimNode).id;
+      add(s, t);
+      add(t, s);
+    }
+    return m;
+  }, [simEdges]);
+
+  // When hovering, the hovered node plus its neighbours stay lit; everything
+  // else recedes.
+  const hoverSet = useMemo(() => {
+    if (!hoveredNodeId) return null;
+    const set = new Set<string>([hoveredNodeId]);
+    const adj = neighborMap.get(hoveredNodeId);
+    if (adj) for (const n of adj) set.add(n);
+    return set;
+  }, [hoveredNodeId, neighborMap]);
 
   return (
     <div ref={containerRef} className="w-full h-full bg-background relative overflow-hidden">
@@ -321,8 +362,9 @@ export default function GraphViewer({
                 if (source.x === undefined || source.y === undefined || target.x === undefined || target.y === undefined) return null;
 
                 const style = edgeStyleFor(edge.kind);
-                const isEdgeHighlighted = selectedNodeId && (source.id === selectedNodeId || target.id === selectedNodeId);
-                const isEdgeDimmed = selectedNodeId && !isEdgeHighlighted;
+                const activeNode = hoveredNodeId ?? selectedNodeId;
+                const isEdgeHighlighted = activeNode && (source.id === activeNode || target.id === activeNode);
+                const isEdgeDimmed = activeNode && !isEdgeHighlighted;
 
                 // Trim the endpoints to each node's rim and bow the line into a
                 // gentle arc so the dense graph reads as elegant curves rather
@@ -358,6 +400,19 @@ export default function GraphViewer({
                       markerEnd={`url(#${style.marker})`}
                       strokeLinecap="round"
                     />
+                    {/* Living pipeline: light beads streaming source -> target
+                        along the structural routing/flow edges. */}
+                    {(edge.kind === "routing" || edge.kind === "flow") && !isEdgeDimmed && (
+                      <path
+                        d={d}
+                        stroke="hsl(var(--card))"
+                        strokeWidth={width + 0.5}
+                        strokeDasharray="0,16"
+                        strokeLinecap="round"
+                        opacity={isEdgeHighlighted ? 1 : 0.8}
+                        className="atlas-flow-line"
+                      />
+                    )}
                   </g>
                 );
               })}
@@ -377,6 +432,8 @@ export default function GraphViewer({
                   <g
                     key={node.id}
                     onClick={() => onSelectNode(node.id)}
+                    onMouseEnter={() => setHoveredNodeId(node.id)}
+                    onMouseLeave={() => setHoveredNodeId(null)}
                     className="cursor-pointer transition-all duration-300"
                     style={{
                       opacity: isDimmed ? 0.2 : 1,

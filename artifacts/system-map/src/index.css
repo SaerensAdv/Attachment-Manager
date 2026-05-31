@@ -159,3 +159,19 @@
   background: transparent;
   padding: 0;
 }
+
+/* Atlas "living pipeline" — light beads travelling along routing/flow edges in
+   the direction of the hand-off (source → target). */
+@keyframes atlas-flow {
+  to {
+    stroke-dashoffset: -16;
+  }
+}
+.atlas-flow-line {
+  animation: atlas-flow 1.6s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .atlas-flow-line {
+    animation: none;
+  }
+}

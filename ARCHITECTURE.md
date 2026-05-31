@@ -18,7 +18,7 @@ Every request is answered by combining five layers in a fixed order. Think of it
 
 This separation is deliberate:
 
-- **An agent is a role** (e.g. Setup Specialist). It does not contain client data.
+- **An agent is a role *and* a character** (e.g. Setup Specialist "Senne"). It defines what the agent does and who it is, but contains no client data. Its persona shapes *how* it works; it never overrides the client-facing brand voice (see `knowledge/agent-personas.md`).
 - **A client file is context** (e.g. a roofing company in Antwerp). The same client is reused across many agents and workflows.
 - **A workflow is a process** (e.g. campaign setup). The same workflow can involve several agents.
 - **A template is an output shape.** It makes results consistent and comparable over time.
@@ -65,6 +65,7 @@ saerens-ai-team/
 └── knowledge/           # Agency standards (the quality bar)
     ├── agency-principles.md
     ├── tone-of-voice.md
+    ├── agent-personas.md
     ├── google-ads-standards.md
     ├── analytics-standards.md
     ├── reporting-standards.md
@@ -86,7 +87,7 @@ A small app will assemble layers 1–5 automatically (an "agent loader" + "promp
 ## Design rules
 
 - One concept per folder. Do not mix client data into agent files or standards into workflows.
-- New agents follow the shared agent file structure (role → responsibilities → not responsible for → required input → output format).
+- New agents follow the shared agent file structure (role → character & personality → responsibilities → not responsible for → required input → output format) and get a persona per `knowledge/agent-personas.md`.
 - New clients copy `clients/_template.md`.
 - New output types get a template before agents are asked to produce them.
 - Anything affecting live spend, tracking, or accounts must surface a **Human approval required** step.

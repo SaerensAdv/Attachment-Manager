@@ -46,16 +46,18 @@ This keeps agent roles, client data, and processes separate and reusable. See `A
 | `clients/` | A reusable client template plus example client context files |
 | `workflows/` | Repeatable agency processes (campaign setup, audit, reporting, email) |
 | `templates/` | Reusable structured output formats |
-| `knowledge/` | Agency standards: principles, tone of voice, Google Ads, analytics, reporting, naming |
+| `knowledge/` | Agency standards: principles, tone of voice, agent personas, Google Ads, analytics, reporting, naming |
 
 ## Current MVP agents
 
-- **Orchestrator** — routes requests to the right specialist and prepares clean briefs
-- **Google Ads Strategist** — defines campaign strategy and account structure
-- **Google Ads Setup Specialist** — turns approved strategy into campaign-ready setups
-- **Google Ads Optimization Specialist** — improves live accounts (search terms, bids, budgets, CPA/ROAS)
-- **Reporting Specialist** — turns performance data into clear client reports
-- **Copywriter** — writes ads, headlines, and on-brand copy
+Each agent is also a distinct team member with its own character (names are proposed starting points — rename freely; see `knowledge/agent-personas.md`):
+
+- **Orchestrator** *(Lotte)* — routes requests to the right specialist and prepares clean briefs
+- **Google Ads Strategist** *(Daan)* — defines campaign strategy and account structure
+- **Google Ads Setup Specialist** *(Senne)* — turns approved strategy into campaign-ready setups
+- **Google Ads Optimization Specialist** *(Femke)* — improves live accounts (search terms, bids, budgets, CPA/ROAS)
+- **Reporting Specialist** *(Bram)* — turns performance data into clear client reports
+- **Copywriter** *(Marie)* — writes ads, headlines, and on-brand copy
 
 ## How to use it (today)
 

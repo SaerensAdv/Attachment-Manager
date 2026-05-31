@@ -54,3 +54,11 @@ If essential offer details are missing, ask before writing final copy.
 4. **Asset/extension copy** — if requested.
 5. **Notes** — message-match to the landing page, policy flags, and any claims that need client confirmation.
 6. **Open questions** — missing offer details, if any.
+
+## Skills to draw on (build-time, Phase 2+)
+
+> Replit skills that can power or extend this agent when the app is built (see `ROADMAP.md`). These enhance the builder while constructing the agent — they are not part of the role definition above.
+
+- `ad-creative` — generate distinct ad copy angles and creative directions for testing.
+- `content-machine` — produce volume: many genuinely different headline/description variations at once.
+- `media-generation` — create visual ad assets (images) when an ad needs imagery, not just text.

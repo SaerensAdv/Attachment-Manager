@@ -179,15 +179,55 @@ function extractSection(content: string, headingMatch: RegExp): string | null {
 }
 
 /**
+ * One layer of the five-layer model: either a single named file (AGENTS.md) or a
+ * whole category of docs (agents, clients, workflows, templates).
+ */
+type LayerSpec =
+  | { kind: "file"; value: string }
+  | { kind: "category"; value: string };
+
+/**
+ * Parse the ordered layer pipeline out of ARCHITECTURE.md's five-layer model.
+ * Each line of the model names the doc(s) that back a layer via a path token
+ * (AGENTS.md, agents/, clients/, workflows/, templates/). We walk the text in
+ * order and record each layer the first time its token appears, so the sequence
+ * mirrors whatever the document declares. Layers with no backing doc (the user
+ * request) simply carry no token and are skipped, collapsing the pipeline to its
+ * document-backed steps.
+ */
+function parseLayerOrder(content: string): LayerSpec[] {
+  const layers: LayerSpec[] = [];
+  const seen = new Set<string>();
+  const add = (spec: LayerSpec) => {
+    const key = `${spec.kind}:${spec.value}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      layers.push(spec);
+    }
+  };
+  for (const line of content.split("\n")) {
+    let spec: LayerSpec | null = null;
+    if (/\bAGENTS\.md\b/.test(line)) spec = { kind: "file", value: "AGENTS.md" };
+    else if (/\bagents\//.test(line)) spec = { kind: "category", value: "agent" };
+    else if (/\bclients\//.test(line)) spec = { kind: "category", value: "client" };
+    else if (/\bworkflows\//.test(line)) spec = { kind: "category", value: "workflow" };
+    else if (/\btemplates\//.test(line)) spec = { kind: "category", value: "template" };
+    if (spec) add(spec);
+  }
+  return layers;
+}
+
+/**
  * Edge priority: when the same directed pair is produced by more than one pass,
- * keep the most specific/structural relationship. routing (explicit hand-off) and
- * flow (layer pipeline) are derived from dedicated parsers and outrank a generic
- * backtick reference, which in turn outranks an incidental title mention.
+ * keep the most specific/structural relationship. routing (an explicit
+ * orchestrator hand-off) ranks highest, then an explicit backtick reference (a
+ * real citation), then a generic five-layer flow transition (layer adjacency),
+ * and finally an incidental title mention.
  */
 const EDGE_PRIORITY: Record<DocEdgeKind, number> = {
   routing: 4,
-  flow: 3,
-  reference: 2,
+  reference: 3,
+  flow: 2,
   mention: 1,
 };
 
@@ -233,20 +273,32 @@ function deriveEdges(files: DocFile[]): DocEdge[] {
     }
   }
 
-  // Pass 3: flow edges — the five-layer model in ARCHITECTURE.md states that
-  // layer 1 (global rules, AGENTS.md) feeds layer 2 (every agent). We only emit
-  // these once that model is actually present in the docs, so the relationship
-  // stays derived from content rather than hardcoded.
+  // Pass 3: flow edges — the full five-layer pipeline described in
+  // ARCHITECTURE.md. The model defines a fixed order of layers, each backed by a
+  // file or a category of files (AGENTS.md -> agents/ -> clients/ -> workflows/
+  // -> templates/, with the user-request layer carrying no document). We parse
+  // that ordering straight from the doc and connect every member of each layer
+  // to every member of the next, because ARCHITECTURE explicitly states the
+  // layers compose many-to-many ("the same client is reused across many agents
+  // and workflows"). Emitting nothing unless the model text is present keeps the
+  // relationship derived from content rather than hardcoded.
   const architecture = byId.get("ARCHITECTURE.md");
-  const agentsConstitution = byId.get("AGENTS.md");
-  const describesLayers =
-    architecture !== undefined &&
-    /five[- ]layer/i.test(architecture.content) &&
-    architecture.content.includes("AGENTS.md") &&
-    /agents\//.test(architecture.content);
-  if (describesLayers && agentsConstitution) {
-    for (const agent of agents) {
-      consider(agentsConstitution.id, agent.id, "flow");
+  if (architecture && /five[- ]layer/i.test(architecture.content)) {
+    const layers = parseLayerOrder(architecture.content);
+    const membersOf = (layer: LayerSpec): DocFile[] =>
+      layer.kind === "file"
+        ? byId.has(layer.value)
+          ? [byId.get(layer.value)!]
+          : []
+        : files.filter((f) => f.category === layer.value);
+    for (let i = 0; i < layers.length - 1; i++) {
+      const upstream = membersOf(layers[i]);
+      const downstream = membersOf(layers[i + 1]);
+      for (const a of upstream) {
+        for (const b of downstream) {
+          consider(a.id, b.id, "flow");
+        }
+      }
     }
   }
 

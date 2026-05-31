@@ -33,7 +33,7 @@ export const GetDocGraphResponse = zod.object({
   "edges": zod.array(zod.object({
   "source": zod.string().describe('The id of the document the relationship starts from.'),
   "target": zod.string().describe('The id of the document the relationship points to.'),
-  "kind": zod.string().describe('The relationship type (reference or mention).')
+  "kind": zod.string().describe('The relationship type, derived from document content: \"routing\" (orchestrator routing-guide entry to a specialist), \"flow\" (a five-layer-model transition between adjacent layers), \"reference\" (an explicit backtick\/link citation), or \"mention\" (an incidental title match).')
 })),
   "categories": zod.array(zod.object({
   "id": zod.string(),

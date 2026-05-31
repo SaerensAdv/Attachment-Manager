@@ -114,7 +114,12 @@ components:
           description: The id of the document the relationship points to.
         kind:
           type: string
-          description: The relationship type (reference or mention).
+          description: >-
+            The relationship type, derived from document content: "routing"
+            (orchestrator routing-guide entry to a specialist), "flow" (a
+            five-layer-model transition between adjacent layers), "reference"
+            (an explicit backtick/link citation), or "mention" (an incidental
+            title match).
     DocCategory:
       type: object
       required: [id, label, count]

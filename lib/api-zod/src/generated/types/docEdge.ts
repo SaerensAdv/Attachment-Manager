@@ -11,6 +11,6 @@ export interface DocEdge {
   source: string;
   /** The id of the document the relationship points to. */
   target: string;
-  /** The relationship type (reference or mention). */
+  /** The relationship type, derived from document content: "routing" (orchestrator routing-guide entry to a specialist), "flow" (a five-layer-model transition between adjacent layers), "reference" (an explicit backtick/link citation), or "mention" (an incidental title match). */
   kind: string;
 }

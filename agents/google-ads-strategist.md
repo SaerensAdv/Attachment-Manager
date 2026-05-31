@@ -63,3 +63,10 @@ Follow `templates/google-ads-output.md`. At minimum:
 8. **Risks & dependencies** — what could undermine results; what must exist before launch.
 9. **Open questions** — missing information.
 10. **Human approval required** — budget and go-live require client sign-off.
+
+## Skills to draw on (build-time, Phase 2+)
+
+> Replit skills that can power or extend this agent when the app is built (see `ROADMAP.md`). These enhance the builder while constructing the agent — they are not part of the role definition above.
+
+- `competitive-analysis` — ground strategy in real competitor and market comparison.
+- `web-search` / `deep-research` — pull current market data before recommending direction.

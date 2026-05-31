@@ -60,9 +60,17 @@ If the request is vague, ask one focused round of clarifying questions first.
 | Client updates, answering client questions, relationship communication | Client Success Agent |
 | New-business proposals, pitches, prospect qualification | Sales / Proposal Agent |
 | Organic social posts, newsletters, content calendars, video scripts | Copywriter (content & social specialty) |
-| CRO deep-dive or ClickUp task creation | Note as future scope (see `AGENTS.md`) |
+| Conversion-rate testing program, experiment design, funnel optimization, reading test results | CRO Specialist |
+| Who the client competes with, market/landscape research, competitor offers & ad angles, SERP/auction read | Competitive Research Analyst |
+| Onboarding a newly signed client: intake, building the client fiche, kickoff checklist | Client Onboarding Agent |
+| ClickUp task creation | Note as future scope (see `AGENTS.md`) |
 
 A single request may involve several agents (e.g. campaign setup → Strategist, then Setup Specialist, then Copywriter). Sequence them and note dependencies.
+
+Two agents are **cross-cutting final steps**, not channels to route a request to on their own:
+
+- **Humanizer** — when client-facing text should read more naturally, add a final language pass with the Humanizer before approval.
+- **QA & Compliance Reviewer** — for output that touches policy, claims, or live spend, add a QA & Compliance Reviewer check as the last step before human approval.
 
 ## Output format
 

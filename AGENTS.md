@@ -64,8 +64,15 @@ Specified after the initial MVP, following the "new agent vs deeper specialty" r
 - Analytics & Tracking Specialist — `agents/analytics-tracking-specialist.md`
 - Client Success Agent — `agents/client-success-agent.md`
 - Sales / Proposal Agent — `agents/sales-proposal-agent.md`
+- CRO Specialist — `agents/cro-specialist.md`
+- Competitive Research Analyst — `agents/competitive-research-analyst.md`
+- Client Onboarding Agent — `agents/client-onboarding-agent.md`
+- QA & Compliance Reviewer — `agents/qa-compliance-reviewer.md`
+- Humanizer — `agents/humanizer.md`
 
 Content & social is **not** a separate agent: it is a deeper specialty of the Copywriter (`agents/copywriter.md`).
+
+Two of these are **cross-cutting final steps** rather than channel specialists: the **Humanizer** gives any drafted text a natural-voice pass, and the **QA & Compliance Reviewer** is the quality gate before human approval. Both review or refine other agents' output, which is why each is a distinct shared step rather than folded into one specialist.
 
 ## Growing the team (new agent vs deeper specialty)
 
@@ -77,8 +84,9 @@ Add a **new agent only when the capability or its boundary is genuinely distinct
 
 These are planned but intentionally not built yet. They are listed so the system knows where it is heading (see `ROADMAP.md`):
 
-- CRO Specialist (its scope currently lives within the Landing Page / Web Design Specialist)
 - ClickUp Task Agent
+
+The CRO Specialist is now a specified agent (`agents/cro-specialist.md`): its experimentation-program scope grew distinct enough from the Landing Page / Web Design Specialist's single-page review to warrant its own role.
 
 ## How an agent is invoked (today)
 

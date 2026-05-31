@@ -50,7 +50,12 @@ saerens-ai-team/
 │   ├── web-developer.md
 │   ├── analytics-tracking-specialist.md
 │   ├── client-success-agent.md
-│   └── sales-proposal-agent.md
+│   ├── sales-proposal-agent.md
+│   ├── cro-specialist.md
+│   ├── competitive-research-analyst.md
+│   ├── client-onboarding-agent.md
+│   ├── qa-compliance-reviewer.md
+│   └── humanizer.md
 │
 ├── clients/             # Client context (data, kept separate from agents)
 │   ├── _template.md

@@ -53,6 +53,12 @@ The AI team is organized as follows:
 - Meta Ads Strategist — `agents/meta-ads-strategist.md`
 - Landing Page / Web Design Specialist — `agents/landing-page-specialist.md`
 
+## Growing the team (new agent vs deeper specialty)
+
+Prefer **deepening an existing agent** over creating a new one. Many capabilities are a deeper branch of an existing role — give that agent an extra mode or sub-specialty (and the matching build-time skills) instead of spawning a new team member.
+
+Add a **new agent only when the capability or its boundary is genuinely distinct** from every existing one: a different domain, a different kind of output, or a boundary that would blur an existing agent's clear role if folded in. This keeps the team focused and avoids sprawl.
+
 ## Future Agents (not yet specified)
 
 These are planned but intentionally not built yet. They are listed so the system knows where it is heading (see `ROADMAP.md`):

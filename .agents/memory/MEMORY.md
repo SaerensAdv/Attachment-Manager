@@ -1,1 +1,2 @@
 - [Architect skill-registry blindspot](architect-skill-registry.md) — code-review/architect subagent can't see the live Replit skill list and will falsely flag valid skill names as non-existent.
+- [Growing the AI team](growing-the-team.md) — for the Saerens AI-team docs: prefer deepening an existing agent (extra mode/sub-specialty) over spawning new agents; new agent only when boundary is genuinely distinct.

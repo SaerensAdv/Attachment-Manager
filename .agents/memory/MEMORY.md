@@ -1,3 +1,2 @@
-- [Architect skill-registry blindspot](architect-skill-registry.md) — code-review/architect subagent can't see the live Replit skill list and will falsely flag valid skill names as non-existent.
-- [Growing the AI team](growing-the-team.md) — for the Saerens AI-team docs: prefer deepening an existing agent (extra mode/sub-specialty) over spawning new agents; new agent only when boundary is genuinely distinct.
-- [System Map doc-graph](system-map-doc-graph.md) — docs in agents/clients/workflows/templates/knowledge auto-appear on the map (dynamic scan); backticked skill names are safe, backticked doc paths create edges so they must exist.
+- [System Map generator (Phase 2)](system-map-generator.md) — how the "Genereren" tab assembles doc context + streams Claude; key prompt + SSE decisions.
+- [Monorepo composite project refs](monorepo-composite-refs.md) — new workspace libs need built dist declarations (tsc -b) or api-server typecheck fails TS6305.

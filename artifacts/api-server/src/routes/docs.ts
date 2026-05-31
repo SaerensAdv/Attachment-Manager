@@ -5,15 +5,16 @@ import {
   GetDocContentResponse,
 } from "@workspace/api-zod";
 import { getDocGraph, getDocFile } from "../lib/docs";
+import { loadClientDocs } from "../lib/clients-store";
 
 const router: IRouter = Router();
 
-router.get("/docs/graph", (req, res): void => {
-  const graph = getDocGraph();
+router.get("/docs/graph", async (req, res): Promise<void> => {
+  const graph = getDocGraph(await loadClientDocs());
   res.json(GetDocGraphResponse.parse(graph));
 });
 
-router.get("/docs/content", (req, res): void => {
+router.get("/docs/content", async (req, res): Promise<void> => {
   // `path` is coerced to a string by the generated schema, so a missing param
   // would slip through as the literal "undefined". Guard presence explicitly.
   if (typeof req.query.path !== "string" || req.query.path.length === 0) {
@@ -28,7 +29,7 @@ router.get("/docs/content", (req, res): void => {
     return;
   }
 
-  const file = getDocFile(parsed.data.path);
+  const file = getDocFile(parsed.data.path, await loadClientDocs());
   if (!file) {
     res.status(404).json({ error: "Document not found" });
     return;

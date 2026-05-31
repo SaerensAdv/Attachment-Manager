@@ -55,6 +55,81 @@ export interface DocContent {
   content: string;
 }
 
+export interface Client {
+  id: number;
+  name: string;
+  /** @nullable */
+  business?: string | null;
+  /** @nullable */
+  world?: string | null;
+  /** @nullable */
+  services?: string | null;
+  /** @nullable */
+  audience?: string | null;
+  /** @nullable */
+  locations?: string | null;
+  /** @nullable */
+  languages?: string | null;
+  /** @nullable */
+  mainGoal?: string | null;
+  /** @nullable */
+  conversionAction?: string | null;
+  /** @nullable */
+  kpis?: string | null;
+  /** @nullable */
+  budget?: string | null;
+  /** @nullable */
+  toneOfVoice?: string | null;
+  /** @nullable */
+  channels?: string | null;
+  /** @nullable */
+  restrictions?: string | null;
+  /** @nullable */
+  website?: string | null;
+  /** @nullable */
+  landingPages?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ClientInput {
+  name: string;
+  /** @nullable */
+  business?: string | null;
+  /** @nullable */
+  world?: string | null;
+  /** @nullable */
+  services?: string | null;
+  /** @nullable */
+  audience?: string | null;
+  /** @nullable */
+  locations?: string | null;
+  /** @nullable */
+  languages?: string | null;
+  /** @nullable */
+  mainGoal?: string | null;
+  /** @nullable */
+  conversionAction?: string | null;
+  /** @nullable */
+  kpis?: string | null;
+  /** @nullable */
+  budget?: string | null;
+  /** @nullable */
+  toneOfVoice?: string | null;
+  /** @nullable */
+  channels?: string | null;
+  /** @nullable */
+  restrictions?: string | null;
+  /** @nullable */
+  website?: string | null;
+  /** @nullable */
+  landingPages?: string | null;
+}
+
+export interface ClientList {
+  clients: Client[];
+}
+
 export interface ErrorResponse {
   error: string;
 }

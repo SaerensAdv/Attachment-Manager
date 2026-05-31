@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { anthropic } from "@workspace/integrations-anthropic-ai";
 import { getDocFile } from "../lib/docs";
+import { loadClientDocs } from "../lib/clients-store";
 import {
   buildIntakePrompt,
   parseIntakeJson,
@@ -36,12 +37,14 @@ router.post("/intake", async (req, res) => {
     return;
   }
 
+  const clientDocs = await loadClientDocs();
+
   const agent = getDocFile(agentPath);
   if (!agent || agent.category !== "agent") {
     res.status(400).json({ error: "Onbekende of ongeldige agent." });
     return;
   }
-  const client = getDocFile(clientPath);
+  const client = getDocFile(clientPath, clientDocs);
   if (!client || client.category !== "client") {
     res.status(400).json({ error: "Onbekende of ongeldige klant." });
     return;
@@ -54,7 +57,12 @@ router.post("/intake", async (req, res) => {
     }
   }
 
-  const system = buildIntakePrompt({ agentPath, workflowPath, clientPath });
+  const system = buildIntakePrompt({
+    agentPath,
+    workflowPath,
+    clientPath,
+    extraDocs: clientDocs,
+  });
 
   let raw: string;
   try {

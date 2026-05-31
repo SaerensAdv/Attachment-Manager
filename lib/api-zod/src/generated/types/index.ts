@@ -6,6 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './client';
+export * from './clientInput';
+export * from './clientList';
 export * from './docCategory';
 export * from './docContent';
 export * from './docEdge';

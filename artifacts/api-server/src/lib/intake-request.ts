@@ -1,4 +1,4 @@
-import { getDocFile } from "./docs";
+import { getDocFile, type DocFile } from "./docs";
 
 export interface IntakeField {
   /** Stable key, lowercase snake/kebab (e.g. "budget", "locaties"). */
@@ -28,10 +28,15 @@ export function buildIntakePrompt(params: {
   agentPath: string;
   workflowPath: string | null;
   clientPath: string;
+  /** Extra docs (e.g. DB-backed clients) merged into doc resolution. */
+  extraDocs?: DocFile[];
 }): string {
-  const agent = getDocFile(params.agentPath);
-  const workflow = params.workflowPath ? getDocFile(params.workflowPath) : null;
-  const client = getDocFile(params.clientPath);
+  const extra = params.extraDocs ?? [];
+  const agent = getDocFile(params.agentPath, extra);
+  const workflow = params.workflowPath
+    ? getDocFile(params.workflowPath, extra)
+    : null;
+  const client = getDocFile(params.clientPath, extra);
 
   return [
     "Je bent de intake-assistent van het AI-team van Saerens Advertising (een Belgisch Google Ads-bureau).",

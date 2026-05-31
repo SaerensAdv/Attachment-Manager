@@ -4,6 +4,7 @@ import docsRouter from "./docs";
 import generateRouter from "./generate";
 import routeRouter from "./route";
 import intakeRouter from "./intake";
+import clientsRouter from "./clients";
 
 const router: IRouter = Router();
 
@@ -12,5 +13,6 @@ router.use(docsRouter);
 router.use(generateRouter);
 router.use(routeRouter);
 router.use(intakeRouter);
+router.use(clientsRouter);
 
 export default router;

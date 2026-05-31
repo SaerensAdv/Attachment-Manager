@@ -12,6 +12,8 @@ tags:
     description: Health operations
   - name: docs
     description: Documentation system-map operations
+  - name: clients
+    description: Client profile management (persisted)
 paths:
   /healthz:
     get:
@@ -70,6 +72,119 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
         "404":
           description: Document not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /clients:
+    get:
+      operationId: getClients
+      tags: [clients]
+      summary: List all persisted clients
+      responses:
+        "200":
+          description: The list of clients
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClientList"
+    post:
+      operationId: createClient
+      tags: [clients]
+      summary: Create a new client
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClientInput"
+      responses:
+        "201":
+          description: The created client
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Client"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /clients/{id}:
+    get:
+      operationId: getClient
+      tags: [clients]
+      summary: Get a single client by id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: The client
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Client"
+        "404":
+          description: Client not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    put:
+      operationId: updateClient
+      tags: [clients]
+      summary: Update an existing client
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClientInput"
+      responses:
+        "200":
+          description: The updated client
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Client"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Client not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteClient
+      tags: [clients]
+      summary: Delete a client
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Client not found
           content:
             application/json:
               schema:
@@ -161,6 +276,94 @@ components:
         content:
           type: string
           description: The raw markdown content of the document.
+    Client:
+      type: object
+      required: [id, name, createdAt, updatedAt]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        business:
+          type: ["string", "null"]
+        world:
+          type: ["string", "null"]
+        services:
+          type: ["string", "null"]
+        audience:
+          type: ["string", "null"]
+        locations:
+          type: ["string", "null"]
+        languages:
+          type: ["string", "null"]
+        mainGoal:
+          type: ["string", "null"]
+        conversionAction:
+          type: ["string", "null"]
+        kpis:
+          type: ["string", "null"]
+        budget:
+          type: ["string", "null"]
+        toneOfVoice:
+          type: ["string", "null"]
+        channels:
+          type: ["string", "null"]
+        restrictions:
+          type: ["string", "null"]
+        website:
+          type: ["string", "null"]
+        landingPages:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    ClientInput:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        business:
+          type: ["string", "null"]
+        world:
+          type: ["string", "null"]
+        services:
+          type: ["string", "null"]
+        audience:
+          type: ["string", "null"]
+        locations:
+          type: ["string", "null"]
+        languages:
+          type: ["string", "null"]
+        mainGoal:
+          type: ["string", "null"]
+        conversionAction:
+          type: ["string", "null"]
+        kpis:
+          type: ["string", "null"]
+        budget:
+          type: ["string", "null"]
+        toneOfVoice:
+          type: ["string", "null"]
+        channels:
+          type: ["string", "null"]
+        restrictions:
+          type: ["string", "null"]
+        website:
+          type: ["string", "null"]
+        landingPages:
+          type: ["string", "null"]
+    ClientList:
+      type: object
+      required: [clients]
+      properties:
+        clients:
+          type: array
+          items:
+            $ref: "#/components/schemas/Client"
     ErrorResponse:
       type: object
       required: [error]

@@ -371,8 +371,13 @@ function buildCategories(files: DocFile[]): DocCategory[] {
   }));
 }
 
-export function getDocGraph(): DocGraph {
-  const files = scanFiles();
+/**
+ * Build the documentation graph. Callers may pass `extra` doc files (e.g.
+ * DB-backed clients) to merge alongside the filesystem docs; these participate
+ * in edge derivation and category counts just like file-backed docs.
+ */
+export function getDocGraph(extra: DocFile[] = []): DocGraph {
+  const files = [...scanFiles(), ...extra];
   const nodes: DocNode[] = files.map(({ content: _content, ...node }) => node);
   return {
     nodes,
@@ -381,7 +386,11 @@ export function getDocGraph(): DocGraph {
   };
 }
 
-export function getDocFile(path: string): DocFile | null {
-  const files = scanFiles();
+/**
+ * Resolve a single doc by path. `extra` doc files (e.g. DB-backed clients) are
+ * searched alongside the filesystem docs, so injected clients resolve here too.
+ */
+export function getDocFile(path: string, extra: DocFile[] = []): DocFile | null {
+  const files = [...scanFiles(), ...extra];
   return files.find((f) => f.id === path) ?? null;
 }

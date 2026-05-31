@@ -60,3 +60,141 @@ export const GetDocContentResponse = zod.object({
 })
 
 
+/**
+ * @summary List all persisted clients
+ */
+export const GetClientsResponse = zod.object({
+  "clients": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "business": zod.string().nullish(),
+  "world": zod.string().nullish(),
+  "services": zod.string().nullish(),
+  "audience": zod.string().nullish(),
+  "locations": zod.string().nullish(),
+  "languages": zod.string().nullish(),
+  "mainGoal": zod.string().nullish(),
+  "conversionAction": zod.string().nullish(),
+  "kpis": zod.string().nullish(),
+  "budget": zod.string().nullish(),
+  "toneOfVoice": zod.string().nullish(),
+  "channels": zod.string().nullish(),
+  "restrictions": zod.string().nullish(),
+  "website": zod.string().nullish(),
+  "landingPages": zod.string().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+}))
+})
+
+
+/**
+ * @summary Create a new client
+ */
+export const CreateClientBody = zod.object({
+  "name": zod.string(),
+  "business": zod.string().nullish(),
+  "world": zod.string().nullish(),
+  "services": zod.string().nullish(),
+  "audience": zod.string().nullish(),
+  "locations": zod.string().nullish(),
+  "languages": zod.string().nullish(),
+  "mainGoal": zod.string().nullish(),
+  "conversionAction": zod.string().nullish(),
+  "kpis": zod.string().nullish(),
+  "budget": zod.string().nullish(),
+  "toneOfVoice": zod.string().nullish(),
+  "channels": zod.string().nullish(),
+  "restrictions": zod.string().nullish(),
+  "website": zod.string().nullish(),
+  "landingPages": zod.string().nullish()
+})
+
+
+/**
+ * @summary Get a single client by id
+ */
+export const GetClientParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetClientResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "business": zod.string().nullish(),
+  "world": zod.string().nullish(),
+  "services": zod.string().nullish(),
+  "audience": zod.string().nullish(),
+  "locations": zod.string().nullish(),
+  "languages": zod.string().nullish(),
+  "mainGoal": zod.string().nullish(),
+  "conversionAction": zod.string().nullish(),
+  "kpis": zod.string().nullish(),
+  "budget": zod.string().nullish(),
+  "toneOfVoice": zod.string().nullish(),
+  "channels": zod.string().nullish(),
+  "restrictions": zod.string().nullish(),
+  "website": zod.string().nullish(),
+  "landingPages": zod.string().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Update an existing client
+ */
+export const UpdateClientParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateClientBody = zod.object({
+  "name": zod.string(),
+  "business": zod.string().nullish(),
+  "world": zod.string().nullish(),
+  "services": zod.string().nullish(),
+  "audience": zod.string().nullish(),
+  "locations": zod.string().nullish(),
+  "languages": zod.string().nullish(),
+  "mainGoal": zod.string().nullish(),
+  "conversionAction": zod.string().nullish(),
+  "kpis": zod.string().nullish(),
+  "budget": zod.string().nullish(),
+  "toneOfVoice": zod.string().nullish(),
+  "channels": zod.string().nullish(),
+  "restrictions": zod.string().nullish(),
+  "website": zod.string().nullish(),
+  "landingPages": zod.string().nullish()
+})
+
+export const UpdateClientResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "business": zod.string().nullish(),
+  "world": zod.string().nullish(),
+  "services": zod.string().nullish(),
+  "audience": zod.string().nullish(),
+  "locations": zod.string().nullish(),
+  "languages": zod.string().nullish(),
+  "mainGoal": zod.string().nullish(),
+  "conversionAction": zod.string().nullish(),
+  "kpis": zod.string().nullish(),
+  "budget": zod.string().nullish(),
+  "toneOfVoice": zod.string().nullish(),
+  "channels": zod.string().nullish(),
+  "restrictions": zod.string().nullish(),
+  "website": zod.string().nullish(),
+  "landingPages": zod.string().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Delete a client
+ */
+export const DeleteClientParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+

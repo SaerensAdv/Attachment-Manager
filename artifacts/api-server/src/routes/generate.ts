@@ -1,7 +1,8 @@
 import { Router, type IRouter } from "express";
 import { anthropic } from "@workspace/integrations-anthropic-ai";
 import { buildGenerationContext } from "../lib/generate-context";
-import { getDocFile } from "../lib/docs";
+import { getDocFile, type DocFile } from "../lib/docs";
+import { loadClientDocs } from "../lib/clients-store";
 
 const router: IRouter = Router();
 
@@ -20,8 +21,12 @@ function asString(value: unknown): string | null {
 }
 
 /** Ensure a selected path maps to an existing doc of the expected category. */
-function isValidDoc(path: string, expectedCategory: string): boolean {
-  const doc = getDocFile(path);
+function isValidDoc(
+  path: string,
+  expectedCategory: string,
+  extra: DocFile[] = [],
+): boolean {
+  const doc = getDocFile(path, extra);
   return doc !== null && doc.category === expectedCategory;
 }
 
@@ -65,7 +70,8 @@ router.post("/generate", async (req, res) => {
     res.status(400).json({ error: "Onbekende of ongeldige agent." });
     return;
   }
-  if (!isValidDoc(clientPath, "client")) {
+  const clientDocs = await loadClientDocs();
+  if (!isValidDoc(clientPath, "client", clientDocs)) {
     res.status(400).json({ error: "Onbekende of ongeldige klant." });
     return;
   }
@@ -111,6 +117,7 @@ router.post("/generate", async (req, res) => {
           agentPath: path,
           clientPath,
           workflowPath,
+          extraDocs: clientDocs,
           team: {
             members: memberTitles,
             position: i,

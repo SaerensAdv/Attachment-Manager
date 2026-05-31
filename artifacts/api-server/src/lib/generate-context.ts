@@ -28,6 +28,8 @@ export interface GenerationSelection {
   workflowPath: string;
   /** When set (and more than one member), the agent works as part of a team. */
   team?: TeamContext;
+  /** Extra docs (e.g. DB-backed clients) merged into doc resolution. */
+  extraDocs?: DocFile[];
 }
 
 export interface BuiltContext {
@@ -57,9 +59,10 @@ function collectReferenced(docs: (DocFile | null)[]): string[] {
 export function buildGenerationContext(
   selection: GenerationSelection,
 ): BuiltContext {
+  const extra = selection.extraDocs ?? [];
   const globalRules = getDocFile(GLOBAL_RULES_PATH);
   const agent = getDocFile(selection.agentPath);
-  const client = getDocFile(selection.clientPath);
+  const client = getDocFile(selection.clientPath, extra);
   const workflow = getDocFile(selection.workflowPath);
 
   const referencedPaths = collectReferenced([agent, workflow]);

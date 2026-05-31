@@ -1,9 +1,10 @@
 import { Link, useLocation } from "wouter";
-import { Map, Sparkles } from "lucide-react";
+import { Map, Sparkles, Users } from "lucide-react";
 
 const tabs = [
   { href: "/", label: "Kaart", icon: Map },
   { href: "/generate", label: "Genereren", icon: Sparkles },
+  { href: "/clients", label: "Klanten", icon: Users },
 ];
 
 export default function TabNav() {

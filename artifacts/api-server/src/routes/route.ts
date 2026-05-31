@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { anthropic } from "@workspace/integrations-anthropic-ai";
 import { getDocFile, getDocGraph } from "../lib/docs";
+import { loadClientDocs } from "../lib/clients-store";
 import {
   buildRoutingPrompt,
   parseRoutingJson,
@@ -30,7 +31,8 @@ router.post("/route", async (req, res) => {
     return;
   }
 
-  const client = getDocFile(clientPath);
+  const clientDocs = await loadClientDocs();
+  const client = getDocFile(clientPath, clientDocs);
   if (!client || client.category !== "client") {
     res.status(400).json({ error: "Onbekende of ongeldige klant." });
     return;

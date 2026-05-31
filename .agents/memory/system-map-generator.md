@@ -83,6 +83,12 @@ includes the team roster + the **accumulated prior work** of earlier colleagues
   alone could exceed ~2 min; the team felt broken.
 - Team is editable in the UI before generating (lead dropdown + removable member
   chips); combined output drives copy/download.
+- **A long sequential chain needs instant + live feedback or users think it's
+  broken.** On generate, the UI optimistically renders the WHOLE team as a queue
+  ("In wachtrij") and shows a ticking elapsed timer + "Teamlid X/N"; the first
+  `agent_start` reconciles the queue against the backend's authoritative `total`.
+  **Why:** with multi-minute chains and silence before the first token, the first
+  user reaction was literally "werkt dit wel?".
 
 ## Scope boundary
 No persistence in Phase 2 (deliberately — that's Phase 4). The conversations/

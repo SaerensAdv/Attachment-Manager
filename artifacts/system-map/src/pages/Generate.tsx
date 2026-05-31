@@ -13,6 +13,7 @@ import {
   RotateCcw,
   Users,
   X,
+  Clock,
 } from "lucide-react";
 import {
   Select,
@@ -38,7 +39,7 @@ interface AgentSegment {
   title: string;
   role: "lead" | "member";
   content: string;
-  status: "working" | "done";
+  status: "queued" | "working" | "done";
 }
 
 export default function Generate() {
@@ -65,6 +66,10 @@ export default function Generate() {
   const [streamError, setStreamError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
+  // Elapsed time since generation started, so a long sequential chain always
+  // shows visible movement instead of silence while an agent thinks.
+  const [elapsed, setElapsed] = useState(0);
+  const startedAtRef = useRef<number | null>(null);
 
   const byCategory = (cat: string): Option[] =>
     (graphData?.nodes ?? [])
@@ -197,9 +202,21 @@ export default function Generate() {
 
   const handleGenerate = async () => {
     if (!canGenerate || isStreaming) return;
-    setSegments([]);
+    // Show the whole team as a queue up front so the user immediately sees who
+    // will work and in what order — no blank wait before the first token.
+    setSegments(
+      teamPaths.map((path, i) => ({
+        path,
+        title: titleFor(path),
+        role: i === 0 ? "lead" : "member",
+        content: "",
+        status: "queued" as const,
+      })),
+    );
     setStreamError(null);
     setIsStreaming(true);
+    startedAtRef.current = Date.now();
+    setElapsed(0);
     const controller = new AbortController();
     abortRef.current = controller;
 
@@ -213,16 +230,23 @@ export default function Generate() {
       },
       {
         onAgentStart: (info) =>
-          setSegments((prev) => [
-            ...prev,
-            {
+          setSegments((prev) => {
+            const next = [...prev];
+            // Reconcile the optimistic queue with the backend's authoritative
+            // team size: drop any trailing placeholders the backend didn't run.
+            if (info.total > 0 && next.length > info.total) {
+              next.length = info.total;
+            }
+            if (info.index < 0) return next;
+            next[info.index] = {
               path: info.agent.path,
               title: info.agent.title,
               role: info.role,
-              content: "",
+              content: next[info.index]?.content ?? "",
               status: "working",
-            },
-          ]),
+            };
+            return next;
+          }),
         onDelta: (index, text) =>
           setSegments((prev) =>
             prev.map((s, i) =>
@@ -273,6 +297,23 @@ export default function Generate() {
       routeAbortRef.current?.abort();
     };
   }, []);
+
+  // Tick the elapsed-time counter once per second while generating.
+  useEffect(() => {
+    if (!isStreaming) return;
+    const id = setInterval(() => {
+      if (startedAtRef.current) {
+        setElapsed(Math.floor((Date.now() - startedAtRef.current) / 1000));
+      }
+    }, 1000);
+    return () => clearInterval(id);
+  }, [isStreaming]);
+
+  const doneCount = segments.filter((s) => s.status === "done").length;
+  const activeStep = Math.min(doneCount + (isStreaming ? 1 : 0), segments.length);
+  const elapsedLabel = `${String(Math.floor(elapsed / 60)).padStart(2, "0")}:${String(
+    elapsed % 60,
+  ).padStart(2, "0")}`;
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(combinedOutput);
@@ -568,7 +609,22 @@ export default function Generate() {
             <span className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
               Resultaat
             </span>
-            {combinedOutput && (
+            {isStreaming && segments.length > 0 && (
+              <div
+                className="flex items-center gap-2 text-xs text-muted-foreground"
+                data-testid="text-progress"
+              >
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-cat-agent" />
+                <span className="font-mono">
+                  Teamlid {activeStep}/{segments.length}
+                </span>
+                <span className="inline-flex items-center gap-1 tabular-nums">
+                  <Clock className="w-3 h-3" />
+                  {elapsedLabel}
+                </span>
+              </div>
+            )}
+            {combinedOutput && !isStreaming && (
               <div className="flex items-center gap-2">
                 <Button
                   variant="ghost"
@@ -632,7 +688,12 @@ export default function Generate() {
                         </span>
                       )}
                       <span className="ml-auto flex items-center gap-1.5 text-xs text-muted-foreground">
-                        {seg.status === "working" ? (
+                        {seg.status === "queued" ? (
+                          <>
+                            <Clock className="w-3.5 h-3.5" />
+                            In wachtrij
+                          </>
+                        ) : seg.status === "working" ? (
                           <>
                             <Loader2 className="w-3.5 h-3.5 animate-spin" />
                             Aan het werk

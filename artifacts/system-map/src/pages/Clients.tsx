@@ -10,19 +10,9 @@ import {
   type Client,
   type ClientInput,
 } from "@workspace/api-client-react";
-import {
-  Loader2,
-  Users,
-  Plus,
-  Save,
-  Trash2,
-  X,
-  Pencil,
-  Building2,
-} from "lucide-react";
+import { Loader2, Plus, Save, Trash2, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
 
 type FieldKey = Exclude<keyof ClientInput, "name">;
 
@@ -173,6 +163,10 @@ function formToInput(f: FormState): ClientInput {
   return out as unknown as ClientInput;
 }
 
+// Shared editorial input styling: sharp ink-bordered fields on white paper.
+const INPUT_CLASS =
+  "rounded-none border border-foreground bg-card px-3 py-2 text-sm font-['Inter'] shadow-none focus-visible:ring-1 focus-visible:ring-accent focus-visible:border-accent";
+
 export default function Clients() {
   const queryClient = useQueryClient();
   const { data, isLoading, error } = useGetClients();
@@ -231,7 +225,7 @@ export default function Clients() {
 
   const handleSave = () => {
     if (!form.name.trim()) {
-      setFormError("Geef de klant minstens een naam.");
+      setFormError("Geef de cliënt minstens een naam.");
       return;
     }
     setFormError(null);
@@ -285,11 +279,11 @@ export default function Clients() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen w-full flex items-center justify-center bg-background text-foreground">
-        <div className="flex flex-col items-center gap-4 animate-pulse">
-          <Loader2 className="w-8 h-8 animate-spin text-cat-agent" />
-          <p className="font-mono text-sm tracking-widest text-muted-foreground">
-            LADEN...
+      <div className="min-h-[100dvh] w-full flex items-center justify-center bg-background text-foreground font-['Inter']">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-6 h-6 animate-spin text-accent" />
+          <p className="font-['Space_Mono'] text-[10px] uppercase tracking-widest text-muted-foreground">
+            Register laden...
           </p>
         </div>
       </div>
@@ -298,13 +292,17 @@ export default function Clients() {
 
   if (error) {
     return (
-      <div className="min-h-screen w-full flex items-center justify-center bg-background text-foreground">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-destructive">
-            Kon de klanten niet laden
+      <div className="min-h-[100dvh] w-full flex items-center justify-center bg-background text-foreground font-['Inter'] px-6">
+        <div className="max-w-md w-full border border-foreground bg-card p-8 text-center shadow-[4px_4px_0px_hsl(var(--foreground))]">
+          <p className="font-['Space_Mono'] text-[10px] uppercase tracking-widest text-destructive mb-3">
+            Storing
+          </p>
+          <h1 className="font-['Playfair_Display'] font-black text-2xl uppercase tracking-tight mb-2">
+            Register onbereikbaar
           </h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Controleer je verbinding of de API-status.
+          <p className="text-sm text-muted-foreground">
+            Kon de cliënten niet laden. Controleer je verbinding of de
+            API-status.
           </p>
         </div>
       </div>
@@ -312,220 +310,317 @@ export default function Clients() {
   }
 
   return (
-    <div className="min-h-[100dvh] w-full bg-background text-foreground">
-      <div className="mx-auto max-w-7xl px-6 pt-20 pb-10 grid grid-cols-1 lg:grid-cols-[22rem_1fr] gap-6">
-        {/* Client list */}
-        <div className="flex flex-col gap-4">
-          <div>
-            <h1 className="font-mono font-bold tracking-tight text-2xl uppercase flex items-center gap-2">
-              <Users className="w-5 h-5 text-cat-agent" />
-              Klanten
-            </h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Beheer je klantenfiches. Ze voeden automatisch de routering,
-              intake, generatie en de Kaart.
-            </p>
-          </div>
-
-          <Button onClick={startCreate} data-testid="button-new-client">
-            <Plus className="w-4 h-4" />
-            Nieuwe klant
-          </Button>
-
-          <div className="flex flex-col gap-2">
-            {clients.length === 0 && (
-              <div className="text-sm text-muted-foreground rounded-lg border border-dashed border-card-border bg-card/40 px-4 py-6 text-center">
-                Nog geen klanten. Voeg je eerste klant toe.
-              </div>
-            )}
-            {clients.map((c) => {
-              const active = editing === c.id;
-              return (
-                <button
-                  key={c.id}
-                  onClick={() => startEdit(c)}
-                  data-testid={`client-row-${c.id}`}
-                  className={`group flex items-start gap-3 text-left rounded-lg border px-4 py-3 transition-colors ${
-                    active
-                      ? "border-cat-agent/40 bg-cat-agent/10"
-                      : "border-card-border bg-card/60 hover:bg-card"
-                  }`}
-                >
-                  <Building2
-                    className={`w-4 h-4 mt-0.5 shrink-0 ${
-                      active ? "text-cat-agent" : "text-muted-foreground"
-                    }`}
-                  />
-                  <span className="flex-1 min-w-0">
-                    <span className="block font-medium truncate">{c.name}</span>
-                    {c.business && (
-                      <span className="block text-xs text-muted-foreground truncate">
-                        {c.business}
-                      </span>
-                    )}
-                  </span>
-                  <Pencil className="w-3.5 h-3.5 shrink-0 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity mt-0.5" />
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Editor */}
-        <div className="flex flex-col gap-4">
-          {editing === null ? (
-            <div className="flex flex-col items-center justify-center gap-3 text-center rounded-lg border border-dashed border-card-border bg-card/40 py-20 px-6">
-              <Users className="w-8 h-8 text-muted-foreground" />
-              <p className="text-sm text-muted-foreground max-w-sm">
-                Kies een klant om te bewerken, of maak een nieuwe klant aan.
+    <div className="min-h-[100dvh] w-full bg-background text-foreground font-['Inter']">
+      <div className="mx-auto max-w-7xl px-6 pt-20 pb-16">
+        {/* Masthead */}
+        <header className="border-b-2 border-foreground pb-5 mb-10">
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <p className="font-['Space_Mono'] text-[10px] uppercase tracking-widest text-muted-foreground mb-3">
+                Saerens Advertising — Redactie
               </p>
+              <h1 className="font-['Playfair_Display'] font-black text-4xl md:text-5xl uppercase tracking-tight leading-none">
+                Cliëntenregister
+              </h1>
             </div>
-          ) : (
-            <div className="flex flex-col gap-5 bg-card/60 border border-card-border rounded-lg p-5">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
-                  {editing === "new" ? "Nieuwe klant" : "Klant bewerken"}
-                </span>
-                <button
-                  onClick={closeEditor}
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                  data-testid="button-close-editor"
-                  aria-label="Sluiten"
-                >
-                  <X className="w-4 h-4" />
-                </button>
+            <div className="text-right hidden sm:block shrink-0">
+              <div className="font-['Space_Mono'] text-[10px] uppercase tracking-widest text-muted-foreground">
+                Editie
               </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
-                  Naam <span className="text-cat-agent">*</span>
-                </label>
-                <Input
-                  value={form.name}
-                  onChange={(e) => setField("name", e.target.value)}
-                  placeholder="Bedrijfsnaam van de klant"
-                  data-testid="input-client-name"
-                />
+              <div className="font-['Playfair_Display'] text-2xl italic leading-none mt-1">
+                No. {String(clients.length).padStart(3, "0")}
               </div>
+            </div>
+          </div>
+          <p className="font-['Inter'] text-sm text-muted-foreground mt-5 max-w-2xl">
+            Beheer de cliëntfiches. Ze voeden automatisch de routering, intake,
+            generatie en de Kaart.
+          </p>
+        </header>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {FIELDS.map((f) => (
-                  <div
-                    key={f.key}
-                    className={`flex flex-col gap-1.5 ${
-                      f.kind === "textarea" || f.kind === "list"
-                        ? "md:col-span-2"
-                        : ""
-                    }`}
-                  >
-                    <label className="text-xs font-mono uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                      {f.label}
-                      {f.help && (
-                        <span className="text-[10px] normal-case tracking-normal text-muted-foreground/60">
-                          ({f.help})
-                        </span>
-                      )}
-                    </label>
-                    {f.kind === "input" ? (
-                      <Input
-                        value={form[f.key]}
-                        onChange={(e) => setField(f.key, e.target.value)}
-                        placeholder={f.placeholder}
-                        data-testid={`input-client-${f.key}`}
-                      />
-                    ) : (
-                      <Textarea
-                        value={form[f.key]}
-                        onChange={(e) => setField(f.key, e.target.value)}
-                        placeholder={f.placeholder}
-                        rows={f.kind === "list" ? 3 : 4}
-                        className="resize-none"
-                        data-testid={`input-client-${f.key}`}
-                      />
-                    )}
-                  </div>
-                ))}
-              </div>
+        <div className="grid grid-cols-1 lg:grid-cols-[24rem_1fr] gap-10">
+          {/* Register / index */}
+          <div className="flex flex-col gap-5">
+            <div className="flex items-center justify-between border-b border-foreground/20 pb-2">
+              <span className="font-['Space_Mono'] text-[10px] uppercase tracking-widest">
+                Index
+              </span>
+              <span className="font-['Space_Mono'] text-[10px] uppercase tracking-widest text-muted-foreground">
+                {clients.length}{" "}
+                {clients.length === 1 ? "cliënt" : "cliënten"}
+              </span>
+            </div>
 
-              {formError && (
-                <div
-                  className="text-sm text-destructive"
-                  data-testid="text-form-error"
-                >
-                  ⚠️ {formError}
+            <button
+              onClick={startCreate}
+              data-testid="button-new-client"
+              className="w-full py-3 px-4 bg-foreground text-background border-2 border-foreground font-['Space_Mono'] text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 shadow-[4px_4px_0px_hsl(var(--accent))] hover:bg-accent hover:border-accent active:translate-x-1 active:translate-y-1 active:shadow-none transition-all"
+            >
+              <Plus className="w-4 h-4" />
+              Nieuwe cliënt
+            </button>
+
+            <div className="flex flex-col border-t border-foreground/20">
+              {clients.length === 0 && (
+                <div className="px-4 py-12 text-center border-b border-foreground/20">
+                  <p className="font-['Space_Mono'] text-[10px] uppercase tracking-widest text-muted-foreground">
+                    Nog geen cliënten in het register
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-2 font-['Inter']">
+                    Voeg je eerste cliënt toe om te beginnen.
+                  </p>
                 </div>
               )}
-
-              <div className="flex flex-wrap items-center gap-2 pt-1">
-                <Button
-                  onClick={handleSave}
-                  disabled={saving}
-                  data-testid="button-save-client"
-                >
-                  {saving ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Save className="w-4 h-4" />
-                  )}
-                  {editing === "new" ? "Klant aanmaken" : "Wijzigingen opslaan"}
-                </Button>
-
-                <Button
-                  variant="ghost"
-                  onClick={closeEditor}
-                  disabled={saving}
-                  data-testid="button-cancel"
-                >
-                  Annuleren
-                </Button>
-
-                {typeof editing === "number" && (
-                  <div className="ml-auto flex items-center gap-2">
-                    {confirmDelete ? (
-                      <>
-                        <span className="text-xs text-muted-foreground">
-                          Zeker?
+              {clients.map((c, i) => {
+                const active = editing === c.id;
+                return (
+                  <button
+                    key={c.id}
+                    onClick={() => startEdit(c)}
+                    data-testid={`client-row-${c.id}`}
+                    className={`group flex items-start gap-4 text-left px-4 py-4 border-b border-foreground/20 transition-colors ${
+                      active
+                        ? "bg-foreground text-background"
+                        : "hover:bg-foreground hover:text-background"
+                    }`}
+                  >
+                    <span
+                      className={`font-['Space_Mono'] text-xs pt-1.5 shrink-0 ${
+                        active
+                          ? "text-background/60"
+                          : "text-muted-foreground group-hover:text-background/60"
+                      }`}
+                    >
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
+                    <span className="flex-1 min-w-0">
+                      <span className="block font-['Playfair_Display'] font-bold text-lg leading-tight truncate">
+                        {c.name}
+                      </span>
+                      {c.business && (
+                        <span
+                          className={`block text-xs mt-1 truncate font-['Inter'] ${
+                            active
+                              ? "text-background/70"
+                              : "text-muted-foreground group-hover:text-background/70"
+                          }`}
+                        >
+                          {c.business}
                         </span>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={handleDelete}
-                          disabled={deleting}
-                          data-testid="button-confirm-delete"
-                        >
-                          {deleting ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <Trash2 className="w-4 h-4" />
-                          )}
-                          Verwijderen
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setConfirmDelete(false)}
-                          disabled={deleting}
-                        >
-                          Nee
-                        </Button>
-                      </>
-                    ) : (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setConfirmDelete(true)}
-                        className="text-destructive hover:text-destructive"
-                        data-testid="button-delete-client"
+                      )}
+                    </span>
+                    <span
+                      className={`font-['Space_Mono'] text-[10px] uppercase tracking-widest pt-1.5 shrink-0 transition-opacity ${
+                        active
+                          ? "opacity-100 text-background/60"
+                          : "opacity-0 group-hover:opacity-100 text-background/60"
+                      }`}
+                    >
+                      Open
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Dossier editor */}
+          <div>
+            {editing === null ? (
+              <div className="flex flex-col items-center justify-center gap-4 text-center border border-dashed border-foreground/30 bg-card py-24 px-6">
+                <span className="font-['Playfair_Display'] font-black text-6xl text-foreground/10 leading-none">
+                  SA
+                </span>
+                <p className="font-['Space_Mono'] text-[10px] uppercase tracking-widest text-muted-foreground">
+                  Geen dossier geopend
+                </p>
+                <p className="text-sm text-muted-foreground max-w-sm font-['Inter']">
+                  Kies een cliënt uit het register om te bewerken, of stel een
+                  nieuw dossier samen.
+                </p>
+              </div>
+            ) : (
+              <div className="border border-foreground bg-card shadow-[4px_4px_0px_hsl(var(--foreground))]">
+                {/* Dossier header */}
+                <div className="flex items-start justify-between gap-2 border-b-2 border-foreground px-6 py-5">
+                  <div>
+                    <p className="font-['Space_Mono'] text-[10px] uppercase tracking-widest text-muted-foreground">
+                      Dossier
+                    </p>
+                    <h2 className="font-['Playfair_Display'] font-black text-2xl uppercase tracking-tight leading-none mt-2">
+                      {editing === "new" ? "Nieuw dossier" : "Dossier bewerken"}
+                    </h2>
+                  </div>
+                  <button
+                    onClick={closeEditor}
+                    className="p-2 border border-foreground hover:bg-foreground hover:text-background transition-colors shrink-0"
+                    data-testid="button-close-editor"
+                    aria-label="Sluiten"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <div className="p-6 flex flex-col gap-8">
+                  {/* Section heading */}
+                  <div className="flex items-baseline justify-between border-b-2 border-foreground pb-1">
+                    <h3 className="font-['Playfair_Display'] font-bold text-lg uppercase tracking-wider">
+                      I. Briefing
+                    </h3>
+                    <span className="font-['Space_Mono'] text-xs text-muted-foreground">
+                      {FIELDS.length + 1} velden
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Name — 01 */}
+                    <div className="md:col-span-2 flex flex-col gap-2">
+                      <div className="flex items-baseline gap-3 border-b border-foreground/20 pb-1">
+                        <span className="font-['Space_Mono'] text-xs text-muted-foreground">
+                          01
+                        </span>
+                        <label className="font-['Space_Mono'] text-[10px] uppercase tracking-widest flex-1">
+                          Naam <span className="text-accent">*</span>
+                        </label>
+                      </div>
+                      <Input
+                        value={form.name}
+                        onChange={(e) => setField("name", e.target.value)}
+                        placeholder="Bedrijfsnaam van de cliënt"
+                        data-testid="input-client-name"
+                        className={INPUT_CLASS}
+                      />
+                    </div>
+
+                    {FIELDS.map((f, i) => (
+                      <div
+                        key={f.key}
+                        className={`flex flex-col gap-2 ${
+                          f.kind === "textarea" || f.kind === "list"
+                            ? "md:col-span-2"
+                            : ""
+                        }`}
                       >
-                        <Trash2 className="w-4 h-4" />
-                        Verwijderen
-                      </Button>
+                        <div className="flex items-baseline gap-3 border-b border-foreground/20 pb-1">
+                          <span className="font-['Space_Mono'] text-xs text-muted-foreground">
+                            {String(i + 2).padStart(2, "0")}
+                          </span>
+                          <label className="font-['Space_Mono'] text-[10px] uppercase tracking-widest flex-1">
+                            {f.label}
+                          </label>
+                          {f.help && (
+                            <span className="font-['Space_Mono'] text-[9px] tracking-wider text-muted-foreground/60 italic">
+                              {f.help}
+                            </span>
+                          )}
+                        </div>
+                        {f.kind === "input" ? (
+                          <Input
+                            value={form[f.key]}
+                            onChange={(e) => setField(f.key, e.target.value)}
+                            placeholder={f.placeholder}
+                            data-testid={`input-client-${f.key}`}
+                            className={INPUT_CLASS}
+                          />
+                        ) : (
+                          <Textarea
+                            value={form[f.key]}
+                            onChange={(e) => setField(f.key, e.target.value)}
+                            placeholder={f.placeholder}
+                            rows={f.kind === "list" ? 3 : 4}
+                            data-testid={`input-client-${f.key}`}
+                            className={`${INPUT_CLASS} resize-none`}
+                          />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+
+                  {formError && (
+                    <div
+                      className="border-l-2 border-destructive bg-destructive/5 px-4 py-3"
+                      data-testid="text-form-error"
+                    >
+                      <p className="font-['Space_Mono'] text-[10px] uppercase tracking-widest text-destructive mb-1">
+                        Fout
+                      </p>
+                      <p className="text-sm text-foreground font-['Inter']">
+                        {formError}
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="flex flex-wrap items-center gap-3 pt-4 border-t border-foreground/20">
+                    <button
+                      onClick={handleSave}
+                      disabled={saving}
+                      data-testid="button-save-client"
+                      className="py-3 px-5 bg-accent text-accent-foreground border-2 border-accent font-['Space_Mono'] text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 shadow-[4px_4px_0px_hsl(var(--foreground))] hover:bg-accent/90 active:translate-x-1 active:translate-y-1 active:shadow-none transition-all disabled:opacity-50 disabled:pointer-events-none"
+                    >
+                      {saving ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Save className="w-4 h-4" />
+                      )}
+                      {editing === "new"
+                        ? "Dossier aanmaken"
+                        : "Wijzigingen opslaan"}
+                    </button>
+
+                    <button
+                      onClick={closeEditor}
+                      disabled={saving}
+                      data-testid="button-cancel"
+                      className="py-3 px-5 border-2 border-foreground text-foreground font-['Space_Mono'] text-[11px] uppercase tracking-widest hover:bg-foreground hover:text-background transition-colors disabled:opacity-50 disabled:pointer-events-none"
+                    >
+                      Annuleren
+                    </button>
+
+                    {typeof editing === "number" && (
+                      <div className="ml-auto flex items-center gap-3">
+                        {confirmDelete ? (
+                          <>
+                            <span className="font-['Space_Mono'] text-[10px] uppercase tracking-widest text-muted-foreground">
+                              Definitief?
+                            </span>
+                            <button
+                              onClick={handleDelete}
+                              disabled={deleting}
+                              data-testid="button-confirm-delete"
+                              className="py-2.5 px-4 bg-destructive text-destructive-foreground border-2 border-destructive font-['Space_Mono'] text-[11px] uppercase tracking-widest flex items-center gap-2 shadow-[4px_4px_0px_hsl(var(--foreground))] active:translate-x-1 active:translate-y-1 active:shadow-none transition-all disabled:opacity-50 disabled:pointer-events-none"
+                            >
+                              {deleting ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="w-4 h-4" />
+                              )}
+                              Verwijderen
+                            </button>
+                            <button
+                              onClick={() => setConfirmDelete(false)}
+                              disabled={deleting}
+                              className="py-2.5 px-4 border-2 border-foreground text-foreground font-['Space_Mono'] text-[11px] uppercase tracking-widest hover:bg-foreground hover:text-background transition-colors disabled:opacity-50 disabled:pointer-events-none"
+                            >
+                              Behouden
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            onClick={() => setConfirmDelete(true)}
+                            data-testid="button-delete-client"
+                            className="py-2.5 px-4 border-2 border-destructive text-destructive font-['Space_Mono'] text-[11px] uppercase tracking-widest flex items-center gap-2 hover:bg-destructive hover:text-destructive-foreground transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                            Verwijderen
+                          </button>
+                        )}
+                      </div>
                     )}
                   </div>
-                )}
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </div>

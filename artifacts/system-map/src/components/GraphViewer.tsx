@@ -30,10 +30,10 @@ const EDGE_STYLE: Record<
   string,
   { color: string; width: number; dash: string; opacity: number; marker: string }
 > = {
-  routing: { color: "hsl(var(--cat-agent))", width: 2.5, dash: "none", opacity: 0.7, marker: "arrow-routing" },
-  flow: { color: "hsl(var(--cat-core))", width: 2.5, dash: "none", opacity: 0.6, marker: "arrow-flow" },
-  reference: { color: "hsl(var(--muted-foreground))", width: 2, dash: "none", opacity: 0.4, marker: "arrow-reference" },
-  mention: { color: "hsl(var(--muted-foreground))", width: 1, dash: "4,4", opacity: 0.2, marker: "arrow-mention" },
+  routing: { color: "hsl(var(--cat-agent))", width: 2, dash: "none", opacity: 0.75, marker: "arrow-routing" },
+  flow: { color: "hsl(var(--cat-core))", width: 2, dash: "none", opacity: 0.7, marker: "arrow-flow" },
+  reference: { color: "hsl(var(--foreground))", width: 1, dash: "none", opacity: 0.35, marker: "arrow-reference" },
+  mention: { color: "hsl(var(--foreground))", width: 1, dash: "4,4", opacity: 0.2, marker: "arrow-mention" },
 };
 const edgeStyleFor = (kind: string) => EDGE_STYLE[kind] ?? EDGE_STYLE.mention;
 
@@ -259,10 +259,10 @@ export default function GraphViewer({
 
   return (
     <div ref={containerRef} className="w-full h-full bg-background relative overflow-hidden">
-      {/* Grid Pattern Background */}
-      <div className="absolute inset-0 pointer-events-none opacity-20" 
+      {/* Grid Pattern Background — faint ink dots on cream paper */}
+      <div className="absolute inset-0 pointer-events-none opacity-40" 
            style={{
-             backgroundImage: 'radial-gradient(circle at 2px 2px, hsl(var(--border)) 1px, transparent 0)',
+             backgroundImage: 'radial-gradient(circle at 2px 2px, hsl(var(--foreground) / 0.18) 1px, transparent 0)',
              backgroundSize: '32px 32px'
            }} 
       />
@@ -289,11 +289,11 @@ export default function GraphViewer({
               </marker>
               {/* Reference edge arrow */}
               <marker id="arrow-reference" viewBox="0 -5 10 10" refX="25" refY="0" markerWidth="6" markerHeight="6" orient="auto">
-                <path d="M0,-5L10,0L0,5" fill="hsl(var(--muted-foreground))" opacity={0.6} />
+                <path d="M0,-5L10,0L0,5" fill="hsl(var(--foreground))" opacity={0.5} />
               </marker>
               {/* Mention edge arrow */}
               <marker id="arrow-mention" viewBox="0 -5 10 10" refX="25" refY="0" markerWidth="6" markerHeight="6" orient="auto">
-                <path d="M0,-5L10,0L0,5" fill="hsl(var(--muted-foreground))" opacity={0.3} />
+                <path d="M0,-5L10,0L0,5" fill="hsl(var(--foreground))" opacity={0.3} />
               </marker>
             </defs>
 
@@ -348,31 +348,36 @@ export default function GraphViewer({
                   >
                     {/* Glow effect for highlighted nodes */}
                     {isHighlighted && (
-                      <circle r={24} fill={color} opacity={0.2} className="animate-pulse" />
+                      <circle r={24} fill={color} opacity={0.18} className="animate-pulse" />
                     )}
                     
-                    {/* Main Node Circle */}
+                    {/* Main Node Circle — filled with the category accent on cream,
+                        with an ink hairline ring for editorial contrast. */}
                     <circle 
                       r={16} 
-                      fill="hsl(var(--card))"
-                      stroke={color}
-                      strokeWidth={isHighlighted ? 4 : 2}
-                      className="transition-all duration-300 shadow-xl"
+                      fill={color}
+                      stroke="hsl(var(--foreground))"
+                      strokeWidth={isHighlighted ? 3 : 1.5}
+                      className="transition-all duration-300"
                     />
                     
-                    {/* Inner core color */}
-                    <circle r={8} fill={color} opacity={isHighlighted ? 1 : 0.8} />
+                    {/* Inner paper core for a printed, ringed look */}
+                    <circle r={6} fill="hsl(var(--card))" opacity={isHighlighted ? 1 : 0.9} />
 
                     {/* Node Label — hidden when zoomed out so the overview stays
                         legible, always shown for the highlighted/selected node. */}
                     <text
-                      dy={28}
+                      dy={30}
                       textAnchor="middle"
                       fill={isHighlighted ? "hsl(var(--foreground))" : "hsl(var(--muted-foreground))"}
-                      className={`font-mono text-xs transition-opacity duration-300 ${isHighlighted ? 'font-bold' : ''}`}
+                      className={`font-['Space_Mono'] text-[11px] uppercase tracking-wider transition-opacity duration-300 ${isHighlighted ? 'font-bold' : ''}`}
                       style={{
                         pointerEvents: 'none',
                         opacity: isHighlighted || scale >= LABEL_VISIBLE_SCALE ? 1 : 0,
+                        paintOrder: 'stroke',
+                        stroke: 'hsl(var(--background))',
+                        strokeWidth: 3,
+                        strokeLinejoin: 'round',
                       }}
                     >
                       {node.title}
@@ -390,29 +395,29 @@ export default function GraphViewer({
         <button
           type="button"
           onClick={fitView}
-          title="Zoom to fit"
-          aria-label="Zoom to fit"
-          className="flex items-center justify-center w-10 h-10 rounded-lg bg-card/80 backdrop-blur-md border border-card-border shadow-2xl text-muted-foreground hover:text-cat-agent hover:border-cat-agent transition-colors"
+          title="Passend zoomen"
+          aria-label="Passend zoomen"
+          className="flex items-center justify-center w-10 h-10 rounded-none bg-card border border-foreground shadow-[4px_4px_0px_hsl(var(--foreground))] text-foreground hover:bg-foreground hover:text-background active:translate-x-1 active:translate-y-1 active:shadow-none transition-all"
         >
           <Maximize2 className="w-4 h-4" />
         </button>
-        <div className="flex flex-col rounded-lg bg-card/80 backdrop-blur-md border border-card-border shadow-2xl overflow-hidden">
+        <div className="flex flex-col rounded-none bg-card border border-foreground shadow-[4px_4px_0px_hsl(var(--foreground))] overflow-hidden">
           <button
             type="button"
             onClick={() => transformRef.current?.zoomIn(0.3)}
-            title="Zoom in"
-            aria-label="Zoom in"
-            className="flex items-center justify-center w-10 h-10 text-muted-foreground hover:text-cat-agent transition-colors"
+            title="Inzoomen"
+            aria-label="Inzoomen"
+            className="flex items-center justify-center w-10 h-10 text-foreground hover:bg-foreground hover:text-background transition-colors"
           >
             <Plus className="w-4 h-4" />
           </button>
-          <div className="h-px bg-card-border" />
+          <div className="h-px bg-foreground" />
           <button
             type="button"
             onClick={() => transformRef.current?.zoomOut(0.3)}
-            title="Zoom out"
-            aria-label="Zoom out"
-            className="flex items-center justify-center w-10 h-10 text-muted-foreground hover:text-cat-agent transition-colors"
+            title="Uitzoomen"
+            aria-label="Uitzoomen"
+            className="flex items-center justify-center w-10 h-10 text-foreground hover:bg-foreground hover:text-background transition-colors"
           >
             <Minus className="w-4 h-4" />
           </button>

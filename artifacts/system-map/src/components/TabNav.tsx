@@ -11,8 +11,13 @@ export default function TabNav() {
   const [location] = useLocation();
 
   return (
-    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 pointer-events-auto">
-      <div className="flex items-center gap-1 p-1 rounded-full bg-card/80 backdrop-blur-md border border-card-border shadow-2xl">
+    <div className="fixed top-5 left-1/2 -translate-x-1/2 z-50 pointer-events-auto">
+      <div className="flex items-stretch bg-card border border-foreground shadow-[3px_3px_0px_hsl(var(--foreground))]">
+        <div className="hidden sm:flex items-center px-3 border-r border-foreground/20">
+          <span className="font-['Playfair_Display'] font-black text-sm tracking-tight leading-none">
+            SA
+          </span>
+        </div>
         {tabs.map(({ href, label, icon: Icon }) => {
           const active =
             href === "/" ? location === "/" : location.startsWith(href);
@@ -20,14 +25,14 @@ export default function TabNav() {
             <Link
               key={href}
               href={href}
-              className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-mono font-medium tracking-tight transition-colors ${
+              className={`flex items-center gap-2 px-4 py-2 font-['Space_Mono'] text-[11px] uppercase tracking-widest transition-colors border-r border-foreground/20 last:border-r-0 ${
                 active
-                  ? "bg-cat-agent/20 text-cat-agent"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "bg-foreground text-background"
+                  : "text-foreground/60 hover:text-foreground hover:bg-foreground/5"
               }`}
               data-testid={`tab-${label.toLowerCase()}`}
             >
-              <Icon className="w-4 h-4" />
+              <Icon className="w-3.5 h-3.5" />
               {label}
             </Link>
           );

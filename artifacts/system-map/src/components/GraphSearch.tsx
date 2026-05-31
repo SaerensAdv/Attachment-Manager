@@ -10,10 +10,10 @@ interface GraphSearchProps {
 export default function GraphSearch({ query, onQueryChange, onSubmit }: GraphSearchProps) {
   return (
     <div className="relative group">
-      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-cat-agent transition-colors" />
+      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-accent transition-colors" />
       <Input
         type="text"
-        placeholder="Search documents..."
+        placeholder="Documenten doorzoeken..."
         value={query}
         onChange={(e) => onQueryChange(e.target.value)}
         onKeyDown={(e) => {
@@ -22,7 +22,7 @@ export default function GraphSearch({ query, onQueryChange, onSubmit }: GraphSea
             onSubmit?.();
           }
         }}
-        className="pl-9 bg-background/50 border-card-border focus-visible:ring-cat-agent focus-visible:border-cat-agent placeholder:text-muted-foreground/50 transition-all font-mono text-sm"
+        className="pl-9 rounded-none bg-background border-foreground focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-accent placeholder:text-muted-foreground/70 transition-all font-['Space_Mono'] text-xs uppercase tracking-wider"
       />
     </div>
   );

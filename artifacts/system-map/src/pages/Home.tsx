@@ -64,9 +64,11 @@ export default function Home() {
   if (isLoading) {
     return (
       <div className="min-h-screen w-full flex items-center justify-center bg-background text-foreground">
-        <div className="flex flex-col items-center gap-4 animate-pulse">
-          <Loader2 className="w-8 h-8 animate-spin text-cat-agent" />
-          <p className="font-mono text-sm tracking-widest text-muted-foreground">INITIALIZING ATLAS...</p>
+        <div className="flex flex-col items-center gap-5">
+          <Loader2 className="w-8 h-8 animate-spin text-accent" />
+          <p className="font-['Space_Mono'] text-xs uppercase tracking-[0.3em] text-muted-foreground">
+            Atlas initialiseren...
+          </p>
         </div>
       </div>
     );
@@ -74,10 +76,17 @@ export default function Home() {
 
   if (error || !graphData) {
     return (
-      <div className="min-h-screen w-full flex items-center justify-center bg-background text-foreground">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-destructive">Failed to load system map</h1>
-          <p className="mt-2 text-sm text-muted-foreground">Check your connection or API status.</p>
+      <div className="min-h-screen w-full flex items-center justify-center bg-background text-foreground p-6">
+        <div className="bg-card border border-foreground shadow-[4px_4px_0px_hsl(var(--foreground))] max-w-md w-full p-8 text-center">
+          <p className="font-['Space_Mono'] text-[10px] uppercase tracking-[0.3em] text-muted-foreground mb-4">
+            Editie No. 001 — Storing
+          </p>
+          <h1 className="font-['Playfair_Display'] text-3xl font-black uppercase tracking-tight text-foreground">
+            Kaart Niet Geladen
+          </h1>
+          <p className="mt-4 font-['Inter'] text-sm text-muted-foreground">
+            Controleer uw verbinding of de status van de API.
+          </p>
         </div>
       </div>
     );
@@ -102,21 +111,29 @@ export default function Home() {
       </div>
 
       {/* Foreground UI Layer */}
-      <div className="absolute inset-0 z-10 pointer-events-none p-6 flex justify-between items-start">
+      <div className="absolute inset-0 z-10 pointer-events-none p-6 pt-20 flex justify-between items-start">
         
         {/* Left column: Legend & Search */}
         <div className="w-80 flex flex-col gap-6 pointer-events-auto">
-          <div className="bg-card/80 backdrop-blur-md border border-card-border rounded-lg shadow-2xl overflow-hidden flex flex-col">
-            <div className="p-4 border-b border-card-border bg-card/50">
-              <h1 className="font-mono font-bold tracking-tight text-lg text-foreground uppercase">
+          <div className="bg-card border border-foreground shadow-[4px_4px_0px_hsl(var(--foreground))] overflow-hidden flex flex-col">
+            <div className="p-5 border-b border-foreground">
+              <div className="flex items-baseline justify-between mb-1">
+                <span className="font-['Space_Mono'] text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
+                  Editie No. 042
+                </span>
+                <span className="font-['Space_Mono'] text-[10px] uppercase tracking-[0.3em] text-accent">
+                  Live
+                </span>
+              </div>
+              <h1 className="font-['Playfair_Display'] font-black tracking-tight text-2xl text-foreground uppercase leading-none mt-2">
                 Operations Atlas
               </h1>
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="font-['Inter'] text-xs text-muted-foreground mt-2">
                 Saerens Advertising AI Team Map
               </p>
             </div>
             
-            <div className="p-4">
+            <div className="p-5">
               <GraphSearch 
                 query={searchQuery} 
                 onQueryChange={setSearchQuery} 
@@ -124,7 +141,7 @@ export default function Home() {
               />
             </div>
             
-            <div className="p-4 pt-0">
+            <div className="px-5 pb-5">
               <GraphLegend 
                 categories={graphData.categories} 
                 hiddenCategories={hiddenCategories}

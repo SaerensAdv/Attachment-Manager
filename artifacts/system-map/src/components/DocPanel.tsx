@@ -72,7 +72,7 @@ export default function DocPanel({ path, node, nodes, edges, onClose, onSelectPa
             <button
               type="button"
               onClick={() => onSelectPath(target.path)}
-              className="inline-flex items-center gap-1 align-baseline rounded px-1 py-0.5 font-mono text-[0.85em] text-cat-agent bg-cat-agent/10 hover:bg-cat-agent/20 transition-colors not-prose"
+              className="inline-flex items-center gap-1 align-baseline rounded-none px-1 py-0.5 font-['Space_Mono'] text-[0.8em] text-accent bg-accent/10 hover:bg-accent hover:text-accent-foreground transition-colors not-prose"
               title={`Open ${target.title}`}
             >
               {text}
@@ -92,7 +92,7 @@ export default function DocPanel({ path, node, nodes, edges, onClose, onSelectPa
             <button
               type="button"
               onClick={() => onSelectPath(target.path)}
-              className="text-cat-agent underline underline-offset-2 hover:text-cat-agent/80 transition-colors not-prose"
+              className="text-accent underline underline-offset-2 hover:text-accent/80 transition-colors not-prose"
               title={`Open ${target.title}`}
             >
               {children}
@@ -115,22 +115,22 @@ export default function DocPanel({ path, node, nodes, edges, onClose, onSelectPa
   ) => {
     if (items.length === 0) return null;
     return (
-      <div className="mb-4">
-        <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-muted-foreground mb-2">
+      <div className="mb-5">
+        <div className="flex items-center gap-2 text-[10px] font-['Space_Mono'] uppercase tracking-[0.2em] text-muted-foreground mb-2 border-b border-foreground/20 pb-1">
           <Icon className="w-3.5 h-3.5" />
           {label} ({items.length})
         </div>
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col">
           {items.map(({ node: n, kind }) => (
             <button
               key={`${label}-${n.id}-${kind}`}
               type="button"
               onClick={() => onSelectPath(n.path)}
-              className="group flex items-center gap-2 text-left rounded-md px-2 py-1.5 hover:bg-muted/60 transition-colors"
+              className="group flex items-center gap-2 text-left rounded-none px-2 py-1.5 border-l-2 border-transparent hover:border-accent hover:bg-accent/5 transition-colors"
             >
               <CategoryDot category={n.category} />
-              <span className="text-sm truncate flex-1">{n.title}</span>
-              <span className="text-[10px] font-mono uppercase text-muted-foreground/70 shrink-0">
+              <span className="font-['Inter'] text-sm truncate flex-1">{n.title}</span>
+              <span className="text-[10px] font-['Space_Mono'] uppercase tracking-wider text-muted-foreground/70 shrink-0">
                 {KIND_LABEL[kind] ?? kind}
               </span>
             </button>
@@ -141,26 +141,27 @@ export default function DocPanel({ path, node, nodes, edges, onClose, onSelectPa
   };
 
   return (
-    <div className="h-full bg-card/95 backdrop-blur-xl border border-card-border shadow-2xl rounded-l-2xl overflow-hidden flex flex-col relative">
+    <div className="h-full bg-card border border-foreground shadow-[4px_4px_0px_hsl(var(--foreground))] overflow-hidden flex flex-col relative">
       {/* Header */}
-      <div className="flex-none p-4 border-b border-card-border flex items-center justify-between bg-card/50">
+      <div className="flex-none p-5 border-b border-foreground flex items-center justify-between">
         <div className="flex items-center gap-3 overflow-hidden">
           <div 
-            className="w-3 h-3 rounded-full shrink-0" 
+            className="w-3 h-3 rounded-none shrink-0" 
             style={{ backgroundColor: node ? `hsl(var(--cat-${node.category}))` : 'hsl(var(--muted))' }} 
           />
           <div className="flex flex-col min-w-0">
-            <span className="text-xs font-mono text-muted-foreground uppercase tracking-wider truncate">
-              {node?.category || 'Loading...'}
+            <span className="text-[10px] font-['Space_Mono'] text-muted-foreground uppercase tracking-[0.25em] truncate">
+              {node?.category || 'Laden...'}
             </span>
-            <h2 className="text-sm font-semibold truncate" title={node?.title || path}>
+            <h2 className="font-['Playfair_Display'] text-lg font-bold tracking-tight truncate" title={node?.title || path}>
               {node?.title || path.split('/').pop()}
             </h2>
           </div>
         </div>
         <button 
           onClick={onClose}
-          className="p-2 hover:bg-muted rounded-full transition-colors text-muted-foreground hover:text-foreground shrink-0"
+          aria-label="Sluiten"
+          className="p-2 border border-foreground rounded-none hover:bg-foreground hover:text-background transition-colors text-foreground shrink-0"
         >
           <X className="w-4 h-4" />
         </button>
@@ -169,35 +170,39 @@ export default function DocPanel({ path, node, nodes, edges, onClose, onSelectPa
       {/* Content Area */}
       <div className="flex-1 overflow-y-auto relative">
         {isLoading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-card/50 backdrop-blur-sm z-10">
+          <div className="absolute inset-0 flex items-center justify-center bg-card/80 backdrop-blur-sm z-10">
             <div className="flex flex-col items-center gap-3">
-              <Loader2 className="w-6 h-6 animate-spin text-cat-agent" />
-              <span className="font-mono text-xs text-muted-foreground">Reading Document...</span>
+              <Loader2 className="w-6 h-6 animate-spin text-accent" />
+              <span className="font-['Space_Mono'] text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
+                Document lezen...
+              </span>
             </div>
           </div>
         )}
 
         {error && (
-          <div className="p-6 text-center text-destructive">
-            <p>Failed to load document content.</p>
+          <div className="p-6 text-center">
+            <p className="font-['Space_Mono'] text-xs uppercase tracking-widest text-destructive">
+              Documentinhoud niet geladen.
+            </p>
           </div>
         )}
 
         {doc && !isLoading && (
           <>
-            <div className="p-6 prose prose-invert max-w-none">
+            <div className="p-6 prose max-w-none prose-headings:font-['Playfair_Display'] prose-headings:font-bold prose-headings:tracking-tight prose-h1:uppercase prose-p:font-['Inter'] prose-li:font-['Inter'] prose-headings:text-foreground prose-p:text-foreground prose-li:text-foreground prose-strong:text-foreground prose-a:text-accent first-letter:font-['Playfair_Display']">
               <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
                 {doc.content}
               </ReactMarkdown>
             </div>
 
             {(outgoing.length > 0 || incoming.length > 0) && (
-              <div className="px-6 pb-6 pt-2 border-t border-card-border mt-2">
-                <h3 className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-3 mt-4">
-                  Connections
+              <div className="px-6 pb-6 pt-2 border-t border-foreground mt-2">
+                <h3 className="font-['Space_Mono'] text-[10px] uppercase tracking-[0.3em] text-muted-foreground mb-4 mt-4">
+                  Verbindingen
                 </h3>
-                {renderConnections(outgoing, "Links to", ArrowRight)}
-                {renderConnections(incoming, "Linked from", ArrowLeft)}
+                {renderConnections(outgoing, "Verwijst naar", ArrowRight)}
+                {renderConnections(incoming, "Verwezen vanuit", ArrowLeft)}
               </div>
             )}
           </>

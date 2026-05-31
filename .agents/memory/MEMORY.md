@@ -1,3 +1,4 @@
 - [System Map generator (Phase 2)](system-map-generator.md) — how the "Genereren" tab assembles doc context + streams Claude; key prompt + SSE decisions.
 - [Monorepo composite project refs](monorepo-composite-refs.md) — new workspace libs need built dist declarations (tsc -b) or api-server typecheck fails TS6305.
+- [System Map branding direction](branding-direction.md) — editorial "Newsroom" light theme (cream/ink/indigo, Playfair+Inter+Space Mono); theme in index.css :root, no dark toggle.
 - [Client DB ↔ doc-graph bridge](client-db-doc-bridge.md) — DB clients become synthetic `clients/db/<id>.md` DocFiles; every doc consumer must inject loadClientDocs(); invalidate clients+doc-graph keys after mutations.

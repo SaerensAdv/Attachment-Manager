@@ -64,3 +64,10 @@ Follow `templates/google-ads-output.md` (optimization variant). At minimum:
 > Replit skills that can power or extend this agent when the app is built (see `ROADMAP.md`). These enhance the builder while constructing the agent — they are not part of the role definition above.
 
 - `data-visualization` — turn account performance into clear charts and tables so findings and prioritized recommendations are easy to read.
+
+## Planned integration (Phase 5)
+
+> A live connection, gated to Phase 5 in `ROADMAP.md`. Documented here because optimization depends most on real account data.
+
+- **Google Ads API — read-first.** Pull performance data, search terms, and account structure directly so the agent works from real numbers instead of manually pasted reports. This stays within the "never live" rule: the agent only reads and recommends; a human still implements.
+- **Write access is deliberately deferred.** Applying negatives, bid, or budget changes via the API is a later step and must always require explicit human approval before anything goes live.

@@ -43,7 +43,10 @@ saerens-ai-team/
 │   ├── google-ads-setup-specialist.md
 │   ├── google-ads-optimization-specialist.md
 │   ├── reporting-specialist.md
-│   └── copywriter.md
+│   ├── copywriter.md
+│   ├── seo-specialist.md
+│   ├── meta-ads-strategist.md
+│   └── landing-page-specialist.md
 │
 ├── clients/             # Client context (data, kept separate from agents)
 │   ├── _template.md
@@ -53,7 +56,10 @@ saerens-ai-team/
 │   ├── campaign-setup.md
 │   ├── account-audit.md
 │   ├── monthly-reporting.md
-│   └── client-email.md
+│   ├── client-email.md
+│   ├── seo-audit.md
+│   ├── meta-ads-setup.md
+│   └── landing-page-review.md
 │
 ├── templates/           # Reusable output formats
 │   ├── campaign-brief.md
@@ -67,6 +73,9 @@ saerens-ai-team/
     ├── tone-of-voice.md
     ├── agent-personas.md
     ├── google-ads-standards.md
+    ├── meta-ads-standards.md
+    ├── seo-standards.md
+    ├── landing-page-standards.md
     ├── analytics-standards.md
     ├── reporting-standards.md
     └── naming-conventions.md

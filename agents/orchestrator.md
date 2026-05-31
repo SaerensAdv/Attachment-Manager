@@ -52,7 +52,10 @@ If the request is vague, ask one focused round of clarifying questions first.
 | Search terms, bidding, budgets, CPA/ROAS, performance fixes on a live account | Google Ads Optimization Specialist |
 | Monthly performance summary or client-facing report | Reporting Specialist |
 | Ad copy, headlines, descriptions, hooks, on-brand text | Copywriter |
-| SEO, Meta Ads, CRO, landing pages, analytics setup | Note it as out of MVP scope; flag as a future agent (see `AGENTS.md`) |
+| Organic search, technical/on-page/local SEO, keyword & content strategy | SEO Specialist |
+| Paid social on Meta (Facebook & Instagram): strategy, structure, audiences, creative direction | Meta Ads Strategist |
+| Landing pages, conversion design, message match, page structure / web design review | Landing Page / Web Design Specialist |
+| CRO, analytics/tracking setup, client success, proposals | Note it as out of MVP scope; flag as a future agent (see `AGENTS.md`) |
 
 A single request may involve several agents (e.g. campaign setup → Strategist, then Setup Specialist, then Copywriter). Sequence them and note dependencies.
 

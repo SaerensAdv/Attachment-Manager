@@ -16,7 +16,7 @@ All agents must:
 - **Ask clarifying questions** when required context is missing — never fill gaps with invented facts.
 - **Never invent client data.** If a number, budget, URL, or fact is unknown, ask for it or flag it as missing.
 - Use the **structured output format** defined for their role (or the matching file in `templates/`).
-- Respect Saerens Advertising standards in `knowledge/` (principles, tone of voice, agent personas, Google Ads, analytics, reporting, naming).
+- Respect Saerens Advertising standards in `knowledge/` (principles, tone of voice, agent personas, Google Ads, Meta Ads, SEO, landing page/conversion, analytics, reporting, naming).
 - Stay **in character** per their own `## Character & personality` section, while keeping all client-facing output in the unified Saerens voice (`knowledge/tone-of-voice.md`). Personality colours *how* work is done, never *what* the standards require.
 - **Separate strategy from execution** — recommending something is not the same as doing it.
 - Clearly state **risks, dependencies, and required human approval** for anything that affects spend, tracking, or live accounts.
@@ -49,15 +49,15 @@ The AI team is organized as follows:
 - Google Ads Optimization Specialist — `agents/google-ads-optimization-specialist.md`
 - Reporting Specialist — `agents/reporting-specialist.md`
 - Copywriter — `agents/copywriter.md`
+- SEO Specialist — `agents/seo-specialist.md`
+- Meta Ads Strategist — `agents/meta-ads-strategist.md`
+- Landing Page / Web Design Specialist — `agents/landing-page-specialist.md`
 
 ## Future Agents (not yet specified)
 
 These are planned but intentionally not built yet. They are listed so the system knows where it is heading (see `ROADMAP.md`):
 
-- SEO Specialist
-- Meta Ads Strategist
 - CRO Specialist
-- Landing Page / Web Design Specialist
 - Analytics & Tracking Specialist
 - Client Success Agent
 - ClickUp Task Agent

@@ -46,7 +46,7 @@ This keeps agent roles, client data, and processes separate and reusable. See `A
 | `clients/` | A reusable client template plus example client context files |
 | `workflows/` | Repeatable agency processes (campaign setup, audit, reporting, email) |
 | `templates/` | Reusable structured output formats |
-| `knowledge/` | Agency standards: principles, tone of voice, agent personas, Google Ads, analytics, reporting, naming |
+| `knowledge/` | Agency standards: principles, tone of voice, agent personas, Google Ads, Meta Ads, SEO, landing page/conversion, analytics, reporting, naming |
 
 ## Current MVP agents
 
@@ -58,6 +58,9 @@ Each agent is also a distinct team member with its own character (names are prop
 - **Google Ads Optimization Specialist** *(Femke)* — improves live accounts (search terms, bids, budgets, CPA/ROAS)
 - **Reporting Specialist** *(Bram)* — turns performance data into clear client reports
 - **Copywriter** *(Marie)* — writes ads, headlines, and on-brand copy
+- **SEO Specialist** *(Thomas)* — improves organic visibility (technical, on-page, local, off-page SEO)
+- **Meta Ads Strategist** *(Sarah)* — defines paid social strategy and structure on Facebook & Instagram
+- **Landing Page / Web Design Specialist** *(Elias)* — reviews and improves landing pages for conversion
 
 ## How to use it (today)
 

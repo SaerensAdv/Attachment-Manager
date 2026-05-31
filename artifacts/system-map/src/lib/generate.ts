@@ -1,27 +1,50 @@
 export interface GeneratePayload {
   agentPath: string;
+  additionalAgentPaths: string[];
   clientPath: string;
   workflowPath: string;
   request: string;
 }
 
-export interface StreamHandlers {
-  onDelta: (text: string) => void;
+export interface AgentStartInfo {
+  index: number;
+  total: number;
+  agent: { path: string; title: string };
+  role: "lead" | "member";
+}
+
+export interface TeamStreamHandlers {
+  onAgentStart: (info: AgentStartInfo) => void;
+  onDelta: (index: number, text: string) => void;
+  onAgentDone: (index: number) => void;
   onDone: () => void;
   onError: (message: string) => void;
   signal?: AbortSignal;
 }
 
+interface StreamEvent {
+  type?: "agent_start" | "agent_done";
+  index?: number;
+  total?: number;
+  agent?: { path: string; title: string };
+  role?: "lead" | "member";
+  content?: string;
+  done?: boolean;
+  error?: string;
+}
+
 /**
  * POST to the SSE generate endpoint and parse `data: {...}` events from the
- * streamed response body. Orval cannot generate a usable client for SSE, so we
- * consume the stream manually with fetch + ReadableStream.
+ * streamed response body. The team runs sequentially: each agent emits an
+ * `agent_start`, then `content` deltas, then `agent_done`. Orval cannot generate
+ * a usable client for SSE, so we consume the stream manually with fetch.
  */
-export async function streamGenerate(
+export async function streamGenerateTeam(
   payload: GeneratePayload,
-  handlers: StreamHandlers,
+  handlers: TeamStreamHandlers,
 ): Promise<void> {
-  const { onDelta, onDone, onError, signal } = handlers;
+  const { onAgentStart, onDelta, onAgentDone, onDone, onError, signal } =
+    handlers;
 
   let res: Response;
   try {
@@ -52,6 +75,11 @@ export async function streamGenerate(
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
+  let currentIndex = 0;
+  // Only an explicit `{ done: true }` event counts as success. If the socket
+  // closes before that (e.g. a mid-chain server failure), surface an error
+  // instead of falsely reporting completion.
+  let seenDone = false;
 
   try {
     while (true) {
@@ -68,26 +96,43 @@ export async function streamGenerate(
         const json = line.slice(5).trim();
         if (!json) continue;
         try {
-          const parsed = JSON.parse(json) as {
-            content?: string;
-            done?: boolean;
-            error?: string;
-          };
+          const parsed = JSON.parse(json) as StreamEvent;
           if (parsed.error) {
             onError(parsed.error);
             return;
           }
           if (parsed.done) {
+            seenDone = true;
             onDone();
             return;
           }
-          if (typeof parsed.content === "string") onDelta(parsed.content);
+          if (parsed.type === "agent_start" && parsed.agent) {
+            currentIndex = parsed.index ?? currentIndex;
+            onAgentStart({
+              index: parsed.index ?? 0,
+              total: parsed.total ?? 1,
+              agent: parsed.agent,
+              role: parsed.role ?? "member",
+            });
+            continue;
+          }
+          if (parsed.type === "agent_done") {
+            onAgentDone(parsed.index ?? currentIndex);
+            continue;
+          }
+          if (typeof parsed.content === "string") {
+            onDelta(parsed.index ?? currentIndex, parsed.content);
+          }
         } catch {
           // ignore malformed chunk
         }
       }
     }
-    onDone();
+    if (seenDone) {
+      onDone();
+    } else {
+      onError("Stream onverwacht beëindigd");
+    }
   } catch (err) {
     if ((err as Error)?.name === "AbortError") return;
     onError(err instanceof Error ? err.message : "Streamfout");

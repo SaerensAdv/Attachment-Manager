@@ -12,6 +12,7 @@ import {
   Wand2,
   RotateCcw,
   Users,
+  X,
 } from "lucide-react";
 import {
   Select,
@@ -24,12 +25,20 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { streamGenerate } from "@/lib/generate";
+import { streamGenerateTeam } from "@/lib/generate";
 import { routeRequest, type RoutingResult } from "@/lib/route";
 
 interface Option {
   path: string;
   title: string;
+}
+
+interface AgentSegment {
+  path: string;
+  title: string;
+  role: "lead" | "member";
+  content: string;
+  status: "working" | "done";
 }
 
 export default function Generate() {
@@ -47,9 +56,11 @@ export default function Generate() {
   // Detected choices, editable as an override before generating.
   const [workflowPath, setWorkflowPath] = useState("");
   const [agentPath, setAgentPath] = useState("");
+  // The supporting team (in execution order), editable before generating.
+  const [memberPaths, setMemberPaths] = useState<string[]>([]);
 
-  // Generation state.
-  const [output, setOutput] = useState("");
+  // Generation state — one segment per agent in the team.
+  const [segments, setSegments] = useState<AgentSegment[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamError, setStreamError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -103,12 +114,18 @@ export default function Generate() {
     setRouteError(null);
     setWorkflowPath("");
     setAgentPath("");
-    setOutput("");
+    setMemberPaths([]);
+    setSegments([]);
     setStreamError(null);
   };
 
   const hasActiveFlow =
-    routing || isStreaming || !!result || !!output || !!routeError || !!streamError;
+    routing ||
+    isStreaming ||
+    !!result ||
+    segments.length > 0 ||
+    !!routeError ||
+    !!streamError;
 
   const canRoute = !!clientPath && request.trim().length > 0 && !routing;
 
@@ -122,7 +139,8 @@ export default function Generate() {
     setResult(null);
     setWorkflowPath("");
     setAgentPath("");
-    setOutput("");
+    setMemberPaths([]);
+    setSegments([]);
     setStreamError(null);
 
     try {
@@ -134,6 +152,11 @@ export default function Generate() {
       if (!r.needsClarification) {
         setWorkflowPath(r.workflow?.path ?? "");
         setAgentPath(r.agent?.path ?? "");
+        setMemberPaths(
+          r.additionalAgents
+            .map((a) => a.path)
+            .filter((p) => p !== r.agent?.path),
+        );
       }
     } catch (err) {
       if ((err as Error)?.name === "AbortError") return;
@@ -144,25 +167,74 @@ export default function Generate() {
     }
   };
 
+  // Full team in execution order: lead first, then members (deduped).
+  const teamPaths = useMemo(() => {
+    const out: string[] = [];
+    const seen = new Set<string>();
+    for (const p of [agentPath, ...memberPaths]) {
+      if (!p || seen.has(p)) continue;
+      seen.add(p);
+      out.push(p);
+    }
+    return out;
+  }, [agentPath, memberPaths]);
+
+  const titleFor = (path: string) =>
+    allAgents.find((a) => a.path === path)?.title ??
+    result?.additionalAgents.find((a) => a.path === path)?.title ??
+    result?.agent?.title ??
+    "Teamlid";
+
+  const removeMember = (path: string) =>
+    setMemberPaths((prev) => prev.filter((p) => p !== path));
+
   const canGenerate =
     isRouted &&
     !!clientPath &&
     !!workflowPath &&
-    !!agentPath &&
+    teamPaths.length > 0 &&
     request.trim().length > 0;
 
   const handleGenerate = async () => {
     if (!canGenerate || isStreaming) return;
-    setOutput("");
+    setSegments([]);
     setStreamError(null);
     setIsStreaming(true);
     const controller = new AbortController();
     abortRef.current = controller;
 
-    await streamGenerate(
-      { agentPath, clientPath, workflowPath, request: request.trim() },
+    await streamGenerateTeam(
       {
-        onDelta: (text) => setOutput((prev) => prev + text),
+        agentPath,
+        additionalAgentPaths: memberPaths,
+        clientPath,
+        workflowPath,
+        request: request.trim(),
+      },
+      {
+        onAgentStart: (info) =>
+          setSegments((prev) => [
+            ...prev,
+            {
+              path: info.agent.path,
+              title: info.agent.title,
+              role: info.role,
+              content: "",
+              status: "working",
+            },
+          ]),
+        onDelta: (index, text) =>
+          setSegments((prev) =>
+            prev.map((s, i) =>
+              i === index ? { ...s, content: s.content + text } : s,
+            ),
+          ),
+        onAgentDone: (index) =>
+          setSegments((prev) =>
+            prev.map((s, i) =>
+              i === index ? { ...s, status: "done" } : s,
+            ),
+          ),
         onDone: () => {
           setIsStreaming(false);
           abortRef.current = null;
@@ -176,6 +248,17 @@ export default function Generate() {
       },
     );
   };
+
+  const combinedOutput = useMemo(
+    () =>
+      segments
+        .map((s) =>
+          s.content.trim() ? `# ${s.title}\n\n${s.content.trim()}` : "",
+        )
+        .filter(Boolean)
+        .join("\n\n---\n\n"),
+    [segments],
+  );
 
   const handleStop = () => {
     abortRef.current?.abort();
@@ -192,13 +275,13 @@ export default function Generate() {
   }, []);
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(output);
+    await navigator.clipboard.writeText(combinedOutput);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   };
 
   const handleDownload = () => {
-    const blob = new Blob([output], { type: "text/markdown" });
+    const blob = new Blob([combinedOutput], { type: "text/markdown" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -404,18 +487,46 @@ export default function Generate() {
                 </Select>
               </div>
 
-              {result && result.additionalAgents.length > 0 && (
-                <div
-                  className="flex items-start gap-2 text-xs text-muted-foreground"
-                  data-testid="text-additional-agents"
-                >
-                  <Users className="w-3.5 h-3.5 mt-0.5 shrink-0" />
-                  <span>
-                    Mogelijk ook betrokken:{" "}
-                    {result.additionalAgents.map((a) => a.title).join(", ")}
-                  </span>
+              <div
+                className="flex flex-col gap-2"
+                data-testid="text-additional-agents"
+              >
+                <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-muted-foreground">
+                  <Users className="w-3.5 h-3.5 shrink-0" />
+                  Team ({teamPaths.length}){" "}
+                  {teamPaths.length > 1 && "— werkt na elkaar"}
                 </div>
-              )}
+                <ol className="flex flex-col gap-1.5">
+                  {teamPaths.map((p, i) => (
+                    <li
+                      key={p}
+                      className="flex items-center gap-2 text-sm rounded-md border border-card-border bg-background/40 px-3 py-1.5"
+                      data-testid={`team-member-${i}`}
+                    >
+                      <span className="text-[11px] font-mono text-muted-foreground w-4 shrink-0">
+                        {i + 1}.
+                      </span>
+                      <span className="flex-1 truncate">{titleFor(p)}</span>
+                      {i === 0 ? (
+                        <span className="text-[10px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded bg-cat-agent/15 text-cat-agent border border-cat-agent/30 shrink-0">
+                          Hoofd
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => removeMember(p)}
+                          disabled={isStreaming}
+                          className="text-muted-foreground hover:text-destructive transition-colors disabled:opacity-40 shrink-0"
+                          aria-label={`Verwijder ${titleFor(p)}`}
+                          data-testid={`button-remove-member-${i}`}
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </li>
+                  ))}
+                </ol>
+              </div>
 
               {isStreaming ? (
                 <Button
@@ -457,7 +568,7 @@ export default function Generate() {
             <span className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
               Resultaat
             </span>
-            {output && (
+            {combinedOutput && (
               <div className="flex items-center gap-2">
                 <Button
                   variant="ghost"
@@ -491,23 +602,60 @@ export default function Generate() {
                 ⚠️ {streamError}
               </div>
             )}
-            {!output && !isStreaming && !streamError && (
+            {segments.length === 0 && !isStreaming && !streamError && (
               <div className="h-full flex items-center justify-center text-center text-muted-foreground">
                 <p className="max-w-sm text-sm">
-                  De gegenereerde output verschijnt hier. Output is altijd een
-                  eerste versie — een teamlid moet ze nakijken voor publicatie.
+                  De gegenereerde output verschijnt hier. Het team werkt na
+                  elkaar — elke bijdrage is een eerste versie die een teamlid
+                  moet nakijken voor publicatie.
                 </p>
               </div>
             )}
-            {(output || isStreaming) && (
-              <article className="prose prose-invert prose-sm max-w-none prose-headings:font-mono prose-headings:tracking-tight prose-a:text-cat-agent">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                  {output}
-                </ReactMarkdown>
-                {isStreaming && (
-                  <span className="inline-block w-2 h-4 bg-cat-agent animate-pulse align-middle ml-0.5" />
-                )}
-              </article>
+            {segments.length > 0 && (
+              <div className="flex flex-col gap-6">
+                {segments.map((seg, i) => (
+                  <div
+                    key={`${seg.path}-${i}`}
+                    className="flex flex-col gap-3"
+                    data-testid={`segment-${i}`}
+                  >
+                    <div className="flex items-center gap-2 border-b border-card-border pb-2">
+                      <span className="flex items-center justify-center w-5 h-5 rounded-full bg-cat-agent/15 text-cat-agent text-[11px] font-mono shrink-0">
+                        {i + 1}
+                      </span>
+                      <span className="font-mono text-sm font-semibold tracking-tight">
+                        {seg.title}
+                      </span>
+                      {seg.role === "lead" && (
+                        <span className="text-[10px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded bg-cat-agent/15 text-cat-agent border border-cat-agent/30">
+                          Hoofd
+                        </span>
+                      )}
+                      <span className="ml-auto flex items-center gap-1.5 text-xs text-muted-foreground">
+                        {seg.status === "working" ? (
+                          <>
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            Aan het werk
+                          </>
+                        ) : (
+                          <>
+                            <Check className="w-3.5 h-3.5 text-cat-knowledge" />
+                            Klaar
+                          </>
+                        )}
+                      </span>
+                    </div>
+                    <article className="prose prose-invert prose-sm max-w-none prose-headings:font-mono prose-headings:tracking-tight prose-a:text-cat-agent">
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {seg.content}
+                      </ReactMarkdown>
+                      {seg.status === "working" && (
+                        <span className="inline-block w-2 h-4 bg-cat-agent animate-pulse align-middle ml-0.5" />
+                      )}
+                    </article>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
         </div>

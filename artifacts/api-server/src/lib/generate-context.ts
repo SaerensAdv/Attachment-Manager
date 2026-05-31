@@ -11,10 +11,23 @@ const ALWAYS_KNOWLEDGE = [
 
 const REFERENCE_RE = /\b(?:templates|knowledge)\/[A-Za-z0-9_-]+\.md\b/g;
 
+export interface TeamContext {
+  /** Ordered titles of the full team, in execution order. */
+  members: string[];
+  /** 0-based position of the current agent within the team. */
+  position: number;
+  /** Concatenated work delivered by colleagues before this agent ("" for the lead). */
+  priorWork: string;
+  /** Whether this agent is the last in the chain (writes the approval section). */
+  isFinal: boolean;
+}
+
 export interface GenerationSelection {
   agentPath: string;
   clientPath: string;
   workflowPath: string;
+  /** When set (and more than one member), the agent works as part of a team. */
+  team?: TeamContext;
 }
 
 export interface BuiltContext {
@@ -106,12 +119,59 @@ export function buildGenerationContext(
 
   const persona = agent?.title ?? "een gespecialiseerde agent";
 
+  const team = selection.team;
+  const inTeam = !!team && team.members.length > 1;
+
+  // Teamwork framing: who is in the team, where this agent sits, and what
+  // colleagues have already delivered. Only the final agent closes with the
+  // human-approval section so the deliverable ends with exactly one.
+  const teamBlocks: string[] = [];
+  if (inTeam && team) {
+    const roster = team.members
+      .map((title, i) => {
+        const marker =
+          i === team.position
+            ? " \u2190 jij"
+            : i < team.position
+              ? " (klaar)"
+              : "";
+        return `${i + 1}. ${title}${marker}`;
+      })
+      .join("\n");
+
+    teamBlocks.push(
+      [
+        "## Teamwerk",
+        `Je werkt NIET alleen. Dit is een opdracht in teamverband; de teamleden leveren na elkaar hun bijdrage aan \u00e9\u00e9n gezamenlijk eindresultaat. De volgorde:`,
+        roster,
+        "",
+        team.position === 0
+          ? "Jij bent het eerste teamlid en zet de richting. Lever jouw specialistische bijdrage; collega's bouwen hierna verder."
+          : "Hieronder staat het werk dat je collega's al geleverd hebben. Bouw daarop verder, verwijs ernaar waar nuttig, en HERHAAL niet wat er al staat. Voeg uitsluitend jouw eigen specialistische bijdrage toe.",
+        team.priorWork.trim()
+          ? `\n### Werk van het team tot nu toe\n\n${team.priorWork.trim()}`
+          : "",
+      ]
+        .filter(Boolean)
+        .join("\n"),
+    );
+  }
+
+  const approvalRule = !inTeam || (team && team.isFinal)
+    ? "- Sluit ALTIJD af met een sectie '## \u26a0\ufe0f Menselijke goedkeuring vereist' waarin je kort opsomt wat een teamlid moet nakijken vooraleer dit gepubliceerd, verzonden of live gezet wordt. Dit mag nooit weggelaten worden."
+    : "- Voeg GEEN goedkeuringssectie toe \u2014 een teamlid verderop in de keten sluit het gezamenlijke resultaat af. Lever enkel jouw bijdrage.";
+
+  const teamOutputRule = inTeam
+    ? "- Begin je bijdrage met een korte kop die jouw rol benoemt (bv. '## Strategie' of '## Advertentieteksten'), zodat duidelijk is welk teamlid wat leverde."
+    : null;
+
   const systemPrompt = [
     "Je bent een AI-agent binnen het AI-team van Saerens Advertising, een Belgisch Google Ads-bureau.",
     `Je vervult de rol van: ${persona}.`,
     "Je werkt strikt volgens onderstaande projectdocumentatie. Volg ALTIJD de globale regels.",
     "",
     blocks.join("\n\n"),
+    inTeam ? "\n" + teamBlocks.join("\n\n") : "",
     "",
     "## Uitvoeringsregels",
     "- Schrijf je output in het Nederlands (Vlaams), tenzij de opdracht expliciet een andere taal vraagt.",
@@ -120,8 +180,11 @@ export function buildGenerationContext(
     "- Lever ALTIJD een concrete, volledige eerste versie. Weiger nooit en vraag niet eerst om meer informatie \u2014 dat is precies wat de menselijke review-stap opvangt.",
     "- Ontbreekt er essenti\u00eble informatie (bv. cijfers, namen, datums)? Maak dan een redelijke aanname en markeer die duidelijk inline met **[AAN TE VULLEN: \u2026]**, en som de aannames kort op in de goedkeuringssectie. Schrijf de versie dus af, ook met onvolledige input.",
     "- Gebruik nette markdown-opmaak (koppen, lijsten, tabellen waar zinvol).",
-    "- Sluit ALTIJD af met een sectie '## \u26a0\ufe0f Menselijke goedkeuring vereist' waarin je kort opsomt wat een teamlid moet nakijken vooraleer dit gepubliceerd, verzonden of live gezet wordt. Dit mag nooit weggelaten worden.",
-  ].join("\n");
+    teamOutputRule,
+    approvalRule,
+  ]
+    .filter((line): line is string => line !== null)
+    .join("\n");
 
   return { systemPrompt, includedPaths };
 }

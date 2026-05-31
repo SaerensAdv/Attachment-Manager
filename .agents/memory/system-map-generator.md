@@ -62,9 +62,27 @@ extractor.
 - **Reset-on-change must abort BOTH controllers.** Changing client/request must
   abort in-flight routing *and* generation (guarded by a `hasActiveFlow` flag),
   or a stale route/stream leaks into a newer request.
-- Foundation only: real multi-agent chained TEAMWORK (several agents work before
-  a result appears) is the intended next step — `additionalAgents` already
-  surfaces the chain but execution is still single-agent.
+## Multi-agent teamwork (sequential chain)
+The detected chain (lead + `additionalAgents`) runs **sequentially** in one
+`/api/generate` call: server builds an ordered, deduped, category-validated team
+(orchestrator excluded), then loops members one at a time. Each member's prompt
+includes the team roster + the **accumulated prior work** of earlier colleagues
+(handoff), and only the **final** member writes the
+`## ⚠️ Menselijke goedkeuring vereist` section; earlier members are told NOT to.
+- **SSE protocol is per-member and indexed.** Events: `agent_start {index,total,
+  agent,role}` → indexed `content {index}` deltas → `agent_done {index}`, repeated
+  per member, then a single `{done:true}`. Frontend renders one segment per agent
+  (`segment-<i>`) keyed off these indexes.
+- **EOF ≠ success.** The frontend stream reader must only treat an explicit
+  `{done:true}` as completion; a socket close without it (mid-chain server crash)
+  must surface an error, not a false success. **Why:** a code review caught the
+  reader calling `onDone()` on any EOF, masking mid-chain failures.
+- **Per-member max_tokens is capped (4096), not 8192.** Each agent contributes one
+  section, and N sequential full-length generations made the chain too slow to
+  finish within reasonable time. **Why:** verified a single 8192-token member
+  alone could exceed ~2 min; the team felt broken.
+- Team is editable in the UI before generating (lead dropdown + removable member
+  chips); combined output drives copy/download.
 
 ## Scope boundary
 No persistence in Phase 2 (deliberately — that's Phase 4). The conversations/

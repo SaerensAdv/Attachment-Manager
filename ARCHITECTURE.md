@@ -46,7 +46,11 @@ saerens-ai-team/
 │   ├── copywriter.md
 │   ├── seo-specialist.md
 │   ├── meta-ads-strategist.md
-│   └── landing-page-specialist.md
+│   ├── landing-page-specialist.md
+│   ├── web-developer.md
+│   ├── analytics-tracking-specialist.md
+│   ├── client-success-agent.md
+│   └── sales-proposal-agent.md
 │
 ├── clients/             # Client context (data, kept separate from agents)
 │   ├── _template.md
@@ -59,7 +63,11 @@ saerens-ai-team/
 │   ├── client-email.md
 │   ├── seo-audit.md
 │   ├── meta-ads-setup.md
-│   └── landing-page-review.md
+│   ├── landing-page-review.md
+│   ├── web-build.md
+│   ├── tracking-setup.md
+│   ├── client-update.md
+│   └── sales-proposal.md
 │
 ├── templates/           # Reusable output formats
 │   ├── campaign-brief.md

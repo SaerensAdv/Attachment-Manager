@@ -13,22 +13,43 @@ export interface AgentStartInfo {
   role: "lead" | "member";
 }
 
+export interface DeliverableMeta {
+  kind: string;
+  title: string;
+  note: string;
+  filename: string;
+  mimeType: string;
+  format: "text" | "binary";
+}
+
 export interface TeamStreamHandlers {
   onAgentStart: (info: AgentStartInfo) => void;
   onDelta: (index: number, text: string) => void;
   onAgentDone: (index: number) => void;
+  onDeliverableStart?: (meta: DeliverableMeta) => void;
+  onDeliverableDelta?: (text: string) => void;
+  onDeliverableDone?: () => void;
+  onDeliverableError?: (message: string) => void;
   onDone: (archived: boolean) => void;
   onError: (message: string) => void;
   signal?: AbortSignal;
 }
 
 interface StreamEvent {
-  type?: "agent_start" | "agent_done";
+  type?:
+    | "agent_start"
+    | "agent_done"
+    | "deliverable_start"
+    | "deliverable_delta"
+    | "deliverable_done"
+    | "deliverable_error";
   index?: number;
   total?: number;
   agent?: { path: string; title: string };
   role?: "lead" | "member";
+  deliverable?: DeliverableMeta;
   content?: string;
+  message?: string;
   done?: boolean;
   archived?: boolean;
   error?: string;
@@ -44,8 +65,18 @@ export async function streamGenerateTeam(
   payload: GeneratePayload,
   handlers: TeamStreamHandlers,
 ): Promise<void> {
-  const { onAgentStart, onDelta, onAgentDone, onDone, onError, signal } =
-    handlers;
+  const {
+    onAgentStart,
+    onDelta,
+    onAgentDone,
+    onDeliverableStart,
+    onDeliverableDelta,
+    onDeliverableDone,
+    onDeliverableError,
+    onDone,
+    onError,
+    signal,
+  } = handlers;
 
   let res: Response;
   try {
@@ -119,6 +150,24 @@ export async function streamGenerateTeam(
           }
           if (parsed.type === "agent_done") {
             onAgentDone(parsed.index ?? currentIndex);
+            continue;
+          }
+          if (parsed.type === "deliverable_start" && parsed.deliverable) {
+            onDeliverableStart?.(parsed.deliverable);
+            continue;
+          }
+          if (parsed.type === "deliverable_delta") {
+            if (typeof parsed.content === "string") {
+              onDeliverableDelta?.(parsed.content);
+            }
+            continue;
+          }
+          if (parsed.type === "deliverable_done") {
+            onDeliverableDone?.();
+            continue;
+          }
+          if (parsed.type === "deliverable_error") {
+            onDeliverableError?.(parsed.message ?? "Onbekende fout");
             continue;
           }
           if (typeof parsed.content === "string") {

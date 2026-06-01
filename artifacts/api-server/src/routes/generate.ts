@@ -4,6 +4,11 @@ import { buildGenerationContext } from "../lib/generate-context";
 import { getDocFile, type DocFile } from "../lib/docs";
 import { loadClientDocs } from "../lib/clients-store";
 import { saveGeneration } from "../lib/generations-store";
+import {
+  getDeliverableKind,
+  deliverableMeta,
+  buildDeliverablePrompt,
+} from "../lib/deliverables";
 
 const router: IRouter = Router();
 
@@ -84,6 +89,15 @@ router.post("/generate", async (req, res) => {
   const memberTitles = teamPaths.map(
     (p) => getDocFile(p)?.title ?? "Teamlid",
   );
+
+  const clientDoc = getDocFile(clientPath, clientDocs);
+  const clientName = (clientDoc?.title ?? clientPath).replace(
+    /^Client:\s*/i,
+    "",
+  );
+  const clientContent = clientDoc?.content ?? "";
+  const workflowDoc = getDocFile(workflowPath);
+  const deliverableKind = getDeliverableKind(workflowDoc);
 
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
@@ -174,6 +188,49 @@ router.post("/generate", async (req, res) => {
       priorWork += `\n\n## ${memberTitles[i]}\n\n${agentText.trim()}`;
     }
 
+    // Deliverable layer: once the team's combined work is ready, convert it into
+    // the concrete end product the workflow declares (e.g. a ready-to-paste
+    // Replit prompt). Best-effort — a deliverable failure must never lose the
+    // run; we report it and still finish the stream with the markdown result.
+    const meta = clientGone ? null : deliverableMeta(deliverableKind, clientName);
+    const prompt = meta
+      ? buildDeliverablePrompt(deliverableKind, {
+          clientName,
+          clientContent,
+          request,
+          teamWork: priorWork,
+        })
+      : null;
+    if (!clientGone && meta && prompt) {
+      try {
+        send({ type: "deliverable_start", deliverable: meta });
+        const dstream = anthropic.messages.stream(
+          {
+            model: "claude-sonnet-4-6",
+            max_tokens: 4096,
+            system: prompt.system,
+            messages: [{ role: "user", content: prompt.user }],
+          },
+          { signal: controller.signal },
+        );
+        for await (const event of dstream) {
+          if (clientGone) break;
+          if (
+            event.type === "content_block_delta" &&
+            event.delta.type === "text_delta"
+          ) {
+            send({ type: "deliverable_delta", content: event.delta.text });
+          }
+        }
+        if (!clientGone) send({ type: "deliverable_done" });
+      } catch (err) {
+        if (!clientGone && !(err instanceof Error && err.name === "AbortError")) {
+          const message = err instanceof Error ? err.message : String(err);
+          send({ type: "deliverable_error", message });
+        }
+      }
+    }
+
     if (!clientGone) {
       // Persist the finished run to the archive. This must never break a
       // successful generation: on any DB error we log and still finish the
@@ -182,16 +239,14 @@ router.post("/generate", async (req, res) => {
       // was saved when it wasn't.
       let archived = false;
       try {
-        const clientTitle = (
-          getDocFile(clientPath, clientDocs)?.title ?? clientPath
-        ).replace(/^Client:\s*/i, "");
         await saveGeneration({
           clientPath,
-          clientName: clientTitle,
+          clientName,
           workflowPath,
-          workflowTitle: (
-            getDocFile(workflowPath)?.title ?? workflowPath
-          ).replace(/^Workflow:\s*/i, ""),
+          workflowTitle: (workflowDoc?.title ?? workflowPath).replace(
+            /^Workflow:\s*/i,
+            "",
+          ),
           leadAgentPath: teamPaths[0],
           leadAgentTitle: memberTitles[0],
           teamPaths: JSON.stringify(teamPaths),

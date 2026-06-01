@@ -192,7 +192,7 @@ export default function DocPanel({ path, node, nodes, edges, onClose, onSelectPa
           <>
             <div className="p-6 prose max-w-none prose-headings:font-['Playfair_Display'] prose-headings:font-bold prose-headings:tracking-tight prose-h1:uppercase prose-p:font-['Inter'] prose-li:font-['Inter'] prose-headings:text-foreground prose-p:text-foreground prose-li:text-foreground prose-strong:text-foreground prose-a:text-accent first-letter:font-['Playfair_Display']">
               <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
-                {doc.content}
+                {doc.content.replace(/<!--[\s\S]*?-->/g, "")}
               </ReactMarkdown>
             </div>
 

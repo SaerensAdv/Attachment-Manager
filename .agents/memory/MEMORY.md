@@ -3,4 +3,5 @@
 - [Egress quirk + Saerens brand](replit-egress-and-saerens-brand.md) — container curl is blocked (http 000) but sandbox fetch() works; Saerens real domain is .com + its brand tokens/logo.
 - [Adding an agent](adding-agents.md) — agent .md read at runtime (no api restart); routing edge needs exact H1 title in orchestrator table; update AGENTS.md + ARCHITECTURE.md.
 - [System Map branding direction](branding-direction.md) — editorial "Newsroom" light theme (cream/ink/indigo, Playfair+Inter+Space Mono); theme in index.css :root, no dark toggle.
+- [Deliverable layer](deliverable-layer.md) — workflows opt into a typed end product via `<!-- deliverable: kind -->`; best-effort after team loop, never loses markdown; strip HTML comments before any ReactMarkdown (no rehype-raw).
 - [Client DB ↔ doc-graph bridge](client-db-doc-bridge.md) — DB clients become synthetic `clients/db/<id>.md` DocFiles; every doc consumer must inject loadClientDocs(); invalidate clients+doc-graph keys after mutations.

@@ -168,7 +168,9 @@ function textMentions(text: string, title: string): boolean {
  * while real backtick file references (handled separately) remain untouched.
  */
 function stripNonProse(content: string): string {
-  const lines = content.split("\n");
+  // Drop HTML comments (e.g. `<!-- deliverable: replit-prompt -->`) so markers
+  // and other comments can never influence mention-edge derivation.
+  const lines = content.replace(/<!--[\s\S]*?-->/g, "").split("\n");
   const out: string[] = [];
   let fenceChar: string | null = null;
   let fenceLen = 0;

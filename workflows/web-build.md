@@ -1,5 +1,7 @@
 # Workflow: Web Build
 
+<!-- deliverable: replit-prompt -->
+
 ## Goal
 
 Turn an approved page specification or design direction into a working, reviewable, on-brand build — a landing page or simple site that is fast, responsive, and accessible. A human reviews and publishes; nothing goes live automatically.

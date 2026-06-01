@@ -28,6 +28,18 @@ This separation is deliberate:
 
 If client data lived inside agent files, every new client would mean editing every agent. By keeping client context in `clients/`, agent files stay stable and reusable. The same logic applies to workflows, templates, and standards — each concept changes in exactly one place.
 
+## The deliverable layer
+
+The five layers produce structured **markdown** — the team's combined work. On top of that, a workflow can declare a **deliverable**: the concrete end product the team's work should be turned into (e.g. a ready-to-paste website build prompt, a Google Ads bulk CSV, a Meta ad image). After the team finishes, the deliverable layer converts the combined markdown into that artifact.
+
+A workflow opts in with a single marker line, an HTML comment so it stays invisible in the rendered doc and creates no graph edges:
+
+```
+<!-- deliverable: replit-prompt -->
+```
+
+Workflows without a marker keep markdown as their result, exactly as before. The first implemented deliverable is `replit-prompt` on `workflows/web-build.md`. The deliverable step is best-effort: if it fails, the team's markdown is still returned.
+
 ## Folder map
 
 ```

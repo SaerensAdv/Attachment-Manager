@@ -29,7 +29,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { streamGenerateTeam } from "@/lib/generate";
+import { streamGenerateTeam, type DeliverableMeta } from "@/lib/generate";
 import { routeRequest, type RoutingResult } from "@/lib/route";
 import { fetchIntake, type IntakeField } from "@/lib/intake";
 
@@ -89,6 +89,16 @@ export default function Generate() {
   const [streamError, setStreamError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
+
+  // Deliverable layer — the concrete end product (e.g. a Replit prompt) the
+  // workflow produces after the team finishes, streamed in like an agent.
+  const [deliverable, setDeliverable] = useState<DeliverableMeta | null>(null);
+  const [deliverableContent, setDeliverableContent] = useState("");
+  const [deliverableStatus, setDeliverableStatus] = useState<
+    "idle" | "working" | "done" | "error"
+  >("idle");
+  const [deliverableError, setDeliverableError] = useState<string | null>(null);
+  const [deliverableCopied, setDeliverableCopied] = useState(false);
   // Elapsed time since generation started, so a long sequential chain always
   // shows visible movement instead of silence while an agent thinks.
   const [elapsed, setElapsed] = useState(0);
@@ -145,6 +155,10 @@ export default function Generate() {
     setMemberPaths([]);
     setSegments([]);
     setStreamError(null);
+    setDeliverable(null);
+    setDeliverableContent("");
+    setDeliverableStatus("idle");
+    setDeliverableError(null);
     intakeAbortRef.current?.abort();
     intakeAbortRef.current = null;
     setIntakeFields([]);
@@ -175,6 +189,10 @@ export default function Generate() {
     setMemberPaths([]);
     setSegments([]);
     setStreamError(null);
+    setDeliverable(null);
+    setDeliverableContent("");
+    setDeliverableStatus("idle");
+    setDeliverableError(null);
 
     try {
       const r = await routeRequest(
@@ -307,6 +325,10 @@ export default function Generate() {
     );
     setStreamError(null);
     setJustSaved(false);
+    setDeliverable(null);
+    setDeliverableContent("");
+    setDeliverableStatus("idle");
+    setDeliverableError(null);
     setIsStreaming(true);
     startedAtRef.current = Date.now();
     setElapsed(0);
@@ -352,6 +374,19 @@ export default function Generate() {
               i === index ? { ...s, status: "done" } : s,
             ),
           ),
+        onDeliverableStart: (meta) => {
+          setDeliverable(meta);
+          setDeliverableContent("");
+          setDeliverableError(null);
+          setDeliverableStatus("working");
+        },
+        onDeliverableDelta: (text) =>
+          setDeliverableContent((prev) => prev + text),
+        onDeliverableDone: () => setDeliverableStatus("done"),
+        onDeliverableError: (message) => {
+          setDeliverableError(message);
+          setDeliverableStatus("error");
+        },
         onDone: (archived) => {
           setIsStreaming(false);
           abortRef.current = null;
@@ -429,6 +464,23 @@ export default function Generate() {
     const a = document.createElement("a");
     a.href = url;
     a.download = "saerens-output.md";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleDeliverableCopy = async () => {
+    await navigator.clipboard.writeText(deliverableContent);
+    setDeliverableCopied(true);
+    setTimeout(() => setDeliverableCopied(false), 1500);
+  };
+
+  const handleDeliverableDownload = () => {
+    if (!deliverable) return;
+    const blob = new Blob([deliverableContent], { type: deliverable.mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = deliverable.filename;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -1093,6 +1145,80 @@ export default function Generate() {
                     </div>
                   );
                 })}
+              </div>
+            )}
+
+            {/* Deliverable layer — the concrete end product (e.g. Replit prompt) */}
+            {deliverable && (
+              <div className="mt-16" data-testid="deliverable-panel">
+                <div className="flex items-center gap-4 mb-6 pb-2 border-b-2 border-accent">
+                  <span
+                    className={`w-2 h-2 rounded-full shrink-0 ${
+                      deliverableStatus === "working"
+                        ? "bg-accent animate-pulse"
+                        : deliverableStatus === "error"
+                          ? "bg-destructive"
+                          : "bg-green-600"
+                    }`}
+                  />
+                  <h3 className="font-['Space_Mono'] uppercase tracking-widest text-xs font-bold text-accent">
+                    Eindproduct — {deliverable.title}
+                  </h3>
+                  <span className="text-xs italic ml-auto shrink-0 text-muted-foreground">
+                    {deliverableStatus === "working"
+                      ? "Aan het samenstellen..."
+                      : deliverableStatus === "error"
+                        ? "Mislukt"
+                        : "Klaar"}
+                  </span>
+                </div>
+
+                <p className="text-xs text-muted-foreground font-['Inter'] mb-4">
+                  {deliverable.note}
+                </p>
+
+                {deliverableStatus === "error" ? (
+                  <div className="border-l-2 border-destructive bg-destructive/5 px-4 py-3 text-sm text-destructive font-['Inter']">
+                    Het eindproduct kon niet worden samengesteld
+                    {deliverableError ? `: ${deliverableError}` : "."} De
+                    teamtekst hierboven blijft bruikbaar.
+                  </div>
+                ) : (
+                  <>
+                    {deliverableStatus === "done" && (
+                      <div className="flex items-center gap-1 mb-3">
+                        <button
+                          type="button"
+                          onClick={handleDeliverableCopy}
+                          data-testid="button-deliverable-copy"
+                          className="inline-flex items-center gap-1.5 font-['Space_Mono'] text-[10px] uppercase tracking-widest text-muted-foreground hover:text-accent transition-colors px-2 py-1"
+                        >
+                          {deliverableCopied ? (
+                            <Check className="w-3.5 h-3.5 text-green-600" />
+                          ) : (
+                            <Copy className="w-3.5 h-3.5" />
+                          )}
+                          Kopiëren
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleDeliverableDownload}
+                          data-testid="button-deliverable-download"
+                          className="inline-flex items-center gap-1.5 font-['Space_Mono'] text-[10px] uppercase tracking-widest text-muted-foreground hover:text-accent transition-colors px-2 py-1"
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                          {deliverable.filename}
+                        </button>
+                      </div>
+                    )}
+                    <pre className="whitespace-pre-wrap break-words bg-foreground text-background p-5 font-['Space_Mono'] text-xs leading-relaxed shadow-[4px_4px_0px_hsl(var(--foreground))] border border-foreground overflow-x-auto">
+                      {deliverableContent}
+                      {deliverableStatus === "working" && (
+                        <span className="inline-block w-2 h-4 bg-background/80 animate-pulse align-middle ml-0.5" />
+                      )}
+                    </pre>
+                  </>
+                )}
               </div>
             )}
           </div>

@@ -45,29 +45,29 @@ If the request is vague, ask one focused round of clarifying questions first.
 
 ## Routing guide
 
-| If the request is about… | Route to |
-|---|---|
-| Campaign strategy, account structure, budgets at a strategic level | Google Ads Strategist |
-| Building a campaign from approved strategy (structure, ad groups, keywords, ads, tracking checklist) | Google Ads Setup Specialist |
-| Google Shopping / Performance Max feeds, Merchant Center, product-feed structure, attributes, disapprovals | Shopping & Feed Specialist |
-| Search terms, bidding, budgets, CPA/ROAS, performance fixes on a live account | Google Ads Optimization Specialist |
-| Monthly performance summary or client-facing report | Reporting Specialist |
-| Ad copy, headlines, descriptions, hooks, on-brand text | Copywriter |
-| Full paid-ad creative sets: distinct angles with on-image text, primary text, headlines & descriptions for Meta or Google Display/Demand Gen (use `workflows/ad-creatives.md`) | Copywriter (ad-creatives specialty) |
-| Organic search, technical/on-page/local SEO, keyword & content strategy | SEO Specialist |
-| Paid social on Meta (Facebook & Instagram): strategy, structure, audiences, creative direction | Meta Ads Strategist |
-| Landing pages, conversion design, message match, page structure / web design review | Landing Page / Web Design Specialist |
-| Building / coding a landing page or site from an approved spec | Web Developer / Builder |
-| Conversion tracking, GA4, pixel / Conversions API, measurement integrity | Analytics & Tracking Specialist |
-| Client updates, answering client questions, relationship communication | Client Success Agent |
-| New-business proposals, pitches, prospect qualification | Sales / Proposal Agent |
-| Organic social posts, newsletters, content calendars, video scripts | Copywriter (content & social specialty) |
-| Email marketing, newsletters as a channel, automation flows, lifecycle/retention, list segmentation | Email & Marketing Automation Specialist |
-| Producing the actual visual ad assets, banners, email visuals, or motion/video from an approved creative direction | Creative Designer |
-| Conversion-rate testing program, experiment design, funnel optimization, reading test results | CRO Specialist |
-| Who the client competes with, market/landscape research, competitor offers & ad angles, SERP/auction read | Competitive Research Analyst |
-| Onboarding a newly signed client: intake, building the client fiche, kickoff checklist | Client Onboarding Agent |
-| ClickUp task creation | Note as future scope (see `AGENTS.md`) |
+| If the request is about… | Route to | Workflow |
+|---|---|---|
+| Campaign strategy, account structure, budgets at a strategic level | Google Ads Strategist | `workflows/campaign-setup.md` |
+| Building a campaign from approved strategy (structure, ad groups, keywords, ads, tracking checklist) | Google Ads Setup Specialist | `workflows/campaign-setup.md` |
+| Google Shopping / Performance Max feeds, Merchant Center, product-feed structure, attributes, disapprovals | Shopping & Feed Specialist | — |
+| Search terms, bidding, budgets, CPA/ROAS, performance fixes on a live account | Google Ads Optimization Specialist | `workflows/account-audit.md` |
+| Monthly performance summary or client-facing report | Reporting Specialist | `workflows/monthly-reporting.md` |
+| Ad copy, headlines, descriptions, hooks, on-brand text | Copywriter | — |
+| Full paid-ad creative sets: distinct angles with on-image text, primary text, headlines & descriptions for Meta or Google Display/Demand Gen (use `workflows/ad-creatives.md`) | Copywriter (ad-creatives specialty) | `workflows/ad-creatives.md` |
+| Organic search, technical/on-page/local SEO, keyword & content strategy | SEO Specialist | `workflows/seo-audit.md` |
+| Paid social on Meta (Facebook & Instagram): strategy, structure, audiences, creative direction | Meta Ads Strategist | `workflows/meta-ads-setup.md` |
+| Landing pages, conversion design, message match, page structure / web design review | Landing Page / Web Design Specialist | `workflows/landing-page-review.md` |
+| Building / coding a landing page or site from an approved spec | Web Developer / Builder | `workflows/web-build.md` |
+| Conversion tracking, GA4, pixel / Conversions API, measurement integrity | Analytics & Tracking Specialist | `workflows/tracking-setup.md` |
+| Client updates, answering client questions, relationship communication | Client Success Agent | `workflows/client-update.md`, `workflows/client-email.md` |
+| New-business proposals, pitches, prospect qualification | Sales / Proposal Agent | `workflows/sales-proposal.md` |
+| Organic social posts, newsletters, content calendars, video scripts | Copywriter (content & social specialty) | — |
+| Email marketing, newsletters as a channel, automation flows, lifecycle/retention, list segmentation | Email & Marketing Automation Specialist | — |
+| Producing the actual visual ad assets, banners, email visuals, or motion/video from an approved creative direction | Creative Designer | `workflows/ad-creatives.md` |
+| Conversion-rate testing program, experiment design, funnel optimization, reading test results | CRO Specialist | — |
+| Who the client competes with, market/landscape research, competitor offers & ad angles, SERP/auction read | Competitive Research Analyst | — |
+| Onboarding a newly signed client: intake, building the client fiche, kickoff checklist | Client Onboarding Agent | — |
+| ClickUp task creation | Note as future scope (see `AGENTS.md`) | — |
 
 A single request may involve several agents (e.g. campaign setup → Strategist, then Setup Specialist, then Copywriter). Sequence them and note dependencies.
 

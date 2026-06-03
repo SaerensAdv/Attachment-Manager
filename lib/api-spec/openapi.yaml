@@ -826,6 +826,7 @@ components:
         - portraitUrl
         - portraitThumbUrl
         - layer
+        - head
       properties:
         slug:
           type: string
@@ -867,6 +868,11 @@ components:
         layer:
           $ref: "#/components/schemas/TeamLayer"
           description: The hierarchy layer this member belongs to (group + order).
+        head:
+          $ref: "#/components/schemas/TeamLayer"
+          description: >-
+            The leadership head this member reports to (organizational reporting
+            line only; reuses the layer shape: id, order, title, description).
     TeamRoster:
       type: object
       required: [employees]

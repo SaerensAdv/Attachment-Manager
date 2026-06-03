@@ -5,7 +5,7 @@ import {
   type DocFile,
 } from "./docs";
 import { ALWAYS_KNOWLEDGE } from "./generate-context";
-import { hierarchySlugs } from "./team";
+import { hierarchySlugs, headSlugs } from "./team";
 
 // An agent can opt out of the hierarchy check by declaring itself deliberately
 // layer-less with an HTML comment, e.g. `<!-- unlisted: cross-cutting -->`.
@@ -131,6 +131,26 @@ export function validateDocs(extra: DocFile[] = []): ValidationReport {
         source: agentsDoc.id,
         target: file.id,
         message: `Agent '${file.title}' (${slug}) staat niet in de "Agent Hierarchy" van AGENTS.md en valt daardoor in 'Overig'. Voeg de agent toe aan een laag, of markeer 'm bewust laagloos met '<!-- unlisted: ... -->' in ${file.id}.`,
+      });
+    }
+  }
+
+  // 4b. Agents not placed under a head in the AGENTS.md "Leadership & reporting
+  //     line" section. Unlike the function layer, every agent must have a
+  //     reporting line, so there is no opt-out marker here — a missing head means
+  //     the agent silently lands in the "Nog geen rapportagelijn" catch-all.
+  if (agentsDoc) {
+    const withHead = headSlugs(agentsDoc.content);
+    for (const file of files) {
+      if (file.category !== "agent") continue;
+      const slug = file.id.replace(/^agents\//, "").replace(/\.md$/, "");
+      if (withHead.has(slug)) continue;
+      issues.push({
+        severity: "warning",
+        kind: "headless-agent",
+        source: agentsDoc.id,
+        target: file.id,
+        message: `Agent '${file.title}' (${slug}) staat niet onder een head in de "Leadership & reporting line" van AGENTS.md en valt daardoor buiten de rapportagelijn. Voeg de agent toe aan een head in ${agentsDoc.id}.`,
       });
     }
   }

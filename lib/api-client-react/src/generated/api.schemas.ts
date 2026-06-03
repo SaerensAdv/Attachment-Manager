@@ -176,6 +176,8 @@ export interface TeamMember {
   portraitThumbUrl: string | null;
   /** The hierarchy layer this member belongs to (group + order). */
   layer: TeamLayer;
+  /** The leadership head this member reports to (organizational reporting line only; reuses the layer shape: id, order, title, description). */
+  head: TeamLayer;
 }
 
 export interface TeamRoster {

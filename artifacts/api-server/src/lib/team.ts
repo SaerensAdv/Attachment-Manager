@@ -29,6 +29,7 @@ export interface TeamMember {
   portraitUrl: string | null;
   portraitThumbUrl: string | null;
   layer: TeamLayer;
+  head: TeamLayer;
 }
 
 /**
@@ -106,6 +107,66 @@ const FALLBACK_LAYER: TeamLayer = {
 };
 
 /**
+ * The leadership "heads" — the *reporting line* layer (who answers to whom),
+ * separate from the function-based {@link TEAM_LAYERS}. Like the layers, this
+ * array owns only the Dutch display metadata; which agent reports to which head
+ * is derived from the "Leadership & reporting line" section of AGENTS.md (see
+ * {@link headSlugsFromAgents}), keyed by the numbered item matching `order`.
+ */
+const TEAM_HEADS: TeamLayer[] = [
+  {
+    id: "direction",
+    order: 0,
+    title: "Directie & orchestratie",
+    description:
+      "De rechterhand van de CEO. Leest elke aanvraag, routeert ze en stelt de briefing op — boven de heads.",
+  },
+  {
+    id: "paid-media",
+    order: 1,
+    title: "Paid Media",
+    description:
+      "Betaalde acquisitie over Google en Meta, onder leiding van de Head of Paid Media.",
+  },
+  {
+    id: "seo-web",
+    order: 2,
+    title: "SEO & Web",
+    description:
+      "Organische zichtbaarheid, de website, conversie en meting, onder leiding van de Head of SEO & Web.",
+  },
+  {
+    id: "content-creative",
+    order: 3,
+    title: "Content & Creatie",
+    description:
+      "Boodschap, copy en een natuurlijke klantklare stem, onder leiding van de Head of Content & Creative.",
+  },
+  {
+    id: "client-growth",
+    order: 4,
+    title: "Klant & Groei",
+    description:
+      "De klantrelatie, nieuwe opdrachten en marktinzicht, onder leiding van de Head of Client & Growth.",
+  },
+  {
+    id: "quality",
+    order: 5,
+    title: "Kwaliteit & Compliance",
+    description:
+      "Overkoepelende kwaliteitspoort die elke head bedient en rechtstreeks aan de Orchestrator rapporteert.",
+  },
+];
+
+/** Catch-all head for slugs not assigned to any head in AGENTS.md. */
+const FALLBACK_HEAD: TeamLayer = {
+  id: "head-other",
+  order: 98,
+  title: "Nog geen rapportagelijn",
+  description: "Nog niet toegewezen aan een head in de rapportagelijn.",
+};
+
+/**
  * Parse the "Agent Hierarchy" section of AGENTS.md into a map of hierarchy
  * order (the leading number of each list item) → the agent slugs listed under
  * it. Each numbered item runs until the next numbered item; every
@@ -173,6 +234,70 @@ function layerForSlug(
   layerBySlug: Map<string, TeamLayer>,
 ): TeamLayer {
   return layerBySlug.get(slug) ?? FALLBACK_LAYER;
+}
+
+/**
+ * Parse the "Leadership & reporting line" section of AGENTS.md the same way as
+ * the hierarchy: each numbered item (its leading number = a head's `order`)
+ * lists the `agents/<slug>.md` that report to that head. This makes AGENTS.md
+ * the single source of truth for the reporting line too.
+ */
+function headSlugsFromAgents(agentsContent: string): Map<number, Set<string>> {
+  const result = new Map<number, Set<string>>();
+  const section = extractSection(agentsContent, /Leadership & reporting line/i);
+  if (!section) return result;
+
+  let currentOrder: number | null = null;
+  for (const line of section.split(/\r?\n/)) {
+    const itemMatch = line.match(/^\s*(\d+)\.\s/);
+    if (itemMatch) {
+      currentOrder = Number.parseInt(itemMatch[1], 10);
+    }
+    if (currentOrder === null) continue;
+    for (const ref of line.matchAll(/agents\/([a-z0-9-]+)\.md/gi)) {
+      const slug = ref[1];
+      let set = result.get(currentOrder);
+      if (!set) {
+        set = new Set<string>();
+        result.set(currentOrder, set);
+      }
+      set.add(slug);
+    }
+  }
+  return result;
+}
+
+/**
+ * Every agent slug placed under a numbered item in the AGENTS.md "Leadership &
+ * reporting line" section, flattened across all heads. Doc validation uses this
+ * to spot agents that were never given a head (and would silently fall into the
+ * "Nog geen rapportagelijn" catch-all).
+ */
+export function headSlugs(agentsContent: string): Set<string> {
+  const all = new Set<string>();
+  for (const set of headSlugsFromAgents(agentsContent).values()) {
+    for (const slug of set) all.add(slug);
+  }
+  return all;
+}
+
+/** Resolve every agent slug to the head it reports to (display + reporting line). */
+function buildHeadBySlug(agentsContent: string): Map<string, TeamLayer> {
+  const slugsByOrder = headSlugsFromAgents(agentsContent);
+  const bySlug = new Map<string, TeamLayer>();
+  for (const head of TEAM_HEADS) {
+    for (const slug of slugsByOrder.get(head.order) ?? []) {
+      bySlug.set(slug, head);
+    }
+  }
+  return bySlug;
+}
+
+function headForSlug(
+  slug: string,
+  headBySlug: Map<string, TeamLayer>,
+): TeamLayer {
+  return headBySlug.get(slug) ?? FALLBACK_HEAD;
 }
 
 /** The bullet labels used inside each agent's "Character & personality" list. */
@@ -243,6 +368,7 @@ export async function getTeamRoster(): Promise<TeamMember[]> {
   );
   const agentsDoc = getDocFile("AGENTS.md");
   const layerBySlug = buildLayerBySlug(agentsDoc?.content ?? "");
+  const headBySlug = buildHeadBySlug(agentsDoc?.content ?? "");
   const index = await loadPortraitIndex();
 
   const members = agents.map((doc): TeamMember => {
@@ -272,6 +398,7 @@ export async function getTeamRoster(): Promise<TeamMember[]> {
           })
         : null,
       layer: layerForSlug(slug, layerBySlug),
+      head: headForSlug(slug, headBySlug),
     };
   });
 

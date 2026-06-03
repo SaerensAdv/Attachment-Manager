@@ -163,7 +163,13 @@ export const GetTeamResponse = zod.object({
   "order": zod.number().describe('Fixed top-to-bottom position of the layer (1 = Orchestrator).'),
   "title": zod.string().describe('Editorial Dutch title for the hierarchy layer.'),
   "description": zod.string().describe('Short editorial description of what this layer does.')
-}).describe('The hierarchy layer this member belongs to (group + order).')
+}).describe('The hierarchy layer this member belongs to (group + order).'),
+  "head": zod.object({
+  "id": zod.string().describe('Stable layer identifier from the agent hierarchy (e.g. strategy).'),
+  "order": zod.number().describe('Fixed top-to-bottom position of the layer (1 = Orchestrator).'),
+  "title": zod.string().describe('Editorial Dutch title for the hierarchy layer.'),
+  "description": zod.string().describe('Short editorial description of what this layer does.')
+}).describe('The leadership head this member reports to (organizational reporting line only; reuses the layer shape: id, order, title, description).')
 }))
 })
 

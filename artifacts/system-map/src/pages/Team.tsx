@@ -234,23 +234,24 @@ export default function Team() {
     [employees, selectedSlug],
   );
 
-  // The team grouped per hierarchy layer (from AGENTS.md), in fixed top-to-bottom
-  // order. Members keep their alphabetical order within a layer; empty layers are
-  // simply absent because they never get any members pushed into them.
-  const layers = useMemo(() => {
+  // The team grouped by leadership head (the reporting line from AGENTS.md), in
+  // fixed top-to-bottom order. Members keep their alphabetical order within a
+  // head; empty heads are simply absent. Each card still shows its function layer
+  // as a caption, so both the reporting line and the kind of work stay visible.
+  const heads = useMemo(() => {
     const byId = new Map<
       string,
-      { layer: TeamMember["layer"]; members: TeamMember[] }
+      { head: TeamMember["head"]; members: TeamMember[] }
     >();
     for (const member of employees) {
-      const group = byId.get(member.layer.id);
+      const group = byId.get(member.head.id);
       if (group) {
         group.members.push(member);
       } else {
-        byId.set(member.layer.id, { layer: member.layer, members: [member] });
+        byId.set(member.head.id, { head: member.head, members: [member] });
       }
     }
-    return [...byId.values()].sort((a, b) => a.layer.order - b.layer.order);
+    return [...byId.values()].sort((a, b) => a.head.order - b.head.order);
   }, [employees]);
 
   if (isLoading) {
@@ -328,21 +329,28 @@ export default function Team() {
           </div>
         )}
 
-        {/* Roster grouped per hierarchy layer, top to bottom */}
+        {/* Reporting-line note */}
+        <Reveal>
+          <p className="font-['Space_Mono'] text-[10px] uppercase tracking-[0.2em] text-muted-foreground mb-8">
+            Rapportagelijn: specialisten → head → Orchestrator → CEO
+          </p>
+        </Reveal>
+
+        {/* Roster grouped per leadership head, top to bottom */}
         <div className="flex flex-col gap-14">
-          {layers.map(({ layer, members }) => (
-            <section key={layer.id}>
+          {heads.map(({ head, members }) => (
+            <section key={head.id}>
               <Reveal>
                 <div className="flex items-baseline gap-4 border-b-2 border-foreground pb-3 mb-7">
                   <span className="font-['Playfair_Display'] font-black text-3xl italic leading-none text-foreground/30 shrink-0">
-                    {String(layer.order).padStart(2, "0")}
+                    {String(head.order).padStart(2, "0")}
                   </span>
                   <div className="min-w-0">
                     <h2 className="font-['Playfair_Display'] font-black text-2xl md:text-3xl uppercase tracking-tight leading-none">
-                      {layer.title}
+                      {head.title}
                     </h2>
                     <p className="font-['Inter'] text-sm text-muted-foreground mt-2 max-w-2xl">
-                      {layer.description}
+                      {head.description}
                     </p>
                   </div>
                 </div>
@@ -376,6 +384,9 @@ export default function Team() {
                               {member.oneLiner}
                             </p>
                           )}
+                          <span className="inline-block mt-3 font-['Space_Mono'] text-[9px] uppercase tracking-widest text-muted-foreground/80 border border-foreground/20 px-1.5 py-0.5">
+                            {member.layer.title}
+                          </span>
                         </div>
                       </button>
                     </Reveal>

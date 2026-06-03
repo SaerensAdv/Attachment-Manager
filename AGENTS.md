@@ -52,6 +52,33 @@ The AI team is organized as follows. Each layer lists the agent files that belon
 8. **Client-facing & Growth** — manage the client relationship and new business.
    - Agents: `agents/client-success-agent.md`, `agents/sales-proposal-agent.md`, `agents/client-onboarding-agent.md`
 
+## Leadership & reporting line (heads)
+
+The hierarchy above groups agents by **what kind of work** they do. This section adds the **reporting line**: who answers to whom. The line is:
+
+```
+specialists → head → Orchestrator → CEO (human owner)
+```
+
+A **head** is a domain lead that a few specialists report to, mirroring how a real agency has functional leads under management. Heads roll up to the Orchestrator, who is the CEO's right hand; the Orchestrator rolls up to the human CEO.
+
+This is an **organizational layer only**. It defines reporting and grouping for the team page — it does **not** change how agents run. Heads are **not yet invoked at runtime**: today routing still goes Orchestrator → specialist directly (no runtime, routing, or generation change). Each numbered item lists the agents that report to that head; this is the single source of truth the team page uses to group people under heads.
+
+0. **Directie & orchestratie** — the CEO's right hand. Reads every request, routes it, and prepares the brief. Sits above the heads.
+   - Agents: `agents/orchestrator.md`
+1. **Head of Paid Media** — owns paid acquisition across Google and Meta.
+   - Agents: `agents/google-ads-strategist.md`, `agents/google-ads-setup-specialist.md`, `agents/google-ads-optimization-specialist.md`, `agents/meta-ads-strategist.md`
+2. **Head of SEO & Web** — owns organic visibility, the website, conversion, and measurement.
+   - Agents: `agents/seo-specialist.md`, `agents/web-developer.md`, `agents/landing-page-specialist.md`, `agents/cro-specialist.md`, `agents/analytics-tracking-specialist.md`
+3. **Head of Content & Creative** — owns messaging, copy, and a natural client-ready voice.
+   - Agents: `agents/copywriter.md`, `agents/humanizer.md`
+4. **Head of Client & Growth** — owns the client relationship, client-facing reporting, new business, and market insight.
+   - Agents: `agents/client-success-agent.md`, `agents/client-onboarding-agent.md`, `agents/reporting-specialist.md`, `agents/sales-proposal-agent.md`, `agents/competitive-research-analyst.md`
+5. **Overkoepelend — kwaliteit & compliance** — a cross-cutting quality gate that serves every head and reports straight to the Orchestrator, which is why it sits under no single domain head.
+   - Agents: `agents/qa-compliance-reviewer.md`
+
+When heads eventually become *active* roles (a real review/composition step in a workflow), that is a separate, future change tracked in `ROADMAP.md` — it is intentionally out of scope here.
+
 ## Current MVP Agents
 
 - Orchestrator Agent — `agents/orchestrator.md`

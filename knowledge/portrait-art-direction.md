@@ -63,8 +63,16 @@ Portretten staan in object storage onder het publieke zoekpad:
 serveert ze via `/api/storage/public-objects/<pad>` en rapporteert ze per
 teamlid in `GET /api/team`.
 
-## Volgende stap (buiten scope hier)
+## Gekozen richting & volledige set
 
-Kies één richting en werk de volledige set van 18 portretten af in die stijl,
-met behoud van de gedeelde art-direction hierboven, en plaats elk als
-`portraits/<slug>.png`.
+De gekozen richting is **Fotografisch (`photographic`)**: professionele
+studio-headshots met zacht natuurlijk vensterlicht, ondiepe scherptediepte en
+een neutrale warmgrijze achtergrond. De volledige set van 18 portretten is in
+deze stijl afgewerkt, met behoud van de gedeelde art-direction hierboven
+(kop-en-schouders, vierkant, gecentreerd, donkere top, één persoon per portret),
+en elk teamlid heeft een eigen herkenbaar gezicht passend bij zijn persona.
+
+Elk portret staat als `portraits/<slug>.png` in object storage en verschijnt
+automatisch op de Team-pagina (roster + profiel) en als rond node-portret op de
+Kaart. De drie eerder gegenereerde fotografische voorbeelden (Lotte, Marie,
+Ruben) zijn hergebruikt als hun definitieve portret.

@@ -30,6 +30,16 @@ block as `lib/objectStorage.ts`). `process.env.PUBLIC_OBJECT_SEARCH_PATHS` is a
 `<baseDir>/portrait-styles/...`. The code_execution sandbox has no `process.env`,
 so do uploads from bash/node, not the sandbox.
 
+## Chosen portrait direction
+The user picked the **photographic** direction (real studio headshot, soft window
+light, neutral warm-grey background, dark top) for the full 18-employee set, NOT
+editorial — even though the app's overall brand is editorial "Newsroom". The
+three pre-existing `photographic` style examples (orchestrator=Lotte,
+copywriter=Marie, analytics-tracking-specialist=Ruben) were promoted as-is to
+`portraits/<slug>.png`; the other 15 were generated to match that art-direction.
+**Why:** the style choice was not recorded anywhere in code/docs, so always
+confirm the chosen direction before regenerating the set.
+
 ## Image generation gotcha
 `generateImage` flat/avatar styles sometimes bake in name/role TEXT despite a
 negative prompt; add an explicit "plain empty background with no text anywhere"

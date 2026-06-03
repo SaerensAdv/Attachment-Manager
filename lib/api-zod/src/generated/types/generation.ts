@@ -19,4 +19,10 @@ export interface Generation {
   leadAgentPath: string;
   teamPaths: string[];
   finalMarkdown: string;
+  /** @nullable */
+  feedbackVerdict: string | null;
+  /** @nullable */
+  feedbackNote: string | null;
+  /** @nullable */
+  feedbackAt: Date | null;
 }

@@ -1,16 +1,33 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useGetGenerations,
   useGetGeneration,
   useDeleteGeneration,
+  useSetGenerationFeedback,
+  useGetProposals,
+  useCreateProposals,
+  useAcceptProposal,
+  useRejectProposal,
   getGetGenerationsQueryKey,
   getGetGenerationQueryKey,
+  getGetProposalsQueryKey,
   type GenerationSummary,
+  type ImprovementProposal,
 } from "@workspace/api-client-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { Loader2, Trash2, X, Copy, Check, Download } from "lucide-react";
+import {
+  Loader2,
+  Trash2,
+  X,
+  Copy,
+  Check,
+  Download,
+  ThumbsUp,
+  ThumbsDown,
+  Lightbulb,
+} from "lucide-react";
 
 function formatDate(iso: string): string {
   const d = new Date(iso);
@@ -44,6 +61,35 @@ export default function History() {
     },
   });
   const deleteMut = useDeleteGeneration();
+
+  const feedbackMut = useSetGenerationFeedback();
+  const createProposalsMut = useCreateProposals();
+  const acceptMut = useAcceptProposal();
+  const rejectMut = useRejectProposal();
+
+  const [verdict, setVerdict] = useState<"approved" | "rejected" | null>(null);
+  const [note, setNote] = useState("");
+  const [savedVerdict, setSavedVerdict] = useState<string | null>(null);
+
+  const proposalsQuery = useGetProposals(selected ?? 0, {
+    query: {
+      enabled: selected !== null,
+      queryKey: getGetProposalsQueryKey(selected ?? 0),
+    },
+  });
+  const proposals: ImprovementProposal[] = proposalsQuery.data?.proposals ?? [];
+
+  useEffect(() => {
+    setVerdict(
+      (detail.data?.feedbackVerdict as "approved" | "rejected" | null) ?? null,
+    );
+    setNote(detail.data?.feedbackNote ?? "");
+    setSavedVerdict(detail.data?.feedbackVerdict ?? null);
+  }, [
+    detail.data?.id,
+    detail.data?.feedbackVerdict,
+    detail.data?.feedbackNote,
+  ]);
 
   const open = (id: number) => {
     setSelected(id);
@@ -91,6 +137,42 @@ export default function History() {
     a.click();
     URL.revokeObjectURL(url);
   };
+
+  const refetchProposals = () => {
+    if (selected !== null) {
+      queryClient.invalidateQueries({
+        queryKey: getGetProposalsQueryKey(selected),
+      });
+    }
+  };
+
+  const handleSaveFeedback = () => {
+    if (selected === null || !verdict) return;
+    feedbackMut.mutate(
+      { id: selected, data: { verdict, note: note.trim() || null } },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries({
+            queryKey: getGetGenerationQueryKey(selected),
+          });
+          setSavedVerdict(verdict);
+        },
+      },
+    );
+  };
+
+  const handlePropose = () => {
+    if (selected === null) return;
+    createProposalsMut.mutate(
+      { id: selected },
+      { onSuccess: refetchProposals },
+    );
+  };
+
+  const handleAccept = (id: number) =>
+    acceptMut.mutate({ id }, { onSuccess: refetchProposals });
+  const handleReject = (id: number) =>
+    rejectMut.mutate({ id }, { onSuccess: refetchProposals });
 
   if (isLoading) {
     return (
@@ -345,6 +427,217 @@ export default function History() {
                     </article>
                   )}
                 </div>
+
+                {/* Quality control + learning loop */}
+                {detail.data && (
+                  <div className="border-t-2 border-foreground px-6 lg:px-10 py-8 bg-background/40">
+                    <p className="font-['Space_Mono'] text-[10px] uppercase tracking-widest text-muted-foreground mb-1">
+                      Kwaliteitscontrole
+                    </p>
+                    <h3 className="font-['Playfair_Display'] font-black text-xl uppercase tracking-tight mb-4">
+                      Jouw oordeel
+                    </h3>
+
+                    <div className="flex flex-wrap gap-3 mb-4">
+                      <button
+                        type="button"
+                        onClick={() => setVerdict("approved")}
+                        data-testid="button-verdict-approved"
+                        className={`py-2.5 px-4 border-2 font-['Space_Mono'] text-[11px] uppercase tracking-widest flex items-center gap-2 transition-colors ${
+                          verdict === "approved"
+                            ? "bg-foreground text-background border-foreground"
+                            : "border-foreground text-foreground hover:bg-foreground hover:text-background"
+                        }`}
+                      >
+                        <ThumbsUp className="w-4 h-4" />
+                        Goedgekeurd
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setVerdict("rejected")}
+                        data-testid="button-verdict-rejected"
+                        className={`py-2.5 px-4 border-2 font-['Space_Mono'] text-[11px] uppercase tracking-widest flex items-center gap-2 transition-colors ${
+                          verdict === "rejected"
+                            ? "bg-destructive text-destructive-foreground border-destructive"
+                            : "border-foreground text-foreground hover:bg-destructive hover:border-destructive hover:text-destructive-foreground"
+                        }`}
+                      >
+                        <ThumbsDown className="w-4 h-4" />
+                        Afgekeurd
+                      </button>
+                    </div>
+
+                    <textarea
+                      value={note}
+                      onChange={(e) => setNote(e.target.value)}
+                      data-testid="input-feedback-note"
+                      rows={3}
+                      placeholder="Wat moet er beter? Geef een concrete correctie of voorkeur. Dit voedt de voorgestelde verbeteringen."
+                      className="w-full border-2 border-foreground bg-card px-4 py-3 text-sm font-['Inter'] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-0 focus:border-accent resize-y"
+                    />
+
+                    <div className="flex flex-wrap items-center gap-3 mt-3">
+                      <button
+                        type="button"
+                        onClick={handleSaveFeedback}
+                        disabled={!verdict || feedbackMut.isPending}
+                        data-testid="button-save-feedback"
+                        className="py-2.5 px-4 bg-foreground text-background border-2 border-foreground font-['Space_Mono'] text-[11px] uppercase tracking-widest flex items-center gap-2 shadow-[4px_4px_0px_hsl(var(--accent))] active:translate-x-1 active:translate-y-1 active:shadow-none transition-all disabled:opacity-40 disabled:pointer-events-none"
+                      >
+                        {feedbackMut.isPending ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Check className="w-4 h-4" />
+                        )}
+                        Beoordeling bewaren
+                      </button>
+                      {savedVerdict && (
+                        <span className="font-['Space_Mono'] text-[10px] uppercase tracking-widest text-muted-foreground">
+                          Bewaard:{" "}
+                          {savedVerdict === "approved"
+                            ? "Goedgekeurd"
+                            : "Afgekeurd"}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Learning loop */}
+                    <div className="mt-8 border-t border-foreground/20 pt-6">
+                      <div className="flex flex-wrap items-start justify-between gap-3 mb-1">
+                        <div>
+                          <p className="font-['Space_Mono'] text-[10px] uppercase tracking-widest text-muted-foreground mb-1">
+                            Leren
+                          </p>
+                          <h3 className="font-['Playfair_Display'] font-black text-xl uppercase tracking-tight">
+                            Voorgestelde verbeteringen
+                          </h3>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handlePropose}
+                          disabled={!savedVerdict || createProposalsMut.isPending}
+                          data-testid="button-propose-improvements"
+                          className="py-2.5 px-4 border-2 border-foreground text-foreground font-['Space_Mono'] text-[11px] uppercase tracking-widest flex items-center gap-2 hover:bg-foreground hover:text-background transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                        >
+                          {createProposalsMut.isPending ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Lightbulb className="w-4 h-4" />
+                          )}
+                          Stel verbeteringen voor
+                        </button>
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-5 font-['Inter'] max-w-2xl">
+                        Op basis van je oordeel stelt het systeem concrete
+                        documentaanpassingen voor. Jij bevestigt elke aanpassing
+                        apart voor ze wordt toegepast.
+                      </p>
+
+                      {createProposalsMut.isError && (
+                        <p className="text-sm text-destructive font-['Inter'] mb-4">
+                          Het voorstellen van verbeteringen is mislukt. Probeer
+                          het opnieuw.
+                        </p>
+                      )}
+
+                      {proposalsQuery.isLoading ? (
+                        <div className="h-20 flex items-center justify-center">
+                          <Loader2 className="w-5 h-5 animate-spin text-accent" />
+                        </div>
+                      ) : proposals.length === 0 ? (
+                        <p className="font-['Space_Mono'] text-[10px] uppercase tracking-widest text-muted-foreground">
+                          {createProposalsMut.isPending
+                            ? "Verbeteringen worden opgesteld..."
+                            : "Nog geen voorstellen"}
+                        </p>
+                      ) : (
+                        <div className="flex flex-col gap-4">
+                          {proposals.map((p) => {
+                            const accepting =
+                              acceptMut.isPending &&
+                              acceptMut.variables?.id === p.id;
+                            const rejecting =
+                              rejectMut.isPending &&
+                              rejectMut.variables?.id === p.id;
+                            return (
+                              <div
+                                key={p.id}
+                                data-testid={`proposal-${p.id}`}
+                                className="border border-foreground bg-card p-5 shadow-[3px_3px_0px_hsl(var(--foreground))]"
+                              >
+                                <div className="flex items-center justify-between gap-2 mb-3">
+                                  <span className="font-['Space_Mono'] text-[9px] uppercase tracking-widest border border-foreground px-2 py-1 shrink-0">
+                                    {p.targetType === "client"
+                                      ? "Klant"
+                                      : "Standaard"}
+                                  </span>
+                                  <span className="font-['Space_Mono'] text-[9px] uppercase tracking-widest text-muted-foreground truncate">
+                                    {p.targetLabel}
+                                  </span>
+                                </div>
+                                <p className="text-sm text-foreground font-['Inter'] italic mb-3">
+                                  {p.rationale}
+                                </p>
+                                <div className="border-l-2 border-accent bg-background/60 px-4 py-3 mb-4">
+                                  <p className="font-['Space_Mono'] text-[9px] uppercase tracking-widest text-muted-foreground mb-1">
+                                    Toe te voegen regel
+                                  </p>
+                                  <p className="text-sm text-foreground font-['Inter'] whitespace-pre-wrap">
+                                    {p.proposedText}
+                                  </p>
+                                </div>
+                                {p.status === "pending" ? (
+                                  <div className="flex flex-wrap gap-3">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleAccept(p.id)}
+                                      disabled={accepting || rejecting}
+                                      data-testid={`button-accept-proposal-${p.id}`}
+                                      className="py-2 px-4 bg-foreground text-background border-2 border-foreground font-['Space_Mono'] text-[10px] uppercase tracking-widest flex items-center gap-2 shadow-[3px_3px_0px_hsl(var(--accent))] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all disabled:opacity-40 disabled:pointer-events-none"
+                                    >
+                                      {accepting ? (
+                                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                      ) : (
+                                        <Check className="w-3.5 h-3.5" />
+                                      )}
+                                      Toepassen
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleReject(p.id)}
+                                      disabled={accepting || rejecting}
+                                      data-testid={`button-reject-proposal-${p.id}`}
+                                      className="py-2 px-4 border-2 border-foreground text-foreground font-['Space_Mono'] text-[10px] uppercase tracking-widest flex items-center gap-2 hover:bg-destructive hover:border-destructive hover:text-destructive-foreground transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                                    >
+                                      {rejecting ? (
+                                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                      ) : (
+                                        <X className="w-3.5 h-3.5" />
+                                      )}
+                                      Afwijzen
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <span
+                                    className={`font-['Space_Mono'] text-[10px] uppercase tracking-widest ${
+                                      p.status === "accepted"
+                                        ? "text-foreground"
+                                        : "text-muted-foreground"
+                                    }`}
+                                  >
+                                    {p.status === "accepted"
+                                      ? "Toegepast"
+                                      : "Afgewezen"}
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 {/* Footer / delete */}
                 <div className="flex items-center justify-end gap-3 border-t border-foreground/20 px-6 py-4">

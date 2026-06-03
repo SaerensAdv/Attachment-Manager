@@ -16,6 +16,8 @@ tags:
     description: Client profile management (persisted)
   - name: generations
     description: Saved AI team generations (archive/history)
+  - name: proposals
+    description: Doc improvement proposals from the learning loop
 paths:
   /healthz:
     get:
@@ -246,6 +248,161 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /generations/{id}/feedback:
+    put:
+      operationId: setGenerationFeedback
+      tags: [generations]
+      summary: Record the human QA verdict on a generation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FeedbackInput"
+      responses:
+        "200":
+          description: The updated generation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Generation"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Generation not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /generations/{id}/proposals:
+    get:
+      operationId: getProposals
+      tags: [proposals]
+      summary: List improvement proposals for a generation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: The proposals for this generation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProposalList"
+    post:
+      operationId: createProposals
+      tags: [proposals]
+      summary: Generate improvement proposals from the generation's feedback
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: The generated proposals
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProposalList"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Generation not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "502":
+          description: Proposal generation failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /proposals/{id}/accept:
+    post:
+      operationId: acceptProposal
+      tags: [proposals]
+      summary: Accept and apply an improvement proposal
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: The accepted proposal
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImprovementProposal"
+        "404":
+          description: Proposal not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Already decided
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "502":
+          description: Applying the proposal failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /proposals/{id}/reject:
+    post:
+      operationId: rejectProposal
+      tags: [proposals]
+      summary: Reject an improvement proposal
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: The rejected proposal
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImprovementProposal"
+        "404":
+          description: Proposal not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Already decided
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 components:
   schemas:
     HealthStatus:
@@ -464,6 +621,9 @@ components:
         - leadAgentPath
         - teamPaths
         - finalMarkdown
+        - feedbackVerdict
+        - feedbackNote
+        - feedbackAt
       properties:
         id:
           type: integer
@@ -494,6 +654,13 @@ components:
             type: string
         finalMarkdown:
           type: string
+        feedbackVerdict:
+          type: ["string", "null"]
+        feedbackNote:
+          type: ["string", "null"]
+        feedbackAt:
+          type: ["string", "null"]
+          format: date-time
     GenerationList:
       type: object
       required: [generations]
@@ -502,6 +669,61 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/GenerationSummary"
+    FeedbackInput:
+      type: object
+      required: [verdict]
+      properties:
+        verdict:
+          type: string
+          enum: [approved, rejected]
+        note:
+          type: ["string", "null"]
+    ImprovementProposal:
+      type: object
+      required:
+        - id
+        - generationId
+        - targetType
+        - targetPath
+        - targetLabel
+        - rationale
+        - proposedText
+        - status
+        - createdAt
+        - decidedAt
+      properties:
+        id:
+          type: integer
+        generationId:
+          type: integer
+        targetType:
+          type: string
+          description: "knowledge (an agency-wide standard) or client (this client only)."
+        targetPath:
+          type: string
+        targetLabel:
+          type: string
+        rationale:
+          type: string
+        proposedText:
+          type: string
+        status:
+          type: string
+          description: "pending, accepted, or rejected."
+        createdAt:
+          type: string
+          format: date-time
+        decidedAt:
+          type: ["string", "null"]
+          format: date-time
+    ProposalList:
+      type: object
+      required: [proposals]
+      properties:
+        proposals:
+          type: array
+          items:
+            $ref: "#/components/schemas/ImprovementProposal"
     ErrorResponse:
       type: object
       required: [error]

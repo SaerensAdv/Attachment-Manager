@@ -31,6 +31,23 @@ export async function getGeneration(id: number): Promise<Generation | null> {
   return row ?? null;
 }
 
+/**
+ * Record the human QA verdict on a generation. The user is the single quality
+ * gate; this verdict (+ optional correction note) drives the learning loop.
+ */
+export async function updateGenerationFeedback(
+  id: number,
+  verdict: string,
+  note: string | null,
+): Promise<Generation | null> {
+  const [row] = await db
+    .update(generationsTable)
+    .set({ feedbackVerdict: verdict, feedbackNote: note, feedbackAt: new Date() })
+    .where(eq(generationsTable.id, id))
+    .returning();
+  return row ?? null;
+}
+
 /** Delete a generation. Returns true when a row was removed. */
 export async function deleteGeneration(id: number): Promise<boolean> {
   const [row] = await db

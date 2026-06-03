@@ -6,6 +6,7 @@ import routeRouter from "./route";
 import intakeRouter from "./intake";
 import clientsRouter from "./clients";
 import generationsRouter from "./generations";
+import proposalsRouter from "./proposals";
 
 const router: IRouter = Router();
 
@@ -16,5 +17,6 @@ router.use(routeRouter);
 router.use(intakeRouter);
 router.use(clientsRouter);
 router.use(generationsRouter);
+router.use(proposalsRouter);
 
 export default router;

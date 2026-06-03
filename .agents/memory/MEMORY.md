@@ -5,3 +5,4 @@
 - [System Map branding direction](branding-direction.md) — editorial "Newsroom" light theme (cream/ink/indigo, Playfair+Inter+Space Mono); theme in index.css :root, no dark toggle.
 - [Deliverable layer](deliverable-layer.md) — workflows opt into a typed end product via `<!-- deliverable: kind -->`; best-effort after team loop, never loses markdown; strip HTML comments before any ReactMarkdown (no rehype-raw).
 - [Client DB ↔ doc-graph bridge](client-db-doc-bridge.md) — DB clients become synthetic `clients/db/<id>.md` DocFiles; every doc consumer must inject loadClientDocs(); invalidate clients+doc-graph keys after mutations.
+- [Learning loop (review→proposals→apply)](learning-loop.md) — per-change confirmation; non-destructive append; accept/reject must be an atomic compare-and-set (claim WHERE pending) + revert-on-apply-failure.

@@ -396,3 +396,17 @@ export function getDocFile(path: string, extra: DocFile[] = []): DocFile | null 
   const files = [...scanFiles(), ...extra];
   return files.find((f) => f.id === path) ?? null;
 }
+
+/**
+ * All doc files (filesystem + any injected `extra` docs), content included.
+ * Used by the learning loop to give the model the current state of the docs it
+ * is allowed to improve.
+ */
+export function listDocFiles(extra: DocFile[] = []): DocFile[] {
+  return [...scanFiles(), ...extra];
+}
+
+/** The absolute documentation root on disk (where AGENTS.md + agents/ live). */
+export function getDocsRoot(): string {
+  return resolveDocsRoot();
+}

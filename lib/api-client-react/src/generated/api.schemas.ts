@@ -153,10 +153,50 @@ export interface Generation {
   leadAgentPath: string;
   teamPaths: string[];
   finalMarkdown: string;
+  /** @nullable */
+  feedbackVerdict: string | null;
+  /** @nullable */
+  feedbackNote: string | null;
+  /** @nullable */
+  feedbackAt: string | null;
 }
 
 export interface GenerationList {
   generations: GenerationSummary[];
+}
+
+export type FeedbackInputVerdict = typeof FeedbackInputVerdict[keyof typeof FeedbackInputVerdict];
+
+
+export const FeedbackInputVerdict = {
+  approved: 'approved',
+  rejected: 'rejected',
+} as const;
+
+export interface FeedbackInput {
+  verdict: FeedbackInputVerdict;
+  /** @nullable */
+  note?: string | null;
+}
+
+export interface ImprovementProposal {
+  id: number;
+  generationId: number;
+  /** knowledge (an agency-wide standard) or client (this client only). */
+  targetType: string;
+  targetPath: string;
+  targetLabel: string;
+  rationale: string;
+  proposedText: string;
+  /** pending, accepted, or rejected. */
+  status: string;
+  createdAt: string;
+  /** @nullable */
+  decidedAt: string | null;
+}
+
+export interface ProposalList {
+  proposals: ImprovementProposal[];
 }
 
 export interface ErrorResponse {

@@ -26,10 +26,13 @@ import type {
   DocContent,
   DocGraph,
   ErrorResponse,
+  FeedbackInput,
   Generation,
   GenerationList,
   GetDocContentParams,
-  HealthStatus
+  HealthStatus,
+  ImprovementProposal,
+  ProposalList
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -875,5 +878,364 @@ export const useDeleteGeneration = <TError = ErrorType<ErrorResponse>,
         TContext
       > => {
       return useMutation(getDeleteGenerationMutationOptions(options));
+    }
+
+export const getSetGenerationFeedbackUrl = (id: number,) => {
+
+
+
+
+  return `/api/generations/${id}/feedback`
+}
+
+/**
+ * @summary Record the human QA verdict on a generation
+ */
+export const setGenerationFeedback = async (id: number,
+    feedbackInput: FeedbackInput, options?: RequestInit): Promise<Generation> => {
+
+  return customFetch<Generation>(getSetGenerationFeedbackUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      feedbackInput,)
+  }
+);}
+
+
+
+
+export const getSetGenerationFeedbackMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setGenerationFeedback>>, TError,{id: number;data: BodyType<FeedbackInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setGenerationFeedback>>, TError,{id: number;data: BodyType<FeedbackInput>}, TContext> => {
+
+const mutationKey = ['setGenerationFeedback'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setGenerationFeedback>>, {id: number;data: BodyType<FeedbackInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  setGenerationFeedback(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetGenerationFeedbackMutationResult = NonNullable<Awaited<ReturnType<typeof setGenerationFeedback>>>
+    export type SetGenerationFeedbackMutationBody = BodyType<FeedbackInput>
+    export type SetGenerationFeedbackMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Record the human QA verdict on a generation
+ */
+export const useSetGenerationFeedback = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setGenerationFeedback>>, TError,{id: number;data: BodyType<FeedbackInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof setGenerationFeedback>>,
+        TError,
+        {id: number;data: BodyType<FeedbackInput>},
+        TContext
+      > => {
+      return useMutation(getSetGenerationFeedbackMutationOptions(options));
+    }
+
+export const getGetProposalsUrl = (id: number,) => {
+
+
+
+
+  return `/api/generations/${id}/proposals`
+}
+
+/**
+ * @summary List improvement proposals for a generation
+ */
+export const getProposals = async (id: number, options?: RequestInit): Promise<ProposalList> => {
+
+  return customFetch<ProposalList>(getGetProposalsUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetProposalsQueryKey = (id: number,) => {
+    return [
+    `/api/generations/${id}/proposals`
+    ] as const;
+    }
+
+
+export const getGetProposalsQueryOptions = <TData = Awaited<ReturnType<typeof getProposals>>, TError = ErrorType<unknown>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getProposals>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetProposalsQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getProposals>>> = ({ signal }) => getProposals(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getProposals>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetProposalsQueryResult = NonNullable<Awaited<ReturnType<typeof getProposals>>>
+export type GetProposalsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List improvement proposals for a generation
+ */
+
+export function useGetProposals<TData = Awaited<ReturnType<typeof getProposals>>, TError = ErrorType<unknown>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getProposals>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetProposalsQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateProposalsUrl = (id: number,) => {
+
+
+
+
+  return `/api/generations/${id}/proposals`
+}
+
+/**
+ * @summary Generate improvement proposals from the generation's feedback
+ */
+export const createProposals = async (id: number, options?: RequestInit): Promise<ProposalList> => {
+
+  return customFetch<ProposalList>(getCreateProposalsUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getCreateProposalsMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createProposals>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createProposals>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['createProposals'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createProposals>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  createProposals(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateProposalsMutationResult = NonNullable<Awaited<ReturnType<typeof createProposals>>>
+
+    export type CreateProposalsMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Generate improvement proposals from the generation's feedback
+ */
+export const useCreateProposals = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createProposals>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createProposals>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getCreateProposalsMutationOptions(options));
+    }
+
+export const getAcceptProposalUrl = (id: number,) => {
+
+
+
+
+  return `/api/proposals/${id}/accept`
+}
+
+/**
+ * @summary Accept and apply an improvement proposal
+ */
+export const acceptProposal = async (id: number, options?: RequestInit): Promise<ImprovementProposal> => {
+
+  return customFetch<ImprovementProposal>(getAcceptProposalUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getAcceptProposalMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof acceptProposal>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof acceptProposal>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['acceptProposal'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof acceptProposal>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  acceptProposal(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AcceptProposalMutationResult = NonNullable<Awaited<ReturnType<typeof acceptProposal>>>
+
+    export type AcceptProposalMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Accept and apply an improvement proposal
+ */
+export const useAcceptProposal = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof acceptProposal>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof acceptProposal>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getAcceptProposalMutationOptions(options));
+    }
+
+export const getRejectProposalUrl = (id: number,) => {
+
+
+
+
+  return `/api/proposals/${id}/reject`
+}
+
+/**
+ * @summary Reject an improvement proposal
+ */
+export const rejectProposal = async (id: number, options?: RequestInit): Promise<ImprovementProposal> => {
+
+  return customFetch<ImprovementProposal>(getRejectProposalUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getRejectProposalMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rejectProposal>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof rejectProposal>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['rejectProposal'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof rejectProposal>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  rejectProposal(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RejectProposalMutationResult = NonNullable<Awaited<ReturnType<typeof rejectProposal>>>
+
+    export type RejectProposalMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Reject an improvement proposal
+ */
+export const useRejectProposal = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rejectProposal>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof rejectProposal>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getRejectProposalMutationOptions(options));
     }
 

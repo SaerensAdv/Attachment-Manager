@@ -233,7 +233,10 @@ export const GetGenerationResponse = zod.object({
   "workflowPath": zod.string(),
   "leadAgentPath": zod.string(),
   "teamPaths": zod.array(zod.string()),
-  "finalMarkdown": zod.string()
+  "finalMarkdown": zod.string(),
+  "feedbackVerdict": zod.string().nullable(),
+  "feedbackNote": zod.string().nullable(),
+  "feedbackAt": zod.coerce.date().nullable()
 })
 
 
@@ -242,6 +245,125 @@ export const GetGenerationResponse = zod.object({
  */
 export const DeleteGenerationParams = zod.object({
   "id": zod.coerce.number()
+})
+
+
+/**
+ * @summary Record the human QA verdict on a generation
+ */
+export const SetGenerationFeedbackParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const SetGenerationFeedbackBody = zod.object({
+  "verdict": zod.enum(['approved', 'rejected']),
+  "note": zod.string().nullish()
+})
+
+export const SetGenerationFeedbackResponse = zod.object({
+  "id": zod.number(),
+  "clientName": zod.string(),
+  "workflowTitle": zod.string(),
+  "leadAgentTitle": zod.string(),
+  "teamTitles": zod.array(zod.string()),
+  "requestText": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "clientPath": zod.string(),
+  "workflowPath": zod.string(),
+  "leadAgentPath": zod.string(),
+  "teamPaths": zod.array(zod.string()),
+  "finalMarkdown": zod.string(),
+  "feedbackVerdict": zod.string().nullable(),
+  "feedbackNote": zod.string().nullable(),
+  "feedbackAt": zod.coerce.date().nullable()
+})
+
+
+/**
+ * @summary List improvement proposals for a generation
+ */
+export const GetProposalsParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetProposalsResponse = zod.object({
+  "proposals": zod.array(zod.object({
+  "id": zod.number(),
+  "generationId": zod.number(),
+  "targetType": zod.string().describe('knowledge (an agency-wide standard) or client (this client only).'),
+  "targetPath": zod.string(),
+  "targetLabel": zod.string(),
+  "rationale": zod.string(),
+  "proposedText": zod.string(),
+  "status": zod.string().describe('pending, accepted, or rejected.'),
+  "createdAt": zod.coerce.date(),
+  "decidedAt": zod.coerce.date().nullable()
+}))
+})
+
+
+/**
+ * @summary Generate improvement proposals from the generation's feedback
+ */
+export const CreateProposalsParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const CreateProposalsResponse = zod.object({
+  "proposals": zod.array(zod.object({
+  "id": zod.number(),
+  "generationId": zod.number(),
+  "targetType": zod.string().describe('knowledge (an agency-wide standard) or client (this client only).'),
+  "targetPath": zod.string(),
+  "targetLabel": zod.string(),
+  "rationale": zod.string(),
+  "proposedText": zod.string(),
+  "status": zod.string().describe('pending, accepted, or rejected.'),
+  "createdAt": zod.coerce.date(),
+  "decidedAt": zod.coerce.date().nullable()
+}))
+})
+
+
+/**
+ * @summary Accept and apply an improvement proposal
+ */
+export const AcceptProposalParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const AcceptProposalResponse = zod.object({
+  "id": zod.number(),
+  "generationId": zod.number(),
+  "targetType": zod.string().describe('knowledge (an agency-wide standard) or client (this client only).'),
+  "targetPath": zod.string(),
+  "targetLabel": zod.string(),
+  "rationale": zod.string(),
+  "proposedText": zod.string(),
+  "status": zod.string().describe('pending, accepted, or rejected.'),
+  "createdAt": zod.coerce.date(),
+  "decidedAt": zod.coerce.date().nullable()
+})
+
+
+/**
+ * @summary Reject an improvement proposal
+ */
+export const RejectProposalParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const RejectProposalResponse = zod.object({
+  "id": zod.number(),
+  "generationId": zod.number(),
+  "targetType": zod.string().describe('knowledge (an agency-wide standard) or client (this client only).'),
+  "targetPath": zod.string(),
+  "targetLabel": zod.string(),
+  "rationale": zod.string(),
+  "proposedText": zod.string(),
+  "status": zod.string().describe('pending, accepted, or rejected.'),
+  "createdAt": zod.coerce.date(),
+  "decidedAt": zod.coerce.date().nullable()
 })
 
 

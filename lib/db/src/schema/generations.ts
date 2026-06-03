@@ -21,6 +21,12 @@ export const generationsTable = pgTable("generations", {
   requestText: text("request_text").notNull(),
   finalMarkdown: text("final_markdown").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  // Human quality-control verdict on this generation. The user is the single QA
+  // gate; their judgment feeds the learning loop (improvement proposals).
+  // "approved" | "rejected" | null (not yet reviewed).
+  feedbackVerdict: text("feedback_verdict"),
+  feedbackNote: text("feedback_note"),
+  feedbackAt: timestamp("feedback_at"),
 });
 
 export type Generation = typeof generationsTable.$inferSelect;

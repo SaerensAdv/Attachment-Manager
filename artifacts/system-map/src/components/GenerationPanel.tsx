@@ -1,4 +1,5 @@
-import { motion, useReducedMotion } from "framer-motion";
+import { useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
@@ -12,6 +13,8 @@ import {
   X,
   Clock,
   AlertTriangle,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { Link } from "wouter";
 import {
@@ -44,6 +47,7 @@ export default function GenerationPanel({
   gen: GenerationController;
 }) {
   const reduce = useReducedMotion();
+  const [collapsed, setCollapsed] = useState(false);
   const {
     request,
     routing,
@@ -136,6 +140,21 @@ export default function GenerationPanel({
             )}
             <button
               type="button"
+              onClick={() => setCollapsed((c) => !c)}
+              aria-label={collapsed ? "Paneel uitklappen" : "Paneel inklappen"}
+              aria-expanded={!collapsed}
+              title={collapsed ? "Uitklappen" : "Inklappen"}
+              data-testid="button-collapse"
+              className="text-muted-foreground transition-colors hover:text-foreground"
+            >
+              {collapsed ? (
+                <ChevronUp className="w-4 h-4" />
+              ) : (
+                <ChevronDown className="w-4 h-4" />
+              )}
+            </button>
+            <button
+              type="button"
               onClick={resetFlow}
               aria-label="Sluiten"
               title="Sluiten en wissen"
@@ -147,6 +166,17 @@ export default function GenerationPanel({
           </div>
         </div>
 
+        {/* Collapsible body + footer */}
+        <AnimatePresence initial={false}>
+          {!collapsed && (
+            <motion.div
+              key="panel-body"
+              className="flex min-h-0 flex-1 flex-col overflow-hidden"
+              initial={reduce ? false : { height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={reduce ? { opacity: 1 } : { height: 0, opacity: 0 }}
+              transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+            >
         {/* Scrollable body */}
         <div
           className="flex-1 overflow-y-auto px-5 py-5"
@@ -672,6 +702,9 @@ export default function GenerationPanel({
             )}
           </div>
         )}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </motion.div>
   );

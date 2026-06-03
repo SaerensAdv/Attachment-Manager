@@ -61,6 +61,34 @@ export const GetDocContentResponse = zod.object({
 
 
 /**
+ * Returns one entry per agent in the agents/ folder, parsed from each agent's "Character & personality" persona section, together with the portrait URL (when a portrait exists in object storage) and any generated style-example portraits.
+
+ * @summary List the full team roster with personas and portraits
+ */
+export const GetTeamResponse = zod.object({
+  "employees": zod.array(zod.object({
+  "slug": zod.string().describe('The agent filename without extension (e.g. copywriter).'),
+  "path": zod.string().describe('The doc-graph node id for this agent (e.g. agents\/copywriter.md).'),
+  "title": zod.string().describe('The agent\'s role title, from the document\'s first heading.'),
+  "name": zod.string().nullable().describe('The persona\'s first name (e.g. Marie).'),
+  "oneLiner": zod.string().nullable().describe('The persona\'s \"In a line\" summary.'),
+  "personality": zod.string().nullable(),
+  "communicationStyle": zod.string().nullable().describe('The persona\'s \"How they communicate\" trait.'),
+  "caresMostAbout": zod.string().nullable(),
+  "signatureHabit": zod.string().nullable(),
+  "culturalFitNote": zod.string().nullable(),
+  "roleSummary": zod.string().nullable().describe('First paragraph of the agent\'s Role section, if present.'),
+  "portraitUrl": zod.string().nullable().describe('Public URL of the chosen portrait, or null when none exists yet.'),
+  "styleExamples": zod.array(zod.object({
+  "style": zod.string().describe('The art-direction key (e.g. editorial, photographic, avatar).'),
+  "label": zod.string().describe('Human-readable Dutch label for the style direction.'),
+  "url": zod.string().describe('Public URL that serves the generated style-example portrait.')
+})).describe('Generated style-direction portraits for comparison, if any.')
+}))
+})
+
+
+/**
  * @summary List all persisted clients
  */
 export const GetClientsResponse = zod.object({

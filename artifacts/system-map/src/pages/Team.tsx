@@ -1,0 +1,427 @@
+import { useMemo, useState } from "react";
+import {
+  useGetTeam,
+  useGetDocGraph,
+  type TeamMember,
+  type DocNode,
+} from "@workspace/api-client-react";
+import { Loader2, ArrowLeft, ArrowRight, X } from "lucide-react";
+import Reveal from "@/components/Reveal";
+
+const KIND_LABEL: Record<string, string> = {
+  routing: "routeert naar",
+  flow: "voedt",
+  reference: "verwijst naar",
+  mention: "vermeldt",
+};
+
+// Persona fields shown in the profile dossier, in reading order.
+const PERSONA_FIELDS: { key: keyof TeamMember; label: string }[] = [
+  { key: "personality", label: "Persoonlijkheid" },
+  { key: "communicationStyle", label: "Communicatie" },
+  { key: "caresMostAbout", label: "Hecht het meest aan" },
+  { key: "signatureHabit", label: "Kenmerkende gewoonte" },
+  { key: "culturalFitNote", label: "Culturele match" },
+];
+
+function initialsOf(member: TeamMember): string {
+  const base = member.name?.trim() || member.title.trim();
+  const parts = base.split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "SA";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[1][0]).toUpperCase();
+}
+
+function Portrait({
+  member,
+  size,
+}: {
+  member: TeamMember;
+  size: "sm" | "lg";
+}) {
+  const dim = size === "lg" ? "w-28 h-28" : "w-16 h-16";
+  const text = size === "lg" ? "text-3xl" : "text-xl";
+  if (member.portraitUrl) {
+    return (
+      <img
+        src={member.portraitUrl}
+        alt={member.name ?? member.title}
+        className={`${dim} rounded-full object-cover border-2 border-foreground shrink-0`}
+      />
+    );
+  }
+  return (
+    <div
+      className={`${dim} rounded-full border-2 border-foreground bg-foreground/5 flex items-center justify-center shrink-0`}
+      aria-hidden="true"
+    >
+      <span
+        className={`font-['Playfair_Display'] font-black ${text} text-foreground/70 leading-none`}
+      >
+        {initialsOf(member)}
+      </span>
+    </div>
+  );
+}
+
+interface ProfileProps {
+  member: TeamMember;
+  nodes: DocNode[];
+  edges: { source: string; target: string; kind: string }[];
+  onClose: () => void;
+}
+
+function Profile({ member, nodes, edges, onClose }: ProfileProps) {
+  const nodeById = useMemo(() => new Map(nodes.map((n) => [n.id, n])), [nodes]);
+
+  // Direct graph connections for this agent, derived from the doc-graph edges.
+  const { outgoing, incoming } = useMemo(() => {
+    const out: { node: DocNode; kind: string }[] = [];
+    const inc: { node: DocNode; kind: string }[] = [];
+    for (const e of edges) {
+      if (e.source === member.path) {
+        const t = nodeById.get(e.target);
+        if (t) out.push({ node: t, kind: e.kind });
+      } else if (e.target === member.path) {
+        const s = nodeById.get(e.source);
+        if (s) inc.push({ node: s, kind: e.kind });
+      }
+    }
+    return { outgoing: out, incoming: inc };
+  }, [edges, member.path, nodeById]);
+
+  const personaRows = PERSONA_FIELDS.map((f) => ({
+    label: f.label,
+    value: member[f.key] as string | null,
+  })).filter((r) => r.value);
+
+  const renderConnections = (
+    items: { node: DocNode; kind: string }[],
+    label: string,
+    Icon: typeof ArrowRight,
+  ) => {
+    if (items.length === 0) return null;
+    return (
+      <div className="mb-5">
+        <div className="flex items-center gap-2 text-[10px] font-['Space_Mono'] uppercase tracking-[0.2em] text-muted-foreground mb-2 border-b border-foreground/20 pb-1">
+          <Icon className="w-3.5 h-3.5" />
+          {label} ({items.length})
+        </div>
+        <div className="flex flex-col">
+          {items.map(({ node: n, kind }) => (
+            <div
+              key={`${label}-${n.id}-${kind}`}
+              className="flex items-center gap-2 px-2 py-1.5 border-l-2 border-transparent"
+            >
+              <span
+                className="w-2 h-2 rounded-full shrink-0"
+                style={{ backgroundColor: `hsl(var(--cat-${n.category}))` }}
+              />
+              <span className="font-['Inter'] text-sm truncate flex-1">
+                {n.title}
+              </span>
+              <span className="text-[10px] font-['Space_Mono'] uppercase tracking-wider text-muted-foreground/70 shrink-0">
+                {KIND_LABEL[kind] ?? kind}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="border border-foreground bg-card shadow-[4px_4px_0px_hsl(var(--foreground))]">
+      {/* Dossier header */}
+      <div className="flex items-start justify-between gap-4 border-b-2 border-foreground px-6 py-5">
+        <div className="flex items-center gap-5 min-w-0">
+          <Portrait member={member} size="lg" />
+          <div className="min-w-0">
+            <p className="font-['Space_Mono'] text-[10px] uppercase tracking-widest text-muted-foreground">
+              {member.title}
+            </p>
+            <h2 className="font-['Playfair_Display'] font-black text-3xl uppercase tracking-tight leading-none mt-2 truncate">
+              {member.name ?? member.title}
+            </h2>
+            {member.oneLiner && (
+              <p className="font-['Playfair_Display'] italic text-lg text-foreground/80 mt-2">
+                "{member.oneLiner}"
+              </p>
+            )}
+          </div>
+        </div>
+        <button
+          onClick={onClose}
+          className="p-2 border border-foreground hover:bg-foreground hover:text-background transition-colors shrink-0"
+          aria-label="Sluiten"
+          data-testid="button-close-profile"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_20rem]">
+        {/* Persona */}
+        <div className="p-6 border-b lg:border-b-0 lg:border-r border-foreground/20">
+          <h3 className="font-['Playfair_Display'] font-bold text-lg uppercase tracking-wider border-b-2 border-foreground pb-1 mb-5">
+            Persona
+          </h3>
+          {member.roleSummary && (
+            <p className="font-['Inter'] text-sm text-foreground leading-relaxed mb-6">
+              {member.roleSummary}
+            </p>
+          )}
+          {personaRows.length > 0 ? (
+            <dl className="flex flex-col gap-4">
+              {personaRows.map((r) => (
+                <div key={r.label}>
+                  <dt className="font-['Space_Mono'] text-[10px] uppercase tracking-widest text-muted-foreground mb-1">
+                    {r.label}
+                  </dt>
+                  <dd className="font-['Inter'] text-sm text-foreground leading-relaxed">
+                    {r.value}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          ) : (
+            <p className="font-['Inter'] text-sm text-muted-foreground italic">
+              Nog geen persona vastgelegd voor dit teamlid.
+            </p>
+          )}
+        </div>
+
+        {/* Connections */}
+        <div className="p-6">
+          <h3 className="font-['Space_Mono'] text-[10px] uppercase tracking-[0.3em] text-muted-foreground mb-4">
+            Verbindingen
+          </h3>
+          {outgoing.length === 0 && incoming.length === 0 ? (
+            <p className="font-['Inter'] text-sm text-muted-foreground italic">
+              Geen verbindingen in de kaart.
+            </p>
+          ) : (
+            <>
+              {renderConnections(outgoing, "Verwijst naar", ArrowRight)}
+              {renderConnections(incoming, "Verwezen vanuit", ArrowLeft)}
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Style examples for this member, if any */}
+      {member.styleExamples.length > 0 && (
+        <div className="px-6 pb-6 pt-2 border-t border-foreground/20">
+          <h3 className="font-['Space_Mono'] text-[10px] uppercase tracking-[0.3em] text-muted-foreground mb-4 mt-4">
+            Stijlrichtingen
+          </h3>
+          <div className="grid grid-cols-3 gap-4">
+            {member.styleExamples.map((ex) => (
+              <figure key={ex.style} className="flex flex-col gap-2">
+                <img
+                  src={ex.url}
+                  alt={`${member.name ?? member.title} — ${ex.label}`}
+                  className="w-full aspect-square object-cover border-2 border-foreground"
+                />
+                <figcaption className="font-['Space_Mono'] text-[10px] uppercase tracking-widest text-muted-foreground text-center">
+                  {ex.label}
+                </figcaption>
+              </figure>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function Team() {
+  const { data: teamData, isLoading, error } = useGetTeam();
+  const { data: graphData } = useGetDocGraph();
+
+  const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
+
+  const employees = useMemo(
+    () =>
+      [...(teamData?.employees ?? [])].sort((a, b) =>
+        (a.name ?? a.title).localeCompare(b.name ?? b.title, "nl"),
+      ),
+    [teamData],
+  );
+
+  const selected = useMemo(
+    () => employees.find((e) => e.slug === selectedSlug) ?? null,
+    [employees, selectedSlug],
+  );
+
+  // Members that carry generated style directions, for the comparison gallery.
+  const styleGallery = useMemo(
+    () => employees.filter((e) => e.styleExamples.length > 0),
+    [employees],
+  );
+
+  if (isLoading) {
+    return (
+      <div className="min-h-[100dvh] w-full flex items-center justify-center bg-background text-foreground font-['Inter']">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-6 h-6 animate-spin text-accent" />
+          <p className="font-['Space_Mono'] text-[10px] uppercase tracking-widest text-muted-foreground">
+            Redactie laden...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-[100dvh] w-full flex items-center justify-center bg-background text-foreground font-['Inter'] px-6">
+        <div className="max-w-md w-full border border-foreground bg-card p-8 text-center shadow-[4px_4px_0px_hsl(var(--foreground))]">
+          <p className="font-['Space_Mono'] text-[10px] uppercase tracking-widest text-destructive mb-3">
+            Storing
+          </p>
+          <h1 className="font-['Playfair_Display'] font-black text-2xl uppercase tracking-tight mb-2">
+            Team onbereikbaar
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Kon de teamleden niet laden. Controleer je verbinding of de
+            API-status.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-[100dvh] w-full bg-background text-foreground font-['Inter']">
+      <div className="mx-auto max-w-7xl px-6 pt-20 pb-16">
+        {/* Masthead */}
+        <Reveal>
+          <header className="border-b-2 border-foreground pb-5 mb-10">
+            <div className="flex items-end justify-between gap-4">
+              <div>
+                <p className="font-['Space_Mono'] text-[10px] uppercase tracking-widest text-muted-foreground mb-3">
+                  Saerens Advertising — Redactie
+                </p>
+                <h1 className="font-['Playfair_Display'] font-black text-4xl md:text-5xl uppercase tracking-tight leading-none">
+                  Het Team
+                </h1>
+              </div>
+              <div className="text-right hidden sm:block shrink-0">
+                <div className="font-['Space_Mono'] text-[10px] uppercase tracking-widest text-muted-foreground">
+                  Koppen
+                </div>
+                <div className="font-['Playfair_Display'] text-2xl italic leading-none mt-1">
+                  No. {String(employees.length).padStart(3, "0")}
+                </div>
+              </div>
+            </div>
+            <p className="font-['Inter'] text-sm text-muted-foreground mt-5 max-w-2xl">
+              De volledige redactie van het AI-team. Klik op een kop voor de
+              volledige persona en de verbindingen in de kaart.
+            </p>
+          </header>
+        </Reveal>
+
+        {/* Profile view */}
+        {selected && (
+          <div className="mb-12">
+            <Profile
+              member={selected}
+              nodes={graphData?.nodes ?? []}
+              edges={graphData?.edges ?? []}
+              onClose={() => setSelectedSlug(null)}
+            />
+          </div>
+        )}
+
+        {/* Roster grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {employees.map((member, i) => {
+            const active = member.slug === selectedSlug;
+            return (
+              <Reveal key={member.slug} delay={Math.min(i * 0.03, 0.3)}>
+                <button
+                  onClick={() =>
+                    setSelectedSlug((cur) =>
+                      cur === member.slug ? null : member.slug,
+                    )
+                  }
+                  data-testid={`team-card-${member.slug}`}
+                  className={`group w-full h-full text-left border border-foreground bg-card p-5 flex items-start gap-4 transition-all shadow-[4px_4px_0px_hsl(var(--foreground))] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_hsl(var(--accent))] active:translate-x-1 active:translate-y-1 active:shadow-none ${
+                    active ? "ring-2 ring-accent" : ""
+                  }`}
+                >
+                  <Portrait member={member} size="sm" />
+                  <div className="min-w-0 flex-1">
+                    <p className="font-['Space_Mono'] text-[9px] uppercase tracking-widest text-muted-foreground">
+                      {String(i + 1).padStart(2, "0")} — {member.title}
+                    </p>
+                    <h2 className="font-['Playfair_Display'] font-bold text-xl leading-tight tracking-tight mt-1 truncate">
+                      {member.name ?? member.title}
+                    </h2>
+                    {member.oneLiner && (
+                      <p className="font-['Inter'] text-sm text-muted-foreground mt-2 line-clamp-2">
+                        {member.oneLiner}
+                      </p>
+                    )}
+                  </div>
+                </button>
+              </Reveal>
+            );
+          })}
+        </div>
+
+        {/* Style comparison gallery */}
+        {styleGallery.length > 0 && (
+          <section className="mt-16">
+            <Reveal>
+              <div className="border-b-2 border-foreground pb-3 mb-8">
+                <p className="font-['Space_Mono'] text-[10px] uppercase tracking-widest text-muted-foreground mb-2">
+                  Portretstudie
+                </p>
+                <h2 className="font-['Playfair_Display'] font-black text-3xl uppercase tracking-tight leading-none">
+                  Stijlrichtingen
+                </h2>
+                <p className="font-['Inter'] text-sm text-muted-foreground mt-4 max-w-2xl">
+                  Drie kandidaat-richtingen per kop, naast elkaar ter
+                  vergelijking: redactioneel, fotografisch en avatar.
+                </p>
+              </div>
+            </Reveal>
+            <div className="flex flex-col gap-10">
+              {styleGallery.map((member) => (
+                <Reveal key={member.slug}>
+                  <div>
+                    <div className="flex items-baseline gap-3 mb-4">
+                      <h3 className="font-['Playfair_Display'] font-bold text-xl tracking-tight">
+                        {member.name ?? member.title}
+                      </h3>
+                      <span className="font-['Space_Mono'] text-[10px] uppercase tracking-widest text-muted-foreground">
+                        {member.title}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-4">
+                      {member.styleExamples.map((ex) => (
+                        <figure key={ex.style} className="flex flex-col gap-2">
+                          <img
+                            src={ex.url}
+                            alt={`${member.name ?? member.title} — ${ex.label}`}
+                            className="w-full aspect-square object-cover border-2 border-foreground shadow-[4px_4px_0px_hsl(var(--foreground))]"
+                          />
+                          <figcaption className="font-['Space_Mono'] text-[10px] uppercase tracking-widest text-muted-foreground text-center">
+                            {ex.label}
+                          </figcaption>
+                        </figure>
+                      ))}
+                    </div>
+                  </div>
+                </Reveal>
+              ))}
+            </div>
+          </section>
+        )}
+      </div>
+    </div>
+  );
+}

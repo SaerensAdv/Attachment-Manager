@@ -8,3 +8,4 @@
 - [Learning loop (review→proposals→apply)](learning-loop.md) — per-change confirmation; non-destructive append; accept/reject must be an atomic compare-and-set (claim WHERE pending) + revert-on-apply-failure.
 - [App motion layer](app-motion-layer.md) — Lenis smooth scroll must be OFF on the full-screen Kaart route ("/"); all motion must honour prefers-reduced-motion.
 - [Replit-docs knowledge nodes](replit-docs-thread.md) — Replit nodes are how-to usage docs in knowledge/, English; wire multi-flow tools (e.g. Canvas) into every agent/workflow they touch via exact knowledge/<file>.md path.
+- [Team page & portraits](team-portrait-foundation.md) — object-storage layout (portraits/<slug>.png, portrait-styles/<slug>-<style>.png), best-effort index loads at request time, upload via node+GCS sidecar (no tsx).

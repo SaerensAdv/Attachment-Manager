@@ -200,7 +200,7 @@ function stripNonProse(content: string): string {
 }
 
 /** Extract the body of a `## Heading` section, up to the next `##`/`#` heading. */
-function extractSection(content: string, headingMatch: RegExp): string | null {
+export function extractSection(content: string, headingMatch: RegExp): string | null {
   const lines = content.split("\n");
   let start = -1;
   for (let i = 0; i < lines.length; i++) {

@@ -80,6 +80,23 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /team:
+    get:
+      operationId: getTeam
+      tags: [team]
+      summary: List the full team roster with personas and portraits
+      description: >
+        Returns one entry per agent in the agents/ folder, parsed from each
+        agent's "Character & personality" persona section, together with the
+        portrait URL (when a portrait exists in object storage) and any
+        generated style-example portraits.
+      responses:
+        "200":
+          description: The team roster
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamRoster"
   /clients:
     get:
       operationId: getClients
@@ -490,6 +507,81 @@ components:
         content:
           type: string
           description: The raw markdown content of the document.
+    StyleExample:
+      type: object
+      required: [style, label, url]
+      properties:
+        style:
+          type: string
+          description: The art-direction key (e.g. editorial, photographic, avatar).
+        label:
+          type: string
+          description: Human-readable Dutch label for the style direction.
+        url:
+          type: string
+          description: Public URL that serves the generated style-example portrait.
+    TeamMember:
+      type: object
+      required:
+        - slug
+        - path
+        - title
+        - name
+        - oneLiner
+        - personality
+        - communicationStyle
+        - caresMostAbout
+        - signatureHabit
+        - culturalFitNote
+        - roleSummary
+        - portraitUrl
+        - styleExamples
+      properties:
+        slug:
+          type: string
+          description: The agent filename without extension (e.g. copywriter).
+        path:
+          type: string
+          description: The doc-graph node id for this agent (e.g. agents/copywriter.md).
+        title:
+          type: string
+          description: The agent's role title, from the document's first heading.
+        name:
+          type: ["string", "null"]
+          description: The persona's first name (e.g. Marie).
+        oneLiner:
+          type: ["string", "null"]
+          description: The persona's "In a line" summary.
+        personality:
+          type: ["string", "null"]
+        communicationStyle:
+          type: ["string", "null"]
+          description: The persona's "How they communicate" trait.
+        caresMostAbout:
+          type: ["string", "null"]
+        signatureHabit:
+          type: ["string", "null"]
+        culturalFitNote:
+          type: ["string", "null"]
+        roleSummary:
+          type: ["string", "null"]
+          description: First paragraph of the agent's Role section, if present.
+        portraitUrl:
+          type: ["string", "null"]
+          description: Public URL of the chosen portrait, or null when none exists yet.
+        styleExamples:
+          type: array
+          description: Generated style-direction portraits for comparison, if any.
+          items:
+            $ref: "#/components/schemas/StyleExample"
+    TeamRoster:
+      type: object
+      required: [employees]
+      properties:
+        employees:
+          type: array
+          items:
+            $ref: "#/components/schemas/TeamMember"
     Client:
       type: object
       required: [id, name, createdAt, updatedAt]

@@ -55,6 +55,63 @@ export interface DocContent {
   content: string;
 }
 
+export interface StyleExample {
+  /** The art-direction key (e.g. editorial, photographic, avatar). */
+  style: string;
+  /** Human-readable Dutch label for the style direction. */
+  label: string;
+  /** Public URL that serves the generated style-example portrait. */
+  url: string;
+}
+
+export interface TeamMember {
+  /** The agent filename without extension (e.g. copywriter). */
+  slug: string;
+  /** The doc-graph node id for this agent (e.g. agents/copywriter.md). */
+  path: string;
+  /** The agent's role title, from the document's first heading. */
+  title: string;
+  /**
+     * The persona's first name (e.g. Marie).
+     * @nullable
+     */
+  name: string | null;
+  /**
+     * The persona's "In a line" summary.
+     * @nullable
+     */
+  oneLiner: string | null;
+  /** @nullable */
+  personality: string | null;
+  /**
+     * The persona's "How they communicate" trait.
+     * @nullable
+     */
+  communicationStyle: string | null;
+  /** @nullable */
+  caresMostAbout: string | null;
+  /** @nullable */
+  signatureHabit: string | null;
+  /** @nullable */
+  culturalFitNote: string | null;
+  /**
+     * First paragraph of the agent's Role section, if present.
+     * @nullable
+     */
+  roleSummary: string | null;
+  /**
+     * Public URL of the chosen portrait, or null when none exists yet.
+     * @nullable
+     */
+  portraitUrl: string | null;
+  /** Generated style-direction portraits for comparison, if any. */
+  styleExamples: StyleExample[];
+}
+
+export interface TeamRoster {
+  employees: TeamMember[];
+}
+
 export interface Client {
   id: number;
   name: string;

@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { useGetDocGraph } from "@workspace/api-client-react";
+import { useGetDocGraph, useGetTeam } from "@workspace/api-client-react";
 import GraphViewer from "@/components/GraphViewer";
 import GraphLegend from "@/components/GraphLegend";
 import GraphSearch from "@/components/GraphSearch";
@@ -8,6 +8,16 @@ import { Loader2 } from "lucide-react";
 
 export default function Home() {
   const { data: graphData, isLoading, error } = useGetDocGraph();
+  // Portraits are best-effort: the graph stays fully functional without them.
+  const { data: teamData } = useGetTeam();
+
+  const portraits = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const member of teamData?.employees ?? []) {
+      if (member.portraitUrl) map[member.path] = member.portraitUrl;
+    }
+    return map;
+  }, [teamData]);
   
   const [selectedNodePath, setSelectedNodePath] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -107,6 +117,7 @@ export default function Home() {
           }}
           searchQuery={searchQuery}
           focusNonce={focusNonce}
+          portraits={portraits}
         />
       </div>
 

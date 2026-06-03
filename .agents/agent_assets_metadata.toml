@@ -1,0 +1,56 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "ixrwRlPC3pAn6uQMwx1mf"
+uri = "file://attached_assets/generated_images/orchestrator-editorial.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "lxiPwFhE2GYgCxEYgXgni"
+uri = "file://attached_assets/generated_images/orchestrator-photographic.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "Re-Ens3COD1Le2XVV4LDH"
+uri = "file://attached_assets/generated_images/orchestrator-avatar.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "fsQoTNHaFYDTancQljoQV"
+uri = "file://attached_assets/generated_images/copywriter-editorial.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "2k-aOLHv2BrQQoGf7JnuS"
+uri = "file://attached_assets/generated_images/copywriter-photographic.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "EGmMB29bC-XsrTCmIKWdJ"
+uri = "file://attached_assets/generated_images/copywriter-avatar.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "Y2TFzddND9ZRkT9UuP_Gc"
+uri = "file://attached_assets/generated_images/analytics-tracking-specialist-editorial.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "TVipnZLfYvRnR5G2LcUby"
+uri = "file://attached_assets/generated_images/analytics-tracking-specialist-photographic.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "iK6GPhNaNjOYjhAYEo1R_"
+uri = "file://attached_assets/generated_images/analytics-tracking-specialist-avatar.png"
+type = "image"
+title = "generated_image"

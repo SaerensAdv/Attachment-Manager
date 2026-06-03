@@ -21,7 +21,13 @@ interface GraphViewerProps {
   onSelectNode: (nodeId: string) => void;
   searchQuery: string;
   focusNonce?: number;
+  // Maps a node id (e.g. agents/copywriter.md) to a portrait URL. When present
+  // the node renders a circular portrait instead of the plain "press seal".
+  portraits?: Record<string, string>;
 }
+
+// Turn a node id into a value safe for an SVG element id / clipPath reference.
+const safeId = (id: string) => id.replace(/[^a-zA-Z0-9_-]/g, "-");
 
 // Visual style per relationship kind. routing (orchestrator hand-off) and flow
 // (five-layer pipeline) get their own colors so the structural backbone reads
@@ -61,6 +67,7 @@ export default function GraphViewer({
   onSelectNode,
   searchQuery,
   focusNonce,
+  portraits,
 }: GraphViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const transformRef = useRef<ReactZoomPanPinchRef | null>(null);
@@ -427,6 +434,8 @@ export default function GraphViewer({
                 const isDimmed = isNodeDimmed(node);
                 const color = getCategoryColor(node.category);
                 const r = radiusOf(node);
+                const portraitUrl = portraits?.[node.id];
+                const clipId = `portrait-clip-${safeId(node.id)}`;
 
                 return (
                   <g
@@ -462,8 +471,33 @@ export default function GraphViewer({
                       <circle r={r + 5} fill="none" stroke="hsl(var(--foreground))" strokeWidth={1} opacity={0.85} />
                     )}
 
-                    {/* Category core dot */}
-                    <circle r={Math.max(3, r * 0.4)} fill={color} />
+                    {portraitUrl ? (
+                      /* Circular portrait, clipped inside the seal, with the
+                         category ring kept on top as a frame. */
+                      <>
+                        <clipPath id={clipId}>
+                          <circle r={r - 1} />
+                        </clipPath>
+                        <image
+                          href={portraitUrl}
+                          x={-(r - 1)}
+                          y={-(r - 1)}
+                          width={(r - 1) * 2}
+                          height={(r - 1) * 2}
+                          clipPath={`url(#${clipId})`}
+                          preserveAspectRatio="xMidYMid slice"
+                        />
+                        <circle
+                          r={r}
+                          fill="none"
+                          stroke={color}
+                          strokeWidth={isHighlighted ? 3.5 : 2.5}
+                        />
+                      </>
+                    ) : (
+                      /* Category core dot — the "press seal" fallback. */
+                      <circle r={Math.max(3, r * 0.4)} fill={color} />
+                    )}
 
                     {/* Node Label — hidden when zoomed out so the overview stays
                         legible, always shown for the highlighted/selected node. */}

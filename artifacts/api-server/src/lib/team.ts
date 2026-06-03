@@ -1,4 +1,4 @@
-import { extractSection, listDocFiles, type DocFile } from "./docs";
+import { extractSection, getDocFile, listDocFiles, type DocFile } from "./docs";
 import {
   loadPortraitIndex,
   portraitObjectName,
@@ -32,18 +32,21 @@ export interface TeamMember {
 }
 
 /**
- * The fixed team hierarchy from AGENTS.md, top to bottom. Each layer lists the
- * agent slugs that belong to it; a member's layer is resolved by slug. New or
- * unknown slugs fall back to the "Overig" layer so the page never hides a head.
+ * The fixed team hierarchy, top to bottom. This array owns only the *display*
+ * metadata for each layer — its stable id, order, and Dutch title/description.
+ * Which agents belong to each layer is NOT hardcoded here: it is derived from
+ * the "Agent Hierarchy" section of AGENTS.md (see {@link layerSlugsFromAgents}),
+ * keyed by the layer's `order` matching the numbered hierarchy item. Adding or
+ * moving an agent in AGENTS.md therefore re-groups the team page automatically,
+ * with no edit to this file.
  */
-const TEAM_LAYERS: (TeamLayer & { slugs: string[] })[] = [
+const TEAM_LAYERS: TeamLayer[] = [
   {
     id: "orchestrator",
     order: 1,
     title: "Orchestrator",
     description:
       "Het instappunt. Leest de aanvraag, kiest de juiste specialist en stelt de briefing op.",
-    slugs: ["orchestrator"],
   },
   {
     id: "strategy",
@@ -51,7 +54,6 @@ const TEAM_LAYERS: (TeamLayer & { slugs: string[] })[] = [
     title: "Strategie & Kanaal",
     description:
       "Bepalen de strategie per kanaal: waar de kansen liggen en hoe we ze pakken.",
-    slugs: ["google-ads-strategist", "meta-ads-strategist", "seo-specialist"],
   },
   {
     id: "execution",
@@ -59,7 +61,6 @@ const TEAM_LAYERS: (TeamLayer & { slugs: string[] })[] = [
     title: "Uitvoering",
     description:
       "Zetten goedgekeurde strategie om in concreet, klaar-voor-implementatie werk.",
-    slugs: ["google-ads-setup-specialist"],
   },
   {
     id: "review",
@@ -67,11 +68,6 @@ const TEAM_LAYERS: (TeamLayer & { slugs: string[] })[] = [
     title: "Review & Optimalisatie",
     description:
       "Analyseren bestaande accounts en sturen bij voor meer rendement.",
-    slugs: [
-      "google-ads-optimization-specialist",
-      "cro-specialist",
-      "qa-compliance-reviewer",
-    ],
   },
   {
     id: "communication",
@@ -79,21 +75,18 @@ const TEAM_LAYERS: (TeamLayer & { slugs: string[] })[] = [
     title: "Communicatie",
     description:
       "Vertalen het werk naar heldere, klantgerichte taal en rapportage.",
-    slugs: ["reporting-specialist", "copywriter"],
   },
   {
     id: "build",
     order: 6,
     title: "Build",
     description: "Bouwen goedgekeurde specs om tot werkende assets en pagina's.",
-    slugs: ["landing-page-specialist", "web-developer"],
   },
   {
     id: "foundation",
     order: 7,
     title: "Fundament",
     description: "Houden de gedeelde data en meting voor iedereen betrouwbaar.",
-    slugs: ["analytics-tracking-specialist", "competitive-research-analyst"],
   },
   {
     id: "growth",
@@ -101,11 +94,6 @@ const TEAM_LAYERS: (TeamLayer & { slugs: string[] })[] = [
     title: "Klant & Groei",
     description:
       "Onderhouden de klantrelatie en winnen nieuwe opdrachten binnen.",
-    slugs: [
-      "client-success-agent",
-      "sales-proposal-agent",
-      "client-onboarding-agent",
-    ],
   },
 ];
 
@@ -117,15 +105,60 @@ const FALLBACK_LAYER: TeamLayer = {
   description: "Nog niet ingedeeld in een vaste laag van de hiërarchie.",
 };
 
-/** Map every known slug to its layer once, for O(1) lookup per member. */
-const LAYER_BY_SLUG = new Map<string, TeamLayer>(
-  TEAM_LAYERS.flatMap(({ slugs, ...layer }) =>
-    slugs.map((slug): [string, TeamLayer] => [slug, layer]),
-  ),
-);
+/**
+ * Parse the "Agent Hierarchy" section of AGENTS.md into a map of hierarchy
+ * order (the leading number of each list item) → the agent slugs listed under
+ * it. Each numbered item runs until the next numbered item; every
+ * `agents/<slug>.md` reference found within it is assigned to that order. This
+ * makes AGENTS.md the single source of truth for layer membership.
+ */
+function layerSlugsFromAgents(agentsContent: string): Map<number, Set<string>> {
+  const result = new Map<number, Set<string>>();
+  const section = extractSection(agentsContent, /Agent Hierarchy/i);
+  if (!section) return result;
 
-function layerForSlug(slug: string): TeamLayer {
-  return LAYER_BY_SLUG.get(slug) ?? FALLBACK_LAYER;
+  let currentOrder: number | null = null;
+  for (const line of section.split(/\r?\n/)) {
+    const itemMatch = line.match(/^\s*(\d+)\.\s/);
+    if (itemMatch) {
+      currentOrder = Number.parseInt(itemMatch[1], 10);
+    }
+    if (currentOrder === null) continue;
+    for (const ref of line.matchAll(/agents\/([a-z0-9-]+)\.md/gi)) {
+      const slug = ref[1];
+      let set = result.get(currentOrder);
+      if (!set) {
+        set = new Set<string>();
+        result.set(currentOrder, set);
+      }
+      set.add(slug);
+    }
+  }
+  return result;
+}
+
+/**
+ * Resolve every agent slug to its layer by joining the Dutch layer metadata in
+ * {@link TEAM_LAYERS} (by `order`) with the membership parsed from AGENTS.md.
+ * Slugs not listed under any hierarchy item fall back to the "Overig" layer so
+ * the page never silently hides an agent.
+ */
+function buildLayerBySlug(agentsContent: string): Map<string, TeamLayer> {
+  const slugsByOrder = layerSlugsFromAgents(agentsContent);
+  const bySlug = new Map<string, TeamLayer>();
+  for (const layer of TEAM_LAYERS) {
+    for (const slug of slugsByOrder.get(layer.order) ?? []) {
+      bySlug.set(slug, layer);
+    }
+  }
+  return bySlug;
+}
+
+function layerForSlug(
+  slug: string,
+  layerBySlug: Map<string, TeamLayer>,
+): TeamLayer {
+  return layerBySlug.get(slug) ?? FALLBACK_LAYER;
 }
 
 /** The bullet labels used inside each agent's "Character & personality" list. */
@@ -194,6 +227,8 @@ export async function getTeamRoster(): Promise<TeamMember[]> {
   const agents: DocFile[] = listDocFiles().filter(
     (doc) => doc.category === "agent",
   );
+  const agentsDoc = getDocFile("AGENTS.md");
+  const layerBySlug = buildLayerBySlug(agentsDoc?.content ?? "");
   const index = await loadPortraitIndex();
 
   const members = agents.map((doc): TeamMember => {
@@ -222,7 +257,7 @@ export async function getTeamRoster(): Promise<TeamMember[]> {
             width: PORTRAIT_THUMB_WIDTH,
           })
         : null,
-      layer: layerForSlug(slug),
+      layer: layerForSlug(slug, layerBySlug),
     };
   });
 

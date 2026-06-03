@@ -33,16 +33,24 @@ Saerens Advertising's voice is **confident, transparent, data-driven, and honest
 
 ## Agent Hierarchy
 
-The AI team is organized as follows:
+The AI team is organized as follows. Each layer lists the agent files that belong to it; this is the single source of truth for how the team page groups people, so moving an agent between layers here moves it on the page.
 
 1. **Orchestrator Agent** — understands the request, routes it, prepares the brief.
-2. **Channel / Strategy Specialists** — define strategy for a channel (e.g. Google Ads Strategist).
-3. **Execution Specialists** — turn approved strategy into concrete, ready-to-implement work (e.g. Setup Specialist).
-4. **Review / Optimization Specialists** — analyze and improve existing accounts (e.g. Optimization Specialist).
-5. **Communication Specialists** — translate work into client-facing output (e.g. Reporting Specialist, Copywriter).
-6. **Build Specialists** — turn approved specs into working assets (e.g. Web Developer / Builder).
-7. **Foundation Specialists** — keep shared data and measurement trustworthy for everyone (e.g. Analytics & Tracking Specialist).
-8. **Client-facing & Growth** — manage the client relationship and new business (e.g. Client Success Agent, Sales / Proposal Agent).
+   - Agents: `agents/orchestrator.md`
+2. **Channel / Strategy Specialists** — define strategy for a channel.
+   - Agents: `agents/google-ads-strategist.md`, `agents/meta-ads-strategist.md`, `agents/seo-specialist.md`
+3. **Execution Specialists** — turn approved strategy into concrete, ready-to-implement work.
+   - Agents: `agents/google-ads-setup-specialist.md`
+4. **Review / Optimization Specialists** — analyze and improve existing accounts.
+   - Agents: `agents/google-ads-optimization-specialist.md`, `agents/cro-specialist.md`, `agents/qa-compliance-reviewer.md`
+5. **Communication Specialists** — translate work into client-facing output.
+   - Agents: `agents/reporting-specialist.md`, `agents/copywriter.md`
+6. **Build Specialists** — turn approved specs into working assets.
+   - Agents: `agents/landing-page-specialist.md`, `agents/web-developer.md`
+7. **Foundation Specialists** — keep shared data and measurement trustworthy for everyone.
+   - Agents: `agents/analytics-tracking-specialist.md`, `agents/competitive-research-analyst.md`
+8. **Client-facing & Growth** — manage the client relationship and new business.
+   - Agents: `agents/client-success-agent.md`, `agents/sales-proposal-agent.md`, `agents/client-onboarding-agent.md`
 
 ## Current MVP Agents
 

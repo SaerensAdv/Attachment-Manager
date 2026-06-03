@@ -33,7 +33,7 @@ export interface DocFile extends DocNode {
   content: string;
 }
 
-const CORE_DOCS = ["README.md", "AGENTS.md", "ARCHITECTURE.md", "ROADMAP.md"];
+const CORE_DOCS = ["AGENTS.md", "ARCHITECTURE.md"];
 
 const FOLDER_CATEGORY: Record<string, string> = {
   agents: "agent",
@@ -44,12 +44,12 @@ const FOLDER_CATEGORY: Record<string, string> = {
 };
 
 const CATEGORY_ORDER: { id: string; label: string }[] = [
-  { id: "core", label: "Core" },
+  { id: "core", label: "Fundament" },
   { id: "agent", label: "Agents" },
-  { id: "client", label: "Clients" },
+  { id: "client", label: "Klanten" },
   { id: "workflow", label: "Workflows" },
-  { id: "template", label: "Templates" },
-  { id: "knowledge", label: "Knowledge" },
+  { id: "template", label: "Sjablonen" },
+  { id: "knowledge", label: "Kennis" },
 ];
 
 /**

@@ -1,5 +1,6 @@
 - [System Map generator (Phase 2)](system-map-generator.md) — how the "Genereren" tab assembles doc context + streams Claude; key prompt + SSE decisions.
-- [Monorepo composite project refs](monorepo-composite-refs.md) — new workspace libs need built dist declarations (tsc -b) or api-server typecheck fails TS6305.
+- [Monorepo composite project refs](monorepo-composite-refs.md) — new workspace libs need built dist declarations (tsc -b) or api-server typecheck fails TS6305; after a merge run api-spec codegen to refresh stale generated/built libs.
+- [System Map legend categories](system-map-categories.md) — "core"=Fundament holds only AGENTS+ARCHITECTURE; labels Dutch, ids stay stable (colors/filtering key off id); README/ROADMAP excluded from graph.
 - [Egress quirk + Saerens brand](replit-egress-and-saerens-brand.md) — container curl is blocked (http 000) but sandbox fetch() works; Saerens real domain is .com + its brand tokens/logo.
 - [Adding an agent](adding-agents.md) — agent .md read at runtime (no api restart); routing edge needs exact H1 title in orchestrator table; update AGENTS.md + ARCHITECTURE.md.
 - [System Map branding direction](branding-direction.md) — editorial "Newsroom" light theme (cream/ink/indigo, Playfair+Inter+Space Mono); theme in index.css :root, no dark toggle.

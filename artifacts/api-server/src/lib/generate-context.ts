@@ -215,6 +215,7 @@ export async function buildGenerationContext(
     "- Lever ALTIJD een concrete, volledige eerste versie. Weiger nooit en vraag niet eerst om meer informatie \u2014 dat is precies wat de menselijke review-stap opvangt.",
     "- Ontbreekt er essenti\u00eble informatie (bv. cijfers, namen, datums)? Maak dan een redelijke aanname en markeer die duidelijk inline met **[AAN TE VULLEN: \u2026]**, en som de aannames kort op in de goedkeuringssectie. Schrijf de versie dus af, ook met onvolledige input.",
     "- Gebruik nette markdown-opmaak (koppen, lijsten, tabellen waar zinvol).",
+    "- Hou je bijdrage gefocust en MAAK ZE ALTIJD VOLLEDIG AF. Er geldt een lengtelimiet per teamlid, dus wees bondig en rond je sectie netjes af in plaats van uit te weiden \u2014 zo wordt je bijdrage nooit middenin een zin afgekapt. Richtlijn: hou het onder ongeveer 1500 woorden.",
     teamOutputRule,
     approvalRule,
   ]

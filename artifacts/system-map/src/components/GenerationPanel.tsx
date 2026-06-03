@@ -11,6 +11,7 @@ import {
   RotateCcw,
   X,
   Clock,
+  AlertTriangle,
 } from "lucide-react";
 import { Link } from "wouter";
 import {
@@ -81,6 +82,7 @@ export default function GenerationPanel({
     deliverableContent,
     deliverableStatus,
     deliverableError,
+    deliverableTruncated,
     deliverableCopied,
     handleDeliverableCopy,
     handleDeliverableDownload,
@@ -539,6 +541,19 @@ export default function GenerationPanel({
                           )}
                         </article>
                       )}
+                      {seg.truncated && (
+                        <p
+                          className="mt-3 flex items-start gap-2 border-l-2 border-amber-500 bg-amber-500/10 px-3 py-2 font-['Inter'] text-xs text-amber-700"
+                          data-testid={`segment-truncated-${i}`}
+                        >
+                          <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                          <span>
+                            Deze sectie raakte de lengtelimiet en is mogelijk
+                            afgekapt. Druk opnieuw of splits de taak op voor een
+                            volledige versie.
+                          </span>
+                        </p>
+                      )}
                     </div>
                   );
                 })}
@@ -613,6 +628,15 @@ export default function GenerationPanel({
                           <span className="ml-0.5 inline-block h-4 w-2 animate-pulse bg-background/80 align-middle" />
                         )}
                       </pre>
+                      {deliverableTruncated && (
+                        <p className="mt-3 flex items-start gap-2 border-l-2 border-amber-500 bg-amber-500/10 px-3 py-2 font-['Inter'] text-xs text-amber-700">
+                          <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                          <span>
+                            Het eindproduct raakte de lengtelimiet en is mogelijk
+                            afgekapt.
+                          </span>
+                        </p>
+                      )}
                     </>
                   )}
                 </div>

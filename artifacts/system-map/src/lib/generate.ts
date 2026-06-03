@@ -25,10 +25,10 @@ export interface DeliverableMeta {
 export interface TeamStreamHandlers {
   onAgentStart: (info: AgentStartInfo) => void;
   onDelta: (index: number, text: string) => void;
-  onAgentDone: (index: number) => void;
+  onAgentDone: (index: number, truncated: boolean) => void;
   onDeliverableStart?: (meta: DeliverableMeta) => void;
   onDeliverableDelta?: (text: string) => void;
-  onDeliverableDone?: () => void;
+  onDeliverableDone?: (truncated: boolean) => void;
   onDeliverableError?: (message: string) => void;
   onDone: (archived: boolean) => void;
   onError: (message: string) => void;
@@ -50,6 +50,7 @@ interface StreamEvent {
   deliverable?: DeliverableMeta;
   content?: string;
   message?: string;
+  truncated?: boolean;
   done?: boolean;
   archived?: boolean;
   error?: string;
@@ -149,7 +150,7 @@ export async function streamGenerateTeam(
             continue;
           }
           if (parsed.type === "agent_done") {
-            onAgentDone(parsed.index ?? currentIndex);
+            onAgentDone(parsed.index ?? currentIndex, parsed.truncated === true);
             continue;
           }
           if (parsed.type === "deliverable_start" && parsed.deliverable) {
@@ -163,7 +164,7 @@ export async function streamGenerateTeam(
             continue;
           }
           if (parsed.type === "deliverable_done") {
-            onDeliverableDone?.();
+            onDeliverableDone?.(parsed.truncated === true);
             continue;
           }
           if (parsed.type === "deliverable_error") {

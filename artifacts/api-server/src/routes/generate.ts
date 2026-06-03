@@ -183,9 +183,21 @@ router.post("/generate", async (req, res) => {
         }
       }
 
+      // Detect a hard token-limit cutoff so the UI can flag a section that was
+      // cut off mid-sentence instead of letting it silently look unfinished.
+      let truncated = false;
+      if (!clientGone) {
+        try {
+          const finalMsg = await stream.finalMessage();
+          truncated = finalMsg.stop_reason === "max_tokens";
+        } catch {
+          // best-effort; never let detection break a successful run
+        }
+      }
+
       if (clientGone) break;
 
-      send({ type: "agent_done", index: i });
+      send({ type: "agent_done", index: i, truncated });
       priorWork += `\n\n## ${memberTitles[i]}\n\n${agentText.trim()}`;
     }
 
@@ -226,7 +238,17 @@ router.post("/generate", async (req, res) => {
             send({ type: "deliverable_delta", content: event.delta.text });
           }
         }
-        if (!clientGone) send({ type: "deliverable_done" });
+        let deliverableTruncated = false;
+        if (!clientGone) {
+          try {
+            const dfinal = await dstream.finalMessage();
+            deliverableTruncated = dfinal.stop_reason === "max_tokens";
+          } catch {
+            // best-effort truncation detection
+          }
+        }
+        if (!clientGone)
+          send({ type: "deliverable_done", truncated: deliverableTruncated });
       } catch (err) {
         if (!clientGone && !(err instanceof Error && err.name === "AbortError")) {
           const message = err instanceof Error ? err.message : String(err);

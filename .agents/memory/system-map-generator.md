@@ -86,7 +86,7 @@ The detected chain (lead + `additionalAgents`) runs **sequentially** in one
 (orchestrator excluded), then loops members one at a time. Each member's prompt
 includes the team roster + the **accumulated prior work** of earlier colleagues
 (handoff), and only the **final** member writes the
-`## ⚠️ Menselijke goedkeuring vereist` section; earlier members are told NOT to.
+`## Menselijke goedkeuring vereist` section (emoji-free); earlier members are told NOT to.
 - **SSE protocol is per-member and indexed.** Events: `agent_start {index,total,
   agent,role}` → indexed `content {index}` deltas → `agent_done {index}`, repeated
   per member, then a single `{done:true}`. Frontend renders one segment per agent

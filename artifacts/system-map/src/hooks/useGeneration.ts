@@ -20,6 +20,8 @@ export interface AgentSegment {
   role: "lead" | "member";
   content: string;
   status: "queued" | "working" | "done";
+  /** True when this agent hit the model's token limit and may be cut off. */
+  truncated: boolean;
 }
 
 export type DeliverableStatus = "idle" | "working" | "done" | "error";
@@ -78,6 +80,8 @@ export function useGeneration(
     useState<DeliverableStatus>("idle");
   const [deliverableError, setDeliverableError] = useState<string | null>(null);
   const [deliverableCopied, setDeliverableCopied] = useState(false);
+  // True when the deliverable hit the model's token limit and may be cut off.
+  const [deliverableTruncated, setDeliverableTruncated] = useState(false);
 
   // Elapsed time since generation started.
   const [elapsed, setElapsed] = useState(0);
@@ -140,6 +144,7 @@ export function useGeneration(
     setDeliverableContent("");
     setDeliverableStatus("idle");
     setDeliverableError(null);
+    setDeliverableTruncated(false);
     setRunCompleted(false);
     setJustSaved(false);
     intakeAbortRef.current?.abort();
@@ -178,6 +183,7 @@ export function useGeneration(
     setDeliverableContent("");
     setDeliverableStatus("idle");
     setDeliverableError(null);
+    setDeliverableTruncated(false);
 
     try {
       const r = await routeRequest(
@@ -293,6 +299,7 @@ export function useGeneration(
         role: i === 0 ? "lead" : "member",
         content: "",
         status: "queued" as const,
+        truncated: false,
       })),
     );
     setStreamError(null);
@@ -302,6 +309,7 @@ export function useGeneration(
     setDeliverableContent("");
     setDeliverableStatus("idle");
     setDeliverableError(null);
+    setDeliverableTruncated(false);
     setIsStreaming(true);
     startedAtRef.current = Date.now();
     setElapsed(0);
@@ -330,6 +338,7 @@ export function useGeneration(
               role: info.role,
               content: next[info.index]?.content ?? "",
               status: "working",
+              truncated: false,
             };
             return next;
           }),
@@ -339,19 +348,25 @@ export function useGeneration(
               i === index ? { ...s, content: s.content + text } : s,
             ),
           ),
-        onAgentDone: (index) =>
+        onAgentDone: (index, truncated) =>
           setSegments((prev) =>
-            prev.map((s, i) => (i === index ? { ...s, status: "done" } : s)),
+            prev.map((s, i) =>
+              i === index ? { ...s, status: "done", truncated } : s,
+            ),
           ),
         onDeliverableStart: (meta) => {
           setDeliverable(meta);
           setDeliverableContent("");
           setDeliverableError(null);
+          setDeliverableTruncated(false);
           setDeliverableStatus("working");
         },
         onDeliverableDelta: (text) =>
           setDeliverableContent((prev) => prev + text),
-        onDeliverableDone: () => setDeliverableStatus("done"),
+        onDeliverableDone: (truncated) => {
+          setDeliverableStatus("done");
+          setDeliverableTruncated(truncated);
+        },
         onDeliverableError: (message) => {
           setDeliverableError(message);
           setDeliverableStatus("error");
@@ -544,6 +559,7 @@ export function useGeneration(
     deliverableContent,
     deliverableStatus,
     deliverableError,
+    deliverableTruncated,
     deliverableCopied,
     handleDeliverableCopy,
     handleDeliverableDownload,

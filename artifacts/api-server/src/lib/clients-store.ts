@@ -29,6 +29,19 @@ function paragraph(label: string, value: string | null): string | null {
   return `## ${label}\n\n${text}`;
 }
 
+function codeBlock(label: string, value: string | null): string | null {
+  const text = value?.trim();
+  if (!text) return null;
+  // Use a fence longer than any backtick run in the pasted content, so data
+  // that itself contains ``` cannot close the block early and inject markdown.
+  const longestRun = Math.max(
+    0,
+    ...(text.match(/`+/g) ?? []).map((s) => s.length),
+  );
+  const fence = "`".repeat(Math.max(3, longestRun + 1));
+  return `## ${label}\n\n${fence}\n${text}\n${fence}`;
+}
+
 function bullets(label: string, value: string | null): string | null {
   const items = (value ?? "")
     .split(/\r?\n/)
@@ -66,6 +79,9 @@ export function clientToMarkdown(client: Client): string {
     bullets("Current advertising channels", client.channels),
     paragraph("Brand restrictions & important notes", client.restrictions),
     links.length > 0 ? `## Links\n\n${links.join("\n")}` : null,
+    paragraph("Current state", client.currentState),
+    codeBlock("Google Ads data (current)", client.googleAdsData),
+    codeBlock("Search Console / SEO data (current)", client.searchConsoleData),
   ];
 
   return sections.filter((s): s is string => s !== null).join("\n\n") + "\n";

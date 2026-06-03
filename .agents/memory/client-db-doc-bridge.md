@@ -27,6 +27,18 @@ branch — they just receive extra docs.
   key and the doc-graph query key — otherwise the Genereren dropdown / Kaart
   graph keep serving a stale client list.
 
+## Pasted "current state" data → agent context
+- Clients carry free-paste fields (notes + Google Ads / Search Console exports)
+  that render into the synthetic client markdown so audits use real data instead
+  of reporting "missing data".
+- Any user-pasted blob rendered into agent-context markdown as a fenced code block
+  MUST use a fence longer than the longest backtick run in the content (dynamic
+  fence), or pasted ``` closes the block early and injects arbitrary
+  markdown/instructions into the prompt.
+- Bound these paste fields server-side (length cap, returns 400) so a huge export
+  can't silently inflate every routing/intake/generation prompt. Keep the UI cap
+  in sync with the server cap.
+
 ## API shape gotchas
 - `PUT /clients/:id` is a FULL replace: any field omitted from the body is set
   to null. The Klanten form always submits every field, so this is intended —

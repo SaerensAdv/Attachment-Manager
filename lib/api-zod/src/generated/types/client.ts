@@ -39,6 +39,12 @@ export interface Client {
   website?: string | null;
   /** @nullable */
   landingPages?: string | null;
+  /** @nullable */
+  currentState?: string | null;
+  /** @nullable */
+  googleAdsData?: string | null;
+  /** @nullable */
+  searchConsoleData?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }

@@ -190,6 +190,9 @@ export const GetClientsResponse = zod.object({
   "restrictions": zod.string().nullish(),
   "website": zod.string().nullish(),
   "landingPages": zod.string().nullish(),
+  "currentState": zod.string().nullish(),
+  "googleAdsData": zod.string().nullish(),
+  "searchConsoleData": zod.string().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 }))
@@ -215,7 +218,10 @@ export const CreateClientBody = zod.object({
   "channels": zod.string().nullish(),
   "restrictions": zod.string().nullish(),
   "website": zod.string().nullish(),
-  "landingPages": zod.string().nullish()
+  "landingPages": zod.string().nullish(),
+  "currentState": zod.string().nullish(),
+  "googleAdsData": zod.string().nullish(),
+  "searchConsoleData": zod.string().nullish()
 })
 
 
@@ -244,6 +250,9 @@ export const GetClientResponse = zod.object({
   "restrictions": zod.string().nullish(),
   "website": zod.string().nullish(),
   "landingPages": zod.string().nullish(),
+  "currentState": zod.string().nullish(),
+  "googleAdsData": zod.string().nullish(),
+  "searchConsoleData": zod.string().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -272,7 +281,10 @@ export const UpdateClientBody = zod.object({
   "channels": zod.string().nullish(),
   "restrictions": zod.string().nullish(),
   "website": zod.string().nullish(),
-  "landingPages": zod.string().nullish()
+  "landingPages": zod.string().nullish(),
+  "currentState": zod.string().nullish(),
+  "googleAdsData": zod.string().nullish(),
+  "searchConsoleData": zod.string().nullish()
 })
 
 export const UpdateClientResponse = zod.object({
@@ -293,6 +305,9 @@ export const UpdateClientResponse = zod.object({
   "restrictions": zod.string().nullish(),
   "website": zod.string().nullish(),
   "landingPages": zod.string().nullish(),
+  "currentState": zod.string().nullish(),
+  "googleAdsData": zod.string().nullish(),
+  "searchConsoleData": zod.string().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })

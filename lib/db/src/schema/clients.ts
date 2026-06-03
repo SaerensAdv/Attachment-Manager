@@ -25,6 +25,9 @@ export const clientsTable = pgTable("clients", {
   restrictions: text("restrictions"),
   website: text("website"),
   landingPages: text("landing_pages"),
+  currentState: text("current_state"),
+  googleAdsData: text("google_ads_data"),
+  searchConsoleData: text("search_console_data"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

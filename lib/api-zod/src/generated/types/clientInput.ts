@@ -38,4 +38,10 @@ export interface ClientInput {
   website?: string | null;
   /** @nullable */
   landingPages?: string | null;
+  /** @nullable */
+  currentState?: string | null;
+  /** @nullable */
+  googleAdsData?: string | null;
+  /** @nullable */
+  searchConsoleData?: string | null;
 }

@@ -127,6 +127,36 @@ const FIELDS: FieldDef[] = [
   },
 ];
 
+// "Huidige stand" — de echte stand van zaken per klant. Vrije notities + geplakte
+// exports/cijfers uit Google Ads en Search Console. Deze velden voeden de agents
+// zodat audits met echte data werken in plaats van "missing data" te rapporteren.
+const STATE_FIELDS: FieldDef[] = [
+  {
+    key: "currentState",
+    label: "Huidige situatie",
+    kind: "textarea",
+    placeholder:
+      "Korte stand van zaken: wat loopt er nu, wat is recent gewijzigd, aandachtspunten...",
+    help: "Vrije notities",
+  },
+  {
+    key: "googleAdsData",
+    label: "Google Ads-data",
+    kind: "textarea",
+    placeholder:
+      "Plak hier een export of de kerncijfers: campagnes, spend, conversies, CPA/ROAS, zoektermen...",
+    help: "Plak export of cijfers",
+  },
+  {
+    key: "searchConsoleData",
+    label: "Search Console / SEO-data",
+    kind: "textarea",
+    placeholder:
+      "Plak hier een Search Console-export of kerncijfers: queries, posities, klikken, impressies...",
+    help: "Plak export of cijfers",
+  },
+];
+
 const EMPTY_FORM: FormState = {
   name: "",
   business: "",
@@ -144,6 +174,9 @@ const EMPTY_FORM: FormState = {
   restrictions: "",
   website: "",
   landingPages: "",
+  currentState: "",
+  googleAdsData: "",
+  searchConsoleData: "",
 };
 
 function clientToForm(c: Client): FormState {
@@ -163,6 +196,9 @@ function formToInput(f: FormState): ClientInput {
   }
   return out as unknown as ClientInput;
 }
+
+// Bounded paste fields — keep in sync with MAX_LARGE_FIELD_LEN on the server.
+const MAX_STATE_FIELD_LEN = 50_000;
 
 // Shared editorial input styling: sharp ink-bordered fields on white paper.
 const INPUT_CLASS =
@@ -471,7 +507,7 @@ export default function Clients() {
                       I. Briefing
                     </h3>
                     <span className="font-['Space_Mono'] text-xs text-muted-foreground">
-                      {FIELDS.length + 1} velden
+                      {FIELDS.length + STATE_FIELDS.length + 1} velden
                     </span>
                   </div>
 
@@ -535,6 +571,61 @@ export default function Clients() {
                             className={`${INPUT_CLASS} resize-none`}
                           />
                         )}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Section II — current state */}
+                  <div className="flex items-baseline justify-between border-b-2 border-foreground pb-1">
+                    <h3 className="font-['Playfair_Display'] font-bold text-lg uppercase tracking-wider">
+                      II. Huidige stand
+                    </h3>
+                    <span className="font-['Space_Mono'] text-xs text-muted-foreground">
+                      Voedt de audits
+                    </span>
+                  </div>
+
+                  <p className="font-['Inter'] text-sm text-muted-foreground -mt-4">
+                    De echte stand van zaken voor deze cliënt. Plak hier exports of
+                    kerncijfers — de agents gebruiken dit als bron in plaats van
+                    "ontbrekende data" te rapporteren.
+                  </p>
+
+                  <div className="grid grid-cols-1 gap-6">
+                    {STATE_FIELDS.map((f, i) => (
+                      <div key={f.key} className="flex flex-col gap-2">
+                        <div className="flex items-baseline gap-3 border-b border-foreground/20 pb-1">
+                          <span className="font-['Space_Mono'] text-xs text-muted-foreground">
+                            {String(FIELDS.length + 2 + i).padStart(2, "0")}
+                          </span>
+                          <label className="font-['Space_Mono'] text-[10px] uppercase tracking-widest flex-1">
+                            {f.label}
+                          </label>
+                          {f.help && (
+                            <span className="font-['Space_Mono'] text-[9px] tracking-wider text-muted-foreground/60 italic">
+                              {f.help}
+                            </span>
+                          )}
+                        </div>
+                        <Textarea
+                          value={form[f.key]}
+                          onChange={(e) => setField(f.key, e.target.value)}
+                          placeholder={f.placeholder}
+                          rows={6}
+                          maxLength={MAX_STATE_FIELD_LEN}
+                          data-testid={`input-client-${f.key}`}
+                          className={`${INPUT_CLASS} resize-y font-['Space_Mono'] text-xs`}
+                        />
+                        <span
+                          className={`font-['Space_Mono'] text-[9px] tracking-wider self-end ${
+                            form[f.key].length > MAX_STATE_FIELD_LEN * 0.9
+                              ? "text-destructive"
+                              : "text-muted-foreground/50"
+                          }`}
+                        >
+                          {form[f.key].length.toLocaleString("nl-BE")} /{" "}
+                          {MAX_STATE_FIELD_LEN.toLocaleString("nl-BE")}
+                        </span>
                       </div>
                     ))}
                   </div>

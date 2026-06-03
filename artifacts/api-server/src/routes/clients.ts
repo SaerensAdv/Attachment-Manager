@@ -21,9 +21,21 @@ const FIELDS = [
   "restrictions",
   "website",
   "landingPages",
+  "currentState",
+  "googleAdsData",
+  "searchConsoleData",
 ] as const;
 
 type FieldKey = (typeof FIELDS)[number];
+
+/** Free-form paste fields that can hold large exports — bounded to keep the
+ * generated client markdown (and thus agent prompt context) within sane limits. */
+const LARGE_FIELDS: readonly FieldKey[] = [
+  "currentState",
+  "googleAdsData",
+  "searchConsoleData",
+];
+const MAX_LARGE_FIELD_LEN = 50_000;
 
 interface ClientInput {
   name: string;
@@ -45,6 +57,14 @@ function parseBody(body: unknown): ClientInput | { error: string } {
   const values: Partial<Record<FieldKey, string | null>> = {};
   for (const key of FIELDS) {
     values[key] = asTrimmed(obj[key]);
+  }
+  for (const key of LARGE_FIELDS) {
+    const value = values[key];
+    if (value && value.length > MAX_LARGE_FIELD_LEN) {
+      return {
+        error: `Veld "${key}" is te groot (max ${MAX_LARGE_FIELD_LEN.toLocaleString("nl-BE")} tekens). Plak een samenvatting of de kerncijfers.`,
+      };
+    }
   }
   return { name, values };
 }

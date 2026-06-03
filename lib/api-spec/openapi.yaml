@@ -841,6 +841,12 @@ components:
           type: ["string", "null"]
         landingPages:
           type: ["string", "null"]
+        currentState:
+          type: ["string", "null"]
+        googleAdsData:
+          type: ["string", "null"]
+        searchConsoleData:
+          type: ["string", "null"]
         createdAt:
           type: string
           format: date-time
@@ -882,6 +888,12 @@ components:
         website:
           type: ["string", "null"]
         landingPages:
+          type: ["string", "null"]
+        currentState:
+          type: ["string", "null"]
+        googleAdsData:
+          type: ["string", "null"]
+        searchConsoleData:
           type: ["string", "null"]
     ClientList:
       type: object

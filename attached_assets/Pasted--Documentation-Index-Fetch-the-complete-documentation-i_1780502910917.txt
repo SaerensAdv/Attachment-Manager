@@ -1,0 +1,109 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.replit.com/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Design with Canvas
+
+> Generate visual variations of an existing app on the Canvas, compare them side by side, and apply the one you like — without rebuilding.
+
+export const YouTubeEmbed = ({videoId, title = "YouTube video", startAt}) => {
+  if (!videoId) {
+    return null;
+  }
+  let url = "https://www.youtube.com/embed/" + videoId;
+  if (startAt) {
+    url = url + "?start=" + startAt;
+  }
+  return <Frame>
+      <iframe src={url} title={title} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen></iframe>
+    </Frame>;
+};
+
+<YouTubeEmbed videoId="Qv9cREjl9vQ" title="Replit Canvas overview" />
+
+⏰ *Estimated time: 5 minutes* · Follows from [Build and publish your first app](/build/your-first-app)
+
+The [Canvas](/learn/design/canvas) is a visual workspace where you can ask Agent to generate alternative looks for an app you've already built, compare them side by side, and apply the one you want. It's the fastest way to explore visual direction without committing to a rebuild.
+
+This guide uses the Runwell running tracker from [Build and publish your first app](/build/your-first-app) as the running example, but the same flow works on any project.
+
+## Before you start
+
+You need an existing app in Replit. Either:
+
+* Complete [Build and publish your first app](/build/your-first-app) so you have Runwell open, or
+* Use any other project — the steps below work the same.
+
+## Explore design variations
+
+<Steps>
+  <Step title="Open Canvas and pick your frame">
+    Open the **Canvas** tab in the Project Editor. Your app appears as a frame on the Canvas. Select the frame to surface the **Reimagine…** and **Preview** controls.
+
+    <Frame>
+      <img src="https://mintcdn.com/replit/L79Q3CdSVWOJwgpU/images/runwell/runwell-canvas-original.png?fit=max&auto=format&n=L79Q3CdSVWOJwgpU&q=85&s=ea5b64f08d33d6c7f45071b02a32658d" alt="The Runwell app shown as a frame on the Canvas, with Reimagine and Preview buttons available at the top of the frame" width="1440" height="900" data-path="images/runwell/runwell-canvas-original.png" />
+    </Frame>
+  </Step>
+
+  <Step title="Reimagine the design">
+    Click **Reimagine…** to open a menu of directions Agent can explore. Pick one — for Runwell, try **Explore different vibes**. Agent generates three aesthetic variations, each preserving the layout but shifting the visual feel.
+
+    <Frame>
+      <img src="https://mintcdn.com/replit/xo1ygyWkXu0yulfN/images/fitstart/fitstart-canvas-reimagine-menu.png?fit=max&auto=format&n=xo1ygyWkXu0yulfN&q=85&s=158dcf710e17daeee2a86554fa0c3e2e" alt="The Reimagine menu open with options including Explore different vibes, Try different layouts, More like this but better, and others" width="720" height="450" data-path="images/fitstart/fitstart-canvas-reimagine-menu.png" />
+    </Frame>
+
+    The full set of directions:
+
+    * **Explore different approaches**
+    * **Try different layouts**
+    * **Explore different vibes**
+    * **More like this, but better**
+    * **Optimize for usability**
+    * **Show me the opposite of this**
+    * **Surprise me**
+
+    You can also describe a direction in your own words instead of picking from the menu — for example, "show me a dark theme, a minimal theme, and a colorful theme".
+  </Step>
+
+  <Step title="Compare the variants">
+    Pan or zoom out on the Canvas to see the variations alongside the original. Compare them, and decide which direction you want to apply.
+
+    <Frame>
+      <img src="https://mintcdn.com/replit/L79Q3CdSVWOJwgpU/images/runwell/runwell-canvas-variants.png?fit=max&auto=format&n=L79Q3CdSVWOJwgpU&q=85&s=86b35f57c7a4cc864b4235d1819b13d8" alt="Three Runwell design variations on the Canvas alongside the original — Dawn Patrol, Track Day, and Zen Trail" width="1440" height="900" data-path="images/runwell/runwell-canvas-variants.png" />
+    </Frame>
+
+    If you want to refine one before committing, ask Agent — for example, "I like the second one, but make the header bigger."
+  </Step>
+
+  <Step title="Apply the design to your app">
+    Select the variant you want, then click **Build…** at the top of the frame. In the dialog, choose your **existing app** (e.g., Runwell) to apply the new design in place — rather than creating a separate copy.
+
+    <Frame>
+      <img src="https://mintcdn.com/replit/xo1ygyWkXu0yulfN/images/fitstart/fitstart-canvas-build-dialog.png?fit=max&auto=format&n=xo1ygyWkXu0yulfN&q=85&s=af969c32f40c2b5af80a30edc3e0016a" alt="The Build dialog showing two options: Build with this design (creates a new app) or apply to the existing Runwell app" width="1700" height="1100" data-path="images/fitstart/fitstart-canvas-build-dialog.png" />
+    </Frame>
+
+    Wait for Agent to apply the changes. When it finishes, select the updated frame on the Canvas and click **Preview** to see the result. Run through the same checks you did originally — for Runwell: save a run, confirm totals update, and resize Preview to a phone-sized width.
+  </Step>
+
+  <Step title="Publish the updated design (optional)">
+    Happy with the new look? Publish from the Agent chat or the **Publishing** tile in the Tools & files panel. Your public URL stays the same — visitors see the updated version immediately.
+
+    See the **Publish your app** step in [Build and publish your first app](/build/your-first-app) if you need a refresher on the publishing flow.
+  </Step>
+</Steps>
+
+## What to try next
+
+<CardGroup cols={2}>
+  <Card title="Canvas" icon="palette" href="/learn/design/canvas">
+    Deep dive into Canvas features and workflows.
+  </Card>
+
+  <Card title="Visual Editor" icon="pen-ruler" href="/learn/design/visual-editor">
+    Make fine-grained tweaks to colors, text, and layout.
+  </Card>
+
+  <Card title="Vibe coding 101" icon="robot" href="/learn/vibe-coding">
+    Learn how to guide Agent from idea to working app.
+  </Card>
+</CardGroup>

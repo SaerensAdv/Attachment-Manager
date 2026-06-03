@@ -144,3 +144,21 @@ id = "vT0NrkUD2bryACFFAv7ni"
 uri = "file://attached_assets/generated_images/web-developer-portrait.png"
 type = "image"
 title = "generated_image"
+
+[[generated]]
+id = "C5DHRsqozHJgc5zEN39fR"
+uri = "file://attached_assets/generated_images/shopping-feed-specialist-portrait.png"
+type = "image"
+title = "lars shopping feed portrait"
+
+[[generated]]
+id = "Rcp1X36_L8_gdVVT8_99g"
+uri = "file://attached_assets/generated_images/email-automation-specialist-portrait.png"
+type = "image"
+title = "hanne email automation portrait"
+
+[[generated]]
+id = "aJnEpWRSk-SO-1zqguD8D"
+uri = "file://attached_assets/generated_images/creative-designer-portrait.png"
+type = "image"
+title = "vince creative designer portrait"

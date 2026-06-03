@@ -1123,6 +1123,76 @@ export const useClientWebsiteIntake = <TError = ErrorType<ErrorResponse>,
       return useMutation(getClientWebsiteIntakeMutationOptions(options));
     }
 
+export const getClientGoogleAdsRefreshUrl = (id: number,) => {
+
+
+
+
+  return `/api/clients/${id}/google-ads-refresh`
+}
+
+/**
+ * @summary Pull live Google Ads data for the client and store it
+ */
+export const clientGoogleAdsRefresh = async (id: number, options?: RequestInit): Promise<Client> => {
+
+  return customFetch<Client>(getClientGoogleAdsRefreshUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getClientGoogleAdsRefreshMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof clientGoogleAdsRefresh>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof clientGoogleAdsRefresh>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['clientGoogleAdsRefresh'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof clientGoogleAdsRefresh>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  clientGoogleAdsRefresh(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ClientGoogleAdsRefreshMutationResult = NonNullable<Awaited<ReturnType<typeof clientGoogleAdsRefresh>>>
+
+    export type ClientGoogleAdsRefreshMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Pull live Google Ads data for the client and store it
+ */
+export const useClientGoogleAdsRefresh = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof clientGoogleAdsRefresh>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof clientGoogleAdsRefresh>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getClientGoogleAdsRefreshMutationOptions(options));
+    }
+
 export const getGetGenerationsUrl = () => {
 
 

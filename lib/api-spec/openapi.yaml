@@ -359,6 +359,42 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /clients/{id}/google-ads-refresh:
+    post:
+      operationId: clientGoogleAdsRefresh
+      tags: [clients]
+      summary: Pull live Google Ads data for the client and store it
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: The updated client with fresh live Google Ads data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Client"
+        "400":
+          description: Invalid request (e.g. no customer id, missing config)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Client not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "502":
+          description: Google Ads could not be read
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /generations:
     get:
       operationId: getGenerations
@@ -888,6 +924,13 @@ components:
         websiteIntakeAt:
           type: ["string", "null"]
           format: date-time
+        googleAdsCustomerId:
+          type: ["string", "null"]
+        googleAdsLive:
+          type: ["string", "null"]
+        googleAdsLiveAt:
+          type: ["string", "null"]
+          format: date-time
         createdAt:
           type: string
           format: date-time
@@ -935,6 +978,8 @@ components:
         googleAdsData:
           type: ["string", "null"]
         searchConsoleData:
+          type: ["string", "null"]
+        googleAdsCustomerId:
           type: ["string", "null"]
     ClientList:
       type: object

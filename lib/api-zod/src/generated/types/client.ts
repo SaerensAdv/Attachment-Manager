@@ -49,6 +49,12 @@ export interface Client {
   websiteIntake?: string | null;
   /** @nullable */
   websiteIntakeAt?: Date | null;
+  /** @nullable */
+  googleAdsCustomerId?: string | null;
+  /** @nullable */
+  googleAdsLive?: string | null;
+  /** @nullable */
+  googleAdsLiveAt?: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }

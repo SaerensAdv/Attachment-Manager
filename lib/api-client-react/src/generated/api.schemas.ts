@@ -225,6 +225,12 @@ export interface Client {
   websiteIntake?: string | null;
   /** @nullable */
   websiteIntakeAt?: string | null;
+  /** @nullable */
+  googleAdsCustomerId?: string | null;
+  /** @nullable */
+  googleAdsLive?: string | null;
+  /** @nullable */
+  googleAdsLiveAt?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -267,6 +273,8 @@ export interface ClientInput {
   googleAdsData?: string | null;
   /** @nullable */
   searchConsoleData?: string | null;
+  /** @nullable */
+  googleAdsCustomerId?: string | null;
 }
 
 export interface ClientList {

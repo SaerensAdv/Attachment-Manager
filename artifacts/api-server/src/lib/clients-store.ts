@@ -81,6 +81,17 @@ export function clientToMarkdown(client: Client): string {
     links.length > 0 ? `## Links\n\n${links.join("\n")}` : null,
     paragraph("Current state", client.currentState),
     codeBlock("Google Ads data (current)", client.googleAdsData),
+    client.googleAdsLive?.trim()
+      ? paragraph(
+          "Google Ads data (live)",
+          `Live read-only data pulled straight from the client's Google Ads account${
+            client.googleAdsLiveAt
+              ? ` (fetched ${client.googleAdsLiveAt.toISOString().slice(0, 10)})`
+              : ""
+          }.`,
+        )
+      : null,
+    codeBlock("Google Ads live performance", client.googleAdsLive),
     codeBlock("Search Console / SEO data (current)", client.searchConsoleData),
     client.websiteIntake?.trim()
       ? paragraph(

@@ -5,6 +5,7 @@ import {
   collectClientUrls,
   fetchWebsiteIntake,
 } from "../lib/website-intake";
+import { fetchGoogleAdsReport, GoogleAdsConfigError } from "../lib/google-ads";
 
 const router: IRouter = Router();
 
@@ -28,6 +29,7 @@ const FIELDS = [
   "currentState",
   "googleAdsData",
   "searchConsoleData",
+  "googleAdsCustomerId",
 ] as const;
 
 type FieldKey = (typeof FIELDS)[number];
@@ -79,6 +81,9 @@ function serialize(client: Client) {
     ...client,
     websiteIntakeAt: client.websiteIntakeAt
       ? client.websiteIntakeAt.toISOString()
+      : null,
+    googleAdsLiveAt: client.googleAdsLiveAt
+      ? client.googleAdsLiveAt.toISOString()
       : null,
     createdAt: client.createdAt.toISOString(),
     updatedAt: client.updatedAt.toISOString(),
@@ -194,6 +199,54 @@ router.post("/clients/:id/website-intake", async (req, res) => {
     .where(eq(clientsTable.id, id))
     .returning();
   res.json(serialize(updated));
+});
+
+router.post("/clients/:id/google-ads-refresh", async (req, res) => {
+  const id = parseId(req.params.id);
+  if (id === null) {
+    res.status(400).json({ error: "Ongeldige id." });
+    return;
+  }
+  const [row] = await db
+    .select()
+    .from(clientsTable)
+    .where(eq(clientsTable.id, id));
+  if (!row) {
+    res.status(404).json({ error: "Klant niet gevonden." });
+    return;
+  }
+
+  const customerId = (row.googleAdsCustomerId ?? "").replace(/\D/g, "");
+  if (!customerId) {
+    res.status(400).json({
+      error:
+        "Deze klant heeft nog geen Google Ads customer ID. Vul het in en bewaar eerst.",
+    });
+    return;
+  }
+
+  try {
+    const report = await fetchGoogleAdsReport(row.googleAdsCustomerId ?? "");
+    const [updated] = await db
+      .update(clientsTable)
+      .set({
+        googleAdsLive: report.text,
+        googleAdsLiveAt: report.fetchedAt,
+        updatedAt: new Date(),
+      })
+      .where(eq(clientsTable.id, id))
+      .returning();
+    res.json(serialize(updated));
+  } catch (err) {
+    if (err instanceof GoogleAdsConfigError) {
+      res.status(400).json({ error: err.message });
+      return;
+    }
+    res.status(502).json({
+      error: "Kon Google Ads niet uitlezen.",
+      detail: err instanceof Error ? err.message : String(err),
+    });
+  }
 });
 
 router.delete("/clients/:id", async (req, res) => {

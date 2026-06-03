@@ -6,12 +6,13 @@ import {
   useUpdateClient,
   useDeleteClient,
   useClientWebsiteIntake,
+  useClientGoogleAdsRefresh,
   getGetClientsQueryKey,
   getGetDocGraphQueryKey,
   type Client,
   type ClientInput,
 } from "@workspace/api-client-react";
-import { Globe, Loader2, Plus, Save, Trash2, X } from "lucide-react";
+import { BarChart3, Globe, Loader2, Plus, Save, Trash2, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import Reveal from "@/components/Reveal";
@@ -178,6 +179,7 @@ const EMPTY_FORM: FormState = {
   currentState: "",
   googleAdsData: "",
   searchConsoleData: "",
+  googleAdsCustomerId: "",
 };
 
 function clientToForm(c: Client): FormState {
@@ -228,6 +230,12 @@ export default function Clients() {
     text: string | null;
     at: string | null;
   }>({ text: null, at: null });
+  // Live Google Ads (fase 3) — set by the google-ads-refresh endpoint; the
+  // customer id itself is an editable briefing field.
+  const [liveAds, setLiveAds] = useState<{
+    text: string | null;
+    at: string | null;
+  }>({ text: null, at: null });
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: getGetClientsQueryKey() });
@@ -240,10 +248,12 @@ export default function Clients() {
   const updateMut = useUpdateClient();
   const deleteMut = useDeleteClient();
   const intakeMut = useClientWebsiteIntake();
+  const adsMut = useClientGoogleAdsRefresh();
 
   const saving = createMut.isPending || updateMut.isPending;
   const deleting = deleteMut.isPending;
   const intaking = intakeMut.isPending;
+  const refreshingAds = adsMut.isPending;
 
   const startCreate = () => {
     setEditing("new");
@@ -251,6 +261,7 @@ export default function Clients() {
     setFormError(null);
     setConfirmDelete(false);
     setIntake({ text: null, at: null });
+    setLiveAds({ text: null, at: null });
   };
 
   const startEdit = (c: Client) => {
@@ -259,6 +270,10 @@ export default function Clients() {
     setFormError(null);
     setConfirmDelete(false);
     setIntake({ text: c.websiteIntake ?? null, at: c.websiteIntakeAt ?? null });
+    setLiveAds({
+      text: c.googleAdsLive ?? null,
+      at: c.googleAdsLiveAt ?? null,
+    });
   };
 
   const closeEditor = () => {
@@ -267,6 +282,7 @@ export default function Clients() {
     setFormError(null);
     setConfirmDelete(false);
     setIntake({ text: null, at: null });
+    setLiveAds({ text: null, at: null });
   };
 
   const setField = (key: keyof ClientInput, value: string) =>
@@ -326,6 +342,28 @@ export default function Clients() {
         onError: (err) =>
           setFormError(
             err instanceof Error ? err.message : "Website uitlezen mislukt",
+          ),
+      },
+    );
+  };
+
+  const handleGoogleAds = () => {
+    if (typeof editing !== "number") return;
+    setFormError(null);
+    adsMut.mutate(
+      { id: editing },
+      {
+        onSuccess: (updated) => {
+          invalidate();
+          setForm(clientToForm(updated));
+          setLiveAds({
+            text: updated.googleAdsLive ?? null,
+            at: updated.googleAdsLiveAt ?? null,
+          });
+        },
+        onError: (err) =>
+          setFormError(
+            err instanceof Error ? err.message : "Google Ads ophalen mislukt",
           ),
       },
     );
@@ -731,6 +769,101 @@ export default function Clients() {
                             className="max-h-72 overflow-auto whitespace-pre-wrap break-words border border-foreground/30 bg-background p-3 font-['Space_Mono'] text-[11px] leading-relaxed text-muted-foreground"
                           >
                             {intake.text}
+                          </pre>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {/* Section IV — live Google Ads (existing clients only) */}
+                  {typeof editing === "number" && (
+                    <>
+                      <div className="flex items-baseline justify-between border-b-2 border-foreground pb-1">
+                        <h3 className="font-['Playfair_Display'] font-bold text-lg uppercase tracking-wider">
+                          IV. Live Google Ads
+                        </h3>
+                        <span className="font-['Space_Mono'] text-xs text-muted-foreground">
+                          Leest het account uit
+                        </span>
+                      </div>
+
+                      <p className="font-['Inter'] text-sm text-muted-foreground -mt-4">
+                        Haalt live cijfers op uit het Google Ads-account van de
+                        cliënt (laatste 30 dagen): accounttotalen, campagnes en top
+                        zoektermen. Alleen-lezen — er wordt nooit iets gewijzigd in
+                        Google Ads. De data wordt bewaard en meegegeven aan de
+                        agents.
+                      </p>
+
+                      <div className="flex flex-col gap-1.5">
+                        <label className="font-['Space_Mono'] text-[10px] uppercase tracking-widest">
+                          Google Ads customer ID
+                        </label>
+                        <Input
+                          value={form.googleAdsCustomerId}
+                          onChange={(e) =>
+                            setField("googleAdsCustomerId", e.target.value)
+                          }
+                          placeholder="Bv. 123-456-7890"
+                          data-testid="input-client-googleAdsCustomerId"
+                          className={INPUT_CLASS}
+                        />
+                        <span className="font-['Space_Mono'] text-[9px] tracking-wider text-muted-foreground/60">
+                          Bewaar het ID eerst met "Wijzigingen opslaan" voor je
+                          ophaalt.
+                        </span>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-3">
+                        <button
+                          onClick={handleGoogleAds}
+                          disabled={
+                            refreshingAds || !form.googleAdsCustomerId.trim()
+                          }
+                          data-testid="button-google-ads-refresh"
+                          className="py-2.5 px-4 border-2 border-foreground text-foreground font-['Space_Mono'] text-[11px] uppercase tracking-widest flex items-center gap-2 hover:bg-foreground hover:text-background transition-colors disabled:opacity-50 disabled:pointer-events-none"
+                        >
+                          {refreshingAds ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <BarChart3 className="w-4 h-4" />
+                          )}
+                          {liveAds.text ? "Opnieuw ophalen" : "Google Ads ophalen"}
+                        </button>
+                        {!form.googleAdsCustomerId.trim() ? (
+                          <span className="font-['Space_Mono'] text-[10px] uppercase tracking-wider text-muted-foreground/70">
+                            Vul eerst het customer ID in
+                          </span>
+                        ) : liveAds.at ? (
+                          <span className="font-['Space_Mono'] text-[10px] uppercase tracking-wider text-muted-foreground">
+                            Laatst opgehaald:{" "}
+                            {new Date(liveAds.at).toLocaleString("nl-BE", {
+                              dateStyle: "medium",
+                              timeStyle: "short",
+                            })}
+                          </span>
+                        ) : (
+                          <span className="font-['Space_Mono'] text-[10px] uppercase tracking-wider text-muted-foreground/70">
+                            Nog niet opgehaald
+                          </span>
+                        )}
+                      </div>
+
+                      {liveAds.text && (
+                        <div className="flex flex-col gap-2">
+                          <div className="flex items-baseline justify-between border-b border-foreground/20 pb-1">
+                            <span className="font-['Space_Mono'] text-[10px] uppercase tracking-widest">
+                              Opgehaalde data
+                            </span>
+                            <span className="font-['Space_Mono'] text-[9px] tracking-wider text-muted-foreground/60">
+                              {liveAds.text.length.toLocaleString("nl-BE")} tekens
+                            </span>
+                          </div>
+                          <pre
+                            data-testid="text-google-ads-live"
+                            className="max-h-72 overflow-auto whitespace-pre-wrap break-words border border-foreground/30 bg-background p-3 font-['Space_Mono'] text-[11px] leading-relaxed text-muted-foreground"
+                          >
+                            {liveAds.text}
                           </pre>
                         </div>
                       )}

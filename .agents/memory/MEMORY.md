@@ -13,3 +13,4 @@
 - [Replit-docs knowledge nodes](replit-docs-thread.md) — Replit nodes are how-to usage docs in knowledge/, English; wire multi-flow tools (e.g. Canvas) into every agent/workflow they touch via exact knowledge/<file>.md path.
 - [Team page & portraits](team-portrait-foundation.md) — object-storage layout (portraits/<slug>.png, portrait-styles/<slug>-<style>.png), best-effort index loads at request time, upload via node+GCS sidecar (no tsx).
 - [DocPanel reader features](doc-panel-features.md) — ToC must read rendered rehype-slug ids (not recompute); local Transformers.js search w/ Orama fallback; edit guards on clients/db/* both sides.
+- [System architecture direction](system-architecture-direction.md) — app = brain + source of truth (agents/knowledge/client state + decision endpoint); n8n = stateless executor that triggers, acts, and writes results back.

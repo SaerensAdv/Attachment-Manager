@@ -4,6 +4,7 @@ import { AnimatePresence } from "framer-motion";
 import { useGetDocGraph, useGetTeam } from "@workspace/api-client-react";
 import GraphViewer from "@/components/GraphViewer";
 import GraphLegend from "@/components/GraphLegend";
+import RunLegend from "@/components/RunLegend";
 import GraphSearch from "@/components/GraphSearch";
 import DocPanel from "@/components/DocPanel";
 import CommandBar from "@/components/CommandBar";
@@ -188,8 +189,8 @@ export default function Home() {
       <div className="absolute inset-0 z-10 pointer-events-none p-6 pt-20 flex justify-between items-start">
         
         {/* Left column: Legend & Search */}
-        <div className="w-80 flex flex-col gap-6 pointer-events-auto">
-          <div className="bg-card border border-foreground shadow-[4px_4px_0px_hsl(var(--foreground))] overflow-hidden flex flex-col">
+        <div className="w-80 flex flex-col gap-6 pointer-events-none">
+          <div className="pointer-events-auto bg-card border border-foreground shadow-[4px_4px_0px_hsl(var(--foreground))] overflow-hidden flex flex-col">
             <div className="p-5 border-b border-foreground">
               <div className="flex items-baseline justify-between mb-1">
                 <span className="font-['Space_Mono'] text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
@@ -223,6 +224,12 @@ export default function Home() {
               />
             </div>
           </div>
+
+          {/* Run-state legend: only present while a run is live, so the moving
+              rings/pulses on the map become self-explanatory. */}
+          <AnimatePresence>
+            {involvedNodeIds.size > 0 && <RunLegend key="run-legend" />}
+          </AnimatePresence>
         </div>
 
         {/* Right column: Document Panel */}

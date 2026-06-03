@@ -70,6 +70,19 @@ export class ObjectStorageService {
     return dir;
   }
 
+  /**
+   * Resolve a File handle for a relative object name inside the first public
+   * search path. Used to read/write derived public assets (e.g. resized
+   * portrait thumbnails) that live alongside the originals and must survive
+   * restarts/redeploys.
+   */
+  publicObjectFile(relativeName: string): File {
+    const searchPath = this.getPublicObjectSearchPaths()[0];
+    const fullPath = `${searchPath}/${relativeName}`;
+    const { bucketName, objectName } = parseObjectPath(fullPath);
+    return objectStorageClient.bucket(bucketName).file(objectName);
+  }
+
   async searchPublicObject(filePath: string): Promise<File | null> {
     for (const searchPath of this.getPublicObjectSearchPaths()) {
       const fullPath = `${searchPath}/${filePath}`;

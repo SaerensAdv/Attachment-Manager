@@ -42,9 +42,16 @@ confirm the chosen direction before regenerating the set.
 
 ## Serving sizes (resize-on-serve)
 The public-objects storage route resizes images on the fly via a `?w=<px>`
-query param: it re-encodes to WebP, caches the result on local disk keyed by the
-object's storage *generation* (so a replaced portrait self-invalidates), and
-sets `immutable` cache headers. Source of truth stays the full `portraits/<slug>.png`.
+query param: it re-encodes to WebP and caches the result in two tiers, both keyed
+by the object's storage *generation* (so a replaced portrait self-invalidates):
+(1) persisted object-storage variant at `thumbs/<source-no-ext>-w<width>-g<generation>.webp`
+(survives restarts/redeploys, shared across instances — first request after a
+deploy serves it with no re-encode), and (2) a local `/tmp` L1 cache. Both
+writes are best-effort. The generation is embedded in the variant *name*, so a
+replaced source yields a new name and stale variants just stop being requested
+(orphans, GC-able later). `objectStorage.publicObjectFile(relName)` resolves a
+read/write File handle in the first public search path for these derived assets.
+Sets `immutable` cache headers. Source of truth stays the full `portraits/<slug>.png`.
 The team API exposes both `portraitUrl` (full) and `portraitThumbUrl` (`?w=256`);
 roster avatars, the profile portrait, and the round Kaart nodes all use the thumb
 (256px WebP ≈ 5KB vs ~1.4MB PNG). Style examples use `?w=512`. Widths are clamped

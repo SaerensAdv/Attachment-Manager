@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   useGetTeam,
   useGetDocGraph,
@@ -6,6 +6,7 @@ import {
   type DocNode,
 } from "@workspace/api-client-react";
 import { Loader2, ArrowLeft, ArrowRight, X } from "lucide-react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import Reveal from "@/components/Reveal";
 
 const KIND_LABEL: Record<string, string> = {
@@ -234,6 +235,24 @@ export default function Team() {
     [employees, selectedSlug],
   );
 
+  const reduceMotion = useReducedMotion();
+
+  // While a profile floats over the page, lock body scroll and let Escape close
+  // it, so the dossier behaves like a proper overlay regardless of scroll spot.
+  useEffect(() => {
+    if (!selected) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setSelectedSlug(null);
+    };
+    window.addEventListener("keydown", onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [selected]);
+
   // The team grouped by leadership head (the reporting line from AGENTS.md), in
   // fixed top-to-bottom order. Members keep their alphabetical order within a
   // head; empty heads are simply absent. Each card still shows its function layer
@@ -317,18 +336,6 @@ export default function Team() {
           </header>
         </Reveal>
 
-        {/* Profile view */}
-        {selected && (
-          <div className="mb-12">
-            <Profile
-              member={selected}
-              nodes={graphData?.nodes ?? []}
-              edges={graphData?.edges ?? []}
-              onClose={() => setSelectedSlug(null)}
-            />
-          </div>
-        )}
-
         {/* Reporting-line note */}
         <Reveal>
           <p className="font-['Space_Mono'] text-[10px] uppercase tracking-[0.2em] text-muted-foreground mb-8">
@@ -397,6 +404,49 @@ export default function Team() {
           ))}
         </div>
       </div>
+
+      {/* Floating profile dossier — appears over the page so you never have to
+          scroll back up to read a member you clicked further down the roster. */}
+      <AnimatePresence>
+        {selected && (
+          <motion.div
+            className="fixed inset-0 z-[60] flex overflow-y-auto bg-foreground/40 backdrop-blur-sm p-4 sm:p-6"
+            onClick={() => setSelectedSlug(null)}
+            role="dialog"
+            aria-modal="true"
+            aria-label={`Profiel van ${selected.name ?? selected.title}`}
+            initial={reduceMotion ? false : { opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: reduceMotion ? 0 : 0.2 }}
+          >
+            <motion.div
+              className="m-auto w-full max-w-5xl"
+              onClick={(e) => e.stopPropagation()}
+              initial={
+                reduceMotion ? false : { opacity: 0, y: 16, scale: 0.98 }
+              }
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={
+                reduceMotion
+                  ? { opacity: 0 }
+                  : { opacity: 0, y: 16, scale: 0.98 }
+              }
+              transition={{
+                duration: reduceMotion ? 0 : 0.28,
+                ease: [0.16, 1, 0.3, 1],
+              }}
+            >
+              <Profile
+                member={selected}
+                nodes={graphData?.nodes ?? []}
+                edges={graphData?.edges ?? []}
+                onClose={() => setSelectedSlug(null)}
+              />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

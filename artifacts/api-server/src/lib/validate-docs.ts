@@ -5,6 +5,13 @@ import {
   type DocFile,
 } from "./docs";
 import { ALWAYS_KNOWLEDGE } from "./generate-context";
+import { hierarchySlugs } from "./team";
+
+// An agent can opt out of the hierarchy check by declaring itself deliberately
+// layer-less with an HTML comment, e.g. `<!-- unlisted: cross-cutting -->`.
+// This matches the existing comment-marker convention (see deliverable markers)
+// and keeps the intent next to the agent it describes.
+const UNLISTED_MARKER_RE = /<!--\s*unlisted\b/i;
 
 export type IssueSeverity = "error" | "warning" | "info";
 
@@ -106,7 +113,29 @@ export function validateDocs(extra: DocFile[] = []): ValidationReport {
     }
   }
 
-  // 4. Mandatory quality docs that are missing.
+  // 4. Agents not placed in the AGENTS.md "Agent Hierarchy" (and not opting out
+  //    via an `<!-- unlisted -->` marker). These would silently land in the
+  //    "Overig" catch-all on the team page, which usually means someone forgot
+  //    to assign the agent a layer rather than that it is genuinely layer-less.
+  const agentsDoc = files.find((f) => f.id === "AGENTS.md");
+  if (agentsDoc) {
+    const listed = hierarchySlugs(agentsDoc.content);
+    for (const file of files) {
+      if (file.category !== "agent") continue;
+      const slug = file.id.replace(/^agents\//, "").replace(/\.md$/, "");
+      if (listed.has(slug)) continue;
+      if (UNLISTED_MARKER_RE.test(file.content)) continue;
+      issues.push({
+        severity: "warning",
+        kind: "unlayered-agent",
+        source: agentsDoc.id,
+        target: file.id,
+        message: `Agent '${file.title}' (${slug}) staat niet in de "Agent Hierarchy" van AGENTS.md en valt daardoor in 'Overig'. Voeg de agent toe aan een laag, of markeer 'm bewust laagloos met '<!-- unlisted: ... -->' in ${file.id}.`,
+      });
+    }
+  }
+
+  // 5. Mandatory quality docs that are missing.
   for (const path of ALWAYS_KNOWLEDGE) {
     if (!ids.has(path)) {
       issues.push({

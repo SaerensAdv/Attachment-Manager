@@ -1,5 +1,7 @@
 # Humanizer
 
+<!-- unlisted: cross-cutting final pass that polishes every agent's output, so it belongs to no single layer of the hierarchy. -->
+
 > Inherits all global rules in `AGENTS.md`.
 
 ## Role

@@ -28,6 +28,12 @@ grows.
   keep them aligned (1..N).
 - An agent not listed under any hierarchy item correctly falls to "Overig"
   (e.g. `humanizer`, a cross-cutting step with no fixed layer).
+- Doc validation (`validate-docs.ts`, `unlayered-agent` warning) flags any
+  `agents/<slug>.md` missing from the hierarchy so accidental omissions surface.
+  A deliberately layer-less agent opts out with an HTML-comment marker at the top
+  of its file: `<!-- unlisted: <reason> -->` (matched by `/<!--\s*unlisted\b/i`,
+  reuses the existing comment-marker convention; DocPanel strips HTML comments so
+  it never renders). `hierarchySlugs()` in `team.ts` flattens the listed slugs.
 - Listing agents in the hierarchy adds NO new doc-graph edges: AGENTS.md already
   references every agent in its "Current MVP / Additional Specified" inventory
   lists.

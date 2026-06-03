@@ -138,6 +138,20 @@ function layerSlugsFromAgents(agentsContent: string): Map<number, Set<string>> {
 }
 
 /**
+ * Every agent slug explicitly placed under a numbered item in the AGENTS.md
+ * "Agent Hierarchy" section, flattened across all layers. Doc validation uses
+ * this to spot agents that were never assigned a layer (and would silently fall
+ * into the "Overig" catch-all).
+ */
+export function hierarchySlugs(agentsContent: string): Set<string> {
+  const all = new Set<string>();
+  for (const set of layerSlugsFromAgents(agentsContent).values()) {
+    for (const slug of set) all.add(slug);
+  }
+  return all;
+}
+
+/**
  * Resolve every agent slug to its layer by joining the Dutch layer metadata in
  * {@link TEAM_LAYERS} (by `order`) with the membership parsed from AGENTS.md.
  * Slugs not listed under any hierarchy item fall back to the "Overig" layer so

@@ -170,8 +170,59 @@
 .atlas-flow-line {
   animation: atlas-flow 1.6s linear infinite;
 }
+
+/* Live-run hand-off line — accent beads flowing from the previous agent to the
+   one currently writing. */
+.atlas-handoff-line {
+  animation: atlas-flow 0.9s linear infinite;
+}
+
+/* Live-run active agent — a soft accent halo that breathes around the node that
+   is writing right now. */
+@keyframes atlas-node-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.25;
+  }
+  50% {
+    transform: scale(1.22);
+    opacity: 0.08;
+  }
+}
+.atlas-node-pulse {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: atlas-node-pulse 2s ease-in-out infinite;
+}
+
+@keyframes atlas-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.atlas-spin {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: atlas-spin 4s linear infinite;
+}
+
+.atlas-spin-slow {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: atlas-spin 12s linear infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .atlas-flow-line {
+  .atlas-flow-line,
+  .atlas-handoff-line,
+  .atlas-node-pulse,
+  .atlas-spin,
+  .atlas-spin-slow {
     animation: none;
   }
 }

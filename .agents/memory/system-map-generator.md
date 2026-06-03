@@ -1,13 +1,27 @@
 ---
 name: System Map generator (Phase 2)
-description: How the "Genereren" tab works — context assembly, SSE streaming, and the non-obvious prompt decisions.
+description: How the generation flow works — context assembly, SSE streaming, and the non-obvious prompt decisions.
 ---
 
-# AI Team System Map — "Genereren" tab (Phase 2)
+# AI Team System Map — generation flow (Phase 2)
 
-The system-map artifact has a second tab that turns the project docs into a live
-generator: user picks client + workflow + agent + types a request → server
-assembles context → Claude streams a Dutch (Flemish) markdown draft.
+The system-map artifact turns the project docs into a live generator: user picks
+client + workflow + agent + types a request → server assembles context → Claude
+streams a Dutch (Flemish) markdown draft.
+
+## UI surface: command bar on the Kaart (not a standalone page)
+The flow no longer lives on a "/generate" page or "Genereren" tab — both are
+retired ("/generate" redirects to "/"). It is now a ChatGPT-style command bar
+docked bottom-center on the Kaart (Home) plus an expanding GenerationPanel above
+it. All flow state/handlers live in `useGeneration(nodes, edges)` (shared hook);
+CommandBar + GenerationPanel are thin views over it. The hook also exposes a
+live-run map model — `involvedPaths`, `activePath`, `handoff {source,target}` —
+that drives GraphViewer node highlighting/pulse + an animated hand-off edge.
+**Why:** the generator and the org map are the same mental model; overlaying the
+run on the map shows *who* is working. **How to apply:** node id === doc path, so
+agent paths map directly to GraphViewer node ids; keep map overlays
+pointer-events-scoped (container `pointer-events-none`, bar/panel `-auto`) so
+they never block pan/zoom, and gate every animation on prefers-reduced-motion.
 
 ## Context assembly
 The server stitches the prompt from existing docs read via `getDocFile`:
@@ -132,3 +146,16 @@ omits the heavy markdown body; detail endpoint returns full `finalMarkdown`.
 Phase 2 had no persistence by design. The conversations/messages DB tables from
 the anthropic integration template were NOT copied; only
 `lib/integrations-anthropic-ai` is used.
+
+## Live-run map feedback (queued/working/done)
+The Kaart shows per-agent progress during a run via three node states: queued,
+working, done. GraphViewer takes an OPTIONAL additive `nodeStatus?: Map<id,
+"queued"|"working"|"done">` (built in useGeneration from segments, threaded
+Home → GraphViewer) alongside the original involved/active/handoff props.
+- **Any new run-state prop must be optional + additive** — never break the
+  existing involvedNodeIds / activeNodeId / handoff contract. **Why:** the map is
+  also the default landing surface; a required prop would crash the at-rest view.
+- **Every run animation is gated twice:** the JS `reducedMotion` flag swaps the
+  animated className for "" AND a `prefers-reduced-motion` block in index.css
+  sets `animation:none`. Each state keeps a STATIC fallback (solid/dashed ring,
+  opacity/scale) so queued/working/done stay legible without motion.

@@ -240,7 +240,7 @@ export default function Clients() {
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: getGetClientsQueryKey() });
     // The doc graph merges DB clients, so refresh it too — the new/updated
-    // client must surface in the Genereren dropdown and the Kaart graph.
+    // client must surface in the Kaart command bar and the Kaart graph.
     queryClient.invalidateQueries({ queryKey: getGetDocGraphQueryKey() });
   };
 

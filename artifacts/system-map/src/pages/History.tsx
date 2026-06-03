@@ -259,8 +259,8 @@ export default function History() {
                     Nog geen generaties bewaard
                   </p>
                   <p className="text-sm text-muted-foreground mt-2 font-['Inter']">
-                    Maak iets aan via Genereren — het verschijnt hier
-                    automatisch.
+                    Maak iets aan via de opdrachtbalk op de Kaart — het
+                    verschijnt hier automatisch.
                   </p>
                 </div>
               )}

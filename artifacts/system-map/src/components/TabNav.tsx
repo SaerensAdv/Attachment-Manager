@@ -1,10 +1,9 @@
 import { Link, useLocation } from "wouter";
 import { motion, useReducedMotion } from "framer-motion";
-import { Map, Sparkles, Users, Archive, Contact, ShieldCheck } from "lucide-react";
+import { Map, Users, Archive, Contact, ShieldCheck } from "lucide-react";
 
 const tabs = [
   { href: "/", label: "Kaart", icon: Map },
-  { href: "/generate", label: "Genereren", icon: Sparkles },
   { href: "/team", label: "Team", icon: Contact },
   { href: "/clients", label: "Klanten", icon: Users },
   { href: "/history", label: "Archief", icon: Archive },

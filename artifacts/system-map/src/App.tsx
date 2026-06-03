@@ -1,11 +1,10 @@
-import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
+import { Switch, Route, Redirect, Router as WouterRouter, useLocation } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
-import Generate from "@/pages/Generate";
 import Team from "@/pages/Team";
 import Clients from "@/pages/Clients";
 import History from "@/pages/History";
@@ -21,7 +20,10 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
-      <Route path="/generate" component={Generate} />
+      {/* The standalone Genereren page now lives as a command bar on the Kaart. */}
+      <Route path="/generate">
+        <Redirect to="/" />
+      </Route>
       <Route path="/team" component={Team} />
       <Route path="/clients" component={Clients} />
       <Route path="/history" component={History} />

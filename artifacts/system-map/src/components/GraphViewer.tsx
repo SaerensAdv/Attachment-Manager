@@ -39,6 +39,18 @@ interface GraphViewerProps {
   // Maps a node id (e.g. agents/copywriter.md) to a portrait URL. When present
   // the node renders a circular portrait instead of the plain "press seal".
   portraits?: Record<string, string>;
+  // Live-run overlay driven by the Kaart command bar: the routed team's nodes
+  // light up (involved), the agent currently writing pulses (active), and an
+  // animated hand-off edge flows from the previous agent to the active one.
+  involvedNodeIds?: Set<string>;
+  activeNodeId?: string | null;
+  handoff?: { source: string; target: string } | null;
+  // Per-node status tracking during a run (queued, working, done) for rich feedback
+  nodeStatus?: Map<string, "queued" | "working" | "done">;
+  // Frame this set of nodes when the nonce changes (e.g. a run starts) so the
+  // involved team is brought into view without fighting manual pan/zoom.
+  spotlightNodeIds?: string[];
+  spotlightNonce?: number;
 }
 
 // Turn a node id into a value safe for an SVG element id / clipPath reference.
@@ -83,6 +95,12 @@ export default function GraphViewer({
   searchQuery,
   focusNonce,
   portraits,
+  involvedNodeIds,
+  activeNodeId,
+  handoff,
+  nodeStatus,
+  spotlightNodeIds,
+  spotlightNonce,
 }: GraphViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const transformRef = useRef<ReactZoomPanPinchRef | null>(null);
@@ -334,6 +352,40 @@ export default function GraphViewer({
     api.setTransform(x, y, clampedScale, reducedMotion ? 0 : 600, "easeOut");
   }, [dimensions.width, dimensions.height, reducedMotion]);
 
+  // Pan/zoom so a specific subset of nodes (e.g. the routed team) is framed.
+  // Used to spotlight the involved agents when a run begins, with a tighter
+  // max zoom than fitView so a small team reads clearly.
+  const fitToNodes = useCallback(
+    (ids: string[]) => {
+      const api = transformRef.current;
+      const wanted = new Set(ids);
+      const positioned = simNodesRef.current.filter(
+        (n) => wanted.has(n.id) && n.x !== undefined && n.y !== undefined,
+      );
+      if (!api || !positioned.length) return;
+
+      const xs = positioned.map((n) => n.x as number);
+      const ys = positioned.map((n) => n.y as number);
+      const minX = Math.min(...xs);
+      const maxX = Math.max(...xs);
+      const minY = Math.min(...ys);
+      const maxY = Math.max(...ys);
+
+      const padding = 160;
+      const w = maxX - minX + padding * 2;
+      const h = maxY - minY + padding * 2;
+      const fitScale = Math.min(dimensions.width / w, dimensions.height / h);
+      const clampedScale = Math.max(0.3, Math.min(fitScale, 1.6));
+
+      const centerX = (minX + maxX) / 2;
+      const centerY = (minY + maxY) / 2;
+      const x = dimensions.width / 2 - centerX * clampedScale;
+      const y = dimensions.height / 2 - centerY * clampedScale;
+      api.setTransform(x, y, clampedScale, reducedMotion ? 0 : 700, "easeOut");
+    },
+    [dimensions.width, dimensions.height, reducedMotion],
+  );
+
   // Export the current graph view (the cream paper + grid + SVG, exactly as
   // panned/zoomed) to an image. The control overlays carry data-export-ignore
   // so they are filtered out, and the cream theme background is forced so the
@@ -387,6 +439,16 @@ export default function GraphViewer({
     fitView();
   }, [settleNonce, simNodes, selectedNodeId, fitView]);
 
+  // Spotlight the involved team when a run begins (nonce bump). Waits a frame so
+  // freshly-filtered nodes are positioned before framing them.
+  useEffect(() => {
+    if (!spotlightNonce) return;
+    if (!spotlightNodeIds || spotlightNodeIds.length === 0) return;
+    const id = requestAnimationFrame(() => fitToNodes(spotlightNodeIds));
+    return () => cancelAnimationFrame(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [spotlightNonce]);
+
   // Clear a stale hover when the hovered node leaves the current dataset (e.g.
   // category filtering removes it), otherwise hoverSet would keep dimming the
   // whole graph until the next hover event.
@@ -406,8 +468,13 @@ export default function GraphViewer({
     return false;
   };
 
+  const runActive = (involvedNodeIds?.size ?? 0) > 0;
+
   const isNodeDimmed = (node: SimNode) => {
     if (hoverSet) return !hoverSet.has(node.id);
+    // During a live run the involved team stays lit and everything else recedes,
+    // so the map clearly shows who is working — unless the user is hovering.
+    if (runActive) return !involvedNodeIds!.has(node.id);
     if (selectedNodeId) return node.id !== selectedNodeId;
     if (lowerSearchQuery) return !node.title.toLowerCase().includes(lowerSearchQuery);
     return false;
@@ -454,6 +521,38 @@ export default function GraphViewer({
     if (adj) for (const n of adj) set.add(n);
     return set;
   }, [hoveredNodeId, neighborMap]);
+
+  // A synthetic bowed path between the previous and current agent of a live run,
+  // so the map shows work flowing from colleague to colleague even when the two
+  // agents aren't directly linked in the doc graph.
+  const handoffPath = useMemo(() => {
+    if (!handoff) return null;
+    const s = simNodes.find((n) => n.id === handoff.source);
+    const t = simNodes.find((n) => n.id === handoff.target);
+    if (
+      !s ||
+      !t ||
+      s.x === undefined ||
+      s.y === undefined ||
+      t.x === undefined ||
+      t.y === undefined
+    )
+      return null;
+    const rOf = (n: SimNode) => 12 + Math.min(degreeMap.get(n.id) ?? 0, 14);
+    const dx = t.x - s.x;
+    const dy = t.y - s.y;
+    const len = Math.hypot(dx, dy) || 1;
+    const ux = dx / len;
+    const uy = dy / len;
+    const x1 = s.x + ux * (rOf(s) + 3);
+    const y1 = s.y + uy * (rOf(s) + 3);
+    const x2 = t.x - ux * (rOf(t) + 8);
+    const y2 = t.y - uy * (rOf(t) + 8);
+    const bow = Math.min(len * 0.14, 70);
+    const cx = (x1 + x2) / 2 - uy * bow;
+    const cy = (y1 + y2) / 2 + ux * bow;
+    return `M${x1},${y1} Q${cx},${cy} ${x2},${y2}`;
+  }, [handoff, simNodes, degreeMap]);
 
   return (
     <div ref={containerRef} className="w-full h-full bg-background relative overflow-hidden">
@@ -560,6 +659,40 @@ export default function GraphViewer({
               })}
             </g>
 
+            {/* Live-run hand-off: an animated accent line flowing from the
+                previous agent to the one currently working. Static under
+                reduced motion. */}
+            {handoffPath && (
+              <g className="handoff" fill="none">
+                <path
+                  d={handoffPath}
+                  stroke="hsl(var(--accent))"
+                  strokeWidth={5}
+                  opacity={0.18}
+                  strokeLinecap="round"
+                />
+                {reducedMotion ? (
+                  <path
+                    d={handoffPath}
+                    stroke="hsl(var(--accent))"
+                    strokeWidth={2}
+                    opacity={0.9}
+                    strokeLinecap="round"
+                  />
+                ) : (
+                  <path
+                    d={handoffPath}
+                    stroke="hsl(var(--accent))"
+                    strokeWidth={2.5}
+                    strokeDasharray="2,9"
+                    strokeLinecap="round"
+                    opacity={1}
+                    className="atlas-handoff-line"
+                  />
+                )}
+              </g>
+            )}
+
             {/* Nodes Layer */}
             <g className="nodes">
               {simNodes.map((node) => {
@@ -567,10 +700,18 @@ export default function GraphViewer({
 
                 const isHighlighted = isNodeHighlighted(node);
                 const isDimmed = isNodeDimmed(node);
+                const isInvolved = involvedNodeIds?.has(node.id) ?? false;
+                const status = nodeStatus?.get(node.id);
+                const isActive = activeNodeId === node.id || status === "working";
+                // Visual prominence: hover/search/select highlight, the active
+                // (writing) agent, or any involved team member during a run.
+                const lit = isHighlighted || isActive || status === "done";
                 const color = getCategoryColor(node.category);
                 const r = radiusOf(node);
                 const portraitUrl = portraits?.[node.id];
                 const clipId = `portrait-clip-${safeId(node.id)}`;
+                const scaleVal = isActive ? 1.18 : (lit ? 1.1 : (isInvolved ? 1.05 : 1));
+                const ringWidth = isActive ? 4 : (lit || isInvolved ? 3.5 : 2.5);
 
                 return (
                   <g
@@ -581,12 +722,78 @@ export default function GraphViewer({
                     className={`cursor-pointer ${reducedMotion ? "" : "transition-all duration-300"}`}
                     style={{
                       opacity: isDimmed ? 0.2 : 1,
-                      transform: `translate(${node.x}px,${node.y}px) scale(${isHighlighted ? 1.15 : 1})`,
+                      transform: `translate(${node.x}px,${node.y}px) scale(${scaleVal})`,
                     }}
                   >
+                    {/* Active (working) agent: strong pulsing accent halo rings */}
+                    {isActive && (
+                      <>
+                        <circle
+                          r={r + 16}
+                          fill="hsl(var(--accent))"
+                          opacity={0.15}
+                          className={reducedMotion ? "" : "atlas-node-pulse"}
+                        />
+                        <circle
+                          r={r + 6}
+                          fill="none"
+                          stroke="hsl(var(--accent))"
+                          strokeWidth={2.5}
+                          opacity={0.9}
+                        />
+                        {/* Inner rotating dash ring to show activity */}
+                        <circle
+                          r={r + 2}
+                          fill="none"
+                          stroke="hsl(var(--accent))"
+                          strokeWidth={1.5}
+                          strokeDasharray="4,4"
+                          className={reducedMotion ? "" : "atlas-spin"}
+                        />
+                      </>
+                    )}
+
+                    {/* Queued agent: a dashed waiting ring that rotates slowly */}
+                    {status === "queued" && !isActive && (
+                      <circle
+                        r={r + 6}
+                        fill="none"
+                        stroke="hsl(var(--muted-foreground))"
+                        strokeWidth={1.5}
+                        opacity={0.6}
+                        strokeDasharray="4,5"
+                        className={reducedMotion ? "" : "atlas-spin-slow"}
+                      />
+                    )}
+
+                    {/* Done agent: solid completed ring */}
+                    {status === "done" && !isActive && (
+                      <>
+                        <circle
+                          r={r + 6}
+                          fill="none"
+                          stroke="hsl(var(--foreground))"
+                          strokeWidth={2}
+                          opacity={0.3}
+                        />
+                      </>
+                    )}
+
                     {/* Soft halo for the highlighted/selected node */}
-                    {isHighlighted && (
+                    {isHighlighted && !isActive && !status && (
                       <circle r={r + 10} fill={color} opacity={0.16} className="animate-pulse" />
+                    )}
+
+                    {/* Involved-but-waiting team member (if no explicit status yet) */}
+                    {isInvolved && !status && !isActive && !isHighlighted && (
+                      <circle
+                        r={r + 6}
+                        fill="none"
+                        stroke="hsl(var(--accent))"
+                        strokeWidth={1.5}
+                        opacity={0.4}
+                        strokeDasharray="3,4"
+                      />
                     )}
 
                     {/* Editorial "press seal": a paper disc lifted with a soft
@@ -596,13 +803,13 @@ export default function GraphViewer({
                         r={r}
                         fill="hsl(var(--card))"
                         stroke={color}
-                        strokeWidth={isHighlighted ? 3.5 : 2.5}
+                        strokeWidth={ringWidth}
                         className="transition-all duration-300"
                       />
                     </g>
 
                     {/* Ink double-frame when active */}
-                    {isHighlighted && (
+                    {lit && (
                       <circle r={r + 5} fill="none" stroke="hsl(var(--foreground))" strokeWidth={1} opacity={0.85} />
                     )}
 
@@ -626,7 +833,7 @@ export default function GraphViewer({
                           r={r}
                           fill="none"
                           stroke={color}
-                          strokeWidth={isHighlighted ? 3.5 : 2.5}
+                          strokeWidth={ringWidth}
                         />
                       </>
                     ) : (
@@ -635,15 +842,15 @@ export default function GraphViewer({
                     )}
 
                     {/* Node Label — hidden when zoomed out so the overview stays
-                        legible, always shown for the highlighted/selected node. */}
+                        legible, always shown for highlighted/involved nodes. */}
                     <text
                       dy={r + 16}
                       textAnchor="middle"
-                      fill={isHighlighted ? "hsl(var(--foreground))" : "hsl(var(--muted-foreground))"}
-                      className={`font-['Space_Mono'] text-[11px] uppercase tracking-wider transition-opacity duration-300 ${isHighlighted ? 'font-bold' : ''}`}
+                      fill={lit ? "hsl(var(--foreground))" : "hsl(var(--muted-foreground))"}
+                      className={`font-['Space_Mono'] text-[11px] uppercase tracking-wider transition-opacity duration-300 ${lit ? 'font-bold' : ''}`}
                       style={{
                         pointerEvents: 'none',
-                        opacity: isHighlighted || scale >= LABEL_VISIBLE_SCALE ? 1 : 0,
+                        opacity: lit || isInvolved || scale >= LABEL_VISIBLE_SCALE ? 1 : 0,
                         paintOrder: 'stroke',
                         stroke: 'hsl(var(--background))',
                         strokeWidth: 3,

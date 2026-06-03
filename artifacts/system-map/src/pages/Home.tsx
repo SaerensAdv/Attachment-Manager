@@ -1,10 +1,14 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useSearch, useLocation } from "wouter";
+import { AnimatePresence } from "framer-motion";
 import { useGetDocGraph, useGetTeam } from "@workspace/api-client-react";
 import GraphViewer from "@/components/GraphViewer";
 import GraphLegend from "@/components/GraphLegend";
 import GraphSearch from "@/components/GraphSearch";
 import DocPanel from "@/components/DocPanel";
+import CommandBar from "@/components/CommandBar";
+import GenerationPanel from "@/components/GenerationPanel";
+import { useGeneration } from "@/hooks/useGeneration";
 import { Loader2 } from "lucide-react";
 
 export default function Home() {
@@ -34,6 +38,32 @@ export default function Home() {
     setSelectedNodePath(path);
     setFocusNonce((n) => n + 1);
   };
+
+  // The generation flow lives docked on the map. It is driven from the full node
+  // set (not the category-filtered view) so clients/agents/workflows are always
+  // available regardless of which legend categories are toggled off.
+  const gen = useGeneration(graphData?.nodes, graphData?.edges);
+
+  const involvedNodeIds = useMemo(
+    () => new Set(gen.involvedPaths),
+    [gen.involvedPaths],
+  );
+
+  // Spotlight the routed team the moment a run becomes live (involved set goes
+  // from empty to populated), without re-framing on every subsequent change so
+  // it never fights the user's own pan/zoom.
+  const [spotlight, setSpotlight] = useState<{ ids: string[]; nonce: number }>({
+    ids: [],
+    nonce: 0,
+  });
+  const prevInvolvedCount = useRef(0);
+  useEffect(() => {
+    const count = gen.involvedPaths.length;
+    if (prevInvolvedCount.current === 0 && count > 0) {
+      setSpotlight((s) => ({ ids: gen.involvedPaths, nonce: s.nonce + 1 }));
+    }
+    prevInvolvedCount.current = count;
+  }, [gen.involvedPaths]);
 
   // Open/focus a node when arriving via the command palette (/?node=<path>).
   const search = useSearch();
@@ -135,7 +165,23 @@ export default function Home() {
           searchQuery={searchQuery}
           focusNonce={focusNonce}
           portraits={portraits}
+          involvedNodeIds={involvedNodeIds}
+          activeNodeId={gen.activePath}
+          handoff={gen.handoff}
+          nodeStatus={gen.nodeStatus}
+          spotlightNodeIds={spotlight.ids}
+          spotlightNonce={spotlight.nonce}
         />
+      </div>
+
+      {/* Command bar + generation panel — docked bottom-center over the map. The
+          stack itself ignores pointer events so the map stays pannable; only the
+          bar and panel capture interaction. */}
+      <div className="absolute inset-x-0 bottom-0 z-20 flex flex-col items-center gap-3 px-6 pb-6 pointer-events-none">
+        <AnimatePresence>
+          {gen.hasActiveFlow && <GenerationPanel key="gen-panel" gen={gen} />}
+        </AnimatePresence>
+        <CommandBar gen={gen} />
       </div>
 
       {/* Foreground UI Layer */}

@@ -1,4 +1,4 @@
-- [System Map generator (Phase 2)](system-map-generator.md) — how the "Genereren" tab assembles doc context + streams Claude; key prompt + SSE decisions.
+- [System Map generator (Phase 2)](system-map-generator.md) — generation flow is a command bar docked on the Kaart (no standalone page); doc-context assembly + SSE + live-run map model.
 - [Retrieval without embeddings](retrieval-no-embeddings.md) — Replit AI proxies have no embeddings API; doc retrieval is local BM25 (Orama), additive; vector upgrade path noted.
 - [Monorepo composite project refs](monorepo-composite-refs.md) — new workspace libs need built dist declarations (tsc -b) or api-server typecheck fails TS6305; after a merge run api-spec codegen to refresh stale generated/built libs.
 - [System Map legend categories](system-map-categories.md) — "core"=Fundament holds only AGENTS+ARCHITECTURE; labels Dutch, ids stay stable (colors/filtering key off id); README/ROADMAP excluded from graph.

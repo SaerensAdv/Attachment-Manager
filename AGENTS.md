@@ -38,15 +38,15 @@ The AI team is organized as follows. Each layer lists the agent files that belon
 1. **Orchestrator Agent** — understands the request, routes it, prepares the brief.
    - Agents: `agents/orchestrator.md`
 2. **Channel / Strategy Specialists** — define strategy for a channel.
-   - Agents: `agents/google-ads-strategist.md`, `agents/meta-ads-strategist.md`, `agents/seo-specialist.md`
+   - Agents: `agents/google-ads-strategist.md`, `agents/meta-ads-strategist.md`, `agents/seo-specialist.md`, `agents/email-automation-specialist.md`
 3. **Execution Specialists** — turn approved strategy into concrete, ready-to-implement work.
-   - Agents: `agents/google-ads-setup-specialist.md`
+   - Agents: `agents/google-ads-setup-specialist.md`, `agents/shopping-feed-specialist.md`
 4. **Review / Optimization Specialists** — analyze and improve existing accounts.
    - Agents: `agents/google-ads-optimization-specialist.md`, `agents/cro-specialist.md`, `agents/qa-compliance-reviewer.md`
 5. **Communication Specialists** — translate work into client-facing output.
    - Agents: `agents/reporting-specialist.md`, `agents/copywriter.md`
 6. **Build Specialists** — turn approved specs into working assets.
-   - Agents: `agents/landing-page-specialist.md`, `agents/web-developer.md`
+   - Agents: `agents/landing-page-specialist.md`, `agents/web-developer.md`, `agents/creative-designer.md`
 7. **Foundation Specialists** — keep shared data and measurement trustworthy for everyone.
    - Agents: `agents/analytics-tracking-specialist.md`, `agents/competitive-research-analyst.md`
 8. **Client-facing & Growth** — manage the client relationship and new business.
@@ -67,11 +67,11 @@ This is an **organizational layer only**. It defines reporting and grouping for 
 0. **Directie & orchestratie** — the CEO's right hand. Reads every request, routes it, and prepares the brief. Sits above the heads.
    - Agents: `agents/orchestrator.md`
 1. **Head of Paid Media** — owns paid acquisition across Google and Meta.
-   - Agents: `agents/google-ads-strategist.md`, `agents/google-ads-setup-specialist.md`, `agents/google-ads-optimization-specialist.md`, `agents/meta-ads-strategist.md`
+   - Agents: `agents/google-ads-strategist.md`, `agents/google-ads-setup-specialist.md`, `agents/google-ads-optimization-specialist.md`, `agents/meta-ads-strategist.md`, `agents/shopping-feed-specialist.md`
 2. **Head of SEO & Web** — owns organic visibility, the website, conversion, and measurement.
    - Agents: `agents/seo-specialist.md`, `agents/web-developer.md`, `agents/landing-page-specialist.md`, `agents/cro-specialist.md`, `agents/analytics-tracking-specialist.md`
-3. **Head of Content & Creative** — owns messaging, copy, and a natural client-ready voice.
-   - Agents: `agents/copywriter.md`, `agents/humanizer.md`
+3. **Head of Content & Creative** — owns messaging, copy, produced visuals/video, the owned email & lifecycle channel, and a natural client-ready voice.
+   - Agents: `agents/copywriter.md`, `agents/humanizer.md`, `agents/creative-designer.md`, `agents/email-automation-specialist.md`
 4. **Head of Client & Growth** — owns the client relationship, client-facing reporting, new business, and market insight.
    - Agents: `agents/client-success-agent.md`, `agents/client-onboarding-agent.md`, `agents/reporting-specialist.md`, `agents/sales-proposal-agent.md`, `agents/competitive-research-analyst.md`
 5. **Overkoepelend — kwaliteit & compliance** — a cross-cutting quality gate that serves every head and reports straight to the Orchestrator, which is why it sits under no single domain head.
@@ -104,6 +104,9 @@ Specified after the initial MVP, following the "new agent vs deeper specialty" r
 - Client Onboarding Agent — `agents/client-onboarding-agent.md`
 - QA & Compliance Reviewer — `agents/qa-compliance-reviewer.md`
 - Humanizer — `agents/humanizer.md`
+- Shopping & Feed Specialist — `agents/shopping-feed-specialist.md`
+- Email & Marketing Automation Specialist — `agents/email-automation-specialist.md`
+- Creative Designer — `agents/creative-designer.md`
 
 Content & social is **not** a separate agent: it is a deeper specialty of the Copywriter (`agents/copywriter.md`).
 

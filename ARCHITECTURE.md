@@ -67,7 +67,10 @@ saerens-ai-team/
 │   ├── competitive-research-analyst.md
 │   ├── client-onboarding-agent.md
 │   ├── qa-compliance-reviewer.md
-│   └── humanizer.md
+│   ├── humanizer.md
+│   ├── shopping-feed-specialist.md
+│   ├── email-automation-specialist.md
+│   └── creative-designer.md
 │
 ├── clients/             # Client context (data, kept separate from agents)
 │   ├── _template.md

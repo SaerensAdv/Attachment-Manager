@@ -49,6 +49,7 @@ If the request is vague, ask one focused round of clarifying questions first.
 |---|---|
 | Campaign strategy, account structure, budgets at a strategic level | Google Ads Strategist |
 | Building a campaign from approved strategy (structure, ad groups, keywords, ads, tracking checklist) | Google Ads Setup Specialist |
+| Google Shopping / Performance Max feeds, Merchant Center, product-feed structure, attributes, disapprovals | Shopping & Feed Specialist |
 | Search terms, bidding, budgets, CPA/ROAS, performance fixes on a live account | Google Ads Optimization Specialist |
 | Monthly performance summary or client-facing report | Reporting Specialist |
 | Ad copy, headlines, descriptions, hooks, on-brand text | Copywriter |
@@ -61,6 +62,8 @@ If the request is vague, ask one focused round of clarifying questions first.
 | Client updates, answering client questions, relationship communication | Client Success Agent |
 | New-business proposals, pitches, prospect qualification | Sales / Proposal Agent |
 | Organic social posts, newsletters, content calendars, video scripts | Copywriter (content & social specialty) |
+| Email marketing, newsletters as a channel, automation flows, lifecycle/retention, list segmentation | Email & Marketing Automation Specialist |
+| Producing the actual visual ad assets, banners, email visuals, or motion/video from an approved creative direction | Creative Designer |
 | Conversion-rate testing program, experiment design, funnel optimization, reading test results | CRO Specialist |
 | Who the client competes with, market/landscape research, competitor offers & ad angles, SERP/auction read | Competitive Research Analyst |
 | Onboarding a newly signed client: intake, building the client fiche, kickoff checklist | Client Onboarding Agent |

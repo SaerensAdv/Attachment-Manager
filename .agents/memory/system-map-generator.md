@@ -24,8 +24,12 @@ the quality bar (agency-principles, tone-of-voice, naming-conventions).
   client has little content) is useless; the human-review step is what catches
   gaps. An earlier version without this rule made Claude refuse and ask questions.
 - **Human-approval section is mandatory.** Output must always end with a
-  `## ⚠️ Menselijke goedkeuring vereist` section — this mirrors the agents'
-  draft-only / human-approval principle and must not be dropped.
+  `## Menselijke goedkeuring vereist` section — this mirrors the agents'
+  draft-only / human-approval principle and must not be dropped. NOTE: the
+  heading is now emoji-free (was `## ⚠️ ...`). **Why:** the product north star is
+  "NO emojis anywhere"; generate-context.ts enforces an explicit "geen emoji's"
+  rule, so the ⚠️ was intentionally removed. The no-emoji rule overrides the old
+  ⚠️ convention — do not re-add the emoji.
 - **Default output language = Dutch (Flemish)** (user choice), overridable only
   if the request explicitly asks another language.
 

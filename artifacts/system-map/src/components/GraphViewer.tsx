@@ -1,12 +1,27 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import * as d3 from "d3-force";
+import dagre from "@dagrejs/dagre";
+import { toPng, toSvg } from "html-to-image";
 import {
   TransformWrapper,
   TransformComponent,
   type ReactZoomPanPinchRef,
 } from "react-zoom-pan-pinch";
-import { Maximize2, Plus, Minus } from "lucide-react";
+import { Maximize2, Plus, Minus, Download, Image as ImageIcon, Network, Workflow } from "lucide-react";
 import type { DocNode, DocEdge, DocCategory } from "@workspace/api-client-react";
+
+// The architecture flows top-to-bottom through these layers. The "Gelaagd"
+// (dagre) layout ranks nodes by this order so the structural backbone reads as
+// a clean hierarchy; edges crossing layers are oriented downward so dagre keeps
+// the ranks aligned with the layer order rather than with arbitrary link
+// direction. Categories not listed here fall to the bottom rank.
+const LAYER_ORDER = ["core", "agent", "client", "workflow", "template", "knowledge"];
+const layerRank = (category: string) => {
+  const i = LAYER_ORDER.indexOf(category);
+  return i === -1 ? LAYER_ORDER.length : i;
+};
+
+type LayoutMode = "organic" | "layered";
 
 // Below this zoom level labels are hidden to keep the dense overview readable;
 // zooming in past it fades them in so individual nodes can be inspected. The
@@ -88,6 +103,25 @@ export default function GraphViewer({
   // Bumped when the simulation cools down, so the auto-fit waits for the final
   // (now larger, spread-out) layout instead of framing a half-settled one.
   const [settleNonce, setSettleNonce] = useState(0);
+  // Which layout engine positions the nodes: "organic" (d3-force, default) or
+  // "layered" (dagre hierarchical). Switching recomputes all positions.
+  const [layoutMode, setLayoutMode] = useState<LayoutMode>("organic");
+  // Honour the user's reduced-motion preference: skip the pan/zoom easing and
+  // the per-node CSS transitions so layout switches land instantly.
+  const [reducedMotion, setReducedMotion] = useState(false);
+  // True while an export render is in flight, so the button can be disabled and
+  // the controls overlay won't be captured mid-click.
+  const [isExporting, setIsExporting] = useState(false);
+
+  // Track the reduced-motion media query so animations can be disabled live.
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const update = () => setReducedMotion(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
 
   // Update dimensions on resize
   useEffect(() => {
@@ -115,7 +149,8 @@ export default function GraphViewer({
     const simNodesData: SimNode[] = nodes.map(n => ({ ...n }));
     const simEdgesData: SimEdge[] = edges.map(e => ({ ...e }));
     simNodesRef.current = simNodesData;
-    // A new node/edge set means the layout will shift, so re-arm the auto-fit.
+    // A new node/edge set (or layout switch) means positions will shift, so
+    // re-arm the auto-fit so the new arrangement is framed in full.
     didAutoFitRef.current = false;
 
     // Count how many edges touch each node. The densest core docs (README,
@@ -130,6 +165,73 @@ export default function GraphViewer({
     }
     const degreeOf = (n: SimNode) => degree.get(n.id) ?? 0;
 
+    // Visual radius of a node "seal", matching the render-side radiusOf().
+    const radiusOfData = (n: SimNode) => 12 + Math.min(degreeOf(n), 14);
+
+    // ---- Layered (dagre) layout -------------------------------------------
+    // Build a directed graph, size each node to its seal, and rank by the
+    // architecture layer order. Cross-layer edges are oriented downward (low
+    // rank -> high rank) so dagre's ranking follows the layer order; same-layer
+    // edges keep their direction. Rendering still uses the original edge
+    // direction (and arrowheads) — dagre only supplies x/y positions.
+    if (layoutMode === "layered") {
+      const byId = new Map(simNodesData.map((n) => [n.id, n]));
+      const g = new dagre.graphlib.Graph({ multigraph: true });
+      g.setGraph({
+        rankdir: "TB",
+        nodesep: 70,
+        ranksep: 150,
+        marginx: 60,
+        marginy: 60,
+        ranker: "network-simplex",
+      });
+      g.setDefaultEdgeLabel(() => ({}));
+
+      for (const n of simNodesData) {
+        const r = radiusOfData(n);
+        // Pad the box so neighbouring seals + their labels don't collide.
+        g.setNode(n.id, { width: r * 2 + 48, height: r * 2 + 40 });
+      }
+
+      simEdgesData.forEach((e, i) => {
+        const s = byId.get(e.source as string);
+        const t = byId.get(e.target as string);
+        if (!s || !t) return;
+        let from = s.id;
+        let to = t.id;
+        // Orient cross-layer edges downward so ranks follow the layer order.
+        if (layerRank(s.category) > layerRank(t.category)) {
+          from = t.id;
+          to = s.id;
+        }
+        g.setEdge(from, to, {}, `e${i}`);
+      });
+
+      dagre.layout(g);
+
+      for (const n of simNodesData) {
+        const gn = g.node(n.id);
+        if (gn && typeof gn.x === "number" && typeof gn.y === "number") {
+          n.x = gn.x;
+          n.y = gn.y;
+        }
+      }
+      // Resolve edge endpoints to node objects so the renderer (which reads
+      // edge.source.x/.y) works identically to the d3-force path.
+      for (const e of simEdgesData) {
+        const s = byId.get(e.source as string);
+        const t = byId.get(e.target as string);
+        if (s) e.source = s;
+        if (t) e.target = t;
+      }
+
+      setSimNodes([...simNodesData]);
+      setSimEdges([...simEdgesData]);
+      setSettleNonce((n) => n + 1);
+      return;
+    }
+
+    // ---- Organic (d3-force) layout ----------------------------------------
     // Visual radius of a node circle (16) — collision keeps at least this much
     // clear space plus a per-degree margin so labels in the dense center don't
     // collide even when zoomed in.
@@ -186,7 +288,7 @@ export default function GraphViewer({
     return () => {
       simulation.stop();
     };
-  }, [nodes, edges, dimensions.width, dimensions.height]);
+  }, [nodes, edges, dimensions.width, dimensions.height, layoutMode]);
 
   // Smoothly pan/zoom the viewport so the given node sits in the center.
   const focusOnNode = useCallback((nodeId: string) => {
@@ -197,8 +299,8 @@ export default function GraphViewer({
     const scale = 1.4;
     const x = dimensions.width / 2 - node.x * scale;
     const y = dimensions.height / 2 - node.y * scale;
-    api.setTransform(x, y, scale, 600, "easeOut");
-  }, [dimensions.width, dimensions.height]);
+    api.setTransform(x, y, scale, reducedMotion ? 0 : 600, "easeOut");
+  }, [dimensions.width, dimensions.height, reducedMotion]);
 
   // Pan/zoom so the entire graph fits within the viewport — the "overview".
   const fitView = useCallback(() => {
@@ -229,8 +331,41 @@ export default function GraphViewer({
     const centerY = (minY + maxY) / 2;
     const x = dimensions.width / 2 - centerX * clampedScale;
     const y = dimensions.height / 2 - centerY * clampedScale;
-    api.setTransform(x, y, clampedScale, 600, "easeOut");
-  }, [dimensions.width, dimensions.height]);
+    api.setTransform(x, y, clampedScale, reducedMotion ? 0 : 600, "easeOut");
+  }, [dimensions.width, dimensions.height, reducedMotion]);
+
+  // Export the current graph view (the cream paper + grid + SVG, exactly as
+  // panned/zoomed) to an image. The control overlays carry data-export-ignore
+  // so they are filtered out, and the cream theme background is forced so the
+  // image is never transparent.
+  const exportImage = useCallback(
+    async (format: "png" | "svg") => {
+      const el = containerRef.current;
+      if (!el || isExporting) return;
+      setIsExporting(true);
+      try {
+        const cream = getComputedStyle(el).backgroundColor || "#F4F4F0";
+        const options = {
+          backgroundColor: cream,
+          cacheBust: true,
+          pixelRatio: 2,
+          filter: (node: HTMLElement) =>
+            !(node instanceof HTMLElement && node.dataset.exportIgnore === "true"),
+        };
+        const dataUrl =
+          format === "png" ? await toPng(el, options) : await toSvg(el, options);
+        const link = document.createElement("a");
+        link.download = `saerens-systeemkaart.${format}`;
+        link.href = dataUrl;
+        link.click();
+      } catch (err) {
+        console.error("Kaart exporteren mislukt", err);
+      } finally {
+        setIsExporting(false);
+      }
+    },
+    [isExporting],
+  );
 
   // Focus when a node is selected, or when search requests a focus (nonce bump).
   useEffect(() => {
@@ -394,7 +529,7 @@ export default function GraphViewer({
                 const width = isEdgeHighlighted ? style.width + 0.75 : style.width;
 
                 return (
-                  <g key={`edge-${i}`} className="transition-opacity duration-300">
+                  <g key={`edge-${i}`} className={reducedMotion ? "" : "transition-opacity duration-300"}>
                     {isEdgeHighlighted && (
                       <path d={d} stroke={style.color} strokeWidth={width + 5} opacity={0.14} strokeLinecap="round" />
                     )}
@@ -443,7 +578,7 @@ export default function GraphViewer({
                     onClick={() => onSelectNode(node.id)}
                     onMouseEnter={() => setHoveredNodeId(node.id)}
                     onMouseLeave={() => setHoveredNodeId(null)}
-                    className="cursor-pointer transition-all duration-300"
+                    className={`cursor-pointer ${reducedMotion ? "" : "transition-all duration-300"}`}
                     style={{
                       opacity: isDimmed ? 0.2 : 1,
                       transform: `translate(${node.x}px,${node.y}px) scale(${isHighlighted ? 1.15 : 1})`,
@@ -525,8 +660,76 @@ export default function GraphViewer({
         </TransformComponent>
       </TransformWrapper>
 
+      {/* Layout toggle + export — placed bottom-left so it balances the
+          navigation controls without overlapping the legend/panel overlays. */}
+      <div data-export-ignore="true" className="absolute bottom-6 left-6 z-20 flex flex-col gap-3 items-start">
+        {/* Segmented control: organic (d3-force) vs layered (dagre). */}
+        <div
+          role="group"
+          aria-label="Lay-out kiezen"
+          className="flex rounded-none bg-card border border-foreground shadow-[4px_4px_0px_hsl(var(--foreground))] overflow-hidden"
+        >
+          <button
+            type="button"
+            onClick={() => setLayoutMode("organic")}
+            aria-pressed={layoutMode === "organic"}
+            title="Organische lay-out"
+            className={`flex items-center gap-2 px-3 h-10 font-['Space_Mono'] text-[11px] uppercase tracking-wider transition-colors ${
+              layoutMode === "organic"
+                ? "bg-foreground text-background"
+                : "text-foreground hover:bg-foreground/10"
+            }`}
+          >
+            <Network className="w-4 h-4" />
+            Organisch
+          </button>
+          <div className="w-px bg-foreground" />
+          <button
+            type="button"
+            onClick={() => setLayoutMode("layered")}
+            aria-pressed={layoutMode === "layered"}
+            title="Gelaagde lay-out"
+            className={`flex items-center gap-2 px-3 h-10 font-['Space_Mono'] text-[11px] uppercase tracking-wider transition-colors ${
+              layoutMode === "layered"
+                ? "bg-foreground text-background"
+                : "text-foreground hover:bg-foreground/10"
+            }`}
+          >
+            <Workflow className="w-4 h-4" />
+            Gelaagd
+          </button>
+        </div>
+
+        {/* Export controls: PNG (priority) + SVG. */}
+        <div className="flex rounded-none bg-card border border-foreground shadow-[4px_4px_0px_hsl(var(--foreground))] overflow-hidden">
+          <button
+            type="button"
+            onClick={() => exportImage("png")}
+            disabled={isExporting}
+            title="Exporteer kaart als PNG"
+            aria-label="Exporteer kaart als PNG"
+            className="flex items-center gap-2 px-3 h-10 font-['Space_Mono'] text-[11px] uppercase tracking-wider text-foreground hover:bg-foreground hover:text-background transition-colors disabled:opacity-50 disabled:pointer-events-none"
+          >
+            <Download className="w-4 h-4" />
+            {isExporting ? "Bezig..." : "Exporteer kaart"}
+          </button>
+          <div className="w-px bg-foreground" />
+          <button
+            type="button"
+            onClick={() => exportImage("svg")}
+            disabled={isExporting}
+            title="Exporteer kaart als SVG"
+            aria-label="Exporteer kaart als SVG"
+            className="flex items-center gap-2 px-3 h-10 font-['Space_Mono'] text-[11px] uppercase tracking-wider text-foreground hover:bg-foreground hover:text-background transition-colors disabled:opacity-50 disabled:pointer-events-none"
+          >
+            <ImageIcon className="w-4 h-4" />
+            SVG
+          </button>
+        </div>
+      </div>
+
       {/* Navigation controls: fit-to-view (reset overview) + zoom in/out. */}
-      <div className="absolute bottom-6 right-6 z-20 flex flex-col gap-2">
+      <div data-export-ignore="true" className="absolute bottom-6 right-6 z-20 flex flex-col gap-2">
         <button
           type="button"
           onClick={fitView}

@@ -1,4 +1,5 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useSearch, useLocation } from "wouter";
 import { useGetDocGraph, useGetTeam } from "@workspace/api-client-react";
 import GraphViewer from "@/components/GraphViewer";
 import GraphLegend from "@/components/GraphLegend";
@@ -33,6 +34,19 @@ export default function Home() {
     setSelectedNodePath(path);
     setFocusNonce((n) => n + 1);
   };
+
+  // Open/focus a node when arriving via the command palette (/?node=<path>).
+  const search = useSearch();
+  const [, navigate] = useLocation();
+  useEffect(() => {
+    if (!graphData) return;
+    const param = new URLSearchParams(search).get("node");
+    if (!param) return;
+    if (!graphData.nodes.some((n) => n.path === param)) return;
+    selectNodeByPath(param);
+    navigate("/", { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search, graphData]);
 
   const toggleCategory = (categoryId: string) => {
     setHiddenCategories((prev) => {

@@ -33,7 +33,8 @@ import type {
   HealthStatus,
   ImprovementProposal,
   ProposalList,
-  TeamRoster
+  TeamRoster,
+  ValidationReport
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -193,6 +194,85 @@ export function useGetDocGraph<TData = Awaited<ReturnType<typeof getDocGraph>>, 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetDocGraphQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetDocValidationUrl = () => {
+
+
+
+
+  return `/api/docs/validate`
+}
+
+/**
+ * Runs integrity checks over the documentation at request time: broken backtick references, agents missing from the orchestrator routing guide, isolated nodes, and missing mandatory quality docs.
+
+ * @summary Validate the documentation graph
+ */
+export const getDocValidation = async ( options?: RequestInit): Promise<ValidationReport> => {
+
+  return customFetch<ValidationReport>(getGetDocValidationUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetDocValidationQueryKey = () => {
+    return [
+    `/api/docs/validate`
+    ] as const;
+    }
+
+
+export const getGetDocValidationQueryOptions = <TData = Awaited<ReturnType<typeof getDocValidation>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDocValidation>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetDocValidationQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getDocValidation>>> = ({ signal }) => getDocValidation({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDocValidation>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetDocValidationQueryResult = NonNullable<Awaited<ReturnType<typeof getDocValidation>>>
+export type GetDocValidationQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Validate the documentation graph
+ */
+
+export function useGetDocValidation<TData = Awaited<ReturnType<typeof getDocValidation>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDocValidation>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetDocValidationQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

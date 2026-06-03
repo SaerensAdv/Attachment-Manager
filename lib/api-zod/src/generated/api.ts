@@ -44,6 +44,28 @@ export const GetDocGraphResponse = zod.object({
 
 
 /**
+ * Runs integrity checks over the documentation at request time: broken backtick references, agents missing from the orchestrator routing guide, isolated nodes, and missing mandatory quality docs.
+
+ * @summary Validate the documentation graph
+ */
+export const GetDocValidationResponse = zod.object({
+  "issues": zod.array(zod.object({
+  "severity": zod.string().describe('One of error, warning, info.'),
+  "kind": zod.string().describe('Machine-readable issue category.'),
+  "source": zod.string().optional().describe('The doc id the issue originates from, if applicable.'),
+  "target": zod.string().optional().describe('The referenced doc id involved in the issue, if applicable.'),
+  "message": zod.string().describe('Human-readable (Dutch) description of the issue.')
+})),
+  "checkedAt": zod.string().describe('ISO timestamp when the validation ran.'),
+  "counts": zod.object({
+  "error": zod.number(),
+  "warning": zod.number(),
+  "info": zod.number()
+})
+})
+
+
+/**
  * Returns the raw markdown for a single known document, identified by its path.
  * @summary Get the raw markdown content of a document
  */

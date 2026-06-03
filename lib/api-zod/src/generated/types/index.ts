@@ -27,3 +27,6 @@ export * from './proposalList';
 export * from './styleExample';
 export * from './teamMember';
 export * from './teamRoster';
+export * from './validationIssue';
+export * from './validationReport';
+export * from './validationReportCounts';

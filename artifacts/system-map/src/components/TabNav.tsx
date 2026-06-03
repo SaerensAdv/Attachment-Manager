@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { motion, useReducedMotion } from "framer-motion";
-import { Map, Sparkles, Users, Archive, Contact } from "lucide-react";
+import { Map, Sparkles, Users, Archive, Contact, ShieldCheck } from "lucide-react";
 
 const tabs = [
   { href: "/", label: "Kaart", icon: Map },
@@ -8,6 +8,7 @@ const tabs = [
   { href: "/team", label: "Team", icon: Contact },
   { href: "/clients", label: "Klanten", icon: Users },
   { href: "/history", label: "Archief", icon: Archive },
+  { href: "/controle", label: "Controle", icon: ShieldCheck },
 ];
 
 export default function TabNav() {

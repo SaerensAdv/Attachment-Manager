@@ -3,8 +3,10 @@ import {
   GetDocGraphResponse,
   GetDocContentQueryParams,
   GetDocContentResponse,
+  GetDocValidationResponse,
 } from "@workspace/api-zod";
 import { getDocGraph, getDocFile } from "../lib/docs";
+import { validateDocs } from "../lib/validate-docs";
 import { loadClientDocs } from "../lib/clients-store";
 
 const router: IRouter = Router();
@@ -12,6 +14,11 @@ const router: IRouter = Router();
 router.get("/docs/graph", async (req, res): Promise<void> => {
   const graph = getDocGraph(await loadClientDocs());
   res.json(GetDocGraphResponse.parse(graph));
+});
+
+router.get("/docs/validate", async (req, res): Promise<void> => {
+  const report = validateDocs(await loadClientDocs());
+  res.json(GetDocValidationResponse.parse(report));
 });
 
 router.get("/docs/content", async (req, res): Promise<void> => {

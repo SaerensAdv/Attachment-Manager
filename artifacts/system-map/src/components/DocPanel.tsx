@@ -1,7 +1,7 @@
-import { useMemo } from "react";
+import { useMemo, type ReactNode } from "react";
 import { X, ArrowRight, ArrowLeft, Loader2 } from "lucide-react";
-import ReactMarkdown, { type Components } from "react-markdown";
-import remarkGfm from "remark-gfm";
+import { type Components } from "react-markdown";
+import MarkdownView from "@/components/MarkdownView";
 import { useGetDocContent, type DocNode, type DocEdge } from "@workspace/api-client-react";
 import { getGetDocContentQueryKey } from "@workspace/api-client-react";
 
@@ -56,35 +56,35 @@ export default function DocPanel({ path, node, nodes, edges, onClose, onSelectPa
     return { outgoing: out, incoming: inc };
   }, [edges, node, nodeById]);
 
-  // Make inline backtick file refs and relative markdown links jump to the node.
-  const markdownComponents: Components = useMemo(() => {
-    const resolve = (raw: string): DocNode | undefined => {
+  const resolveRef = useMemo(() => {
+    return (raw: string): DocNode | undefined => {
       const id = raw.trim().replace(/^\.\//, "");
       return nodeById.get(id) ?? nodeByPath.get(id);
     };
+  }, [nodeById, nodeByPath]);
+
+  // Inline backtick file refs become clickable jumps to the matching node.
+  const renderInlineCode = useMemo(() => {
+    return (text: string): ReactNode | null => {
+      const target = resolveRef(text);
+      if (!target) return null;
+      return (
+        <button
+          type="button"
+          onClick={() => onSelectPath(target.path)}
+          className="inline-flex items-center gap-1 align-baseline rounded-none px-1 py-0.5 font-['Space_Mono'] text-[0.8em] text-accent bg-accent/10 hover:bg-accent hover:text-accent-foreground transition-colors not-prose"
+          title={`Open ${target.title}`}
+        >
+          {text}
+        </button>
+      );
+    };
+  }, [resolveRef, onSelectPath]);
+
+  // Relative markdown links jump to the node too.
+  const markdownComponents: Components = useMemo(() => {
+    const resolve = resolveRef;
     return {
-      code({ className, children, ...props }) {
-        const text = String(children ?? "");
-        // Block code carries a language-* className; only treat inline code as a ref.
-        const target = !className ? resolve(text) : undefined;
-        if (target) {
-          return (
-            <button
-              type="button"
-              onClick={() => onSelectPath(target.path)}
-              className="inline-flex items-center gap-1 align-baseline rounded-none px-1 py-0.5 font-['Space_Mono'] text-[0.8em] text-accent bg-accent/10 hover:bg-accent hover:text-accent-foreground transition-colors not-prose"
-              title={`Open ${target.title}`}
-            >
-              {text}
-            </button>
-          );
-        }
-        return (
-          <code className={className} {...props}>
-            {children}
-          </code>
-        );
-      },
       a({ href, children, ...props }) {
         const target = href ? resolve(href) : undefined;
         if (target) {
@@ -191,9 +191,11 @@ export default function DocPanel({ path, node, nodes, edges, onClose, onSelectPa
         {doc && !isLoading && (
           <>
             <div className="p-6 prose max-w-none prose-headings:font-['Playfair_Display'] prose-headings:font-bold prose-headings:tracking-tight prose-h1:uppercase prose-p:font-['Inter'] prose-li:font-['Inter'] prose-headings:text-foreground prose-p:text-foreground prose-li:text-foreground prose-strong:text-foreground prose-a:text-accent first-letter:font-['Playfair_Display']">
-              <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
-                {doc.content.replace(/<!--[\s\S]*?-->/g, "")}
-              </ReactMarkdown>
+              <MarkdownView
+                content={doc.content.replace(/<!--[\s\S]*?-->/g, "")}
+                components={markdownComponents}
+                renderInlineCode={renderInlineCode}
+              />
             </div>
 
             {(outgoing.length > 0 || incoming.length > 0) && (

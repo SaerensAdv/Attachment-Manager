@@ -128,7 +128,7 @@ router.post("/generate", async (req, res) => {
 
       let systemPrompt: string;
       try {
-        ({ systemPrompt } = buildGenerationContext({
+        ({ systemPrompt } = await buildGenerationContext({
           agentPath: path,
           clientPath,
           workflowPath,

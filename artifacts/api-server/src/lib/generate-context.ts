@@ -1,9 +1,10 @@
 import { getDocFile, type DocFile } from "./docs";
+import { selectRelevantDocs } from "./retrieval";
 
 const GLOBAL_RULES_PATH = "AGENTS.md";
 
 // Knowledge files that always belong in the quality bar, regardless of agent.
-const ALWAYS_KNOWLEDGE = [
+export const ALWAYS_KNOWLEDGE = [
   "knowledge/agency-principles.md",
   "knowledge/tone-of-voice.md",
   "knowledge/naming-conventions.md",
@@ -35,6 +36,8 @@ export interface GenerationSelection {
 export interface BuiltContext {
   systemPrompt: string;
   includedPaths: string[];
+  /** Knowledge/template paths added automatically by relevance retrieval. */
+  retrievedPaths: string[];
 }
 
 function section(heading: string, doc: DocFile | null): string | null {
@@ -56,9 +59,9 @@ function collectReferenced(docs: (DocFile | null)[]): string[] {
   return [...found];
 }
 
-export function buildGenerationContext(
+export async function buildGenerationContext(
   selection: GenerationSelection,
-): BuiltContext {
+): Promise<BuiltContext> {
   const extra = selection.extraDocs ?? [];
   const globalRules = getDocFile(GLOBAL_RULES_PATH);
   const agent = getDocFile(selection.agentPath);
@@ -71,6 +74,34 @@ export function buildGenerationContext(
   for (const p of referencedPaths) {
     if (p.startsWith("knowledge/")) knowledgePaths.add(p);
     else if (p.startsWith("templates/")) templatePaths.add(p);
+  }
+
+  // Relevance retrieval (BM25): on top of the explicitly referenced docs, pull
+  // in the knowledge/templates most relevant to this specific agent + workflow +
+  // client. Best-effort and additive — the mandatory set above is never dropped,
+  // and any retrieval failure leaves the original behaviour intact.
+  const retrievedPaths: string[] = [];
+  const retrievalQuery = [agent?.content, workflow?.content, client?.content]
+    .filter((c): c is string => typeof c === "string")
+    .join("\n\n");
+  try {
+    const relevant = await selectRelevantDocs(retrievalQuery, {
+      exclude: new Set<string>([...knowledgePaths, ...templatePaths]),
+    });
+    for (const p of relevant.knowledge) {
+      if (!knowledgePaths.has(p)) {
+        knowledgePaths.add(p);
+        retrievedPaths.push(p);
+      }
+    }
+    for (const p of relevant.templates) {
+      if (!templatePaths.has(p)) {
+        templatePaths.add(p);
+        retrievedPaths.push(p);
+      }
+    }
+  } catch {
+    // retrieval is non-critical; ignore and continue with the base set
   }
 
   const templateDocs = [...templatePaths].map((p) => getDocFile(p)).filter(
@@ -190,5 +221,5 @@ export function buildGenerationContext(
     .filter((line): line is string => line !== null)
     .join("\n");
 
-  return { systemPrompt, includedPaths };
+  return { systemPrompt, includedPaths, retrievedPaths };
 }

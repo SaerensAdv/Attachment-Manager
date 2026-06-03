@@ -9,7 +9,9 @@ import Generate from "@/pages/Generate";
 import Team from "@/pages/Team";
 import Clients from "@/pages/Clients";
 import History from "@/pages/History";
+import Controle from "@/pages/Controle";
 import TabNav from "@/components/TabNav";
+import CommandPalette from "@/components/CommandPalette";
 import SmoothScroll from "@/components/SmoothScroll";
 import { pageTransition } from "@/lib/motion";
 
@@ -23,6 +25,7 @@ function Router() {
       <Route path="/team" component={Team} />
       <Route path="/clients" component={Clients} />
       <Route path="/history" component={History} />
+      <Route path="/controle" component={Controle} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -56,6 +59,7 @@ function App() {
         <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
           <SmoothScroll>
             <TabNav />
+            <CommandPalette />
             <AnimatedRoutes />
           </SmoothScroll>
         </WouterRouter>

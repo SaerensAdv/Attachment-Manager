@@ -20,6 +20,17 @@ Onboarding a new client, a prospect requesting an audit, or a scheduled review o
 8. Prioritize findings by expected impact and effort.
 9. Prepare a clear summary the client can understand.
 
+## Agent flow
+
+```mermaid
+flowchart TD
+    O[Orchestrator Agent] --> OS[Google Ads Optimization Specialist]
+    OS --> GS[Google Ads Strategist]
+    OS --> RS[Reporting Specialist]
+    GS --> RS
+    RS --> C[Client-ready audit summary]
+```
+
 ## Agents involved
 
 - Orchestrator Agent (routes and briefs)

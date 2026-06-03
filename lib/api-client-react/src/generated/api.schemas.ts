@@ -55,6 +55,32 @@ export interface DocContent {
   content: string;
 }
 
+export interface ValidationIssue {
+  /** One of error, warning, info. */
+  severity: string;
+  /** Machine-readable issue category. */
+  kind: string;
+  /** The doc id the issue originates from, if applicable. */
+  source?: string;
+  /** The referenced doc id involved in the issue, if applicable. */
+  target?: string;
+  /** Human-readable (Dutch) description of the issue. */
+  message: string;
+}
+
+export type ValidationReportCounts = {
+  error: number;
+  warning: number;
+  info: number;
+};
+
+export interface ValidationReport {
+  issues: ValidationIssue[];
+  /** ISO timestamp when the validation ran. */
+  checkedAt: string;
+  counts: ValidationReportCounts;
+}
+
 export interface StyleExample {
   /** The art-direction key (e.g. editorial, photographic, avatar). */
   style: string;

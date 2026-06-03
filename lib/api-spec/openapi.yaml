@@ -48,6 +48,22 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DocGraph"
+  /docs/validate:
+    get:
+      operationId: getDocValidation
+      tags: [docs]
+      summary: Validate the documentation graph
+      description: >
+        Runs integrity checks over the documentation at request time: broken
+        backtick references, agents missing from the orchestrator routing guide,
+        isolated nodes, and missing mandatory quality docs.
+      responses:
+        "200":
+          description: The validation report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationReport"
   /docs/content:
     get:
       operationId: getDocContent
@@ -507,6 +523,46 @@ components:
         content:
           type: string
           description: The raw markdown content of the document.
+    ValidationIssue:
+      type: object
+      required: [severity, kind, message]
+      properties:
+        severity:
+          type: string
+          description: One of error, warning, info.
+        kind:
+          type: string
+          description: Machine-readable issue category.
+        source:
+          type: string
+          description: The doc id the issue originates from, if applicable.
+        target:
+          type: string
+          description: The referenced doc id involved in the issue, if applicable.
+        message:
+          type: string
+          description: Human-readable (Dutch) description of the issue.
+    ValidationReport:
+      type: object
+      required: [issues, checkedAt, counts]
+      properties:
+        issues:
+          type: array
+          items:
+            $ref: "#/components/schemas/ValidationIssue"
+        checkedAt:
+          type: string
+          description: ISO timestamp when the validation ran.
+        counts:
+          type: object
+          required: [error, warning, info]
+          properties:
+            error:
+              type: integer
+            warning:
+              type: integer
+            info:
+              type: integer
     StyleExample:
       type: object
       required: [style, label, url]

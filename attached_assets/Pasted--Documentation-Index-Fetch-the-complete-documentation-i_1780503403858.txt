@@ -1,0 +1,280 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.replit.com/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Vibe coding 101
+
+> Learn the mindset for vibe coding: start with a goal, build in small slices, manage context, review results, and improve with feedback.
+
+export const YouTubeEmbed = ({videoId, title = "YouTube video", startAt}) => {
+  if (!videoId) {
+    return null;
+  }
+  let url = "https://www.youtube.com/embed/" + videoId;
+  if (startAt) {
+    url = url + "?start=" + startAt;
+  }
+  return <Frame>
+      <iframe src={url} title={title} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen></iframe>
+    </Frame>;
+};
+
+export const AiPrompt = ({children}) => {
+  return <CodeBlock className="relative block font-sans whitespace-pre-wrap break-words">
+      <div className="pr-7">
+        {children}
+      </div>
+    </CodeBlock>;
+};
+
+<YouTubeEmbed videoId="5OWurmg41tI" title="Vibe coding 101" />
+
+Vibe coding is a faster way to move from idea to software. Instead of starting with code, you start by describing what should exist, then use AI to help turn that direction into a working app you can see, test, and improve.
+
+Replit is built for this loop. You can describe an idea, preview the result, give feedback, make changes, and publish from the same place.
+
+This page is about the mindset behind vibe coding. The next page, [Build with Agent](/learn/build-with-agent), shows how to use Agent's tools. [Effective prompting](/learn/effective-prompting) shows how to write clearer instructions.
+
+## Software used to be a team loop
+
+Software has usually been built by teams.
+
+A product manager or founder defines what should be built and why. A designer shapes the experience. Developers turn the idea into working software. Teammates test it, give feedback, find bugs, and decide what is ready to ship.
+
+That collaboration is powerful because each role brings a different kind of judgment. Product decides what matters. Design decides how it should feel. Engineering decides how it should work. Testing decides whether it actually does.
+
+But the loop can be slow. Every change has to move through handoffs: explain the idea, design the flow, write the code, review the result, test it, then revise.
+
+Vibe coding compresses that loop.
+
+With Replit, you can move through more of the product-building process yourself. You can define the goal, generate a first version, test it, give feedback, and improve it without waiting for every step to move between different people and tools.
+
+## Your role changes
+
+You do not have to be a developer to start building.
+
+In vibe coding, your role is closer to the product lead. You decide what should exist, who it is for, what matters most, and whether the result is good enough.
+
+Agent helps with implementation, but you still lead the work.
+
+You bring:
+
+* The goal
+* The audience
+* The taste
+* The constraints
+* The feedback
+* The decision about what ships
+
+Agent helps with:
+
+* Turning ideas into working software
+* Making changes
+* Explaining behavior
+* Debugging issues
+* Improving the app over time
+
+The better you lead, the better Agent can build.
+
+## The five principles
+
+Vibe coding works best when you follow five simple principles:
+
+1. Start with the goal.
+2. Build in small slices.
+3. Manage context.
+4. Review and test.
+5. Improve with feedback.
+
+The first principle sets direction. The next four repeat as a loop: build a slice, give the right context, review it, improve it, then build the next slice.
+
+<Frame>
+  <svg viewBox="0 0 920 360" role="img" aria-label="Vibe coding process: Start with the goal, build in small slices, manage context, review and test, improve with feedback, then loop back to build in small slices" style={{ width: "100%", height: "auto" }}>
+    <defs>
+      <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+        <path d="M0,0 L0,6 L9,3 z" fill="currentColor" />
+      </marker>
+    </defs>
+
+    <rect x="24" y="38" width="164" height="88" rx="18" fill="none" stroke="currentColor" strokeWidth="2" />
+
+    <text x="106" y="72" textAnchor="middle" fontSize="18" fontWeight="700" fill="currentColor">1</text>
+    <text x="106" y="100" textAnchor="middle" fontSize="16" fill="currentColor">Start with</text>
+    <text x="106" y="120" textAnchor="middle" fontSize="16" fill="currentColor">the goal</text>
+
+    <rect x="236" y="38" width="164" height="88" rx="18" fill="none" stroke="currentColor" strokeWidth="2" />
+
+    <text x="318" y="72" textAnchor="middle" fontSize="18" fontWeight="700" fill="currentColor">2</text>
+    <text x="318" y="100" textAnchor="middle" fontSize="16" fill="currentColor">Build in</text>
+    <text x="318" y="120" textAnchor="middle" fontSize="16" fill="currentColor">small slices</text>
+
+    <rect x="448" y="38" width="164" height="88" rx="18" fill="none" stroke="currentColor" strokeWidth="2" />
+
+    <text x="530" y="72" textAnchor="middle" fontSize="18" fontWeight="700" fill="currentColor">3</text>
+    <text x="530" y="100" textAnchor="middle" fontSize="16" fill="currentColor">Manage</text>
+    <text x="530" y="120" textAnchor="middle" fontSize="16" fill="currentColor">context</text>
+
+    <rect x="660" y="38" width="164" height="88" rx="18" fill="none" stroke="currentColor" strokeWidth="2" />
+
+    <text x="742" y="72" textAnchor="middle" fontSize="18" fontWeight="700" fill="currentColor">4</text>
+    <text x="742" y="100" textAnchor="middle" fontSize="16" fill="currentColor">Review</text>
+    <text x="742" y="120" textAnchor="middle" fontSize="16" fill="currentColor">and test</text>
+
+    <rect x="448" y="220" width="164" height="88" rx="18" fill="none" stroke="currentColor" strokeWidth="2" />
+
+    <text x="530" y="254" textAnchor="middle" fontSize="18" fontWeight="700" fill="currentColor">5</text>
+    <text x="530" y="282" textAnchor="middle" fontSize="16" fill="currentColor">Improve with</text>
+    <text x="530" y="302" textAnchor="middle" fontSize="16" fill="currentColor">feedback</text>
+
+    <path d="M188 82 H224" stroke="currentColor" strokeWidth="2" fill="none" markerEnd="url(#arrow)" />
+
+    <path d="M400 82 H436" stroke="currentColor" strokeWidth="2" fill="none" markerEnd="url(#arrow)" />
+
+    <path d="M612 82 H648" stroke="currentColor" strokeWidth="2" fill="none" markerEnd="url(#arrow)" />
+
+    <path d="M742 126 C742 184 648 264 624 264" stroke="currentColor" strokeWidth="2" fill="none" markerEnd="url(#arrow)" />
+
+    <path d="M448 264 C348 264 318 190 318 140" stroke="currentColor" strokeWidth="2" fill="none" markerEnd="url(#arrow)" />
+
+    <text x="106" y="172" textAnchor="middle" fontSize="13" fill="currentColor">Set direction once</text>
+    <text x="530" y="342" textAnchor="middle" fontSize="13" fill="currentColor">Repeat 2 through 5 until the slice works</text>
+  </svg>
+</Frame>
+
+These principles matter more than writing a perfect first prompt. You will rarely get the final app in one step. The goal is to keep the loop clear and moving.
+
+## Start with the goal
+
+A good vibe coding session starts like a good product conversation:
+
+Who is this for? What should they be able to do? What would make this useful?
+
+Before asking Replit to build, describe the outcome you want.
+
+<AiPrompt>
+  Build a simple website for a local bakery. Customers should be able to see today's specials, learn about catering, and submit a catering request. Make it warm, polished, and easy to use on mobile.
+</AiPrompt>
+
+This works because it gives Replit a product goal, not just a task. It explains the audience, the core actions, and the feel of the first version.
+
+You do not need to know the technical implementation yet. Start with what should be true when the app works.
+
+## Build in small slices
+
+A slice is a small piece of the product that is complete enough to try.
+
+For the bakery site, the first slice might be:
+
+* A homepage with today's specials
+* A catering request form
+* A mobile-friendly layout
+
+That is enough to test the idea. You can open it, click through it, and decide what should improve next.
+
+Avoid asking for the whole product at once. Large requests are harder to review and easier to misunderstand. Small slices help you make progress without losing control.
+
+After the first slice works, add the next one.
+
+<AiPrompt>
+  Add a confirmation message after someone submits the catering request form. Keep the rest of the page unchanged.
+</AiPrompt>
+
+The instruction is small, clear, and testable.
+
+## Manage context
+
+Context is the information Replit uses to understand what you want.
+
+Good context can include:
+
+* Who the app is for
+* What problem it solves
+* What should be included now
+* What should wait until later
+* What should not change
+* Examples, screenshots, sketches, files, or data
+* Notes about tone, style, or brand
+
+Managing context means giving the right information at the right time.
+
+If you are continuing the same feature, stay in the same conversation so Replit can use the previous decisions. If you are starting a different feature or the conversation has become noisy, it can be better to start fresh with a short summary of what matters.
+
+For example:
+
+<AiPrompt>
+  Context: this bakery site is for busy parents ordering birthday cakes. Keep the form short, make pickup details obvious, and avoid anything that feels corporate. For this change, only improve the catering request section.
+</AiPrompt>
+
+You are not just adding more words. You are helping Replit focus.
+
+## Review and test
+
+Agent can build, but you decide whether the result works.
+
+After each meaningful change, open the app and use it like the person it is for. Do not only read what Agent says it changed. Try the flow.
+
+Ask yourself:
+
+* Can someone complete the main action?
+* Does the page make sense?
+* Does it work on mobile?
+* Did anything important break?
+* Did Replit change something that should have stayed the same?
+* Is this good enough to keep building on?
+
+Reviewing and testing is where your product judgment matters most. You are checking whether the software matches the intent.
+
+## Improve with feedback
+
+The first version of a slice is a draft. That is normal.
+
+Vibe coding gets better through feedback. Tell Replit what to keep, what to change, what to remove, and what to try next.
+
+Instead of:
+
+<AiPrompt>
+  Make it better.
+</AiPrompt>
+
+Try:
+
+<AiPrompt>
+  Make the catering request form easier to scan. Keep the same fields, but improve the spacing, labels, and submit button. Do not change the specials section.
+</AiPrompt>
+
+Good feedback is specific. It protects what already works while improving one part of the app.
+
+When the slice works, loop back and build the next small slice.
+
+If a change goes in the wrong direction, narrow the scope.
+
+<AiPrompt>
+  That changed too much. Keep the new button style, but restore the original layout and only update the catering form.
+</AiPrompt>
+
+Improving with feedback is how you keep the product moving without losing control.
+
+## What good vibe coding feels like
+
+You are on the right track when:
+
+* You can explain the goal in plain language
+* Each change is small enough to review
+* You know what to test after Agent builds
+* You give context instead of guessing what Agent knows
+* You tell Agent what to preserve, not just what to change
+* The app becomes more useful after each round
+
+Vibe coding does not mean handing off an idea and disappearing. It means shortening the distance between idea, software, feedback, and improvement.
+
+## Next step
+
+<CardGroup cols={2}>
+  <Card title="Build with Agent" icon="robot" href="/learn/build-with-agent">
+    Learn how to apply this mindset with Agent's tools, including plans, Canvas annotations, screenshots, and checkpoints.
+  </Card>
+
+  <Card title="Effective prompting" icon="comment" href="/learn/effective-prompting">
+    Learn how to write clearer instructions that Agent can act on confidently.
+  </Card>
+</CardGroup>

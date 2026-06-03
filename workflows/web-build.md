@@ -4,7 +4,7 @@
 
 ## Goal
 
-Turn an approved page specification or design direction into a working, reviewable, on-brand build — a landing page or simple site that is fast, responsive, and accessible. A human reviews and publishes; nothing goes live automatically.
+Turn an approved page specification or design direction into a working, reviewable, on-brand build — a landing page or simple site that is fast, responsive, and accessible. A human reviews and publishes; nothing goes live automatically. This workflow's deliverable is a Replit prompt; write it per `knowledge/replit-prompting.md`.
 
 ## When to use
 

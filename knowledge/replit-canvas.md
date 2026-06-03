@@ -30,3 +30,7 @@ Canvas is not tied to a single step. The same surface supports several of our fl
 - **Variations are starting points, not finished pages.** Message match, the conversion essentials, and brand fit still apply — review every direction against `knowledge/landing-page-standards.md`.
 - **Keep motion restrained and accessible** per `knowledge/premium-web-motion.md`; a flashier variant is not automatically a better one.
 - **A human reviews, deploys, and publishes** — Canvas speeds up exploration, it does not change who signs off.
+
+## Related
+
+- `knowledge/replit-prompting.md` — how to write the Replit prompt that turns a chosen direction into a build.

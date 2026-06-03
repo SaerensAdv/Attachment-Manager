@@ -1,0 +1,124 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.replit.com/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Context management
+
+> Learn how context windows work and how to give AI the right information when building with Replit Agent.
+
+Context is the information an AI model uses to produce its next response. Context management is the practice of giving the model the right information at the right time.
+
+This matters because AI does not work from your intent alone. It works from the text, files, screenshots, logs, examples, and conversation history available in its context window.
+
+## What is a context window?
+
+An AI model has a limit on how much information it can consider at once. That limit is called the context window.
+
+The context window can include:
+
+* Your prompt
+* Earlier messages in the conversation
+* Files or code the model can see
+* Error messages and logs
+* Screenshots, images, or design references
+* Project instructions, such as `replit.md`
+* Tool results from previous steps
+
+The model uses that context to decide what to generate next.
+
+## Why context windows matter
+
+If the important details are not in context, the model may guess. If too much unrelated information is in context, the model may focus on the wrong thing.
+
+For example, this prompt gives little context:
+
+```text theme={null}
+Improve the signup page.
+```
+
+This prompt gives useful context:
+
+```text theme={null}
+Improve the signup page for first-time founders who are deciding whether to join the waitlist.
+Keep the current fields. Make the value proposition clearer above the form.
+Do not change the pricing section.
+```
+
+The second prompt tells the model who the page is for, what to improve, what to preserve, and what is out of scope.
+
+## Context window sizes vary
+
+Different AI models can handle different amounts of context. Larger context windows can consider more text at once, but larger is not always better. Relevant context still matters more than dumping every detail into the conversation.
+
+Examples of public context window sizes:
+
+| Model family      | Example context window |
+| ----------------- | ---------------------- |
+| GPT-4.1           | Up to 1 million tokens |
+| Claude Sonnet 4.5 | Up to 200,000 tokens   |
+| Gemini 2.5 Pro    | Up to 1 million tokens |
+
+These numbers change over time and do not guarantee that every product exposes the full model limit. The practical lesson is stable: keep the important information clear and focused.
+
+## Types of context
+
+| Context type           | Example                                                      |
+| ---------------------- | ------------------------------------------------------------ |
+| **Goal**               | "This landing page should collect waitlist signups."         |
+| **Audience**           | "This is for busy restaurant owners."                        |
+| **Constraints**        | "Keep the current color palette and form fields."            |
+| **Non-goals**          | "Do not add payments yet."                                   |
+| **Examples**           | A screenshot, mockup, sample data, or competitor page.       |
+| **Project state**      | The current file, component, error message, or user flow.    |
+| **Definition of done** | "A visitor can submit the form and see a thank-you message." |
+
+## Fresh context and persistent context
+
+Some context belongs in the current conversation. Use it when you are asking for a specific change, debugging one issue, or giving feedback on a recent result.
+
+Other context should persist across the project. Use persistent context for coding style, brand guidelines, naming conventions, reusable product rules, and constraints Agent should remember across work sessions. On Replit, [replit.md](/references/project-setup/replit-dot-md) is one way to give Agent persistent project context.
+
+## When context gets noisy
+
+Long conversations can drift. If a thread has mixed too many unrelated decisions, Agent may pay attention to old context that no longer matters.
+
+Start a fresh thread when:
+
+* You switch to an unrelated feature
+* The conversation has many abandoned directions
+* Agent keeps applying old constraints
+* You want a clean plan for a new area
+
+When you start fresh, summarize the important context instead of assuming Agent knows what still matters.
+
+```text theme={null}
+Context: this project is a waitlist app for local fitness coaches.
+The main flow is landing page → signup form → confirmation message.
+For this thread, only improve the confirmation message and follow-up copy.
+```
+
+## Common misconceptions
+
+* **"More context is always better."** Relevant context is better. Too much unrelated context can distract the model.
+* **"The model remembers everything perfectly."** AI uses available context, but you should restate important constraints when they matter.
+* **"Context is only text."** Screenshots, files, data, designs, logs, and examples can all be context.
+
+## Where to go next
+
+<CardGroup cols={2}>
+  <Card title="Introduction to AI" icon="sparkles" href="/learn/foundations/introduction-to-ai">
+    Learn how language models work and how AI agents use models with tools to take action.
+  </Card>
+
+  <Card title="Build with Agent" icon="robot" href="/learn/build-with-agent">
+    Learn how to add context while working with Agent.
+  </Card>
+
+  <Card title="Effective prompting" icon="comment-dots" href="/learn/effective-prompting">
+    See prompt examples that include useful context.
+  </Card>
+
+  <Card title="replit.md" icon="file-code" href="/references/project-setup/replit-dot-md">
+    Learn how to provide persistent project context.
+  </Card>
+</CardGroup>

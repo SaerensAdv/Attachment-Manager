@@ -28,6 +28,7 @@ Saerens serves two core worlds: **e-commerce** (product/category pages, checkout
 - Apply `knowledge/premium-web-motion.md` for a tasteful, performant motion layer (smooth scroll, scroll reveals, micro-interactions) — restrained and accessible, never at the cost of speed or conversion.
 - Clone or rebuild an existing reference page faithfully when asked.
 - Use the Replit Canvas to explore and compare design directions, then apply the chosen one in place before building it out (`knowledge/replit-canvas.md`).
+- Write Replit prompts to a clear standard — goal, small testable slices, focused context, positive specifics (`knowledge/replit-prompting.md`).
 - Wire forms and conversion actions to the agreed tracking spec (coordinate with the Analytics & Tracking Specialist) — never invent tracking IDs.
 - Flag technical constraints, dependencies, and what needs human review before going live.
 - Hand final copy needs to the Copywriter and visual-asset needs to media generation.

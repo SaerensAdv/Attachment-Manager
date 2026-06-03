@@ -96,6 +96,103 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+    put:
+      operationId: updateDocContent
+      tags: [docs]
+      summary: Save edited markdown for a document
+      description: >
+        Overwrites the raw markdown of an existing on-disk document. Synthetic
+        DB-backed client docs and any path outside the documentation root are
+        rejected.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DocContentUpdate"
+      responses:
+        "200":
+          description: The updated document
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocContent"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: The document is not editable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Document not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /docs/backlinks:
+    get:
+      operationId: getDocBacklinks
+      tags: [docs]
+      summary: Documents that reference a document
+      description: >
+        Returns every document that references the given document — through an
+        explicit backtick path reference or by naming its exact title in prose —
+        together with the lines where each mention occurs.
+      parameters:
+        - name: path
+          in: query
+          required: true
+          description: The target document path relative to the docs root.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The documents referencing the target
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BacklinkList"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /docs/search:
+    post:
+      operationId: searchDocs
+      tags: [docs]
+      summary: Semantic search across the documentation
+      description: >
+        Ranks documents by semantic similarity to a natural-language query using
+        local multilingual sentence embeddings (no external API or key). Returns
+        an ordered list of document paths with similarity scores; an empty list
+        is returned when the semantic index is unavailable.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DocSearchInput"
+      responses:
+        "200":
+          description: Ranked search results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocSearchResults"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /team:
     get:
       operationId: getTeam
@@ -563,6 +660,67 @@ components:
               type: integer
             info:
               type: integer
+    DocContentUpdate:
+      type: object
+      required: [path, content]
+      properties:
+        path:
+          type: string
+          description: Path of the document to overwrite, relative to the docs root.
+        content:
+          type: string
+          description: The new raw markdown content.
+    DocSearchInput:
+      type: object
+      required: [query]
+      properties:
+        query:
+          type: string
+          description: Natural-language search query (Dutch or English).
+        limit:
+          type: integer
+          description: Maximum number of results to return.
+    DocSearchHit:
+      type: object
+      required: [path, score]
+      properties:
+        path:
+          type: string
+          description: The matched document path.
+        score:
+          type: number
+          description: Cosine similarity score; higher is more relevant.
+    DocSearchResults:
+      type: object
+      required: [results]
+      properties:
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/DocSearchHit"
+    Backlink:
+      type: object
+      required: [path, title, category, snippets]
+      properties:
+        path:
+          type: string
+        title:
+          type: string
+        category:
+          type: string
+        snippets:
+          type: array
+          description: Lines from the referencing document where the mention occurs.
+          items:
+            type: string
+    BacklinkList:
+      type: object
+      required: [backlinks]
+      properties:
+        backlinks:
+          type: array
+          items:
+            $ref: "#/components/schemas/Backlink"
     StyleExample:
       type: object
       required: [style, label, url]

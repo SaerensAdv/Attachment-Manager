@@ -1,5 +1,5 @@
-import { existsSync, readdirSync, readFileSync } from "node:fs";
-import { join, dirname } from "node:path";
+import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { join, dirname, relative, isAbsolute } from "node:path";
 
 export interface DocNode {
   id: string;
@@ -409,4 +409,31 @@ export function listDocFiles(extra: DocFile[] = []): DocFile[] {
 /** The absolute documentation root on disk (where AGENTS.md + agents/ live). */
 export function getDocsRoot(): string {
   return resolveDocsRoot();
+}
+
+/**
+ * Persist new markdown content for an existing on-disk document. Editing is only
+ * allowed for real files under the known doc folders (the core docs plus
+ * agents/, clients/, workflows/, templates/, knowledge/). Synthetic DB-backed
+ * client docs (clients/db/*) and any path that escapes the docs root are
+ * rejected. Returns the updated DocFile, or null if the path is not an editable
+ * document.
+ */
+export function writeDocFile(path: string, content: string): DocFile | null {
+  if (path.includes("\0") || path.includes("..")) return null;
+  if (!path.endsWith(".md")) return null;
+  if (path.startsWith("clients/db/")) return null;
+  const allowed =
+    CORE_DOCS.includes(path) ||
+    Object.keys(FOLDER_CATEGORY).some((folder) => path.startsWith(`${folder}/`));
+  if (!allowed) return null;
+
+  const root = resolveDocsRoot();
+  const abs = join(root, path);
+  const rel = relative(root, abs);
+  if (rel.startsWith("..") || isAbsolute(rel)) return null;
+  if (!existsSync(abs)) return null;
+
+  writeFileSync(abs, content, "utf8");
+  return getDocFile(path);
 }

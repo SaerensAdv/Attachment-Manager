@@ -6,20 +6,27 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './backlink';
+export * from './backlinkList';
 export * from './client';
 export * from './clientInput';
 export * from './clientList';
 export * from './docCategory';
 export * from './docContent';
+export * from './docContentUpdate';
 export * from './docEdge';
 export * from './docGraph';
 export * from './docNode';
+export * from './docSearchHit';
+export * from './docSearchInput';
+export * from './docSearchResults';
 export * from './errorResponse';
 export * from './feedbackInput';
 export * from './feedbackInputVerdict';
 export * from './generation';
 export * from './generationList';
 export * from './generationSummary';
+export * from './getDocBacklinksParams';
 export * from './getDocContentParams';
 export * from './healthStatus';
 export * from './improvementProposal';

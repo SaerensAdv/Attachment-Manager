@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
+import rehypeSlug from "rehype-slug";
 import mermaid from "mermaid";
 import { createHighlighter, type Highlighter, type BundledLanguage } from "shiki";
 
@@ -168,7 +169,11 @@ export default function MarkdownView({
   };
 
   return (
-    <ReactMarkdown remarkPlugins={[remarkGfm]} components={mergedComponents}>
+    <ReactMarkdown
+      remarkPlugins={[remarkGfm]}
+      rehypePlugins={[rehypeSlug]}
+      components={mergedComponents}
+    >
       {content}
     </ReactMarkdown>
   );

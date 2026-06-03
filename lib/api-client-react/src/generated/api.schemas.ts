@@ -81,6 +81,43 @@ export interface ValidationReport {
   counts: ValidationReportCounts;
 }
 
+export interface DocContentUpdate {
+  /** Path of the document to overwrite, relative to the docs root. */
+  path: string;
+  /** The new raw markdown content. */
+  content: string;
+}
+
+export interface DocSearchInput {
+  /** Natural-language search query (Dutch or English). */
+  query: string;
+  /** Maximum number of results to return. */
+  limit?: number;
+}
+
+export interface DocSearchHit {
+  /** The matched document path. */
+  path: string;
+  /** Cosine similarity score; higher is more relevant. */
+  score: number;
+}
+
+export interface DocSearchResults {
+  results: DocSearchHit[];
+}
+
+export interface Backlink {
+  path: string;
+  title: string;
+  category: string;
+  /** Lines from the referencing document where the mention occurs. */
+  snippets: string[];
+}
+
+export interface BacklinkList {
+  backlinks: Backlink[];
+}
+
 export interface StyleExample {
   /** The art-direction key (e.g. editorial, photographic, avatar). */
   style: string;
@@ -294,6 +331,13 @@ export interface ErrorResponse {
 export type GetDocContentParams = {
 /**
  * The document path relative to the documentation root (e.g. agents/orchestrator.md).
+ */
+path: string;
+};
+
+export type GetDocBacklinksParams = {
+/**
+ * The target document path relative to the docs root.
  */
 path: string;
 };

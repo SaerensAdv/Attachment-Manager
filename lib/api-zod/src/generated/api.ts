@@ -83,6 +83,62 @@ export const GetDocContentResponse = zod.object({
 
 
 /**
+ * Overwrites the raw markdown of an existing on-disk document. Synthetic DB-backed client docs and any path outside the documentation root are rejected.
+
+ * @summary Save edited markdown for a document
+ */
+export const UpdateDocContentBody = zod.object({
+  "path": zod.string().describe('Path of the document to overwrite, relative to the docs root.'),
+  "content": zod.string().describe('The new raw markdown content.')
+})
+
+export const UpdateDocContentResponse = zod.object({
+  "id": zod.string(),
+  "path": zod.string(),
+  "title": zod.string(),
+  "category": zod.string(),
+  "content": zod.string().describe('The raw markdown content of the document.')
+})
+
+
+/**
+ * Returns every document that references the given document — through an explicit backtick path reference or by naming its exact title in prose — together with the lines where each mention occurs.
+
+ * @summary Documents that reference a document
+ */
+export const GetDocBacklinksQueryParams = zod.object({
+  "path": zod.coerce.string().describe('The target document path relative to the docs root.')
+})
+
+export const GetDocBacklinksResponse = zod.object({
+  "backlinks": zod.array(zod.object({
+  "path": zod.string(),
+  "title": zod.string(),
+  "category": zod.string(),
+  "snippets": zod.array(zod.string()).describe('Lines from the referencing document where the mention occurs.')
+}))
+})
+
+
+/**
+ * Ranks documents by semantic similarity to a natural-language query using local multilingual sentence embeddings (no external API or key). Returns an ordered list of document paths with similarity scores; an empty list is returned when the semantic index is unavailable.
+
+ * @summary Semantic search across the documentation
+ */
+export const SearchDocsBody = zod.object({
+  "query": zod.string().describe('Natural-language search query (Dutch or English).'),
+  "limit": zod.number().optional().describe('Maximum number of results to return.')
+})
+
+export const SearchDocsResponse = zod.object({
+  "results": zod.array(zod.object({
+  "path": zod.string().describe('The matched document path.'),
+  "score": zod.number().describe('Cosine similarity score; higher is more relevant.')
+}))
+})
+
+
+/**
  * Returns one entry per agent in the agents/ folder, parsed from each agent's "Character & personality" persona section, together with the portrait URL (when a portrait exists in object storage) and any generated style-example portraits.
 
  * @summary List the full team roster with personas and portraits

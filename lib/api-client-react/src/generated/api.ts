@@ -20,15 +20,20 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  BacklinkList,
   Client,
   ClientInput,
   ClientList,
   DocContent,
+  DocContentUpdate,
   DocGraph,
+  DocSearchInput,
+  DocSearchResults,
   ErrorResponse,
   FeedbackInput,
   Generation,
   GenerationList,
+  GetDocBacklinksParams,
   GetDocContentParams,
   HealthStatus,
   ImprovementProposal,
@@ -369,6 +374,238 @@ export function useGetDocContent<TData = Awaited<ReturnType<typeof getDocContent
 
 
 
+
+export const getUpdateDocContentUrl = () => {
+
+
+
+
+  return `/api/docs/content`
+}
+
+/**
+ * Overwrites the raw markdown of an existing on-disk document. Synthetic DB-backed client docs and any path outside the documentation root are rejected.
+
+ * @summary Save edited markdown for a document
+ */
+export const updateDocContent = async (docContentUpdate: DocContentUpdate, options?: RequestInit): Promise<DocContent> => {
+
+  return customFetch<DocContent>(getUpdateDocContentUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      docContentUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateDocContentMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateDocContent>>, TError,{data: BodyType<DocContentUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateDocContent>>, TError,{data: BodyType<DocContentUpdate>}, TContext> => {
+
+const mutationKey = ['updateDocContent'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateDocContent>>, {data: BodyType<DocContentUpdate>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateDocContent(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateDocContentMutationResult = NonNullable<Awaited<ReturnType<typeof updateDocContent>>>
+    export type UpdateDocContentMutationBody = BodyType<DocContentUpdate>
+    export type UpdateDocContentMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Save edited markdown for a document
+ */
+export const useUpdateDocContent = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateDocContent>>, TError,{data: BodyType<DocContentUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateDocContent>>,
+        TError,
+        {data: BodyType<DocContentUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateDocContentMutationOptions(options));
+    }
+
+export const getGetDocBacklinksUrl = (params: GetDocBacklinksParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/docs/backlinks?${stringifiedParams}` : `/api/docs/backlinks`
+}
+
+/**
+ * Returns every document that references the given document — through an explicit backtick path reference or by naming its exact title in prose — together with the lines where each mention occurs.
+
+ * @summary Documents that reference a document
+ */
+export const getDocBacklinks = async (params: GetDocBacklinksParams, options?: RequestInit): Promise<BacklinkList> => {
+
+  return customFetch<BacklinkList>(getGetDocBacklinksUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetDocBacklinksQueryKey = (params?: GetDocBacklinksParams,) => {
+    return [
+    `/api/docs/backlinks`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetDocBacklinksQueryOptions = <TData = Awaited<ReturnType<typeof getDocBacklinks>>, TError = ErrorType<ErrorResponse>>(params: GetDocBacklinksParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDocBacklinks>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetDocBacklinksQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getDocBacklinks>>> = ({ signal }) => getDocBacklinks(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDocBacklinks>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetDocBacklinksQueryResult = NonNullable<Awaited<ReturnType<typeof getDocBacklinks>>>
+export type GetDocBacklinksQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary Documents that reference a document
+ */
+
+export function useGetDocBacklinks<TData = Awaited<ReturnType<typeof getDocBacklinks>>, TError = ErrorType<ErrorResponse>>(
+ params: GetDocBacklinksParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDocBacklinks>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetDocBacklinksQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getSearchDocsUrl = () => {
+
+
+
+
+  return `/api/docs/search`
+}
+
+/**
+ * Ranks documents by semantic similarity to a natural-language query using local multilingual sentence embeddings (no external API or key). Returns an ordered list of document paths with similarity scores; an empty list is returned when the semantic index is unavailable.
+
+ * @summary Semantic search across the documentation
+ */
+export const searchDocs = async (docSearchInput: DocSearchInput, options?: RequestInit): Promise<DocSearchResults> => {
+
+  return customFetch<DocSearchResults>(getSearchDocsUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      docSearchInput,)
+  }
+);}
+
+
+
+
+export const getSearchDocsMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof searchDocs>>, TError,{data: BodyType<DocSearchInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof searchDocs>>, TError,{data: BodyType<DocSearchInput>}, TContext> => {
+
+const mutationKey = ['searchDocs'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof searchDocs>>, {data: BodyType<DocSearchInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  searchDocs(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SearchDocsMutationResult = NonNullable<Awaited<ReturnType<typeof searchDocs>>>
+    export type SearchDocsMutationBody = BodyType<DocSearchInput>
+    export type SearchDocsMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Semantic search across the documentation
+ */
+export const useSearchDocs = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof searchDocs>>, TError,{data: BodyType<DocSearchInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof searchDocs>>,
+        TError,
+        {data: BodyType<DocSearchInput>},
+        TContext
+      > => {
+      return useMutation(getSearchDocsMutationOptions(options));
+    }
 
 export const getGetTeamUrl = () => {
 

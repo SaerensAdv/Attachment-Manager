@@ -96,36 +96,63 @@ export default function CommandPalette() {
     };
   }, [open]);
 
-  // Re-run the Orama search whenever the query changes.
+  // Search whenever the query changes: try the local semantic endpoint first
+  // (Dutch query -> English docs), then fall back to the in-memory Orama index
+  // if the endpoint is unavailable or returns nothing.
   useEffect(() => {
-    const db = dbRef.current;
-    if (!db) return;
     let cancelled = false;
     const term = query.trim();
 
-    (async () => {
-      if (!term) {
-        if (!cancelled) setResults([...nodesRef.current.values()]);
-        return;
-      }
+    if (!term) {
+      setResults([...nodesRef.current.values()]);
+      return;
+    }
+
+    const runLexical = async (): Promise<DocNode[]> => {
+      const db = dbRef.current;
+      if (!db) return [];
       try {
         const out = await search(db as AnyOrama, {
           term,
           properties: ["title", "summary", "category"],
           limit: 50,
         });
-        if (cancelled) return;
-        const hits = out.hits
+        return out.hits
           .map((h) => nodesRef.current.get(String(h.document.id)))
           .filter((n): n is DocNode => Boolean(n));
-        setResults(hits);
       } catch {
-        if (!cancelled) setResults([]);
+        return [];
       }
-    })();
+    };
+
+    const handle = setTimeout(async () => {
+      try {
+        const res = await fetch(`${import.meta.env.BASE_URL}api/docs/search`, {
+          method: "POST",
+          headers: { "content-type": "application/json", accept: "application/json" },
+          body: JSON.stringify({ query: term, limit: 50 }),
+        });
+        if (res.ok) {
+          const data = (await res.json()) as { results: { path: string; score: number }[] };
+          if (cancelled) return;
+          const hits = data.results
+            .map((r) => nodesRef.current.get(r.path))
+            .filter((n): n is DocNode => Boolean(n));
+          if (hits.length > 0) {
+            setResults(hits);
+            return;
+          }
+        }
+      } catch {
+        // Fall through to the lexical fallback below.
+      }
+      const fallback = await runLexical();
+      if (!cancelled) setResults(fallback);
+    }, 200);
 
     return () => {
       cancelled = true;
+      clearTimeout(handle);
     };
   }, [query]);
 

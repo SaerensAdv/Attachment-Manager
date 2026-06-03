@@ -28,6 +28,7 @@ import {
   ThumbsDown,
   Lightbulb,
 } from "lucide-react";
+import Reveal from "@/components/Reveal";
 
 function formatDate(iso: string): string {
   const d = new Date(iso);
@@ -210,6 +211,7 @@ export default function History() {
     <div className="min-h-[100dvh] w-full bg-background text-foreground font-['Inter']">
       <div className="mx-auto max-w-7xl px-6 pt-20 pb-16">
         {/* Masthead */}
+        <Reveal>
         <header className="border-b-2 border-foreground pb-5 mb-10">
           <div className="flex items-end justify-between gap-4">
             <div>
@@ -235,6 +237,7 @@ export default function History() {
             verversing.
           </p>
         </header>
+        </Reveal>
 
         <div className="grid grid-cols-1 lg:grid-cols-[26rem_1fr] gap-10">
           {/* Index */}

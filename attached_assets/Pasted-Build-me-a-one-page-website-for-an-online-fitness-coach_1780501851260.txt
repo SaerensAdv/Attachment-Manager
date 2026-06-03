@@ -1,0 +1,22 @@
+Build me a one-page website for an online fitness coach named Rachel Jones. It should feel premium, like a magazine ad — dark, moody, and luxurious, with black and warm gold as the only colors. Big bold headlines, lots of empty space, and elegant serif accents. No bright colors, no rounded "tech startup" vibes.
+
+Here's what should be on the page, top to bottom:
+
+A header bar with a small gold "RJ" logo on the left, the words "RACHEL JONES — FITNESS COACH" next to it, a few menu links across the middle (About, Coaching, Programs, Success Stories, Resources), and a gold "Book a Free Consultation" button on the right.
+
+A huge hero section with a dramatic close-up photo of a strong, fit woman lit with warm gold light against a black background. On the left side over the dark area, put a giant three-line headline:
+"STRONGER BODY. CONFIDENT MIND. UNSTOPPABLE YOU." — with the last line in gold.
+Underneath: "Personalized coaching. Proven strategies. Real results that last." Then two buttons: a gold "Work With Rachel" and an outlined "Watch Rachel's Story" with a play icon. Below that, show 4 little circular client photos and 5 gold stars with the line "Trusted by 500+ women worldwide."
+On the right side, layered on the photo, write "Rachel Jones" in a fancy gold script font, with "CERTIFIED FITNESS COACH" underneath, and a list of credentials with little gold icons: NASM Certified, Precision Nutrition Level 1, Women's Fitness Specialist, 10+ Years Experience.
+
+A "Featured In" strip — a thin row showing fake magazine logos written in different fancy fonts: Women's Health, Oxygen, Forbes, mindbodygreen, Fit Pregnancy, Shape.
+
+A "Holistic Approach" section — centered headline "A Holistic Approach. Real Results." in an elegant serif. Below it, four columns side by side, each with a small gold icon, a title, and a one-line description: Custom Training, Nutrition Guidance, Mindset Coaching, Accountability.
+
+A "Success Stories" section — on the left, the headline "Stronger on the Outside. Stronger on the Inside." with a "See More Success Stories" button. On the right, three before/after transformation photos of women, each with a big gold result number underneath ("−24 LBS in 16 weeks", "+18 LBS of muscle", "−20% body fat in 14 weeks"), a short italic quote, and the client's first name.
+
+A final call-to-action panel — a wide dark card split into three parts. Left: a friendly portrait of Rachel. Middle: headline "You Don't Need More Motivation. You Need the Right Plan." with a gold "Book Your Free Consultation" button. Right: three small benefits with icons — "1:1 Strategy Call", "Personalized Plan", "Start Your Transformation".
+
+For the photos, generate them — I want a fit woman with warm gold dramatic lighting on a black background, very cinematic. The before/after photos should be full-body in the same dark studio style.
+
+Make it look like a real, professional coaching brand — not a template. Don't add forms, signups, or extra pages — just this one beautiful landing page.

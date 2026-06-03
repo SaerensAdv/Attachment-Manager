@@ -18,8 +18,9 @@ After the Landing Page / Web Design Specialist has approved a page spec or struc
 4. Confirm platform / stack constraints and the tracking spec (from the Analytics & Tracking Specialist), if applicable.
 5. Build the page mobile-first: responsive, accessible, and fast.
 6. Implement the on-brand layout faithfully to the spec — no invented scope.
-7. Wire forms and conversion actions to the agreed tracking spec (never invent tracking IDs).
-8. Note technical constraints, dependencies, and missing assets.
+7. Apply a restrained, performant motion layer per `knowledge/premium-web-motion.md` (smooth scroll, scroll reveals, micro-interactions) with mandatory reduced-motion support.
+8. Wire forms and conversion actions to the agreed tracking spec (never invent tracking IDs).
+9. Note technical constraints, dependencies, and missing assets.
 
 ## Agents involved
 

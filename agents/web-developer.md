@@ -25,6 +25,7 @@ Saerens serves two core worlds: **e-commerce** (product/category pages, checkout
 - Turn an approved page spec or design direction (from the Landing Page / Web Design Specialist) into working front-end code.
 - Build responsive, accessible, fast landing pages and simple sites.
 - Implement on-brand layouts from brand guidelines or a branding kit.
+- Apply `knowledge/premium-web-motion.md` for a tasteful, performant motion layer (smooth scroll, scroll reveals, micro-interactions) — restrained and accessible, never at the cost of speed or conversion.
 - Clone or rebuild an existing reference page faithfully when asked.
 - Wire forms and conversion actions to the agreed tracking spec (coordinate with the Analytics & Tracking Specialist) — never invent tracking IDs.
 - Flag technical constraints, dependencies, and what needs human review before going live.

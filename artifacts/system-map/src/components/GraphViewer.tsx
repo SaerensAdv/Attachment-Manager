@@ -51,6 +51,10 @@ interface GraphViewerProps {
   // involved team is brought into view without fighting manual pan/zoom.
   spotlightNodeIds?: string[];
   spotlightNonce?: number;
+  // Vertical space (px) occupied by the docked GenerationPanel + command bar at
+  // the bottom of the viewport. The spotlight framing reserves this region so
+  // the live-run rings/pulses/hand-off line are never hidden behind the panel.
+  frameBottomInset?: number;
 }
 
 // Turn a node id into a value safe for an SVG element id / clipPath reference.
@@ -101,6 +105,7 @@ export default function GraphViewer({
   nodeStatus,
   spotlightNodeIds,
   spotlightNonce,
+  frameBottomInset,
 }: GraphViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const transformRef = useRef<ReactZoomPanPinchRef | null>(null);
@@ -130,6 +135,15 @@ export default function GraphViewer({
   // True while an export render is in flight, so the button can be disabled and
   // the controls overlay won't be captured mid-click.
   const [isExporting, setIsExporting] = useState(false);
+  // Live bottom inset (the docked panel + command bar height) read at framing
+  // time so the spotlight keeps the team above the panel as it grows/shrinks.
+  const frameBottomInsetRef = useRef(0);
+  frameBottomInsetRef.current = frameBottomInset ?? 0;
+  // While a spotlight is active, the panel grows from routing-review to its
+  // max height; these track that so the framing can follow the growth without
+  // re-framing once it plateaus (or after the run ends).
+  const spotlightActiveRef = useRef(false);
+  const lastFramedInsetRef = useRef(0);
 
   // Track the reduced-motion media query so animations can be disabled live.
   useEffect(() => {
@@ -374,13 +388,26 @@ export default function GraphViewer({
       const padding = 160;
       const w = maxX - minX + padding * 2;
       const h = maxY - minY + padding * 2;
-      const fitScale = Math.min(dimensions.width / w, dimensions.height / h);
+
+      // Reserve the space the docked GenerationPanel + command bar occupy at the
+      // bottom so the team is framed into the visible map area ABOVE the panel,
+      // never behind it. Cap the reserved region so a tall panel still leaves a
+      // usable band (also keeps things sane at narrow widths / short viewports).
+      const inset = Math.min(
+        Math.max(frameBottomInsetRef.current, 0),
+        dimensions.height * 0.6,
+      );
+      const usableHeight = Math.max(dimensions.height - inset, 160);
+
+      const fitScale = Math.min(dimensions.width / w, usableHeight / h);
       const clampedScale = Math.max(0.3, Math.min(fitScale, 1.6));
 
       const centerX = (minX + maxX) / 2;
       const centerY = (minY + maxY) / 2;
       const x = dimensions.width / 2 - centerX * clampedScale;
-      const y = dimensions.height / 2 - centerY * clampedScale;
+      // Centre vertically within the usable band (top of viewport → top of the
+      // panel) rather than the full viewport, lifting the team clear of the panel.
+      const y = usableHeight / 2 - centerY * clampedScale;
       api.setTransform(x, y, clampedScale, reducedMotion ? 0 : 700, "easeOut");
     },
     [dimensions.width, dimensions.height, reducedMotion],
@@ -444,10 +471,38 @@ export default function GraphViewer({
   useEffect(() => {
     if (!spotlightNonce) return;
     if (!spotlightNodeIds || spotlightNodeIds.length === 0) return;
+    spotlightActiveRef.current = true;
+    lastFramedInsetRef.current = frameBottomInsetRef.current;
     const id = requestAnimationFrame(() => fitToNodes(spotlightNodeIds));
     return () => cancelAnimationFrame(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [spotlightNonce]);
+
+  // The panel grows from the routing review to its (capped, then internally
+  // scrolling) max height after the spotlight fires. Re-frame when that bottom
+  // inset grows meaningfully so the live rings/pulses/hand-off line stay clear
+  // of the panel. The panel plateaus at its max height, so this settles after a
+  // couple of smooth adjustments rather than fighting the user's own pan/zoom.
+  useEffect(() => {
+    if (!spotlightActiveRef.current) return;
+    if (!spotlightNodeIds || spotlightNodeIds.length === 0) return;
+    const next = frameBottomInset ?? 0;
+    if (next - lastFramedInsetRef.current <= 48) return;
+    lastFramedInsetRef.current = next;
+    const id = requestAnimationFrame(() => fitToNodes(spotlightNodeIds));
+    return () => cancelAnimationFrame(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [frameBottomInset]);
+
+  // Stop tracking the panel once the run ends so a later panel mount (e.g. a new
+  // request being composed) never re-frames an idle map.
+  const involvedCount = involvedNodeIds?.size ?? 0;
+  useEffect(() => {
+    if (involvedCount === 0) {
+      spotlightActiveRef.current = false;
+      lastFramedInsetRef.current = 0;
+    }
+  }, [involvedCount]);
 
   // Clear a stale hover when the hovered node leaves the current dataset (e.g.
   // category filtering removes it), otherwise hoverSet would keep dimming the

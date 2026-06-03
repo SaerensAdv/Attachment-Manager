@@ -66,6 +66,20 @@ export default function Home() {
     prevInvolvedCount.current = count;
   }, [gen.involvedPaths]);
 
+  // Measure the docked command bar + generation panel so the map can frame the
+  // spotlighted team into the area NOT covered by them during a live run.
+  const dockRef = useRef<HTMLDivElement>(null);
+  const [dockHeight, setDockHeight] = useState(0);
+  useEffect(() => {
+    const el = dockRef.current;
+    if (!el) return;
+    const update = () => setDockHeight(el.offsetHeight);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   // Open/focus a node when arriving via the command palette (/?node=<path>).
   const search = useSearch();
   const [, navigate] = useLocation();
@@ -172,13 +186,14 @@ export default function Home() {
           nodeStatus={gen.nodeStatus}
           spotlightNodeIds={spotlight.ids}
           spotlightNonce={spotlight.nonce}
+          frameBottomInset={dockHeight}
         />
       </div>
 
       {/* Command bar + generation panel — docked bottom-center over the map. The
           stack itself ignores pointer events so the map stays pannable; only the
           bar and panel capture interaction. */}
-      <div className="absolute inset-x-0 bottom-0 z-20 flex flex-col items-center gap-3 px-6 pb-6 pointer-events-none">
+      <div ref={dockRef} className="absolute inset-x-0 bottom-0 z-20 flex flex-col items-center gap-3 px-6 pb-6 pointer-events-none">
         <AnimatePresence>
           {gen.hasActiveFlow && <GenerationPanel key="gen-panel" gen={gen} />}
         </AnimatePresence>

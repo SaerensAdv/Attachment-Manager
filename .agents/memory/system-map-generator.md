@@ -159,3 +159,16 @@ Home → GraphViewer) alongside the original involved/active/handoff props.
   animated className for "" AND a `prefers-reduced-motion` block in index.css
   sets `animation:none`. Each state keeps a STATIC fallback (solid/dashed ring,
   opacity/scale) so queued/working/done stay legible without motion.
+
+## Spotlight framing must dodge the docked panel
+The run-start spotlight (`fitToNodes`) frames the team into the band ABOVE the
+docked GenerationPanel/command bar, not the full viewport — otherwise the live
+rings/pulse/hand-off line hide behind the panel. Home measures the dock height
+(ResizeObserver on the bottom stack) and passes it as `frameBottomInset`;
+fitToNodes reserves it (capped at 60% of height) and centres in the usable band.
+- **Re-frame as the panel grows, but rely on its plateau.** The panel grows from
+  routing-review to its `max-h-[min(70vh,40rem)]` cap (then scrolls internally),
+  so the inset stops growing. A growth-triggered re-frame (>48px, only while a
+  spotlight is active) follows that growth and then settles — it does NOT chase
+  streaming text. **Why:** continuous re-framing would fight the user's pan/zoom
+  (the spotlight is otherwise one-shot on run start, see live-run map model).

@@ -5,12 +5,13 @@ import {
   useCreateClient,
   useUpdateClient,
   useDeleteClient,
+  useClientWebsiteIntake,
   getGetClientsQueryKey,
   getGetDocGraphQueryKey,
   type Client,
   type ClientInput,
 } from "@workspace/api-client-react";
-import { Loader2, Plus, Save, Trash2, X } from "lucide-react";
+import { Globe, Loader2, Plus, Save, Trash2, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import Reveal from "@/components/Reveal";
@@ -221,6 +222,12 @@ export default function Clients() {
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [formError, setFormError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  // Website-intake (fase 2) is managed outside the editable form: it is set by
+  // the read-website endpoint, not by the briefing fields.
+  const [intake, setIntake] = useState<{
+    text: string | null;
+    at: string | null;
+  }>({ text: null, at: null });
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: getGetClientsQueryKey() });
@@ -232,15 +239,18 @@ export default function Clients() {
   const createMut = useCreateClient();
   const updateMut = useUpdateClient();
   const deleteMut = useDeleteClient();
+  const intakeMut = useClientWebsiteIntake();
 
   const saving = createMut.isPending || updateMut.isPending;
   const deleting = deleteMut.isPending;
+  const intaking = intakeMut.isPending;
 
   const startCreate = () => {
     setEditing("new");
     setForm(EMPTY_FORM);
     setFormError(null);
     setConfirmDelete(false);
+    setIntake({ text: null, at: null });
   };
 
   const startEdit = (c: Client) => {
@@ -248,6 +258,7 @@ export default function Clients() {
     setForm(clientToForm(c));
     setFormError(null);
     setConfirmDelete(false);
+    setIntake({ text: c.websiteIntake ?? null, at: c.websiteIntakeAt ?? null });
   };
 
   const closeEditor = () => {
@@ -255,6 +266,7 @@ export default function Clients() {
     setForm(EMPTY_FORM);
     setFormError(null);
     setConfirmDelete(false);
+    setIntake({ text: null, at: null });
   };
 
   const setField = (key: keyof ClientInput, value: string) =>
@@ -295,6 +307,28 @@ export default function Clients() {
         },
       );
     }
+  };
+
+  const handleWebsiteIntake = () => {
+    if (typeof editing !== "number") return;
+    setFormError(null);
+    intakeMut.mutate(
+      { id: editing },
+      {
+        onSuccess: (updated) => {
+          invalidate();
+          setForm(clientToForm(updated));
+          setIntake({
+            text: updated.websiteIntake ?? null,
+            at: updated.websiteIntakeAt ?? null,
+          });
+        },
+        onError: (err) =>
+          setFormError(
+            err instanceof Error ? err.message : "Website uitlezen mislukt",
+          ),
+      },
+    );
   };
 
   const handleDelete = () => {
@@ -629,6 +663,79 @@ export default function Clients() {
                       </div>
                     ))}
                   </div>
+
+                  {/* Section III — website intake (existing clients only) */}
+                  {typeof editing === "number" && (
+                    <>
+                      <div className="flex items-baseline justify-between border-b-2 border-foreground pb-1">
+                        <h3 className="font-['Playfair_Display'] font-bold text-lg uppercase tracking-wider">
+                          III. Website-intake
+                        </h3>
+                        <span className="font-['Space_Mono'] text-xs text-muted-foreground">
+                          Leest de site uit
+                        </span>
+                      </div>
+
+                      <p className="font-['Inter'] text-sm text-muted-foreground -mt-4">
+                        Lees de eigen website van de cliënt uit (homepage +
+                        opgegeven landingspagina's). De ruwe tekst wordt bewaard en
+                        meegegeven aan de agents, zodat ze weten wat er écht op de
+                        site staat.
+                      </p>
+
+                      <div className="flex flex-wrap items-center gap-3">
+                        <button
+                          onClick={handleWebsiteIntake}
+                          disabled={intaking || !form.website.trim()}
+                          data-testid="button-website-intake"
+                          className="py-2.5 px-4 border-2 border-foreground text-foreground font-['Space_Mono'] text-[11px] uppercase tracking-widest flex items-center gap-2 hover:bg-foreground hover:text-background transition-colors disabled:opacity-50 disabled:pointer-events-none"
+                        >
+                          {intaking ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Globe className="w-4 h-4" />
+                          )}
+                          {intake.text ? "Opnieuw uitlezen" : "Website uitlezen"}
+                        </button>
+                        {!form.website.trim() ? (
+                          <span className="font-['Space_Mono'] text-[10px] uppercase tracking-wider text-muted-foreground/70">
+                            Vul eerst het veld Website in
+                          </span>
+                        ) : intake.at ? (
+                          <span className="font-['Space_Mono'] text-[10px] uppercase tracking-wider text-muted-foreground">
+                            Laatst uitgelezen:{" "}
+                            {new Date(intake.at).toLocaleString("nl-BE", {
+                              dateStyle: "medium",
+                              timeStyle: "short",
+                            })}
+                          </span>
+                        ) : (
+                          <span className="font-['Space_Mono'] text-[10px] uppercase tracking-wider text-muted-foreground/70">
+                            Nog niet uitgelezen
+                          </span>
+                        )}
+                      </div>
+
+                      {intake.text && (
+                        <div className="flex flex-col gap-2">
+                          <div className="flex items-baseline justify-between border-b border-foreground/20 pb-1">
+                            <span className="font-['Space_Mono'] text-[10px] uppercase tracking-widest">
+                              Uitgelezen tekst
+                            </span>
+                            <span className="font-['Space_Mono'] text-[9px] tracking-wider text-muted-foreground/60">
+                              {intake.text.length.toLocaleString("nl-BE")} tekens
+                            </span>
+                          </div>
+                          <pre
+                            data-testid="text-website-intake"
+                            className="max-h-72 overflow-auto whitespace-pre-wrap break-words border border-foreground/30 bg-background p-3 font-['Space_Mono'] text-[11px] leading-relaxed text-muted-foreground"
+                          >
+                            {intake.text}
+                          </pre>
+                        </div>
+                      )}
+                    </>
+                  )}
 
                   {formError && (
                     <div

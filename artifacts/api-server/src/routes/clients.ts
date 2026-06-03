@@ -1,6 +1,10 @@
 import { Router, type IRouter } from "express";
 import { eq } from "drizzle-orm";
 import { db, clientsTable, type Client } from "@workspace/db";
+import {
+  collectClientUrls,
+  fetchWebsiteIntake,
+} from "../lib/website-intake";
 
 const router: IRouter = Router();
 
@@ -73,6 +77,9 @@ function parseBody(body: unknown): ClientInput | { error: string } {
 function serialize(client: Client) {
   return {
     ...client,
+    websiteIntakeAt: client.websiteIntakeAt
+      ? client.websiteIntakeAt.toISOString()
+      : null,
     createdAt: client.createdAt.toISOString(),
     updatedAt: client.updatedAt.toISOString(),
   };
@@ -142,6 +149,51 @@ router.put("/clients/:id", async (req, res) => {
     return;
   }
   res.json(serialize(row));
+});
+
+router.post("/clients/:id/website-intake", async (req, res) => {
+  const id = parseId(req.params.id);
+  if (id === null) {
+    res.status(400).json({ error: "Ongeldige id." });
+    return;
+  }
+  const [row] = await db
+    .select()
+    .from(clientsTable)
+    .where(eq(clientsTable.id, id));
+  if (!row) {
+    res.status(404).json({ error: "Klant niet gevonden." });
+    return;
+  }
+
+  const urls = collectClientUrls(row.website, row.landingPages);
+  if (urls.length === 0) {
+    res.status(400).json({
+      error:
+        "Deze klant heeft nog geen geldige website-URL. Vul eerst het veld Website in.",
+    });
+    return;
+  }
+
+  const result = await fetchWebsiteIntake(urls);
+  if (!result.text) {
+    res.status(502).json({
+      error: "Kon de website niet uitlezen.",
+      detail: result.errors.join(" | "),
+    });
+    return;
+  }
+
+  const [updated] = await db
+    .update(clientsTable)
+    .set({
+      websiteIntake: result.text,
+      websiteIntakeAt: new Date(),
+      updatedAt: new Date(),
+    })
+    .where(eq(clientsTable.id, id))
+    .returning();
+  res.json(serialize(updated));
 });
 
 router.delete("/clients/:id", async (req, res) => {

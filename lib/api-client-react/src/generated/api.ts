@@ -1053,6 +1053,76 @@ export const useDeleteClient = <TError = ErrorType<ErrorResponse>,
       return useMutation(getDeleteClientMutationOptions(options));
     }
 
+export const getClientWebsiteIntakeUrl = (id: number,) => {
+
+
+
+
+  return `/api/clients/${id}/website-intake`
+}
+
+/**
+ * @summary Read the client's website and store the extracted text
+ */
+export const clientWebsiteIntake = async (id: number, options?: RequestInit): Promise<Client> => {
+
+  return customFetch<Client>(getClientWebsiteIntakeUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getClientWebsiteIntakeMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof clientWebsiteIntake>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof clientWebsiteIntake>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['clientWebsiteIntake'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof clientWebsiteIntake>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  clientWebsiteIntake(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ClientWebsiteIntakeMutationResult = NonNullable<Awaited<ReturnType<typeof clientWebsiteIntake>>>
+
+    export type ClientWebsiteIntakeMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Read the client's website and store the extracted text
+ */
+export const useClientWebsiteIntake = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof clientWebsiteIntake>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof clientWebsiteIntake>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getClientWebsiteIntakeMutationOptions(options));
+    }
+
 export const getGetGenerationsUrl = () => {
 
 

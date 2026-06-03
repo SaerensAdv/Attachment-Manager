@@ -193,6 +193,8 @@ export const GetClientsResponse = zod.object({
   "currentState": zod.string().nullish(),
   "googleAdsData": zod.string().nullish(),
   "searchConsoleData": zod.string().nullish(),
+  "websiteIntake": zod.string().nullish(),
+  "websiteIntakeAt": zod.coerce.date().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 }))
@@ -253,6 +255,8 @@ export const GetClientResponse = zod.object({
   "currentState": zod.string().nullish(),
   "googleAdsData": zod.string().nullish(),
   "searchConsoleData": zod.string().nullish(),
+  "websiteIntake": zod.string().nullish(),
+  "websiteIntakeAt": zod.coerce.date().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -308,6 +312,8 @@ export const UpdateClientResponse = zod.object({
   "currentState": zod.string().nullish(),
   "googleAdsData": zod.string().nullish(),
   "searchConsoleData": zod.string().nullish(),
+  "websiteIntake": zod.string().nullish(),
+  "websiteIntakeAt": zod.coerce.date().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -318,6 +324,41 @@ export const UpdateClientResponse = zod.object({
  */
 export const DeleteClientParams = zod.object({
   "id": zod.coerce.number()
+})
+
+
+/**
+ * @summary Read the client's website and store the extracted text
+ */
+export const ClientWebsiteIntakeParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ClientWebsiteIntakeResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "business": zod.string().nullish(),
+  "world": zod.string().nullish(),
+  "services": zod.string().nullish(),
+  "audience": zod.string().nullish(),
+  "locations": zod.string().nullish(),
+  "languages": zod.string().nullish(),
+  "mainGoal": zod.string().nullish(),
+  "conversionAction": zod.string().nullish(),
+  "kpis": zod.string().nullish(),
+  "budget": zod.string().nullish(),
+  "toneOfVoice": zod.string().nullish(),
+  "channels": zod.string().nullish(),
+  "restrictions": zod.string().nullish(),
+  "website": zod.string().nullish(),
+  "landingPages": zod.string().nullish(),
+  "currentState": zod.string().nullish(),
+  "googleAdsData": zod.string().nullish(),
+  "searchConsoleData": zod.string().nullish(),
+  "websiteIntake": zod.string().nullish(),
+  "websiteIntakeAt": zod.coerce.date().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
 })
 
 

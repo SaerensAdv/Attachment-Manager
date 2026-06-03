@@ -8,6 +8,7 @@
 - [System Map branding direction](branding-direction.md) — editorial "Newsroom" light theme (cream/ink/indigo, Playfair+Inter+Space Mono); theme in index.css :root, no dark toggle.
 - [Deliverable layer](deliverable-layer.md) — workflows opt into a typed end product via `<!-- deliverable: kind -->`; best-effort after team loop, never loses markdown; strip HTML comments before any ReactMarkdown (no rehype-raw).
 - [Client DB ↔ doc-graph bridge](client-db-doc-bridge.md) — DB clients become synthetic `clients/db/<id>.md` DocFiles; every doc consumer must inject loadClientDocs(); invalidate clients+doc-graph keys after mutations.
+- [Website-intake (Fase 2)](website-intake.md) — server-side read of client's own site into raw agent context; SSRF guardrails (block private IPs + manual redirect re-validation) must never regress.
 - [Learning loop (review→proposals→apply)](learning-loop.md) — per-change confirmation; non-destructive append; accept/reject must be an atomic compare-and-set (claim WHERE pending) + revert-on-apply-failure.
 - [App motion layer](app-motion-layer.md) — Lenis smooth scroll must be OFF on the full-screen Kaart route ("/"); all motion must honour prefers-reduced-motion.
 - [Replit-docs knowledge nodes](replit-docs-thread.md) — Replit nodes are how-to usage docs in knowledge/, English; wire multi-flow tools (e.g. Canvas) into every agent/workflow they touch via exact knowledge/<file>.md path.

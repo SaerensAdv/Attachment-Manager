@@ -28,6 +28,8 @@ export const clientsTable = pgTable("clients", {
   currentState: text("current_state"),
   googleAdsData: text("google_ads_data"),
   searchConsoleData: text("search_console_data"),
+  websiteIntake: text("website_intake"),
+  websiteIntakeAt: timestamp("website_intake_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

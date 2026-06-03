@@ -221,6 +221,10 @@ export interface Client {
   googleAdsData?: string | null;
   /** @nullable */
   searchConsoleData?: string | null;
+  /** @nullable */
+  websiteIntake?: string | null;
+  /** @nullable */
+  websiteIntakeAt?: string | null;
   createdAt: string;
   updatedAt: string;
 }

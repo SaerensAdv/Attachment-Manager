@@ -323,6 +323,42 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /clients/{id}/website-intake:
+    post:
+      operationId: clientWebsiteIntake
+      tags: [clients]
+      summary: Read the client's website and store the extracted text
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: The updated client with fresh website intake
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Client"
+        "400":
+          description: Invalid request (e.g. no website URL set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Client not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "502":
+          description: The website could not be read
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /generations:
     get:
       operationId: getGenerations
@@ -847,6 +883,11 @@ components:
           type: ["string", "null"]
         searchConsoleData:
           type: ["string", "null"]
+        websiteIntake:
+          type: ["string", "null"]
+        websiteIntakeAt:
+          type: ["string", "null"]
+          format: date-time
         createdAt:
           type: string
           format: date-time

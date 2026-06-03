@@ -82,6 +82,17 @@ export function clientToMarkdown(client: Client): string {
     paragraph("Current state", client.currentState),
     codeBlock("Google Ads data (current)", client.googleAdsData),
     codeBlock("Search Console / SEO data (current)", client.searchConsoleData),
+    client.websiteIntake?.trim()
+      ? paragraph(
+          "Website intake",
+          `Raw text read from the client's own website${
+            client.websiteIntakeAt
+              ? ` (fetched ${client.websiteIntakeAt.toISOString().slice(0, 10)})`
+              : ""
+          }.`,
+        )
+      : null,
+    codeBlock("Website content (raw)", client.websiteIntake),
   ];
 
   return sections.filter((s): s is string => s !== null).join("\n\n") + "\n";

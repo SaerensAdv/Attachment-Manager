@@ -161,9 +161,10 @@ router.post("/generate", async (req, res) => {
       const stream = anthropic.messages.stream(
         {
           model: "claude-sonnet-4-6",
-          // Per-member cap: each agent contributes one section, so a smaller
-          // budget keeps a multi-agent chain responsive end-to-end.
-          max_tokens: 4096,
+          // Per-member cap: each agent contributes one section. 4096 turned out
+          // to cut longer sections off mid-sentence in multi-agent runs, so we
+          // give each agent more room while still staying responsive.
+          max_tokens: 8192,
           system: systemPrompt,
           messages: [{ role: "user", content: request }],
         },
@@ -207,7 +208,10 @@ router.post("/generate", async (req, res) => {
         const dstream = anthropic.messages.stream(
           {
             model: "claude-sonnet-4-6",
-            max_tokens: 4096,
+            // The deliverable is the final, ready-to-use product the user
+            // copies out, and it's a single closing call — give it generous
+            // room so it never gets truncated.
+            max_tokens: 16000,
             system: prompt.system,
             messages: [{ role: "user", content: prompt.user }],
           },

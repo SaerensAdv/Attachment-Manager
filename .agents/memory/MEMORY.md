@@ -15,3 +15,4 @@
 - [Team page & portraits](team-portrait-foundation.md) — object-storage layout (portraits/<slug>.png, portrait-styles/<slug>-<style>.png), best-effort index loads at request time, upload via node+GCS sidecar (no tsx).
 - [DocPanel reader features](doc-panel-features.md) — ToC must read rendered rehype-slug ids (not recompute); local Transformers.js search w/ Orama fallback; edit guards on clients/db/* both sides.
 - [System architecture direction](system-architecture-direction.md) — app = brain + source of truth (agents/knowledge/client state + decision endpoint); n8n = stateless executor that triggers, acts, and writes results back.
+- [Google Ads live intake (Fase 3)](google-ads-live.md) — read-only REST searchStream pull per client; sandbox lacks secrets so test via workspace `node`; verify secret SHAPE on auth errors.

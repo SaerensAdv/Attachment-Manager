@@ -71,7 +71,8 @@ Add storage for:
 Only here do live connections enter the picture, likely in this order of value for the agency:
 
 - ClickUp (task drafts)
-- Google Ads API
+- Google Ads API *(live, read-only — in place)*
+- Google Search Console API *(read-only SEO/search data, replaces manual CSV/zip import in the "huidige stand"-sectie)*
 - Google Analytics 4
 - Google Sheets / Looker Studio (reporting)
 - Slack / email (communication)

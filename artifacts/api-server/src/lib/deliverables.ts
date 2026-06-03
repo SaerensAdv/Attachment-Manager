@@ -122,6 +122,7 @@ function buildReplitPrompt(ctx: DeliverableContext): DeliverablePrompt {
     "",
     "## Regels",
     "- Schrijf concreet en compleet, zodat de bouwer meteen aan de slag kan zonder verdere vragen.",
+    "- Gebruik NOOIT emoji's of decoratieve symbolen, niet in de prompt zelf en niet als instructie voor de website. De te bouwen site moet professioneel en emoji-vrij zijn.",
     "- Verlies geen enkele inhoudelijke beslissing of copy uit het teamwerk.",
     "- Laat aannames en open punten staan als **[AAN TE VULLEN: …]** in plaats van ze te verzinnen.",
     "- Geen goedkeuringssectie en geen meta-commentaar — enkel de bouwprompt.",

@@ -22,6 +22,7 @@ We sound like a trusted specialist who knows Google Ads deeply, explains things 
 - **Don't overpromise.** Never guarantee a specific ROAS, ranking, or result.
 - **Don't spin.** Don't dress up bad results or bury them.
 - **Don't use empty jargon.** Avoid buzzwords that don't add meaning.
+- **Don't use emojis or decorative symbols** anywhere — not in reports, client copy, deliverables, or websites we produce. Keep everything professional and businesslike.
 - **Don't claim something is done** when it's a recommendation or a draft.
 - **Don't be pushy or salesy** in client communication. We earn trust, we don't pressure.
 

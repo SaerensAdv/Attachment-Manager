@@ -1,0 +1,153 @@
+Als ik aan Lenis / smooth scroll denk, dan denk ik meteen aan een hele “motion & interaction” stack rond high-end websites. Niet alleen scrollen zelf, maar alles wat daarrond zit:
+1. Scroll-driven animations
+
+Lenis wordt vaak gecombineerd met dingen zoals:
+• GSAP ScrollTrigger
+• Framer Motion
+• React Spring
+• Motion One
+• Locomotive Scroll, als alternatief/older reference
+• ScrollReveal-achtige effecten
+• Parallax layers
+• Sticky sections
+• Horizontal scroll sections
+• Scroll progress indicators
+• Reveal-on-scroll animaties
+
+Vooral die combinatie Lenis + GSAP zie je vaak op premium agency sites, portfolio’s, SaaS landing pages en award-winning websites.
+---
+2. High-end agency / Awwwards vibe
+
+Lenis doet me denken aan sites met een “crafted” gevoel:
+• Awwwards
+• CSS Design Awards
+• Godly.website
+• Minimal Gallery
+• Landingfolio
+• Brand studio websites
+• Creative developer portfolios
+• 3D-heavy landing pages
+• Premium SaaS homepages
+
+Dat soort websites waar scroll niet gewoon functioneel is, maar onderdeel van de experience.
+---
+3. Micro-interactions
+
+Smooth scroll past meestal in een bredere UX waar alles net iets verfijnder voelt:
+• Magnetic buttons
+• Custom cursors
+• Hover distortions
+• Image reveal effects
+• Text splitting animations
+• Staggered text reveals
+• Button transitions
+• Page transitions
+• Loading animations
+• Menu open/close motion
+• Smooth anchor links
+• Section snapping, maar subtiel
+---
+4. Performance-conscious animation
+
+Bij Lenis denk ik ook aan de balans tussen “wauw” en “niet irritant”:
+• 60fps scroll
+• requestAnimationFrame loops
+• Avoiding layout thrashing
+• GPU-friendly transforms
+• Reduced motion support
+• Mobile performance
+• Preventing scroll-jank
+• Not over-animating everything
+
+Smooth scroll kan heel snel “premium” voelen, maar ook heel snel “te veel” worden als het traag, zwaar of onvoorspelbaar is.
+---
+5. Webflow / Framer / custom dev
+
+Lenis wordt vaak genoemd in context van:
+• Webflow custom code
+• Framer sites
+• Next.js
+• React
+• Nuxt
+• Three.js
+• Spline
+• Rive
+• GSAP
+• Barba.js voor page transitions
+
+Vooral in custom builds is Lenis populair omdat het relatief licht en flexibel is.
+---
+6. Three.js en immersive websites
+
+Als smooth scroll gebruikt wordt in meer interactieve sites, denk ik aan:
+• Scroll-controlled 3D scenes
+• Product storytelling
+• Camera movement on scroll
+• WebGL shaders
+• Image distortion
+• Canvas-based animations
+• Product configurators
+• Interactive case studies
+
+Bijvoorbeeld een landing page waar je door een productverhaal scrollt en de 3D-camera meebeweegt.
+---
+7. Storytelling websites
+
+Smooth scroll werkt goed voor websites die meer narratief zijn:
+• Brand stories
+• Case studies
+• Product launches
+• Campaign pages
+• Founder stories
+• Investor decks als website
+• Interactive reports
+• Long-form landing pages
+
+Lenis helpt dan om de overgang tussen secties vloeiender en “cinematic” te maken.
+---
+8. Premium UX details
+
+Dingen waar ik Lenis mee associeer:
+• Scroll velocity effects
+• Elements die reageren op scroll speed
+• Blur based on scroll velocity
+• Scale/rotation while scrolling
+• Smooth anchor navigation
+• Infinite marquees
+• Momentum feeling
+• Section-based rhythm
+• Subtiele easing
+
+Niet per se “wow animaties”, maar gewoon dat alles beter aanvoelt.
+---
+9. Mogelijke valkuilen
+
+Ook denk ik meteen aan de issues:
+• Accessibility
+• Motion sickness
+• Browser-native scroll behavior breken
+• Mobile scroll voelt soms raar als het overdreven is
+• Anchor links kunnen buggy worden
+• Sticky elements kunnen conflicten geven
+• ScrollTrigger sync issues
+• Performance op oudere devices
+• Teveel “laggy luxury” effect
+
+Dus: Lenis is sterk, maar moet subtiel gebruikt worden.
+---
+10. Alternatieven / verwante tools
+
+Als je Lenis noemt, denk ik ook aan:
+• Locomotive Scroll
+• Smooth Scrollbar
+• GSAP ScrollSmoother
+• Native CSS scroll-behavior: smooth
+• Framer Motion scroll hooks
+• React Lenis
+• R3F ScrollControls
+• Barba.js
+• Swup
+• View Transitions API
+---
+
+Kort gezegd:Lenis = premium scroll feel + scroll-based storytelling + motion design.Het zit ergens tussen UX-polish, creative development en high-end brand experience.

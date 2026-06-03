@@ -161,7 +161,7 @@ export function buildGenerationContext(
   }
 
   const approvalRule = !inTeam || (team && team.isFinal)
-    ? "- Sluit ALTIJD af met een sectie '## \u26a0\ufe0f Menselijke goedkeuring vereist' waarin je kort opsomt wat een teamlid moet nakijken vooraleer dit gepubliceerd, verzonden of live gezet wordt. Dit mag nooit weggelaten worden."
+    ? "- Sluit ALTIJD af met een sectie '## Menselijke goedkeuring vereist' waarin je kort opsomt wat een teamlid moet nakijken vooraleer dit gepubliceerd, verzonden of live gezet wordt. Dit mag nooit weggelaten worden."
     : "- Voeg GEEN goedkeuringssectie toe \u2014 een teamlid verderop in de keten sluit het gezamenlijke resultaat af. Lever enkel jouw bijdrage.";
 
   const teamOutputRule = inTeam
@@ -178,6 +178,7 @@ export function buildGenerationContext(
     "",
     "## Uitvoeringsregels",
     "- Schrijf je output in het Nederlands (Vlaams), tenzij de opdracht expliciet een andere taal vraagt.",
+    "- Gebruik NOOIT emoji's of decoratieve symbolen, in geen enkele output (geen \u26a0\ufe0f, \u2705, \uD83D\uDE80, enz.). Hou de toon professioneel en zakelijk.",
     "- Hanteer de tone-of-voice en kwaliteitsstandaarden hierboven.",
     "- Volg de structuur van het relevante output-template wanneer er een is.",
     "- Lever ALTIJD een concrete, volledige eerste versie. Weiger nooit en vraag niet eerst om meer informatie \u2014 dat is precies wat de menselijke review-stap opvangt.",

@@ -46,6 +46,8 @@ A documentation foundation that defines specialized AI agents for Saerens Advert
 - Builds and deploys exclusively on Replit. Do NOT recommend or assume external platforms (WordPress, Webflow, Squarespace, Vercel, Netlify, etc.). Keep all solutions native to Replit (its hosting, deployments, integrations, database).
 - Thinks future-oriented — favor durable, forward-looking approaches over quick throwaway fixes.
 - Communicate in Dutch (Vlaams).
+- No emojis anywhere — not in generated output (reports, copy), not in the app UI, not in any deliverable (e.g. website builds). Keep the tone professional and businesslike.
+- North star: "AI medewerkers" that handle nearly all agency work end-to-end, with the user as the single human quality-control gate. Output quality is a top priority — prefer higher-quality results over more features.
 
 ## Gotchas
 

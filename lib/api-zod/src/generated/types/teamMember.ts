@@ -5,7 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-import type { StyleExample } from './styleExample';
+import type { TeamLayer } from './teamLayer';
 
 export interface TeamMember {
   /** The agent filename without extension (e.g. copywriter). */
@@ -52,6 +52,6 @@ export interface TeamMember {
      * @nullable
      */
   portraitThumbUrl: string | null;
-  /** Generated style-direction portraits for comparison, if any. */
-  styleExamples: StyleExample[];
+  /** The hierarchy layer this member belongs to (group + order). */
+  layer: TeamLayer;
 }

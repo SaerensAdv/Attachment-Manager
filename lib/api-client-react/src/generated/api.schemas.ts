@@ -118,13 +118,15 @@ export interface BacklinkList {
   backlinks: Backlink[];
 }
 
-export interface StyleExample {
-  /** The art-direction key (e.g. editorial, photographic, avatar). */
-  style: string;
-  /** Human-readable Dutch label for the style direction. */
-  label: string;
-  /** Public URL that serves the generated style-example portrait. */
-  url: string;
+export interface TeamLayer {
+  /** Stable layer identifier from the agent hierarchy (e.g. strategy). */
+  id: string;
+  /** Fixed top-to-bottom position of the layer (1 = Orchestrator). */
+  order: number;
+  /** Editorial Dutch title for the hierarchy layer. */
+  title: string;
+  /** Short editorial description of what this layer does. */
+  description: string;
 }
 
 export interface TeamMember {
@@ -172,8 +174,8 @@ export interface TeamMember {
      * @nullable
      */
   portraitThumbUrl: string | null;
-  /** Generated style-direction portraits for comparison, if any. */
-  styleExamples: StyleExample[];
+  /** The hierarchy layer this member belongs to (group + order). */
+  layer: TeamLayer;
 }
 
 export interface TeamRoster {

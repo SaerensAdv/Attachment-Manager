@@ -4,8 +4,15 @@ import {
   portraitObjectName,
   publicObjectUrl,
   PORTRAIT_THUMB_WIDTH,
-  type StyleExample,
 } from "./portraits";
+
+/** The hierarchy layer a team member belongs to, from the AGENTS.md ladder. */
+export interface TeamLayer {
+  id: string;
+  order: number;
+  title: string;
+  description: string;
+}
 
 export interface TeamMember {
   slug: string;
@@ -21,7 +28,104 @@ export interface TeamMember {
   roleSummary: string | null;
   portraitUrl: string | null;
   portraitThumbUrl: string | null;
-  styleExamples: StyleExample[];
+  layer: TeamLayer;
+}
+
+/**
+ * The fixed team hierarchy from AGENTS.md, top to bottom. Each layer lists the
+ * agent slugs that belong to it; a member's layer is resolved by slug. New or
+ * unknown slugs fall back to the "Overig" layer so the page never hides a head.
+ */
+const TEAM_LAYERS: (TeamLayer & { slugs: string[] })[] = [
+  {
+    id: "orchestrator",
+    order: 1,
+    title: "Orchestrator",
+    description:
+      "Het instappunt. Leest de aanvraag, kiest de juiste specialist en stelt de briefing op.",
+    slugs: ["orchestrator"],
+  },
+  {
+    id: "strategy",
+    order: 2,
+    title: "Strategie & Kanaal",
+    description:
+      "Bepalen de strategie per kanaal: waar de kansen liggen en hoe we ze pakken.",
+    slugs: ["google-ads-strategist", "meta-ads-strategist", "seo-specialist"],
+  },
+  {
+    id: "execution",
+    order: 3,
+    title: "Uitvoering",
+    description:
+      "Zetten goedgekeurde strategie om in concreet, klaar-voor-implementatie werk.",
+    slugs: ["google-ads-setup-specialist"],
+  },
+  {
+    id: "review",
+    order: 4,
+    title: "Review & Optimalisatie",
+    description:
+      "Analyseren bestaande accounts en sturen bij voor meer rendement.",
+    slugs: [
+      "google-ads-optimization-specialist",
+      "cro-specialist",
+      "qa-compliance-reviewer",
+    ],
+  },
+  {
+    id: "communication",
+    order: 5,
+    title: "Communicatie",
+    description:
+      "Vertalen het werk naar heldere, klantgerichte taal en rapportage.",
+    slugs: ["reporting-specialist", "copywriter"],
+  },
+  {
+    id: "build",
+    order: 6,
+    title: "Build",
+    description: "Bouwen goedgekeurde specs om tot werkende assets en pagina's.",
+    slugs: ["landing-page-specialist", "web-developer"],
+  },
+  {
+    id: "foundation",
+    order: 7,
+    title: "Fundament",
+    description: "Houden de gedeelde data en meting voor iedereen betrouwbaar.",
+    slugs: ["analytics-tracking-specialist", "competitive-research-analyst"],
+  },
+  {
+    id: "growth",
+    order: 8,
+    title: "Klant & Groei",
+    description:
+      "Onderhouden de klantrelatie en winnen nieuwe opdrachten binnen.",
+    slugs: [
+      "client-success-agent",
+      "sales-proposal-agent",
+      "client-onboarding-agent",
+    ],
+  },
+];
+
+/** Final catch-all layer for slugs not listed in any defined layer. */
+const FALLBACK_LAYER: TeamLayer = {
+  id: "other",
+  order: 99,
+  title: "Overig",
+  description: "Nog niet ingedeeld in een vaste laag van de hiërarchie.",
+};
+
+/** Map every known slug to its layer once, for O(1) lookup per member. */
+const LAYER_BY_SLUG = new Map<string, TeamLayer>(
+  TEAM_LAYERS.flatMap(({ slugs, ...layer }) =>
+    slugs.map((slug): [string, TeamLayer] => [slug, layer]),
+  ),
+);
+
+function layerForSlug(slug: string): TeamLayer {
+  return LAYER_BY_SLUG.get(slug) ?? FALLBACK_LAYER;
 }
 
 /** The bullet labels used inside each agent's "Character & personality" list. */
@@ -118,7 +222,7 @@ export async function getTeamRoster(): Promise<TeamMember[]> {
             width: PORTRAIT_THUMB_WIDTH,
           })
         : null,
-      styleExamples: index.styleExamples.get(slug) ?? [],
+      layer: layerForSlug(slug),
     };
   });
 

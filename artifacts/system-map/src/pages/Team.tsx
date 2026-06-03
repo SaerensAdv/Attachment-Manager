@@ -211,29 +211,6 @@ function Profile({ member, nodes, edges, onClose }: ProfileProps) {
           )}
         </div>
       </div>
-
-      {/* Style examples for this member, if any */}
-      {member.styleExamples.length > 0 && (
-        <div className="px-6 pb-6 pt-2 border-t border-foreground/20">
-          <h3 className="font-['Space_Mono'] text-[10px] uppercase tracking-[0.3em] text-muted-foreground mb-4 mt-4">
-            Stijlrichtingen
-          </h3>
-          <div className="grid grid-cols-3 gap-4">
-            {member.styleExamples.map((ex) => (
-              <figure key={ex.style} className="flex flex-col gap-2">
-                <img
-                  src={ex.url}
-                  alt={`${member.name ?? member.title} — ${ex.label}`}
-                  className="w-full aspect-square object-cover border-2 border-foreground"
-                />
-                <figcaption className="font-['Space_Mono'] text-[10px] uppercase tracking-widest text-muted-foreground text-center">
-                  {ex.label}
-                </figcaption>
-              </figure>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -257,11 +234,24 @@ export default function Team() {
     [employees, selectedSlug],
   );
 
-  // Members that carry generated style directions, for the comparison gallery.
-  const styleGallery = useMemo(
-    () => employees.filter((e) => e.styleExamples.length > 0),
-    [employees],
-  );
+  // The team grouped per hierarchy layer (from AGENTS.md), in fixed top-to-bottom
+  // order. Members keep their alphabetical order within a layer; empty layers are
+  // simply absent because they never get any members pushed into them.
+  const layers = useMemo(() => {
+    const byId = new Map<
+      string,
+      { layer: TeamMember["layer"]; members: TeamMember[] }
+    >();
+    for (const member of employees) {
+      const group = byId.get(member.layer.id);
+      if (group) {
+        group.members.push(member);
+      } else {
+        byId.set(member.layer.id, { layer: member.layer, members: [member] });
+      }
+    }
+    return [...byId.values()].sort((a, b) => a.layer.order - b.layer.order);
+  }, [employees]);
 
   if (isLoading) {
     return (
@@ -338,92 +328,63 @@ export default function Team() {
           </div>
         )}
 
-        {/* Roster grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {employees.map((member, i) => {
-            const active = member.slug === selectedSlug;
-            return (
-              <Reveal key={member.slug} delay={Math.min(i * 0.03, 0.3)}>
-                <button
-                  onClick={() =>
-                    setSelectedSlug((cur) =>
-                      cur === member.slug ? null : member.slug,
-                    )
-                  }
-                  data-testid={`team-card-${member.slug}`}
-                  className={`group w-full h-full text-left border border-foreground bg-card p-5 flex items-start gap-4 transition-all shadow-[4px_4px_0px_hsl(var(--foreground))] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_hsl(var(--accent))] active:translate-x-1 active:translate-y-1 active:shadow-none ${
-                    active ? "ring-2 ring-accent" : ""
-                  }`}
-                >
-                  <Portrait member={member} size="sm" />
-                  <div className="min-w-0 flex-1">
-                    <p className="font-['Space_Mono'] text-[9px] uppercase tracking-widest text-muted-foreground">
-                      {String(i + 1).padStart(2, "0")} — {member.title}
-                    </p>
-                    <h2 className="font-['Playfair_Display'] font-bold text-xl leading-tight tracking-tight mt-1 truncate">
-                      {member.name ?? member.title}
+        {/* Roster grouped per hierarchy layer, top to bottom */}
+        <div className="flex flex-col gap-14">
+          {layers.map(({ layer, members }) => (
+            <section key={layer.id}>
+              <Reveal>
+                <div className="flex items-baseline gap-4 border-b-2 border-foreground pb-3 mb-7">
+                  <span className="font-['Playfair_Display'] font-black text-3xl italic leading-none text-foreground/30 shrink-0">
+                    {String(layer.order).padStart(2, "0")}
+                  </span>
+                  <div className="min-w-0">
+                    <h2 className="font-['Playfair_Display'] font-black text-2xl md:text-3xl uppercase tracking-tight leading-none">
+                      {layer.title}
                     </h2>
-                    {member.oneLiner && (
-                      <p className="font-['Inter'] text-sm text-muted-foreground mt-2 line-clamp-2">
-                        {member.oneLiner}
-                      </p>
-                    )}
+                    <p className="font-['Inter'] text-sm text-muted-foreground mt-2 max-w-2xl">
+                      {layer.description}
+                    </p>
                   </div>
-                </button>
+                </div>
               </Reveal>
-            );
-          })}
-        </div>
-
-        {/* Style comparison gallery */}
-        {styleGallery.length > 0 && (
-          <section className="mt-16">
-            <Reveal>
-              <div className="border-b-2 border-foreground pb-3 mb-8">
-                <p className="font-['Space_Mono'] text-[10px] uppercase tracking-widest text-muted-foreground mb-2">
-                  Portretstudie
-                </p>
-                <h2 className="font-['Playfair_Display'] font-black text-3xl uppercase tracking-tight leading-none">
-                  Stijlrichtingen
-                </h2>
-                <p className="font-['Inter'] text-sm text-muted-foreground mt-4 max-w-2xl">
-                  Drie kandidaat-richtingen per kop, naast elkaar ter
-                  vergelijking: redactioneel, fotografisch en avatar.
-                </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                {members.map((member, i) => {
+                  const active = member.slug === selectedSlug;
+                  return (
+                    <Reveal key={member.slug} delay={Math.min(i * 0.03, 0.3)}>
+                      <button
+                        onClick={() =>
+                          setSelectedSlug((cur) =>
+                            cur === member.slug ? null : member.slug,
+                          )
+                        }
+                        data-testid={`team-card-${member.slug}`}
+                        className={`group w-full h-full text-left border border-foreground bg-card p-5 flex items-start gap-4 transition-all shadow-[4px_4px_0px_hsl(var(--foreground))] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_hsl(var(--accent))] active:translate-x-1 active:translate-y-1 active:shadow-none ${
+                          active ? "ring-2 ring-accent" : ""
+                        }`}
+                      >
+                        <Portrait member={member} size="sm" />
+                        <div className="min-w-0 flex-1">
+                          <p className="font-['Space_Mono'] text-[9px] uppercase tracking-widest text-muted-foreground">
+                            {member.title}
+                          </p>
+                          <h3 className="font-['Playfair_Display'] font-bold text-xl leading-tight tracking-tight mt-1 truncate">
+                            {member.name ?? member.title}
+                          </h3>
+                          {member.oneLiner && (
+                            <p className="font-['Inter'] text-sm text-muted-foreground mt-2 line-clamp-2">
+                              {member.oneLiner}
+                            </p>
+                          )}
+                        </div>
+                      </button>
+                    </Reveal>
+                  );
+                })}
               </div>
-            </Reveal>
-            <div className="flex flex-col gap-10">
-              {styleGallery.map((member) => (
-                <Reveal key={member.slug}>
-                  <div>
-                    <div className="flex items-baseline gap-3 mb-4">
-                      <h3 className="font-['Playfair_Display'] font-bold text-xl tracking-tight">
-                        {member.name ?? member.title}
-                      </h3>
-                      <span className="font-['Space_Mono'] text-[10px] uppercase tracking-widest text-muted-foreground">
-                        {member.title}
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-3 gap-4">
-                      {member.styleExamples.map((ex) => (
-                        <figure key={ex.style} className="flex flex-col gap-2">
-                          <img
-                            src={ex.url}
-                            alt={`${member.name ?? member.title} — ${ex.label}`}
-                            className="w-full aspect-square object-cover border-2 border-foreground shadow-[4px_4px_0px_hsl(var(--foreground))]"
-                          />
-                          <figcaption className="font-['Space_Mono'] text-[10px] uppercase tracking-widest text-muted-foreground text-center">
-                            {ex.label}
-                          </figcaption>
-                        </figure>
-                      ))}
-                    </div>
-                  </div>
-                </Reveal>
-              ))}
-            </div>
-          </section>
-        )}
+            </section>
+          ))}
+        </div>
       </div>
     </div>
   );

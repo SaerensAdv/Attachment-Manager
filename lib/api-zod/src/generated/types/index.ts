@@ -31,7 +31,7 @@ export * from './getDocContentParams';
 export * from './healthStatus';
 export * from './improvementProposal';
 export * from './proposalList';
-export * from './styleExample';
+export * from './teamLayer';
 export * from './teamMember';
 export * from './teamRoster';
 export * from './validationIssue';

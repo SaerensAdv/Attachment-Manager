@@ -158,11 +158,12 @@ export const GetTeamResponse = zod.object({
   "roleSummary": zod.string().nullable().describe('First paragraph of the agent\'s Role section, if present.'),
   "portraitUrl": zod.string().nullable().describe('Public URL of the chosen full-size portrait, or null when none exists yet.'),
   "portraitThumbUrl": zod.string().nullable().describe('Public URL of a small resized WebP thumbnail of the portrait for roster avatars and graph nodes, or null when none exists yet.'),
-  "styleExamples": zod.array(zod.object({
-  "style": zod.string().describe('The art-direction key (e.g. editorial, photographic, avatar).'),
-  "label": zod.string().describe('Human-readable Dutch label for the style direction.'),
-  "url": zod.string().describe('Public URL that serves the generated style-example portrait.')
-})).describe('Generated style-direction portraits for comparison, if any.')
+  "layer": zod.object({
+  "id": zod.string().describe('Stable layer identifier from the agent hierarchy (e.g. strategy).'),
+  "order": zod.number().describe('Fixed top-to-bottom position of the layer (1 = Orchestrator).'),
+  "title": zod.string().describe('Editorial Dutch title for the hierarchy layer.'),
+  "description": zod.string().describe('Short editorial description of what this layer does.')
+}).describe('The hierarchy layer this member belongs to (group + order).')
 }))
 })
 

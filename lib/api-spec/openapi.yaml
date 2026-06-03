@@ -721,19 +721,22 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Backlink"
-    StyleExample:
+    TeamLayer:
       type: object
-      required: [style, label, url]
+      required: [id, order, title, description]
       properties:
-        style:
+        id:
           type: string
-          description: The art-direction key (e.g. editorial, photographic, avatar).
-        label:
+          description: Stable layer identifier from the agent hierarchy (e.g. strategy).
+        order:
+          type: integer
+          description: Fixed top-to-bottom position of the layer (1 = Orchestrator).
+        title:
           type: string
-          description: Human-readable Dutch label for the style direction.
-        url:
+          description: Editorial Dutch title for the hierarchy layer.
+        description:
           type: string
-          description: Public URL that serves the generated style-example portrait.
+          description: Short editorial description of what this layer does.
     TeamMember:
       type: object
       required:
@@ -750,7 +753,7 @@ components:
         - roleSummary
         - portraitUrl
         - portraitThumbUrl
-        - styleExamples
+        - layer
       properties:
         slug:
           type: string
@@ -789,11 +792,9 @@ components:
           description: >-
             Public URL of a small resized WebP thumbnail of the portrait for
             roster avatars and graph nodes, or null when none exists yet.
-        styleExamples:
-          type: array
-          description: Generated style-direction portraits for comparison, if any.
-          items:
-            $ref: "#/components/schemas/StyleExample"
+        layer:
+          $ref: "#/components/schemas/TeamLayer"
+          description: The hierarchy layer this member belongs to (group + order).
     TeamRoster:
       type: object
       required: [employees]

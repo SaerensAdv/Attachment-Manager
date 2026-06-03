@@ -78,7 +78,8 @@ export const GetTeamResponse = zod.object({
   "signatureHabit": zod.string().nullable(),
   "culturalFitNote": zod.string().nullable(),
   "roleSummary": zod.string().nullable().describe('First paragraph of the agent\'s Role section, if present.'),
-  "portraitUrl": zod.string().nullable().describe('Public URL of the chosen portrait, or null when none exists yet.'),
+  "portraitUrl": zod.string().nullable().describe('Public URL of the chosen full-size portrait, or null when none exists yet.'),
+  "portraitThumbUrl": zod.string().nullable().describe('Public URL of a small resized WebP thumbnail of the portrait for roster avatars and graph nodes, or null when none exists yet.'),
   "styleExamples": zod.array(zod.object({
   "style": zod.string().describe('The art-direction key (e.g. editorial, photographic, avatar).'),
   "label": zod.string().describe('Human-readable Dutch label for the style direction.'),

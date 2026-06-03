@@ -41,10 +41,13 @@ function Portrait({
 }) {
   const dim = size === "lg" ? "w-28 h-28" : "w-16 h-16";
   const text = size === "lg" ? "text-3xl" : "text-xl";
-  if (member.portraitUrl) {
+  // The thumbnail (256px WebP) is plenty for both the roster avatar and the
+  // larger profile portrait, so faces appear instantly without the ~1.3MB load.
+  const src = member.portraitThumbUrl ?? member.portraitUrl;
+  if (src) {
     return (
       <img
-        src={member.portraitUrl}
+        src={src}
         alt={member.name ?? member.title}
         className={`${dim} rounded-full object-cover border-2 border-foreground shrink-0`}
       />

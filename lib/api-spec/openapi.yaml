@@ -535,6 +535,7 @@ components:
         - culturalFitNote
         - roleSummary
         - portraitUrl
+        - portraitThumbUrl
         - styleExamples
       properties:
         slug:
@@ -568,7 +569,12 @@ components:
           description: First paragraph of the agent's Role section, if present.
         portraitUrl:
           type: ["string", "null"]
-          description: Public URL of the chosen portrait, or null when none exists yet.
+          description: Public URL of the chosen full-size portrait, or null when none exists yet.
+        portraitThumbUrl:
+          type: ["string", "null"]
+          description: >-
+            Public URL of a small resized WebP thumbnail of the portrait for
+            roster avatars and graph nodes, or null when none exists yet.
         styleExamples:
           type: array
           description: Generated style-direction portraits for comparison, if any.

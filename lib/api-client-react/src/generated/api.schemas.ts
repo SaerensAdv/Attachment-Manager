@@ -100,10 +100,15 @@ export interface TeamMember {
      */
   roleSummary: string | null;
   /**
-     * Public URL of the chosen portrait, or null when none exists yet.
+     * Public URL of the chosen full-size portrait, or null when none exists yet.
      * @nullable
      */
   portraitUrl: string | null;
+  /**
+     * Public URL of a small resized WebP thumbnail of the portrait for roster avatars and graph nodes, or null when none exists yet.
+     * @nullable
+     */
+  portraitThumbUrl: string | null;
   /** Generated style-direction portraits for comparison, if any. */
   styleExamples: StyleExample[];
 }

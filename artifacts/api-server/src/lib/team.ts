@@ -3,6 +3,7 @@ import {
   loadPortraitIndex,
   portraitObjectName,
   publicObjectUrl,
+  PORTRAIT_THUMB_WIDTH,
   type StyleExample,
 } from "./portraits";
 
@@ -19,6 +20,7 @@ export interface TeamMember {
   culturalFitNote: string | null;
   roleSummary: string | null;
   portraitUrl: string | null;
+  portraitThumbUrl: string | null;
   styleExamples: StyleExample[];
 }
 
@@ -108,6 +110,13 @@ export async function getTeamRoster(): Promise<TeamMember[]> {
       roleSummary: parseRoleSummary(doc.content),
       portraitUrl: hasPortrait
         ? publicObjectUrl(portraitObjectName(slug))
+        : null,
+      // Small WebP variant for the roster avatars and round Kaart nodes, so
+      // faces appear instantly instead of streaming the full-size portrait.
+      portraitThumbUrl: hasPortrait
+        ? publicObjectUrl(portraitObjectName(slug), {
+            width: PORTRAIT_THUMB_WIDTH,
+          })
         : null,
       styleExamples: index.styleExamples.get(slug) ?? [],
     };

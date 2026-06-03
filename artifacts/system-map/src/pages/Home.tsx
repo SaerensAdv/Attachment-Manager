@@ -14,7 +14,10 @@ export default function Home() {
   const portraits = useMemo(() => {
     const map: Record<string, string> = {};
     for (const member of teamData?.employees ?? []) {
-      if (member.portraitUrl) map[member.path] = member.portraitUrl;
+      // Prefer the small thumbnail so the tiny round nodes paint instantly;
+      // fall back to the full portrait if a thumbnail isn't available.
+      const url = member.portraitThumbUrl ?? member.portraitUrl;
+      if (url) map[member.path] = url;
     }
     return map;
   }, [teamData]);

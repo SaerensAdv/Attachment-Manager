@@ -12,6 +12,14 @@ import { objectStorageClient } from "./objectStorage";
 const PORTRAIT_PREFIX = "portraits/";
 const STYLE_PREFIX = "portrait-styles/";
 
+/**
+ * Thumbnail widths (px) for the resized variants served via `?w=`. One small
+ * size covers every roster avatar and the tiny round Kaart nodes (even at 2x
+ * DPR); a medium size covers the larger style-comparison gallery tiles.
+ */
+export const PORTRAIT_THUMB_WIDTH = 256;
+const STYLE_EXAMPLE_WIDTH = 512;
+
 /** The three art directions explored for the portrait foundation. */
 export const PORTRAIT_STYLES = [
   { key: "editorial", label: "Redactioneel portret" },
@@ -44,9 +52,20 @@ export function styleExampleObjectName(slug: string, style: string): string {
   return `${STYLE_PREFIX}${slug}-${style}.png`;
 }
 
-/** Build the public, browser-reachable URL that serves a stored object. */
-export function publicObjectUrl(objectName: string): string {
-  return `/api/storage/public-objects/${objectName}`;
+/**
+ * Build the public, browser-reachable URL that serves a stored object. Pass a
+ * `width` to request a resized WebP thumbnail (the serving route resizes on the
+ * fly and caches the result), so small displays don't download the full image.
+ */
+export function publicObjectUrl(
+  objectName: string,
+  opts?: { width?: number },
+): string {
+  const base = `/api/storage/public-objects/${objectName}`;
+  if (opts?.width && Number.isFinite(opts.width)) {
+    return `${base}?w=${Math.round(opts.width)}`;
+  }
+  return base;
 }
 
 function labelForStyle(style: string): string {
@@ -113,7 +132,9 @@ export async function loadPortraitIndex(): Promise<PortraitIndex> {
         list.push({
           style,
           label: labelForStyle(style),
-          url: publicObjectUrl(rel),
+          // Gallery thumbnails display a few hundred px wide; serve a medium
+          // resized variant instead of the full ~1.3MB source.
+          url: publicObjectUrl(rel, { width: STYLE_EXAMPLE_WIDTH }),
         });
         styleExamples.set(slug, list);
       }

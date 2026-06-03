@@ -40,6 +40,21 @@ copywriter=Marie, analytics-tracking-specialist=Ruben) were promoted as-is to
 **Why:** the style choice was not recorded anywhere in code/docs, so always
 confirm the chosen direction before regenerating the set.
 
+## Serving sizes (resize-on-serve)
+The public-objects storage route resizes images on the fly via a `?w=<px>`
+query param: it re-encodes to WebP, caches the result on local disk keyed by the
+object's storage *generation* (so a replaced portrait self-invalidates), and
+sets `immutable` cache headers. Source of truth stays the full `portraits/<slug>.png`.
+The team API exposes both `portraitUrl` (full) and `portraitThumbUrl` (`?w=256`);
+roster avatars, the profile portrait, and the round Kaart nodes all use the thumb
+(256px WebP ≈ 5KB vs ~1.4MB PNG). Style examples use `?w=512`. Widths are clamped
+16–1024 and only `image/*` content types are resized (others fall back to the raw
+stream). `sharp` is a dependency of api-server and is already in build.mjs's
+`external` list (native module, must not be bundled).
+**Why:** full PNGs caused empty-circle flashes + huge bandwidth on tiny displays.
+**How to apply:** to add another sized consumer, request `publicObjectUrl(name,
+{width})`; never widen past the source resolution.
+
 ## Image generation gotcha
 `generateImage` flat/avatar styles sometimes bake in name/role TEXT despite a
 negative prompt; add an explicit "plain empty background with no text anywhere"

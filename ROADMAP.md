@@ -85,6 +85,36 @@ At this stage agents move from *"here is what I recommend"* to *"here is the tas
 
 ---
 
+## Phase 6 — Controlled automations (triggers)
+
+Once the dossiers are richly filled (briefing, website intake, live Google Ads, later Search Console), the app's workflows can be triggered automatically instead of by hand. The brain still lives in the app; n8n only triggers and executes. The whole point of this phase is to add automation **without losing control**.
+
+**Goal:** run the right workflow at the right moment, safely.
+
+### Two categories — this split is the safety valve
+
+1. **Read-only / reporting** — nothing changes in the ad account or reaches the client, so it may run fully automatically end-to-end. No approval needed.
+2. **Proposing / acting** — the agent produces a *proposal*; a human approves; only then does n8n execute the change. Never auto-write. Anything that touches the ad account or the client falls here.
+
+### Automation backlog (to prioritize later)
+
+| Automation | Trigger | Category | Status / notes |
+| :--- | :--- | :--- | :--- |
+| Monthly Google Ads report | Monthly (schedule) | Read-only | Closest to ready — `monthly-reporting.md` + `account-audit.md` + live Ads data exist; needs trigger + delivery. |
+| Weekly search-term audit → negative keywords | Weekly (schedule) | Proposing/acting | Needs an SOP defining when a term is wasteful + an approval gate before n8n writes negatives. |
+| Incoming client email handling | Email received (event) | Proposing/acting | Sensitive — human-in-the-loop required. `client-email.md` + client agents exist. Still to be discussed. |
+| _…more to be added_ | | | |
+
+### New building block this phase needs
+
+An **automation catalog + SOP convention**: every automation is documented *before* it is switched on — its trigger, which workflow it calls, which knowledge/SOP it depends on, and whether it has an approval step. Without this catalog, automation creates faster chaos instead of order (see the guiding principle at the top).
+
+Open topics to discuss: which workflows/templates/knowledge are missing, whether new agents or SOPs are needed per automation, and the exact approval + decision-logging flow.
+
+**Answers:** *Can the system act on its own schedule without losing human control?*
+
+---
+
 ## What stays true across all phases
 
 - Output is always reviewable by a human before real use.

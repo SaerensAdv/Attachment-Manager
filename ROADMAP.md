@@ -174,6 +174,14 @@ Non-obvious, mostly free/open-source bets that lean into Saerens' actual reality
 ### 6. Bilingual client communication (NL/FR)
 - **"Explain it the way the client wants to hear it"** — an agent that rewrites internal analysis into a clear client email in the right language and tone. In Belgium, switching NL/FR is a real advantage; the brain already knows the content, this is just the packaging.
 
+### 7. Smarter optimization & account hygiene
+- **Impression-share gap** — read-only data shows impression share lost (to budget vs to rank), so an agent explains whether to raise budget or improve quality. Free.
+- **Conversion-tracking health check** — detect broken or missing tracking (spend without conversions, missing tag when crawling the site) and warn immediately. Prevents weeks of optimizing on blind data.
+- **"Red team" the account** — an adversarial agent that lists everything leaking money (broad match without negatives, display expansion on, search partners, etc.) as an audit checklist. Free, sharp value.
+
+### 8. Onboarding autopilot ("Day 1 dossier")
+- When a new client is added, automatically run a battery — website-intake + PageSpeed + KBO enrichment + a first competitor briefing — into one ready-made starter dossier. Glues existing building blocks together into a wow moment.
+
 ---
 
 ## What stays true across all phases

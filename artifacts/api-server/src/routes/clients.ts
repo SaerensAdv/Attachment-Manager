@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db, clientsTable, type Client } from "@workspace/db";
 import {
   collectClientUrls,
@@ -42,6 +42,10 @@ const LARGE_FIELDS: readonly FieldKey[] = [
   "searchConsoleData",
 ];
 const MAX_LARGE_FIELD_LEN = 50_000;
+/** Max length for the short fields (everything except the large paste fields).
+ * Keeps any single field from bloating the generated client markdown. */
+const MAX_FIELD_LEN = 5_000;
+const MAX_NAME_LEN = 200;
 
 interface ClientInput {
   name: string;
@@ -59,19 +63,49 @@ function parseBody(body: unknown): ClientInput | { error: string } {
   const obj = (body ?? {}) as Record<string, unknown>;
   const name = asTrimmed(obj.name);
   if (!name) return { error: "Naam is verplicht." };
+  if (name.length > MAX_NAME_LEN) {
+    return { error: `Naam is te lang (max ${MAX_NAME_LEN} tekens).` };
+  }
 
   const values: Partial<Record<FieldKey, string | null>> = {};
   for (const key of FIELDS) {
     values[key] = asTrimmed(obj[key]);
   }
-  for (const key of LARGE_FIELDS) {
+
+  // Length caps: large paste fields get a generous limit, every other field a
+  // tighter one, so no single field can bloat the generated client markdown
+  // (and thus the agent prompt context).
+  for (const key of FIELDS) {
     const value = values[key];
-    if (value && value.length > MAX_LARGE_FIELD_LEN) {
+    if (!value) continue;
+    const max = LARGE_FIELDS.includes(key) ? MAX_LARGE_FIELD_LEN : MAX_FIELD_LEN;
+    if (value.length > max) {
       return {
-        error: `Veld "${key}" is te groot (max ${MAX_LARGE_FIELD_LEN.toLocaleString("nl-BE")} tekens). Plak een samenvatting of de kerncijfers.`,
+        error: `Veld "${key}" is te groot (max ${max.toLocaleString("nl-BE")} tekens). Plak een samenvatting of de kerncijfers.`,
       };
     }
   }
+
+  // Google Ads customer id must be a plain account number (digits, optionally
+  // dash- or space-grouped like 123-456-7890). Reject anything else early so a
+  // typo never reaches the Google Ads API.
+  const rawCustomerId = values.googleAdsCustomerId;
+  if (rawCustomerId) {
+    if (!/^[\d\s-]+$/.test(rawCustomerId)) {
+      return {
+        error:
+          "Google Ads customer ID mag enkel cijfers en streepjes bevatten.",
+      };
+    }
+    const digits = rawCustomerId.replace(/\D/g, "");
+    if (digits.length < 8 || digits.length > 12) {
+      return {
+        error:
+          "Google Ads customer ID moet 8 tot 12 cijfers bevatten (bv. 123-456-7890).",
+      };
+    }
+  }
+
   return { name, values };
 }
 
@@ -144,16 +178,46 @@ router.put("/clients/:id", async (req, res) => {
     res.status(400).json({ error: parsed.error });
     return;
   }
+
+  // Optimistic concurrency: the client echoes back the `updatedAt` it loaded.
+  // The version check is folded into the UPDATE predicate so the compare-and-set
+  // is atomic — a separate SELECT-then-UPDATE could let two concurrent writers
+  // both pass the check and clobber each other. When `updatedAt` is provided we
+  // only update the row that still matches that version; if zero rows change we
+  // disambiguate 404 (gone) from 409 (changed elsewhere) with a follow-up read.
+  const expectedRaw = asTrimmed((req.body as Record<string, unknown>)?.updatedAt);
+  const expectedDate = expectedRaw ? new Date(expectedRaw) : null;
+  const versionValid = expectedDate && !Number.isNaN(expectedDate.getTime());
+
+  const where = versionValid
+    ? and(eq(clientsTable.id, id), eq(clientsTable.updatedAt, expectedDate))
+    : eq(clientsTable.id, id);
+
   const [row] = await db
     .update(clientsTable)
     .set({ name: parsed.name, ...parsed.values, updatedAt: new Date() })
-    .where(eq(clientsTable.id, id))
+    .where(where)
     .returning();
-  if (!row) {
+
+  if (row) {
+    res.json(serialize(row));
+    return;
+  }
+
+  // Nothing updated: either the row is gone (404) or its version moved on (409).
+  const [current] = await db
+    .select()
+    .from(clientsTable)
+    .where(eq(clientsTable.id, id));
+  if (!current) {
     res.status(404).json({ error: "Klant niet gevonden." });
     return;
   }
-  res.json(serialize(row));
+  res.status(409).json({
+    error:
+      "Deze fiche is intussen elders aangepast. Herlaad de klant en voer je wijziging opnieuw door.",
+    current: serialize(current),
+  });
 });
 
 router.post("/clients/:id/website-intake", async (req, res) => {

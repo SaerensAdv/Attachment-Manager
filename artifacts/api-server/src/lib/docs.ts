@@ -1,4 +1,10 @@
-import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  readdirSync,
+  readFileSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
 import { join, dirname, relative, isAbsolute } from "node:path";
 
 export interface DocNode {
@@ -107,8 +113,43 @@ function listMarkdown(dir: string): string[] {
     .sort();
 }
 
+/**
+ * Cheap change-signature for the doc tree: filename + mtime + size of every
+ * candidate markdown file. Statting is far cheaper than reading + parsing every
+ * file, so we recompute this on each request and only do the full scan when it
+ * differs from the cached signature.
+ */
+function computeScanSignature(root: string): string {
+  const parts: string[] = [];
+  const stat = (relPath: string) => {
+    try {
+      const s = statSync(join(root, relPath));
+      parts.push(`${relPath}:${s.mtimeMs}:${s.size}`);
+    } catch {
+      // Missing file: its omission already changes the signature.
+    }
+  };
+  for (const core of CORE_DOCS) stat(core);
+  for (const folder of Object.keys(FOLDER_CATEGORY)) {
+    for (const name of listMarkdown(join(root, folder))) {
+      stat(`${folder}/${name}`);
+    }
+  }
+  return parts.join("|");
+}
+
+let scanCache: { sig: string; files: DocFile[] } | null = null;
+
+/** Drop the cached filesystem scan; call after writing a doc to disk. */
+export function invalidateDocsCache(): void {
+  scanCache = null;
+}
+
 function scanFiles(): DocFile[] {
   const root = resolveDocsRoot();
+  const sig = computeScanSignature(root);
+  if (scanCache && scanCache.sig === sig) return scanCache.files;
+
   const files: DocFile[] = [];
 
   const add = (relPath: string, category: string) => {
@@ -136,6 +177,7 @@ function scanFiles(): DocFile[] {
     }
   }
 
+  scanCache = { sig, files };
   return files;
 }
 
@@ -435,5 +477,6 @@ export function writeDocFile(path: string, content: string): DocFile | null {
   if (!existsSync(abs)) return null;
 
   writeFileSync(abs, content, "utf8");
+  invalidateDocsCache();
   return getDocFile(path);
 }

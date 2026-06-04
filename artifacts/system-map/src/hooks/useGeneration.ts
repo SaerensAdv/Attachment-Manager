@@ -387,6 +387,19 @@ export function useGeneration(
           setIsStreaming(false);
           abortRef.current = null;
           setRunCompleted(true);
+          // Stop any lingering live indicators after a dropped/failed stream:
+          // finalize the segment that was mid-write (its partial text stays
+          // visible) and drop segments that never started, so nothing keeps
+          // spinning. The error banner explains why the run stopped.
+          setSegments((prev) =>
+            prev
+              .filter((s) => s.status !== "queued" || s.content.length > 0)
+              .map((s) =>
+                s.status === "working" ? { ...s, status: "done" as const } : s,
+              ),
+          );
+          // A deliverable that was still assembling will never finish now.
+          setDeliverableStatus((s) => (s === "working" ? "error" : s));
         },
         signal: controller.signal,
       },

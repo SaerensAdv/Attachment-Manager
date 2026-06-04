@@ -231,35 +231,58 @@ export async function fetchGoogleAdsReport(
     pick(account, "customer.descriptiveName") ?? customerId,
   );
 
+  // Campaign + search-term pulls are best-effort: a single failing section (e.g.
+  // a brand-new account without `search_term_view` data) must not sink the whole
+  // report. We collect any failures as warnings and still return the rest.
+  const warnings: string[] = [];
+
   // 2. Per-campaign performance (last 30 days), highest spend first.
-  const campaignRows = await runGaql(
-    cfg,
-    accessToken,
-    customerId,
-    `SELECT campaign.name, campaign.status,
-            metrics.cost_micros, metrics.impressions, metrics.clicks,
-            metrics.conversions, metrics.conversions_value,
-            metrics.ctr, metrics.average_cpc
-     FROM campaign
-     WHERE segments.date DURING LAST_30_DAYS
-       AND campaign.status != 'REMOVED'
-     ORDER BY metrics.cost_micros DESC
-     LIMIT ${MAX_CAMPAIGNS}`,
-  );
+  let campaignRows: Record<string, unknown>[] = [];
+  let campaignFailed = false;
+  try {
+    campaignRows = await runGaql(
+      cfg,
+      accessToken,
+      customerId,
+      `SELECT campaign.name, campaign.status,
+              metrics.cost_micros, metrics.impressions, metrics.clicks,
+              metrics.conversions, metrics.conversions_value,
+              metrics.ctr, metrics.average_cpc
+       FROM campaign
+       WHERE segments.date DURING LAST_30_DAYS
+         AND campaign.status != 'REMOVED'
+       ORDER BY metrics.cost_micros DESC
+       LIMIT ${MAX_CAMPAIGNS}`,
+    );
+  } catch (err) {
+    campaignFailed = true;
+    warnings.push(
+      `Campagnedata kon niet worden opgehaald: ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
 
   // 3. Top search terms by spend (last 30 days).
-  const searchTermRows = await runGaql(
-    cfg,
-    accessToken,
-    customerId,
-    `SELECT search_term_view.search_term,
-            metrics.cost_micros, metrics.clicks,
-            metrics.conversions, metrics.conversions_value
-     FROM search_term_view
-     WHERE segments.date DURING LAST_30_DAYS
-     ORDER BY metrics.cost_micros DESC
-     LIMIT ${MAX_SEARCH_TERMS}`,
-  );
+  let searchTermRows: Record<string, unknown>[] = [];
+  let searchFailed = false;
+  try {
+    searchTermRows = await runGaql(
+      cfg,
+      accessToken,
+      customerId,
+      `SELECT search_term_view.search_term,
+              metrics.cost_micros, metrics.clicks,
+              metrics.conversions, metrics.conversions_value
+       FROM search_term_view
+       WHERE segments.date DURING LAST_30_DAYS
+       ORDER BY metrics.cost_micros DESC
+       LIMIT ${MAX_SEARCH_TERMS}`,
+    );
+  } catch (err) {
+    searchFailed = true;
+    warnings.push(
+      `Zoektermdata kon niet worden opgehaald: ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
 
   const lines: string[] = [];
   lines.push(`Account: ${accountName} (${customerId})`);
@@ -285,7 +308,9 @@ export async function fetchGoogleAdsReport(
   lines.push("");
 
   lines.push(`== Campagnes (30d, top ${MAX_CAMPAIGNS} op kosten) ==`);
-  if (campaignRows.length === 0) {
+  if (campaignFailed) {
+    lines.push("Kon niet worden opgehaald (zie waarschuwingen onderaan).");
+  } else if (campaignRows.length === 0) {
     lines.push("Geen campagnedata in deze periode.");
   } else {
     for (const row of campaignRows) {
@@ -310,7 +335,9 @@ export async function fetchGoogleAdsReport(
   lines.push("");
 
   lines.push(`== Top zoektermen (30d, top ${MAX_SEARCH_TERMS} op kosten) ==`);
-  if (searchTermRows.length === 0) {
+  if (searchFailed) {
+    lines.push("Kon niet worden opgehaald (zie waarschuwingen onderaan).");
+  } else if (searchTermRows.length === 0) {
     lines.push("Geen zoektermdata in deze periode.");
   } else {
     for (const row of searchTermRows) {
@@ -323,6 +350,12 @@ export async function fetchGoogleAdsReport(
           `conversies ${tConv.toFixed(2)}`,
       );
     }
+  }
+
+  if (warnings.length > 0) {
+    lines.push("");
+    lines.push("== Waarschuwingen ==");
+    for (const w of warnings) lines.push(`- ${w}`);
   }
 
   let text = lines.join("\n").trim();

@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useSearch, useLocation } from "wouter";
 import { AnimatePresence } from "framer-motion";
 import { useGetDocGraph, useGetTeam } from "@workspace/api-client-react";
@@ -123,15 +123,21 @@ export default function Home() {
     return graphData.nodes.find(n => n.path === selectedNodePath) || null;
   }, [graphData, selectedNodePath]);
 
-  const focusFirstMatch = () => {
+  // Stable identity so the memoized GraphSearch doesn't re-render on every map
+  // tick. setState updaters are stable, so we inline the selection here rather
+  // than depend on the non-memoized selectNodeByPath helper.
+  const focusFirstMatch = useCallback(() => {
     const q = searchQuery.trim().toLowerCase();
     if (!q || !graphData) return;
     const match =
       activeNodes.find((n) => n.title.toLowerCase() === q) ??
       activeNodes.find((n) => n.title.toLowerCase().includes(q)) ??
       activeNodes.find((n) => n.id.toLowerCase().includes(q));
-    if (match) selectNodeByPath(match.path);
-  };
+    if (match) {
+      setSelectedNodePath(match.path);
+      setFocusNonce((n) => n + 1);
+    }
+  }, [searchQuery, graphData, activeNodes]);
 
   if (isLoading) {
     return (

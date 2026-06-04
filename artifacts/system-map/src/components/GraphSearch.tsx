@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
@@ -7,7 +8,10 @@ interface GraphSearchProps {
   onSubmit?: () => void;
 }
 
-export default function GraphSearch({ query, onQueryChange, onSubmit }: GraphSearchProps) {
+// Memoized: the map re-renders frequently during a live run (spotlight, dock
+// resize, generation state). With stable handlers from the parent this input
+// only re-renders when its own query/handlers change, not on every map tick.
+function GraphSearch({ query, onQueryChange, onSubmit }: GraphSearchProps) {
   return (
     <div className="relative group">
       <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-accent transition-colors" />
@@ -27,3 +31,5 @@ export default function GraphSearch({ query, onQueryChange, onSubmit }: GraphSea
     </div>
   );
 }
+
+export default memo(GraphSearch);

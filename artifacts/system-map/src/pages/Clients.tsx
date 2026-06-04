@@ -16,196 +16,18 @@ import { BarChart3, Globe, Loader2, Plus, Save, Trash2, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import Reveal from "@/components/Reveal";
-
-type FieldKey = Exclude<keyof ClientInput, "name">;
-
-type FormState = Record<keyof ClientInput, string>;
-
-interface FieldDef {
-  key: FieldKey;
-  label: string;
-  kind: "input" | "textarea" | "list";
-  placeholder?: string;
-  help?: string;
-}
-
-// One source of truth for the editor form, mirroring clients/_template.md.
-// "list" fields render as a textarea where every line becomes a bullet in the
-// generated markdown brain.
-const FIELDS: FieldDef[] = [
-  {
-    key: "business",
-    label: "Business",
-    kind: "textarea",
-    placeholder: "Wat doet het bedrijf? Welke producten/diensten verkopen ze?",
-  },
-  {
-    key: "world",
-    label: "Wereld",
-    kind: "input",
-    placeholder: "E-commerce of Lead generation",
-  },
-  {
-    key: "services",
-    label: "Diensten / producten",
-    kind: "list",
-    placeholder: "Eén dienst of product per regel",
-    help: "Eén per regel",
-  },
-  {
-    key: "audience",
-    label: "Doelgroep",
-    kind: "list",
-    placeholder: "Eén doelgroep per regel",
-    help: "Eén per regel",
-  },
-  {
-    key: "locations",
-    label: "Locaties / regio's",
-    kind: "list",
-    placeholder: "Bv. Vlaanderen, Brussel, heel België",
-    help: "Eén per regel",
-  },
-  {
-    key: "languages",
-    label: "Talen",
-    kind: "input",
-    placeholder: "Bv. Nederlands, Frans",
-  },
-  {
-    key: "mainGoal",
-    label: "Hoofddoel",
-    kind: "textarea",
-    placeholder: "Wat wil de klant bereiken met Google Ads?",
-  },
-  {
-    key: "conversionAction",
-    label: "Primaire conversie-actie",
-    kind: "textarea",
-    placeholder: "Bv. offerte-aanvraag, aankoop, telefoontje",
-  },
-  {
-    key: "kpis",
-    label: "Doelstellingen / KPI's",
-    kind: "textarea",
-    placeholder: "Bv. ROAS 4, CPA onder €30, 50 leads per maand",
-  },
-  {
-    key: "budget",
-    label: "Budget",
-    kind: "input",
-    placeholder: "Bv. €2.000 / maand",
-  },
-  {
-    key: "toneOfVoice",
-    label: "Tone of voice",
-    kind: "input",
-    placeholder: "Bv. professioneel, toegankelijk, no-nonsense",
-  },
-  {
-    key: "channels",
-    label: "Advertentiekanalen",
-    kind: "list",
-    placeholder: "Bv. Search, Performance Max, Display, YouTube",
-    help: "Eén per regel",
-  },
-  {
-    key: "restrictions",
-    label: "Merkrestricties & notities",
-    kind: "textarea",
-    placeholder: "Belangrijke do's & don'ts, merkregels, gevoeligheden",
-  },
-  {
-    key: "website",
-    label: "Website",
-    kind: "input",
-    placeholder: "https://...",
-  },
-  {
-    key: "landingPages",
-    label: "Landingspagina's",
-    kind: "input",
-    placeholder: "Belangrijkste landingspagina's",
-  },
-];
-
-// "Huidige stand" — de echte stand van zaken per klant. Vrije notities + geplakte
-// exports/cijfers uit Google Ads en Search Console. Deze velden voeden de agents
-// zodat audits met echte data werken in plaats van "missing data" te rapporteren.
-const STATE_FIELDS: FieldDef[] = [
-  {
-    key: "currentState",
-    label: "Huidige situatie",
-    kind: "textarea",
-    placeholder:
-      "Korte stand van zaken: wat loopt er nu, wat is recent gewijzigd, aandachtspunten...",
-    help: "Vrije notities",
-  },
-  {
-    key: "googleAdsData",
-    label: "Google Ads-data",
-    kind: "textarea",
-    placeholder:
-      "Plak hier een export of de kerncijfers: campagnes, spend, conversies, CPA/ROAS, zoektermen...",
-    help: "Plak export of cijfers",
-  },
-  {
-    key: "searchConsoleData",
-    label: "Search Console / SEO-data",
-    kind: "textarea",
-    placeholder:
-      "Plak hier een Search Console-export of kerncijfers: queries, posities, klikken, impressies...",
-    help: "Plak export of cijfers",
-  },
-];
-
-const EMPTY_FORM: FormState = {
-  name: "",
-  business: "",
-  world: "",
-  services: "",
-  audience: "",
-  locations: "",
-  languages: "",
-  mainGoal: "",
-  conversionAction: "",
-  kpis: "",
-  budget: "",
-  toneOfVoice: "",
-  channels: "",
-  restrictions: "",
-  website: "",
-  landingPages: "",
-  currentState: "",
-  googleAdsData: "",
-  searchConsoleData: "",
-  googleAdsCustomerId: "",
-};
-
-function clientToForm(c: Client): FormState {
-  const out = { ...EMPTY_FORM };
-  for (const k of Object.keys(EMPTY_FORM) as (keyof ClientInput)[]) {
-    const v = (c as unknown as Record<string, unknown>)[k];
-    out[k] = typeof v === "string" ? v : "";
-  }
-  return out;
-}
-
-function formToInput(f: FormState): ClientInput {
-  const out: Record<string, string | null> = {};
-  for (const k of Object.keys(EMPTY_FORM) as (keyof ClientInput)[]) {
-    const v = f[k].trim();
-    out[k] = k === "name" ? v : v === "" ? null : v;
-  }
-  return out as unknown as ClientInput;
-}
-
-// Bounded paste fields — keep in sync with MAX_LARGE_FIELD_LEN on the server.
-const MAX_STATE_FIELD_LEN = 50_000;
-
-// Shared editorial input styling: sharp ink-bordered fields on white paper.
-const INPUT_CLASS =
-  "rounded-none border border-foreground bg-card px-3 py-2 text-sm font-['Inter'] shadow-none focus-visible:ring-1 focus-visible:ring-accent focus-visible:border-accent";
+import {
+  FIELDS,
+  STATE_FIELDS,
+  EMPTY_FORM,
+  INPUT_CLASS,
+  MAX_STATE_FIELD_LEN,
+  clientToForm,
+  formToInput,
+  asConflict,
+  type FieldDef,
+  type FormState,
+} from "@/lib/clients-form";
 
 export default function Clients() {
   const queryClient = useQueryClient();
@@ -236,6 +58,10 @@ export default function Clients() {
     text: string | null;
     at: string | null;
   }>({ text: null, at: null });
+  // Optimistic concurrency: the `updatedAt` of the row as it was loaded into the
+  // editor. We echo it back on save so the server can reject (409) if someone
+  // else changed the fiche in the meantime, instead of silently overwriting.
+  const [editingUpdatedAt, setEditingUpdatedAt] = useState<string | null>(null);
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: getGetClientsQueryKey() });
@@ -262,6 +88,7 @@ export default function Clients() {
     setConfirmDelete(false);
     setIntake({ text: null, at: null });
     setLiveAds({ text: null, at: null });
+    setEditingUpdatedAt(null);
   };
 
   const startEdit = (c: Client) => {
@@ -274,6 +101,7 @@ export default function Clients() {
       text: c.googleAdsLive ?? null,
       at: c.googleAdsLiveAt ?? null,
     });
+    setEditingUpdatedAt(c.updatedAt);
   };
 
   const closeEditor = () => {
@@ -283,6 +111,7 @@ export default function Clients() {
     setConfirmDelete(false);
     setIntake({ text: null, at: null });
     setLiveAds({ text: null, at: null });
+    setEditingUpdatedAt(null);
   };
 
   const setField = (key: keyof ClientInput, value: string) =>
@@ -307,19 +136,42 @@ export default function Clients() {
             invalidate();
             setEditing(created.id);
             setForm(clientToForm(created));
+            setEditingUpdatedAt(created.updatedAt);
           },
           onError,
         },
       );
     } else if (typeof editing === "number") {
       updateMut.mutate(
-        { id: editing, data: payload },
+        // Echo back the loaded `updatedAt` so the server can detect a
+        // concurrent edit. The generated client JSON-stringifies the whole
+        // payload, so this extra field reaches the API even though it isn't
+        // part of the typed ClientInput shape.
+        {
+          id: editing,
+          data: { ...payload, updatedAt: editingUpdatedAt } as ClientInput,
+        },
         {
           onSuccess: (updated) => {
             invalidate();
             setForm(clientToForm(updated));
+            setEditingUpdatedAt(updated.updatedAt);
           },
-          onError,
+          onError: (err) => {
+            // 409: someone else changed the fiche first. Refresh the editor
+            // with the current row so the user can re-apply their change.
+            const conflict = asConflict(err);
+            if (conflict) {
+              invalidate();
+              setForm(clientToForm(conflict));
+              setEditingUpdatedAt(conflict.updatedAt);
+              setFormError(
+                "Deze fiche is intussen elders aangepast. De nieuwste versie is geladen — voer je wijziging opnieuw door.",
+              );
+              return;
+            }
+            onError(err);
+          },
         },
       );
     }

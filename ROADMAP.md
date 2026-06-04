@@ -182,6 +182,25 @@ Non-obvious, mostly free/open-source bets that lean into Saerens' actual reality
 ### 8. Onboarding autopilot ("Day 1 dossier")
 - When a new client is added, automatically run a battery — website-intake + PageSpeed + KBO enrichment + a first competitor briefing — into one ready-made starter dossier. Glues existing building blocks together into a wow moment.
 
+### 9. Self-improvement (a brain that gets better)
+Three levels: learn from results, learn from how it is used, and guard against getting worse while it evolves. The existing learning loop and output archive are the foundations for all of this.
+
+Learn from reality (closed loop):
+- **Outcome feedback loop** — tie each past recommendation to the actual measured result weeks later (from live Ads data) and label it "worked / didn't." The brain learns which strategies work for which type of client — advice graded by reality, not opinion.
+- **Win/loss analysis** — compare accepted vs rejected proposals to extract the implicit acceptance criteria and make them explicit guidelines.
+
+Learn from how it is used:
+- **Edit-diff auto-tuning** — when humans repeatedly tweak outputs before acceptance, diff those edits and propose improvements to the SOP/agent instructions (agents rewrite their own playbook, with human approval).
+- **Retrieval self-eval** — log which retrieved docs were actually cited/used in accepted outputs vs ignored, then re-rank and prune the doc-graph and spot dead docs. Retrieval gets smarter from usage.
+
+Stay reliable while it changes (quality CI):
+- **Golden-set regression harness** — keep a set of representative tasks with known-good outputs and re-run them on every change to agents or `knowledge/`; the QA agent (LLM-as-judge) scores them to catch regressions before a human sees them. CI for the brain.
+- **Confidence / uncertainty flagging** — agents report their own confidence; low-confidence output goes to a human first, and those cases become learning examples. The system asks for help exactly where it is weak.
+
+Measure that it is actually improving:
+- **Human-effort KPI** — track edit-distance (how much a human has to tweak) per agent over time. Falling = improving; rising = regression alarm. One hard metric for "is the brain getting smarter?".
+- **Meta-supervisor over routing** — an agent that periodically reviews the orchestrator's routing decisions (did it pick the right agent?); mis-routes become improvements to the routing rules.
+
 ---
 
 ## What stays true across all phases

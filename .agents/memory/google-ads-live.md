@@ -33,6 +33,17 @@ client→markdown bridge. No gRPC and no SDK — plain `fetch` against the REST
   `googleAdsCustomerId`, POST `/clients/:id/google-ads-refresh`, verify the
   stored report + `googleAdsLiveAt`, then DELETE the client.
 
+## Multi-account clients
+- A client can map to >1 Google Ads account but the schema holds a single
+  `googleAdsCustomerId` + one `googleAdsLive`. For a multi-account client, put the
+  primary id in `googleAdsCustomerId` and store a combined human-readable summary
+  of ALL accounts in the free-paste `googleAdsData` field (agents read both).
+- Discover a client's account ids by name without asking: GAQL
+  `SELECT customer_client.id, customer_client.descriptive_name FROM customer_client
+  WHERE customer_client.status='ENABLED'` against the MCC (login-customer-id),
+  then match on descriptive_name. Run from the workspace shell via a throwaway
+  `/tmp/*.mjs` (sandbox has no secrets).
+
 ## Secret-entry gotcha
 - Secrets pasted into the dialog can be swapped/mistyped. A token refresh that
   returns `invalid_client — The OAuth client was not found` usually means the

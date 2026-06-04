@@ -116,6 +116,34 @@ Open topics to discuss: which workflows/templates/knowledge are missing, whether
 
 ---
 
+## Tooling & open-source improvements (cross-cutting)
+
+These are not a phase of their own — they are open-source, free building blocks that make the existing phases more robust, cheaper, and easier to extend. Ordered by recommended sequence (cheap robustness first, larger refactors last). What is already in place is noted so we don't rebuild it.
+
+Already in place: lexical retrieval (Orama / BM25), local multilingual semantic embeddings (Transformers.js, no API key), Drizzle + Postgres, Zod validation, Pino logging, Vitest.
+
+### A. Cheap robustness wins (do first)
+- **`supertest`** (on top of Vitest) — true end-to-end tests of the Express routes. First targets: the optimistic-locking `409` conflict on `PUT /clients/:id` and the partial-persist path in generation (the two gaps flagged in review).
+- **`express-rate-limit` + `helmet`** — rate-limit the expensive `/api/generate` and `/api/route` (they cost LLM calls) and add standard security headers.
+- **Zod env validation at boot** — fail fast with a clear message when a Google Ads secret has the wrong shape, instead of failing deep inside an API call.
+
+### B. Smarter retrieval (build blocks already exist)
+Today lexical (`retrieval.ts`) and semantic (`semantic.ts`) run separately, and embeddings live in memory (recomputed on every cold start).
+- **Hybrid fusion (Reciprocal Rank Fusion)** — merge BM25 + embedding rankings into one. No new dependency; meaningfully better doc selection for agent context.
+- **`pgvector` + Drizzle vector column** — persist embeddings in the existing Postgres. No recompute on restart, survives redeploys, and becomes the foundation for Phase 4 (memory / reusable outputs). This is the "vector upgrade path" the code already references.
+
+### C. Phase 6 enabler — job scheduling
+- **`pg-boss`** — a Postgres-backed job queue / scheduler that runs on the database we already have (no Redis, no extra infra). This is the missing building block for Phase 6 automations (monthly report, weekly audits). Keeps the principle intact: the brain stays in the app; the scheduler only triggers.
+
+### D. Larger but valuable refactor
+- **Vercel AI SDK (`ai`)** — provider-agnostic, works with the Anthropic-via-Replit proxy through a custom base URL. `generateObject` + Zod gives guaranteed-valid Orchestrator routing (no brittle JSON parsing); `streamText` replaces the hand-rolled SSE layer. Medium effort, hardens the two core flows (routing + generation).
+
+### E. Optional / later
+- **`remark` / `unified`** for edge derivation in `docs.ts` if it is currently regex-based — more robust link parsing (remark-gfm is already used on the frontend).
+- **`google-ads-api` (Opteo)** — only worth adopting once we move from read-only to writing/mutating the ad account (Phase 5/6 "acting"). Not needed for the current read-only REST pull.
+
+---
+
 ## What stays true across all phases
 
 - Output is always reviewable by a human before real use.

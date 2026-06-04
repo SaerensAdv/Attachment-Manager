@@ -144,6 +144,22 @@ Today lexical (`retrieval.ts`) and semantic (`semantic.ts`) run separately, and 
 
 ---
 
+## Out-of-the-box / experimental ideas
+
+Non-obvious, mostly free/open-source bets that lean into Saerens' actual reality (a Belgian Google Ads agency with a doc-graph brain and live read-only account data) and do things the big paid tools don't. Selected for impact-vs-effort. Both respect the core principle: advise/observe before acting, human reviews before real use.
+
+### 1. Free competitive intelligence (no paid SEO tools)
+- **Meta Ad Library API** — free and public. Pull the *live* running ads of any competitor without their account or consent (e.g. what a client's local rivals are advertising right now). An agent turns this into a "what the competition is doing" briefing for the client dossier. Unique selling point: most generic tools don't surface this for Belgian SMEs.
+- **Optional extension — Wayback Machine API** (Internet Archive, free): diff competitor landing pages over time to detect changes in offer, pricing, or positioning. Same competitive-intel theme; pairs naturally with the Meta briefing.
+- **Where it fits:** read-only intake/enrichment feeding the client dossier; the brain stays the source of truth, an agent synthesizes the briefing.
+
+### 2. From advisor to watchdog (anomaly detection)
+- Build on the Google Ads data we *already* pull (read-only). Detect anomalies locally — no new API needed — such as a spend spike or a CPA jump, then have an agent automatically draft an explanation plus a proposal.
+- This is what makes the "AI team that watches your accounts 24/7" promise real, and it fits cleanly in Phase 6: read-only observation may run fully automatically, while any *action* still goes through human review.
+- **Where it fits:** Phase 5 (live data) → Phase 6 (scheduled observation via the job scheduler), output always reviewable.
+
+---
+
 ## What stays true across all phases
 
 - Output is always reviewable by a human before real use.

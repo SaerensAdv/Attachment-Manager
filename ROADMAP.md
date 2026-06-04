@@ -158,6 +158,22 @@ Non-obvious, mostly free/open-source bets that lean into Saerens' actual reality
 - This is what makes the "AI team that watches your accounts 24/7" promise real, and it fits cleanly in Phase 6: read-only observation may run fully automatically, while any *action* still goes through human review.
 - **Where it fits:** Phase 5 (live data) → Phase 6 (scheduled observation via the job scheduler), output always reviewable.
 
+### 3. Squeeze more from data we already pull
+- **Search-term mining** — use the search terms report (read-only, already accessible) so an agent proposes negative keywords and new ad groups automatically. Classic, recurring agency value, fully free.
+- **Message-match check** — combine the landing page (via website-intake) with the live ad copy so an agent scores how well the message matches. A known Quality Score driver almost no one checks systematically.
+- **Budget-pacing simulator** — take month-to-date spend (live data) + the monthly target, project the end-of-month spend, and flag over-/under-pacing. Pure math, no new API. A forward-looking cousin of the watchdog.
+
+### 4. Proactive & calendar-aware (Belgian context)
+- **Budget calendar** — combine Belgian public holidays + sector seasonality (e.g. *bouwverlof*, Black Friday, sales periods) so an agent proactively says "raise budget before this peak." Free (public holiday data).
+- **Policy pre-check** — validate ad copy against Google Ads policies (no unproven superlatives, restricted categories) before launch. One agent with a policy doc in `knowledge/` prevents disapprovals.
+
+### 5. A self-improving brain
+- **Knowledge-gap detector** — analyze rejected outputs / low QA scores to identify which `knowledge/` docs are missing or weak, and propose SOP stubs. Feeds the learning loop: the knowledge base grows where it hurts.
+- **Persona stress-test** — an agent that role-plays the client ("would a price-conscious roofer object to this?") and pressure-tests a proposal before it is sent. Raises quality, costs nothing.
+
+### 6. Bilingual client communication (NL/FR)
+- **"Explain it the way the client wants to hear it"** — an agent that rewrites internal analysis into a clear client email in the right language and tone. In Belgium, switching NL/FR is a real advantage; the brain already knows the content, this is just the packaging.
+
 ---
 
 ## What stays true across all phases

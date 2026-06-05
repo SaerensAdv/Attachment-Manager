@@ -17,6 +17,7 @@
 - [DocPanel reader features](doc-panel-features.md) — ToC must read rendered rehype-slug ids (not recompute); local Transformers.js search w/ Orama fallback; edit guards on clients/db/* both sides.
 - [System architecture direction](system-architecture-direction.md) — app = brain + source of truth (agents/knowledge/client state + decision endpoint); n8n = stateless executor that triggers, acts, and writes results back.
 - [Google Ads live intake (Fase 3)](google-ads-live.md) — read-only REST searchStream pull per client; sandbox lacks secrets so test via workspace `node`; verify secret SHAPE on auth errors.
+- [Branded report PDF (pdfkit)](report-pdf-rendering.md) — hand-drawn PDF; doc.x is sticky after explicit-x text; footers need margins.bottom=0; range method is bufferedPageRange().
 - [Monthly report email deliverable](monthly-report-email.md) — `monthly-report-email` kind: LAST_MONTH Ads → team report → PDF → Gmail to client.reportEmail; best-effort by design; pdfkit/fontkit must stay esbuild-external; sanitize all MIME headers.
 - [In-app scheduler](in-app-scheduler.md) — n8n dropped; 60s croner tick fires "scheduled" runs; CAS-on-nextRunAt prevents double-fire; needs Reserved VM for 24/7.
 - [Run archival & audit trail](run-archival-audit-trail.md) — loop+deliverable+persistRun live in ONE generate-engine (sink+signal) shared by SSE & autonomous routes; archive on markdown OR ≥1 step, persist on every exit path (idempotent), status=worst step; autonomous gated by AUTONOMOUS_TRIGGER_SECRET (503 unset/401 mismatch).

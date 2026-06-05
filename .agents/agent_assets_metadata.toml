@@ -167,3 +167,9 @@ id = "q9rbjXrS4RCaDv1H9FWZh"
 uri = "file://n8n-templates/saerens-autonome-run.json"
 type = "unspecified"
 title = "n8n-workflow — Saerens autonome AI-run"
+
+[[outputs]]
+id = "JABXezwBAy18eO1wGphge"
+uri = "file://.local/report-design-preview.pdf"
+type = "pdf"
+title = "Voorbeeld nieuw maandrapport (met testdata)"

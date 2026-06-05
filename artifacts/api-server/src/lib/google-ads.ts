@@ -28,6 +28,41 @@ const MAX_SEARCH_TERMS = 50;
  */
 export type GoogleAdsDateRange = "LAST_30_DAYS" | "LAST_MONTH";
 
+/** Structured per-campaign numbers (for charts/tables in the PDF report). */
+export interface GoogleAdsCampaignMetric {
+  name: string;
+  status: string;
+  cost: number;
+  impressions: number;
+  clicks: number;
+  conversions: number;
+  conversionsValue: number;
+  ctr: number; // fraction 0..1
+  avgCpc: number;
+  cpa: number | null;
+  roas: number | null;
+}
+
+/** Structured account-level numbers, returned alongside the text report. */
+export interface GoogleAdsMetrics {
+  accountName: string;
+  customerId: string;
+  currency: string;
+  rangeLabel: string;
+  totals: {
+    cost: number;
+    impressions: number;
+    clicks: number;
+    conversions: number;
+    conversionsValue: number;
+    ctr: number; // fraction 0..1
+    avgCpc: number;
+    cpa: number | null;
+    roas: number | null;
+  };
+  campaigns: GoogleAdsCampaignMetric[];
+}
+
 const RANGE_LABEL: Record<GoogleAdsDateRange, string> = {
   LAST_30_DAYS: "laatste 30 dagen",
   LAST_MONTH: "vorige maand",
@@ -224,7 +259,7 @@ function fmtNum(value: unknown, decimals = 0): string {
 export async function fetchGoogleAdsReport(
   rawCustomerId: string,
   opts: { range?: GoogleAdsDateRange } = {},
-): Promise<{ text: string; fetchedAt: Date }> {
+): Promise<{ text: string; fetchedAt: Date; metrics: GoogleAdsMetrics }> {
   const cfg = readConfig();
   const range: GoogleAdsDateRange = opts.range ?? "LAST_30_DAYS";
   const rangeLabel = RANGE_LABEL[range];
@@ -315,6 +350,8 @@ export async function fetchGoogleAdsReport(
   const conversions = num(pick(account, "metrics.conversions"));
   const convValue = num(pick(account, "metrics.conversionsValue"));
   const accountCostNum = num(cost) / 1_000_000;
+  const accountImpressions = num(pick(account, "metrics.impressions"));
+  const accountClicks = num(pick(account, "metrics.clicks"));
   lines.push(`== Accounttotalen (${rangeShort}) ==`);
   lines.push(`Kosten: ${fmtMoney(cost, currency)}`);
   lines.push(`Vertoningen: ${fmtNum(pick(account, "metrics.impressions"))}`);
@@ -329,6 +366,7 @@ export async function fetchGoogleAdsReport(
   );
   lines.push("");
 
+  const campaignMetrics: GoogleAdsCampaignMetric[] = [];
   lines.push(`== Campagnes (${rangeShort}, top ${MAX_CAMPAIGNS} op kosten) ==`);
   if (campaignFailed) {
     lines.push("Kon niet worden opgehaald (zie waarschuwingen onderaan).");
@@ -339,10 +377,25 @@ export async function fetchGoogleAdsReport(
       const name = String(pick(row, "campaign.name") ?? "(naamloos)");
       const status = String(pick(row, "campaign.status") ?? "");
       const cCost = num(pick(row, "metrics.costMicros")) / 1_000_000;
+      const cClicks = num(pick(row, "metrics.clicks"));
+      const cImpr = num(pick(row, "metrics.impressions"));
       const cConv = num(pick(row, "metrics.conversions"));
       const cConvValue = num(pick(row, "metrics.conversionsValue"));
       const ctr = num(pick(row, "metrics.ctr")) * 100;
       const avgCpc = num(pick(row, "metrics.averageCpc")) / 1_000_000;
+      campaignMetrics.push({
+        name,
+        status,
+        cost: cCost,
+        impressions: cImpr,
+        clicks: cClicks,
+        conversions: cConv,
+        conversionsValue: cConvValue,
+        ctr: num(pick(row, "metrics.ctr")),
+        avgCpc,
+        cpa: cConv > 0 ? cCost / cConv : null,
+        roas: cCost > 0 ? cConvValue / cCost : null,
+      });
       lines.push(
         `- ${name} [${status}] — kosten ${cCost.toFixed(2)} ${currency}, ` +
           `klikken ${fmtNum(pick(row, "metrics.clicks"))}, ` +
@@ -387,5 +440,24 @@ export async function fetchGoogleAdsReport(
     text = `${text.slice(0, MAX_REPORT_LEN)}\n…(ingekort)`;
   }
 
-  return { text, fetchedAt: new Date() };
+  const metrics: GoogleAdsMetrics = {
+    accountName,
+    customerId,
+    currency,
+    rangeLabel,
+    totals: {
+      cost: accountCostNum,
+      impressions: accountImpressions,
+      clicks: accountClicks,
+      conversions,
+      conversionsValue: convValue,
+      ctr: accountImpressions > 0 ? accountClicks / accountImpressions : 0,
+      avgCpc: accountClicks > 0 ? accountCostNum / accountClicks : 0,
+      cpa: conversions > 0 ? accountCostNum / conversions : null,
+      roas: accountCostNum > 0 ? convValue / accountCostNum : null,
+    },
+    campaigns: campaignMetrics,
+  };
+
+  return { text, fetchedAt: new Date(), metrics };
 }

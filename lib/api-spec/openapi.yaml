@@ -1140,6 +1140,8 @@ components:
           type: ["string", "null"]
         searchConsoleData:
           type: ["string", "null"]
+        reportEmail:
+          type: ["string", "null"]
         websiteIntake:
           type: ["string", "null"]
         websiteIntakeAt:
@@ -1199,6 +1201,8 @@ components:
         googleAdsData:
           type: ["string", "null"]
         searchConsoleData:
+          type: ["string", "null"]
+        reportEmail:
           type: ["string", "null"]
         googleAdsCustomerId:
           type: ["string", "null"]

@@ -1,5 +1,7 @@
 # Workflow: Monthly Client Report
 
+<!-- deliverable: monthly-report-email -->
+
 ## Goal
 
 Produce a clear, honest monthly performance report that shows how the client's Google Ads performed against their goals — reflecting Saerens' promise of full transparency and no surprises.

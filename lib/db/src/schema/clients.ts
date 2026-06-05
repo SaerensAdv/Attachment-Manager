@@ -30,6 +30,7 @@ export const clientsTable = pgTable("clients", {
   searchConsoleData: text("search_console_data"),
   websiteIntake: text("website_intake"),
   websiteIntakeAt: timestamp("website_intake_at"),
+  reportEmail: text("report_email"),
   googleAdsCustomerId: text("google_ads_customer_id"),
   googleAdsLive: text("google_ads_live"),
   googleAdsLiveAt: timestamp("google_ads_live_at"),

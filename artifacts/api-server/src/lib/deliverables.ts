@@ -11,6 +11,7 @@ import type { DocFile } from "./docs";
  */
 export type DeliverableKind =
   | "replit-prompt"
+  | "monthly-report-email"
   | "google-ads-csv"
   | "meta-ad-image"
   | "markdown";
@@ -46,14 +47,23 @@ export interface DeliverableContext {
 /** A workflow declares its deliverable with an HTML comment: `<!-- deliverable: replit-prompt -->`. */
 const MARKER_RE = /<!--\s*deliverable:\s*([a-z0-9-]+)\s*-->/i;
 
-/** Deliverable kinds that are fully implemented (have meta + a builder). */
-const IMPLEMENTED: ReadonlySet<DeliverableKind> = new Set(["replit-prompt"]);
+/**
+ * Deliverable kinds the engine knows how to act on. Two flavours:
+ * - text deliverables (e.g. replit-prompt) stream a model-generated artifact via
+ *   `buildDeliverablePrompt` + `deliverableMeta`.
+ * - action deliverables (e.g. monthly-report-email) are handled specially in the
+ *   engine (render a PDF, send an email) and have no streamed text prompt.
+ */
+const KNOWN: ReadonlySet<DeliverableKind> = new Set([
+  "replit-prompt",
+  "monthly-report-email",
+]);
 
 export function getDeliverableKind(workflow: DocFile | null): DeliverableKind {
   if (!workflow) return "markdown";
   const match = workflow.content.match(MARKER_RE);
   const raw = match?.[1]?.toLowerCase() ?? "";
-  return IMPLEMENTED.has(raw as DeliverableKind)
+  return KNOWN.has(raw as DeliverableKind)
     ? (raw as DeliverableKind)
     : "markdown";
 }

@@ -20,6 +20,24 @@ const MAX_REPORT_LEN = 40_000;
 const MAX_CAMPAIGNS = 50;
 const MAX_SEARCH_TERMS = 50;
 
+/**
+ * Which period the report covers. "LAST_30_DAYS" is the default ad-hoc refresh;
+ * "LAST_MONTH" is the previous calendar month (e.g. on 5 June → 1–31 May) and is
+ * what the monthly reporting cycle always uses. Both are GAQL predefined date
+ * ranges, so we just swap the `DURING` constant.
+ */
+export type GoogleAdsDateRange = "LAST_30_DAYS" | "LAST_MONTH";
+
+const RANGE_LABEL: Record<GoogleAdsDateRange, string> = {
+  LAST_30_DAYS: "laatste 30 dagen",
+  LAST_MONTH: "vorige maand",
+};
+
+const RANGE_SHORT: Record<GoogleAdsDateRange, string> = {
+  LAST_30_DAYS: "30d",
+  LAST_MONTH: "vorige maand",
+};
+
 /** Thrown when required secrets are missing — surfaced to the user as a 400. */
 export class GoogleAdsConfigError extends Error {
   constructor(message: string) {
@@ -205,8 +223,12 @@ function fmtNum(value: unknown, decimals = 0): string {
  */
 export async function fetchGoogleAdsReport(
   rawCustomerId: string,
+  opts: { range?: GoogleAdsDateRange } = {},
 ): Promise<{ text: string; fetchedAt: Date }> {
   const cfg = readConfig();
+  const range: GoogleAdsDateRange = opts.range ?? "LAST_30_DAYS";
+  const rangeLabel = RANGE_LABEL[range];
+  const rangeShort = RANGE_SHORT[range];
   const customerId = digitsOnly(rawCustomerId);
   if (!customerId) {
     throw new GoogleAdsConfigError("Ongeldig Google Ads customer ID.");
@@ -214,7 +236,7 @@ export async function fetchGoogleAdsReport(
 
   const accessToken = await getAccessToken(cfg);
 
-  // 1. Account totals (last 30 days) — also gives us name + currency.
+  // 1. Account totals — also gives us name + currency.
   const accountRows = await runGaql(
     cfg,
     accessToken,
@@ -223,7 +245,7 @@ export async function fetchGoogleAdsReport(
             metrics.cost_micros, metrics.impressions, metrics.clicks,
             metrics.conversions, metrics.conversions_value
      FROM customer
-     WHERE segments.date DURING LAST_30_DAYS`,
+     WHERE segments.date DURING ${range}`,
   );
   const account = accountRows[0] ?? {};
   const currency = String(pick(account, "customer.currencyCode") ?? "");
@@ -249,7 +271,7 @@ export async function fetchGoogleAdsReport(
               metrics.conversions, metrics.conversions_value,
               metrics.ctr, metrics.average_cpc
        FROM campaign
-       WHERE segments.date DURING LAST_30_DAYS
+       WHERE segments.date DURING ${range}
          AND campaign.status != 'REMOVED'
        ORDER BY metrics.cost_micros DESC
        LIMIT ${MAX_CAMPAIGNS}`,
@@ -273,7 +295,7 @@ export async function fetchGoogleAdsReport(
               metrics.cost_micros, metrics.clicks,
               metrics.conversions, metrics.conversions_value
        FROM search_term_view
-       WHERE segments.date DURING LAST_30_DAYS
+       WHERE segments.date DURING ${range}
        ORDER BY metrics.cost_micros DESC
        LIMIT ${MAX_SEARCH_TERMS}`,
     );
@@ -286,14 +308,14 @@ export async function fetchGoogleAdsReport(
 
   const lines: string[] = [];
   lines.push(`Account: ${accountName} (${customerId})`);
-  lines.push(`Periode: laatste 30 dagen`);
+  lines.push(`Periode: ${rangeLabel}`);
   lines.push("");
 
   const cost = pick(account, "metrics.costMicros");
   const conversions = num(pick(account, "metrics.conversions"));
   const convValue = num(pick(account, "metrics.conversionsValue"));
   const accountCostNum = num(cost) / 1_000_000;
-  lines.push("== Accounttotalen (30d) ==");
+  lines.push(`== Accounttotalen (${rangeShort}) ==`);
   lines.push(`Kosten: ${fmtMoney(cost, currency)}`);
   lines.push(`Vertoningen: ${fmtNum(pick(account, "metrics.impressions"))}`);
   lines.push(`Klikken: ${fmtNum(pick(account, "metrics.clicks"))}`);
@@ -307,7 +329,7 @@ export async function fetchGoogleAdsReport(
   );
   lines.push("");
 
-  lines.push(`== Campagnes (30d, top ${MAX_CAMPAIGNS} op kosten) ==`);
+  lines.push(`== Campagnes (${rangeShort}, top ${MAX_CAMPAIGNS} op kosten) ==`);
   if (campaignFailed) {
     lines.push("Kon niet worden opgehaald (zie waarschuwingen onderaan).");
   } else if (campaignRows.length === 0) {
@@ -334,7 +356,9 @@ export async function fetchGoogleAdsReport(
   }
   lines.push("");
 
-  lines.push(`== Top zoektermen (30d, top ${MAX_SEARCH_TERMS} op kosten) ==`);
+  lines.push(
+    `== Top zoektermen (${rangeShort}, top ${MAX_SEARCH_TERMS} op kosten) ==`,
+  );
   if (searchFailed) {
     lines.push("Kon niet worden opgehaald (zie waarschuwingen onderaan).");
   } else if (searchTermRows.length === 0) {

@@ -29,6 +29,7 @@ const FIELDS = [
   "currentState",
   "googleAdsData",
   "searchConsoleData",
+  "reportEmail",
   "googleAdsCustomerId",
 ] as const;
 

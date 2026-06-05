@@ -294,6 +294,7 @@ export const GetClientsResponse = zod.object({
   "currentState": zod.string().nullish(),
   "googleAdsData": zod.string().nullish(),
   "searchConsoleData": zod.string().nullish(),
+  "reportEmail": zod.string().nullish(),
   "websiteIntake": zod.string().nullish(),
   "websiteIntakeAt": zod.coerce.date().nullish(),
   "googleAdsCustomerId": zod.string().nullish(),
@@ -328,6 +329,7 @@ export const CreateClientBody = zod.object({
   "currentState": zod.string().nullish(),
   "googleAdsData": zod.string().nullish(),
   "searchConsoleData": zod.string().nullish(),
+  "reportEmail": zod.string().nullish(),
   "googleAdsCustomerId": zod.string().nullish()
 })
 
@@ -360,6 +362,7 @@ export const GetClientResponse = zod.object({
   "currentState": zod.string().nullish(),
   "googleAdsData": zod.string().nullish(),
   "searchConsoleData": zod.string().nullish(),
+  "reportEmail": zod.string().nullish(),
   "websiteIntake": zod.string().nullish(),
   "websiteIntakeAt": zod.coerce.date().nullish(),
   "googleAdsCustomerId": zod.string().nullish(),
@@ -397,6 +400,7 @@ export const UpdateClientBody = zod.object({
   "currentState": zod.string().nullish(),
   "googleAdsData": zod.string().nullish(),
   "searchConsoleData": zod.string().nullish(),
+  "reportEmail": zod.string().nullish(),
   "googleAdsCustomerId": zod.string().nullish()
 })
 
@@ -421,6 +425,7 @@ export const UpdateClientResponse = zod.object({
   "currentState": zod.string().nullish(),
   "googleAdsData": zod.string().nullish(),
   "searchConsoleData": zod.string().nullish(),
+  "reportEmail": zod.string().nullish(),
   "websiteIntake": zod.string().nullish(),
   "websiteIntakeAt": zod.coerce.date().nullish(),
   "googleAdsCustomerId": zod.string().nullish(),
@@ -467,6 +472,7 @@ export const ClientWebsiteIntakeResponse = zod.object({
   "currentState": zod.string().nullish(),
   "googleAdsData": zod.string().nullish(),
   "searchConsoleData": zod.string().nullish(),
+  "reportEmail": zod.string().nullish(),
   "websiteIntake": zod.string().nullish(),
   "websiteIntakeAt": zod.coerce.date().nullish(),
   "googleAdsCustomerId": zod.string().nullish(),
@@ -505,6 +511,7 @@ export const ClientGoogleAdsRefreshResponse = zod.object({
   "currentState": zod.string().nullish(),
   "googleAdsData": zod.string().nullish(),
   "searchConsoleData": zod.string().nullish(),
+  "reportEmail": zod.string().nullish(),
   "websiteIntake": zod.string().nullish(),
   "websiteIntakeAt": zod.coerce.date().nullish(),
   "googleAdsCustomerId": zod.string().nullish(),

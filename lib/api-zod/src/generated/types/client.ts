@@ -46,6 +46,8 @@ export interface Client {
   /** @nullable */
   searchConsoleData?: string | null;
   /** @nullable */
+  reportEmail?: string | null;
+  /** @nullable */
   websiteIntake?: string | null;
   /** @nullable */
   websiteIntakeAt?: Date | null;

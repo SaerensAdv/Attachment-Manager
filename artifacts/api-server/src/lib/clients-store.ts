@@ -1,5 +1,5 @@
 import { db, clientsTable, type Client } from "@workspace/db";
-import { asc } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 import type { DocFile } from "./docs";
 
 /** Path prefix that namespaces DB-backed clients inside the "clients" category. */
@@ -130,6 +130,16 @@ export function clientToDoc(client: Client): DocFile {
     summary: firstParagraph(content),
     content,
   };
+}
+
+/** Read a single persisted client row by id, or null if it doesn't exist. */
+export async function getClientRow(id: number): Promise<Client | null> {
+  const rows = await db
+    .select()
+    .from(clientsTable)
+    .where(eq(clientsTable.id, id))
+    .limit(1);
+  return rows[0] ?? null;
 }
 
 /** Load all persisted clients as DocFiles for merging into the doc system. */

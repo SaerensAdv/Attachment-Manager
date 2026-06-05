@@ -45,5 +45,7 @@ export interface ClientInput {
   /** @nullable */
   searchConsoleData?: string | null;
   /** @nullable */
+  reportEmail?: string | null;
+  /** @nullable */
   googleAdsCustomerId?: string | null;
 }

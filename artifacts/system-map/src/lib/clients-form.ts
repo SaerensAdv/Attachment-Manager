@@ -110,6 +110,13 @@ export const FIELDS: FieldDef[] = [
     kind: "input",
     placeholder: "Belangrijkste landingspagina's",
   },
+  {
+    key: "reportEmail",
+    label: "Rapport-ontvanger (e-mail)",
+    kind: "input",
+    placeholder: "naam@bedrijf.be",
+    help: "Maandrapport wordt naar dit adres gestuurd",
+  },
 ];
 
 // "Huidige stand" — de echte stand van zaken per klant. Vrije notities + geplakte
@@ -162,6 +169,7 @@ export const EMPTY_FORM: FormState = {
   currentState: "",
   googleAdsData: "",
   searchConsoleData: "",
+  reportEmail: "",
   googleAdsCustomerId: "",
 };
 

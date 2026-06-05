@@ -7,6 +7,7 @@ import {
   Contact,
   ShieldCheck,
   BarChart3,
+  CalendarClock,
 } from "lucide-react";
 
 const tabs = [
@@ -15,6 +16,7 @@ const tabs = [
   { href: "/team", label: "Team", icon: Contact },
   { href: "/clients", label: "Klanten", icon: Users },
   { href: "/history", label: "Archief", icon: Archive },
+  { href: "/planning", label: "Planning", icon: CalendarClock },
   { href: "/controle", label: "Controle", icon: ShieldCheck },
 ];
 

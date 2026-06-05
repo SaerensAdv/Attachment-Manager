@@ -719,3 +719,110 @@ export const RejectProposalResponse = zod.object({
 })
 
 
+/**
+ * @summary List all schedules
+ */
+export const GetSchedulesResponse = zod.object({
+  "schedules": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "cronExpr": zod.string(),
+  "timezone": zod.string(),
+  "agentPath": zod.string(),
+  "agentTitle": zod.string(),
+  "additionalAgentPaths": zod.array(zod.string()),
+  "clientPath": zod.string(),
+  "clientName": zod.string(),
+  "workflowPath": zod.string(),
+  "workflowTitle": zod.string(),
+  "request": zod.string(),
+  "enabled": zod.boolean(),
+  "nextRunAt": zod.coerce.date().nullable(),
+  "lastRunAt": zod.coerce.date().nullable(),
+  "lastGenerationId": zod.number().nullable(),
+  "lastStatus": zod.string().nullable(),
+  "createdAt": zod.coerce.date()
+}))
+})
+
+
+/**
+ * @summary Create a new schedule
+ */
+export const CreateScheduleBody = zod.object({
+  "name": zod.string(),
+  "cronExpr": zod.string(),
+  "timezone": zod.string().optional(),
+  "agentPath": zod.string(),
+  "additionalAgentPaths": zod.array(zod.string()).optional(),
+  "clientPath": zod.string(),
+  "workflowPath": zod.string(),
+  "request": zod.string(),
+  "enabled": zod.boolean().optional()
+})
+
+
+/**
+ * @summary Update a schedule (enable/disable or edit)
+ */
+export const UpdateScheduleParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateScheduleBody = zod.object({
+  "name": zod.string().optional(),
+  "cronExpr": zod.string().optional(),
+  "timezone": zod.string().optional(),
+  "agentPath": zod.string().optional(),
+  "additionalAgentPaths": zod.array(zod.string()).optional(),
+  "clientPath": zod.string().optional(),
+  "workflowPath": zod.string().optional(),
+  "request": zod.string().optional(),
+  "enabled": zod.boolean().optional()
+})
+
+export const UpdateScheduleResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "cronExpr": zod.string(),
+  "timezone": zod.string(),
+  "agentPath": zod.string(),
+  "agentTitle": zod.string(),
+  "additionalAgentPaths": zod.array(zod.string()),
+  "clientPath": zod.string(),
+  "clientName": zod.string(),
+  "workflowPath": zod.string(),
+  "workflowTitle": zod.string(),
+  "request": zod.string(),
+  "enabled": zod.boolean(),
+  "nextRunAt": zod.coerce.date().nullable(),
+  "lastRunAt": zod.coerce.date().nullable(),
+  "lastGenerationId": zod.number().nullable(),
+  "lastStatus": zod.string().nullable(),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Delete a schedule
+ */
+export const DeleteScheduleParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
+ * @summary Fire a schedule immediately
+ */
+export const RunScheduleNowParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const RunScheduleNowResponse = zod.object({
+  "id": zod.number().nullable(),
+  "status": zod.string(),
+  "archived": zod.boolean(),
+  "error": zod.string().nullable()
+})
+
+

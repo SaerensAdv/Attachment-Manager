@@ -461,6 +461,59 @@ export interface ProposalList {
   proposals: ImprovementProposal[];
 }
 
+export interface Schedule {
+  id: number;
+  name: string;
+  cronExpr: string;
+  timezone: string;
+  agentPath: string;
+  agentTitle: string;
+  additionalAgentPaths: string[];
+  clientPath: string;
+  clientName: string;
+  workflowPath: string;
+  workflowTitle: string;
+  request: string;
+  enabled: boolean;
+  /** @nullable */
+  nextRunAt: string | null;
+  /** @nullable */
+  lastRunAt: string | null;
+  /** @nullable */
+  lastGenerationId: number | null;
+  /** @nullable */
+  lastStatus: string | null;
+  createdAt: string;
+}
+
+export interface ScheduleList {
+  schedules: Schedule[];
+}
+
+export interface ScheduleInput {
+  name: string;
+  cronExpr: string;
+  timezone?: string;
+  agentPath: string;
+  additionalAgentPaths?: string[];
+  clientPath: string;
+  workflowPath: string;
+  request: string;
+  enabled?: boolean;
+}
+
+export interface ScheduleUpdate {
+  name?: string;
+  cronExpr?: string;
+  timezone?: string;
+  agentPath?: string;
+  additionalAgentPaths?: string[];
+  clientPath?: string;
+  workflowPath?: string;
+  request?: string;
+  enabled?: boolean;
+}
+
 export interface ErrorResponse {
   error: string;
 }

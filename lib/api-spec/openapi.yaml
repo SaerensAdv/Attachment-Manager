@@ -706,6 +706,120 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /schedules:
+    get:
+      operationId: getSchedules
+      tags: [schedules]
+      summary: List all schedules
+      responses:
+        "200":
+          description: The list of schedules
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScheduleList"
+    post:
+      operationId: createSchedule
+      tags: [schedules]
+      summary: Create a new schedule
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ScheduleInput"
+      responses:
+        "201":
+          description: The created schedule
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Schedule"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /schedules/{id}:
+    patch:
+      operationId: updateSchedule
+      tags: [schedules]
+      summary: Update a schedule (enable/disable or edit)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ScheduleUpdate"
+      responses:
+        "200":
+          description: The updated schedule
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Schedule"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Schedule not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteSchedule
+      tags: [schedules]
+      summary: Delete a schedule
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Schedule not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /schedules/{id}/run-now:
+    post:
+      operationId: runScheduleNow
+      tags: [schedules]
+      summary: Fire a schedule immediately
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: The archived run outcome
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AutonomousGenerateResult"
+        "404":
+          description: Schedule not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 components:
   schemas:
     HealthStatus:
@@ -1482,6 +1596,124 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ImprovementProposal"
+    Schedule:
+      type: object
+      required:
+        - id
+        - name
+        - cronExpr
+        - timezone
+        - agentPath
+        - agentTitle
+        - additionalAgentPaths
+        - clientPath
+        - clientName
+        - workflowPath
+        - workflowTitle
+        - request
+        - enabled
+        - nextRunAt
+        - lastRunAt
+        - lastGenerationId
+        - lastStatus
+        - createdAt
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        cronExpr:
+          type: string
+        timezone:
+          type: string
+        agentPath:
+          type: string
+        agentTitle:
+          type: string
+        additionalAgentPaths:
+          type: array
+          items:
+            type: string
+        clientPath:
+          type: string
+        clientName:
+          type: string
+        workflowPath:
+          type: string
+        workflowTitle:
+          type: string
+        request:
+          type: string
+        enabled:
+          type: boolean
+        nextRunAt:
+          type: ["string", "null"]
+          format: date-time
+        lastRunAt:
+          type: ["string", "null"]
+          format: date-time
+        lastGenerationId:
+          type: ["integer", "null"]
+        lastStatus:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+    ScheduleList:
+      type: object
+      required: [schedules]
+      properties:
+        schedules:
+          type: array
+          items:
+            $ref: "#/components/schemas/Schedule"
+    ScheduleInput:
+      type: object
+      required: [name, cronExpr, agentPath, clientPath, workflowPath, request]
+      properties:
+        name:
+          type: string
+        cronExpr:
+          type: string
+        timezone:
+          type: string
+        agentPath:
+          type: string
+        additionalAgentPaths:
+          type: array
+          items:
+            type: string
+        clientPath:
+          type: string
+        workflowPath:
+          type: string
+        request:
+          type: string
+        enabled:
+          type: boolean
+    ScheduleUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        cronExpr:
+          type: string
+        timezone:
+          type: string
+        agentPath:
+          type: string
+        additionalAgentPaths:
+          type: array
+          items:
+            type: string
+        clientPath:
+          type: string
+        workflowPath:
+          type: string
+        request:
+          type: string
+        enabled:
+          type: boolean
     ErrorResponse:
       type: object
       required: [error]

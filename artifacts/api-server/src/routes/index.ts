@@ -10,6 +10,7 @@ import generationsRouter from "./generations";
 import proposalsRouter from "./proposals";
 import teamRouter from "./team";
 import storageRouter from "./storage";
+import schedulesRouter from "./schedules";
 
 const router: IRouter = Router();
 
@@ -24,5 +25,6 @@ router.use(generationsRouter);
 router.use(proposalsRouter);
 router.use(teamRouter);
 router.use(storageRouter);
+router.use(schedulesRouter);
 
 export default router;

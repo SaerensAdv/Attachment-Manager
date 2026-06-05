@@ -1,6 +1,7 @@
 import app from "./app";
 import { logger } from "./lib/logger";
 import { warmSemanticIndex } from "./lib/semantic";
+import { startScheduler } from "./lib/scheduler";
 
 const rawPort = process.env["PORT"];
 
@@ -25,4 +26,6 @@ app.listen(port, (err) => {
   logger.info({ port }, "Server listening");
   // Warm the local semantic index in the background so the first search is fast.
   warmSemanticIndex();
+  // Start the in-app scheduler so enabled schedules fire automatically.
+  startScheduler();
 });

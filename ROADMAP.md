@@ -203,6 +203,35 @@ Measure that it is actually improving:
 
 ---
 
+## Content to add (workflows / knowledge / templates)
+
+This is content, not code: new markdown docs in the doc-graph. They fill real gaps in the current library (some agents have no workflow; some workflows have no output template) and back the experimental ideas above. Doc language stays English; UI labels stay Dutch.
+
+Gaps that motivate this: `competitive-research-analyst`, `client-onboarding-agent` and `shopping-feed-specialist` have no dedicated workflow; `google-ads-optimization-specialist` only has account-audit; the `sales-proposal` workflow and the audit workflows have no matching output template.
+
+### New workflows
+- **competitor-research** — competitor briefing (Meta Ad Library, Wayback). Fills the competitive-research-analyst gap and backs the competitive-intelligence idea.
+- **client-onboarding** — the "Day 1 dossier" as a process. Fills the client-onboarding-agent gap and backs the onboarding-autopilot idea.
+- **account-optimization** — ongoing optimization: search-term mining, negatives, impression-share gap, red-team checklist.
+- **shopping-feed-setup** — feed / Shopping / PMax. Fills the shopping-feed-specialist gap.
+- **measurement-audit** — conversion-tracking health check (separate from tracking-setup, which defines the plan).
+- **budget-management** — pacing, allocation, and the Belgian budget calendar.
+
+### New knowledge
+- **google-ads-policy** — policy rules for the policy pre-check (QA reviewer).
+- **competitive-research-standards** — how to do competitor analysis ethically + which free sources (Meta Ad Library, Wayback) and their limits.
+- **belgian-market-context** — NL/FR, KBO, *bouwverlof*, local seasonality (feeds the budget calendar + bilingual comms).
+- **budget-management-standards** — pacing and allocation rules.
+- **experimentation-standards** — A/B test design + statistical significance.
+
+### New templates (output shapes)
+- **competitor-briefing** — shape for the competitor briefing.
+- **onboarding-dossier** — shape for the Day 1 dossier.
+- **audit-report** — shared shape for account / SEO / red-team audits.
+- **proposal** — shape for the sales proposal (workflow exists, template does not).
+
+---
+
 ## What stays true across all phases
 
 - Output is always reviewable by a human before real use.

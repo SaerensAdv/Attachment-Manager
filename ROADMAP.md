@@ -232,6 +232,19 @@ Gaps that motivate this: `competitive-research-analyst`, `client-onboarding-agen
 
 ---
 
+## Reference designs to learn from (external)
+
+**Mark-XXXIX** (FatihMakes) — a Python desktop "Jarvis" personal assistant (voice, screen/webcam vision, OS control, browser automation, autonomous planning, task queue, persistent memory). Not for code reuse: it is a different stack (Python/PyQt6 desktop vs our TS monorepo + agency-brain purpose) and is licensed **CC BY-NC 4.0 (non-commercial only)**, which rules out lifting its code into a commercial product. We borrow patterns/ideas only, re-implemented in our own stack.
+
+Three patterns worth borrowing (each validates a direction already on the roadmap):
+- **Persistent memory model** — categorized store (identity / preferences / projects / notes) with automatic trim-to-limit. A concrete reference for **Phase 4 (Memory)**; for Saerens this maps to per-client and per-agent learnings.
+- **Task queue** — priorities, statuses, cancel flag, worker loop, max-concurrency. Validates the **pg-boss / Phase 6 (controlled automations)** direction (pg-boss is the Node equivalent on our existing Postgres).
+- **Planner with a strict tool schema** — goal → minimal steps using only allowed, typed tools. Aligns with **orchestrator routing** and guaranteed-valid tool calls via the AI SDK (Phase 3/5).
+
+Out of scope from Mark-XXXIX: OS control, voice, screen vision, games, flight search — desktop-assistant territory, not relevant to an agency brain.
+
+---
+
 ## What stays true across all phases
 
 - Output is always reviewable by a human before real use.

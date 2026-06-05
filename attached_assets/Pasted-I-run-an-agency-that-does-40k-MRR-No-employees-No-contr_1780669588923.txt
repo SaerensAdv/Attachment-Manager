@@ -1,0 +1,219 @@
+I run an agency that does $40k MRR
+No employees. No contractors. No standups. No payroll. No "let me check with my team and get back to you"
+Just me, a laptop, and a delivery system that does the work 5 people used to do
+Total cost to run the whole thing: under $300/month
+That's not a typo. The agency clears more than $39k of that $40k every single month, and I take home a margin that no staffed agency on earth can touch
+For a long time I believed the same thing you probably believe right now: that scaling an agency means hiring. More clients, more people. More people, more management. More management, less actual work and thinner and thinner margins until you've built yourself a job you hate
+I don't believe that anymore. The math changed and almost nobody noticed
+This article is the full breakdown. The offer, the delivery engine, the exact model stack, the unit economics, the acquisition system, and a 90-day plan to your first $10k MRR. Every stage, how I actually solve it, no theory
+After reading this, you'll have:
+
+A complete blueprint for running a $40k MRR agency with ZERO employees, the exact offer, delivery system, and stack
+An AI delivery engine that does the work a 5-person team used to do, at under $300/month in total cost
+The unit economics that let a solo operator keep 90%+ margin instead of the 30% a staffed agency survives on
+A client acquisition system that fills your pipeline without a sales team or an ad budget
+A 90-day rollout plan to your first $10k MRR, with specific actions for each phase
+Quick context so the numbers make sense: I run an AI automation agency. I build automations and AI systems for small businesses and lean teams. Lead routing, customer support agents, content pipelines, internal ops tooling, data workflows. Boring, high-value stuff that businesses gladly pay monthly to never think about again
+My $40k MRR is 14 clients:
+4 anchor clients on $5,000/mo retainers = $20,000
+6 core clients on $2,500/mo retainers = $15,000
+4 lite clients on $1,250/mo maintenance = $5,000
+Keep that mix in your head. Every number in this article ties back to it
+[ Let's break it down ] ↓↓↓
+1. Why the Solo Agency Is Suddenly Possible (The Headcount Trap)
+
+Here's the part nobody running an agency wants to say out loud
+The bottleneck was never clients. It was delivery
+You can fill a pipeline. Marketing is solvable, outreach is solvable, referrals are solvable. The thing that actually breaks agencies is what happens AFTER you sign the client. Someone has to do the work
+In the old model, doing the work meant people. Sign 3 clients, hire a junior. Sign 5 more, hire two mid-levels and someone to manage them. Each hire is salary, onboarding, mistakes, sick days, churn, and the slow drift where you stop building and start managing humans who build worse than you do
+And here's the trap inside the trap: every person you hire eats your margin. A staffed agency at $40k MRR is keeping maybe $10-12k after payroll, software, and overhead. The other $28k walks out the door in salaries. You're running a $40k business to take home what a senior contractor makes, except now you also have HR problems
+So agencies plateau. Not because they can't get clients. Because every new client makes the operation heavier, slower, and thinner
+The reason the solo agency works in 2026 is simple:
+The production layer, the actual labor of delivering client work, can now be done by one model instead of a team. For me, that model is Kimi 2.6
+Not the strategy. Not the client relationship. Not the judgment. Those stay with you. But the execution, the part that used to require a team of people grinding through tickets, that's the part that got automated
+The agencies that win from here won't be the ones with the biggest teams
+They'll be the ones who figured out that headcount went from being leverage to being a liability
+That's the whole thesis. Everything below is how you actually do it
+[ Start with the offer ] ↓↓↓
+2. The Offer: What a Solo Agency Should Actually Sell
+
+This is where most people screw it up before they even start
+They sell custom work. "We do whatever you need." Every client is a unique snowflake, every project is built from scratch, and there's no way to systemize any of it. That's a recipe for a job, not an agency
+If you want to run solo, your offer has to obey one rule:
+The work has to be deliverable by a system, not by heroics
+That means productized, repeatable, and scoped tight. Here's how I think about it
+Pick work that is high-value to the client but mechanical to produce
+Businesses pay shocking amounts of money for things that are genuinely repetitive once you've built the pattern once. A customer support agent that handles tier-1 tickets. A lead-routing system that pipes form fills into their CRM and books calls. A content engine that turns one podcast into 30 posts. These feel like magic to the client. To me they're a workflow I've run 40 times
+Scope it so the deliverable is defined, not open-ended
+"We'll automate your customer support" is a trap. "We'll build and maintain an AI support agent that resolves your top 20 ticket types, with a monthly retainer for tuning and new flows" is a product. The retainer is the key. It turns one-time builds into recurring revenue, which is the only way solo math works
+Charge for outcome, deliver with system
+Clients pay $2,500-$5,000/month because of what the automation saves them: a support hire they didn't make, hours their team got back, leads they stopped dropping. They are not paying for my time. They're paying for the result. That gap between perceived value and actual delivery cost is the entire business, and we'll get very specific about it in the economics section
+The constraint that makes all of this work: every offer I sell, I've designed around what AI can reliably deliver. I don't sell things that require a human grinding for 40 hours. I sell things where I architect the solution once, and a model does the production. If a prospect wants something that can't route cleanly to a system, I either reshape the scope or I pass
+Your offer is not "what can I do." It's "what can I systemize and sell on repeat."
+[ Now the engine that makes it possible ] ↓↓↓
+3. The Delivery Engine: How You Deliver Without a Team
+
+This is the heart of the entire thing. If you only read one section, read this one
+When a client request comes in, here's what it does NOT do: land on a person's desk to grind through manually
+Here's what actually happens. Every piece of client work flows through a four-stage pipeline, and I'm only personally touching two of the four stages
+Stage 1: Intake (me, 10 minutes)
+I take the request, a new flow, a bug, a feature, a content batch, and I translate it into a clear spec. This is judgment work. What does the client actually need, what's the cleanest way to build it, what are the edge cases. This is the part that's still human, because it's where the value lives
+Stage 2: Production (the model, not me)
+The spec goes to my delivery stack, and this is where the actual labor happens. Writing the automation logic, generating the code, building the content, wiring the integrations, drafting the configs. The grunt work that used to need a team of juniors. This runs on AI, and the bulk of it runs on Kimi 2.6
+Stage 3: QA (me, 15-20 minutes)
+The model produces, I review. I'm not building from scratch, I'm checking output against the spec. Does it work, does it match what the client needs, does it handle the edge cases. Reviewing finished work is 10x faster than producing it, which is exactly why one person can carry the load of five
+Stage 4: Handoff (mostly automated)
+Deploy, document, notify the client. Templated, scripted, mostly hands-off
+Notice the shape of this. The two stages that need a human, intake and QA, are the FAST stages. The slow, labor-heavy stage in the middle, production, is the one I removed myself from entirely. I went from being the laborer to being the orchestrator
+Now here's where it gets specific, because "AI does the work" is a meaningless sentence without the actual mechanics
+Why Kimi 2.6 is the engine
+When I say the production layer runs on a model, I mean it runs, overwhelmingly, on Kimi 2.6. It is the single most important decision in my entire operation, and I want to be precise about why
+Kimi 2.6 does the bulk of my delivery work, the code, the automation logic, the content generation, the integration wiring, at roughly $0.50 per million input tokens and $2 per million output. For the kind of production work an agency runs all day, that's about 6x cheaper than defaulting to a Sonnet-class model and 20-30x cheaper than running everything on a frontier model like Opus or GPT-5
+And here's the part most people still haven't updated their mental model on: the shipped quality on this kind of work is indistinguishable. I'm not running cheap-and-worse. The automations Kimi 2.6 produces pass the same tests, ship to the same clients, and hold up in production exactly like output from a model costing 6x more. The "Kimi is the budget option" framing from 2025 is dead. In 2026 it's the default for serious production work, not the compromise
+But cost is only half of why it's the engine. The other half is throughput
+I run delivery for 14 clients. On a heavy day that's dozens of production jobs firing in parallel: a support agent rebuild for one client, a content batch for another, three bug fixes, a new integration. If I were running that volume on a frontier model, I'd hit rate limits by mid-morning and spend the rest of the day waiting. A model you can't access is a 0/10 model no matter how smart it is. Moonshot's rate limits are dramatically more generous, which means I can run my entire client load concurrently without getting throttled into a queue. The cheap model is also, in practice, the model that's actually there when I need it
+Think about what that replaces. The production work Kimi 2.6 does for me is the work I would otherwise be paying 3-5 junior and mid-level people to do. That's $25-30k/month in salary, plus the management overhead, plus the mistakes, plus the churn. I replaced all of it with a model that costs me a couple hundred dollars a month and never has a bad week
+That's not "AI helps me work faster." That's "Kimi 2.6 is my production team." Five people's worth of output for about $240 a month. That one line is the whole article
+[ Meet the rest of the roster ] ↓↓↓
+4. The Model Stack & Routing (Your "Team Roster")
+
+I don't actually run everything on one model, and you shouldn't either. The right way to think about your stack is as a team roster. You're the founder, and you have different "hires" for different kinds of work, each priced to the job
+Here's my roster
+The senior workhorse: Kimi 2.6 (90% of delivery)
+This is my lead engineer, my content team, and my automation builder rolled into one. Every routine production task defaults here: building flows, generating code, writing client content, wiring integrations, debugging, refactoring. It carries the overwhelming majority of the actual labor. ~$0.50/$2 per million. This is the hire that makes the whole agency profitable
+The specialist: premium tier, Opus 4.6 or GPT-5 (the 10% that compounds)
+Some decisions are too expensive to get wrong. Architecting a complex multi-system integration for an anchor client. A security-sensitive review before something touches a client's production data. A genuinely novel problem I haven't solved before. For that 10%, I route to a premium model and happily pay 20-30x more per token, because the cost of a wrong answer here is a blown client relationship, not a $0.04 retry. You pay the specialist for the decisions that compound
+The intern: cheap/local tier (cleanup)
+Formatting, simple renames, boilerplate, first-draft scaffolding, trivial single-step tasks. Runs on a cheap utility model or a local model on my own machine for $0. No reason to pay real money for work that doesn't require thinking
+The routing logic is your org chart
+Here's roughly how a task gets assigned:
+Is this a high-stakes architecture or security decision for an anchor client? → premium tier
+Is this real production work (building, coding, content, automations, debugging)? → Kimi 2.6
+Is this a long multi-step agentic job running many iterations? → Kimi 2.6 (the per-step cost advantage compounds hard across iterations)
+Is this cleanup, formatting, or boilerplate? → cheap/local tier
+Cost per real client task
+Here's what the economics look like per real client task, illustratively (your numbers will vary by task and codebase, but the SHAPE is the point):
+Image
+Run those numbers across hundreds of tasks a month, across 14 clients, and the difference between defaulting to a premium model and defaulting to Kimi 2.6 is the difference between an inference bill that eats your margin and one that's a rounding error
+The mistake most people make is hiring one expensive "employee" (running everything on a premium model) for every single task, including the ones an intern could do. The smart move is the roster: the right model for each job, with Kimi 2.6 doing the bulk because that's where the cost-to-quality math wins for real work
+[ Now the part that actually matters, the money ] ↓↓↓
+5. The Unit Economics (Why You Keep 90% of Every Check)
+
+This is the section that separates this from every "start an agency" guide you've ever read
+Let's do the real math. $40k MRR. Here's where it goes every month
+Revenue: $40,000
+Costs:
+Kimi 2.6 inference (the bulk of all delivery): ~$240
+Premium model for the 10% of high-stakes work: ~$110
+Cleanup/local tier: ~$0
+Infrastructure (hosting, automation platform, vector DB, servers): ~$180
+Tools/SaaS (CRM, scheduling, comms, misc): ~$220
+Total monthly opex: roughly $750
+Read that again. I deliver $40,000 of client value on about $750 of cost. My delivery inference, the thing that replaced a 5-person team, is under $300 of that
+That's a margin north of 90%. Realistically, after I account for payment processing, the occasional contractor I bring in for a true edge case, and taxes, I'm still keeping a margin that a staffed agency literally cannot reach, because their single biggest line item, payroll, is one I don't have
+Now here's the contrast that makes the whole thing land. Watch what happens if I run that exact same delivery load on a frontier model instead of Kimi 2.6
+The production work that costs me ~$240/month on Kimi 2.6 would run roughly 6x higher on a Sonnet-class default, and 20-30x higher on Opus or GPT-5 for the heavy agentic loops. Call it $1,500-$5,000+/month depending on the mix. Suddenly my delivery cost isn't a rounding error, it's a real expense that scales with every client I add. Add the rate-limit problem (where I physically can't run my whole load on a frontier model without throttling) and the model breaks entirely at this client count
+The 90% margin doesn't exist because I'm clever about pricing. It exists because my delivery runs on Kimi 2.6. Swap the engine and the entire business model collapses back into "normal agency that has to hire to grow"
+That's the unlock. The reason I can stay solo at $40k MRR is that the cost of delivering the work fell through the floor while the value clients pay for stayed exactly the same. I'm pocketing the spread
+[ Now let's fill the pipeline ] ↓↓↓
+6. Client Acquisition Without a Sales Team
+
+A 90% margin means nothing if you can't get clients. And no, I don't have a sales team. Here's how the pipeline actually fills, as one person
+Inbound from content (my biggest channel)
+I post about the work. Case studies, before/afters, "here's an automation that saved a client 20 hours a week" breakdowns. When you show real outcomes publicly, the right clients self-select and come to you pre-sold. This is slow to start and compounds forever. It's the single best use of the time AI freed up. I'm not grinding delivery anymore, so I can spend that energy being visible
+A niche offer that sells itself
+Because my offer is productized and specific, I'm not explaining a vague "we do AI stuff." I'm saying "I build AI support agents for X type of business, here's exactly what it does, here's what it costs, here's the result." Specific offers close themselves. Generic ones require convincing
+Referral loops baked into delivery
+Every happy client knows other business owners with the same problem. I make referrals frictionless: a simple ask at the moment a client is most delighted (right after a win), and a small incentive. At a 90% margin I can afford to be generous with referral rewards, which most agencies can't
+Lightweight outbound
+A targeted list, a sharp personalized message, a specific offer. I keep this small and surgical. I don't need 1,000 leads, I need to add one or two retainers a month. I'll use AI to help draft and personalize outreach at volume, but the targeting and the relationship stay human, because that's what actually closes
+The whole philosophy here: keep acquisition light enough that it doesn't eat the time the delivery engine gave back. The trap would be to free up all that capacity and then drown myself in a heavy sales operation. I don't need volume. I need a steady trickle of the right clients into a system that delivers them at near-zero cost
+[ Now let's scale without breaking ] ↓↓↓
+7. Staying Solo at Scale (Systems, Not People)
+
+Here's the real danger once this starts working: you accidentally rebuild a job for yourself
+You sign client 8, then 10, then 14, and even with AI doing production, the intake and QA start to pile up until you're back to working 12-hour days. The goal was never "do everything myself faster." It's "build a system that needs less of me over time." Here's how I keep it solo at 14 clients without losing my mind
+Graduated skills: solve once, reuse forever
+Every workflow I solve, I save. The first time I build a client support agent, it's real work: spec it, build it, QA it, deploy it. But I capture that entire process as a reusable skill: the prompts, the configs, the structure, the edge cases. The next time a client needs something similar, the system loads the skill and skips the discovery phase entirely. My 5th support-agent build costs me a fraction of the time and tokens of my 1st, because I'm not re-figuring-out anything. The agency gets faster and cheaper with every job it does
+Background agents running delivery 24/7
+A lot of my client work isn't a one-time build, it's ongoing. Monitoring, content generation, data processing, routine maintenance flows. These run as background agents on Kimi 2.6, continuously, while I sleep. Running persistent 24/7 agents is only economically sane because the per-token cost is so low. The same agents on a frontier model would cost hundreds per month each and the whole thing wouldn't pencil out. On Kimi 2.6, I can have continuous delivery running across every client for the cost of a couple dinners
+Swarms: when one agent isn't enough
+This is the part that actually unlocks running 14 clients without breaking. Kimi 2.6 ships with something Moonshot calls Agent Swarm. Instead of one agent grinding through every step of a job in sequence, the main agent splits the work into smaller pieces and runs up to 300 sub-agents in parallel, coordinated across 4,000 steps
+The thing I like about it: the main agent picks its own workers on the fly. You're not pre-defining roles like "this one's the coder, this one's the QA, this one's the writer." It looks at the spec, decides what sub-jobs it needs, and spawns them. Moonshot calls it an AI-designed org chart instead of a human-designed one. Less wiring from me, more flexibility on every job
+What that looks like in practice for the agency:
+A monthly content batch for a client stops being "wait while Kimi writes 30 posts one by one." The main agent fans out, 15-20 sub-agents draft in parallel, another batch QAs them against the brand voice, a final one packages the output. The whole batch finishes in the time a single agent used to spend on the first 3 posts
+A complex integration build splits into "spec the auth layer," "wire the webhook," "write the tests," "draft the docs," all running at once. I review the merged output instead of waiting through a serial pipeline
+For monitoring work, sub-agents can sit on different parts of a client's system at the same time. One watches the support queue, one watches the error logs, one watches the data pipeline. They report up to a coordinator agent that only pings me if something actually needs human eyes
+The reason this matters for solo math: Swarms is what lets one person run the parallel load of an actual team without queuing. Moonshot has shown internal Swarm runs going for hours, and in one case 5 straight days, handling incident response autonomously. That's not "AI helps me," that's "AI runs the night shift"
+And the cost story still holds. A 300-agent Swarm sounds expensive until you remember each sub-agent is running on Kimi 2.6 economics. A run that would cost triple-digit dollars orchestrated on a frontier model often comes in under $5 here. The cheap per-token cost is what makes the swarm economically possible in the first place
+My role shrinks to judgment and relationships
+As the systems mature, what's left for me is the stuff that should stay human: the intake judgment, the QA eye, and the client relationships. That's it. I'm not the laborer, I'm not even really the builder anymore, I'm the architect and the quality bar. That's a role one person can hold across a lot of clients
+The principle: every time something becomes repetitive, I systemize it instead of doing it again. People scale by adding humans. I scale by adding skills and agents. One of those compounds your costs. The other compounds your leverage
+[ Now the honest part ] ↓↓↓
+8. When to Actually Spend More (The Honest Limits)
+
+I'm not going to pretend this is magic with no edges. If I did, you'd hit the limits yourself and feel lied to. So here's where the solo-on-Kimi model genuinely strains, and what I do about it
+Some work needs the premium tier, not Kimi 2.6
+For the 10% of work that's high-stakes (complex architecture for an anchor client, security-sensitive logic touching production data, a genuinely novel problem) I route to a premium model and pay the premium happily. The rule I use: if the cost of a wrong answer is more than 100x the model cost difference, use the expensive model. A blown integration on a $5k/month anchor client costs me far more than the few dollars I'd save running it cheap. Price the model to the cost of failure, not the cost of the call
+Some work needs a human, not a model
+Deep client strategy, a delicate relationship moment, a creative direction call, a true one-off that doesn't fit any system: that's me, or occasionally a contractor I bring in for a specific gap. I don't force AI onto work that genuinely needs human judgment just to protect the "solo" label
+There's a real ceiling on QA capacity
+This is the honest constraint. Even with production automated, I can only personally QA so much volume before quality slips. Right now 14 clients is comfortable. Somewhere north of that, I'd either need to raise prices and cap client count (my likely move), or bring in one trusted person purely for QA. Notice that's the FIRST hire I'd ever consider, not a producer, a quality checker, because production is the part that's solved
+Naming these limits isn't a weakness in the model. It's what keeps it credible and keeps it working. The point isn't "never spend money." It's "spend it only where it actually buys you something the system can't"
+[ Now let's get you started ] ↓↓↓
+9. The 90-Day Plan to Your First $10k MRR
+
+You don't build $40k MRR in a weekend. But you can build the engine and your first few retainers in 90 days if you move in the right order. Here's the rollout
+Phase 1 (Days 1-30): Nail the offer and land client #1
+Pick ONE productized service in a niche you understand. Resist the urge to offer everything
+Define the exact deliverable, the scope boundaries, and the retainer price. Write it down like a product page
+Build the offer's core delivery once, by hand if you have to, so you understand the work intimately
+Get your first client. Discount the first one if you must, in exchange for a case study and a testimonial
+Milestone: 1 client, ~$1,500-2,500 MRR, and deep understanding of the work
+Phase 2 (Days 31-60): Build the delivery engine
+This is the structural phase. Turn the manual delivery from phase 1 into a system
+Set up your model stack with Kimi 2.6 as the default workhorse for all production work. This is the single highest-leverage move in the entire 90 days. It's what makes every future client profitable instead of just billable
+Route the 10% of high-stakes work to a premium model, and trivial cleanup to a cheap/local tier
+Capture your first workflow as a reusable skill so client #2 is faster than client #1
+Add 2-3 more clients using the case study from phase 1
+Milestone: 3-4 clients, ~$8-12k MRR, a real (if rough) delivery engine
+Phase 3 (Days 61-90): Systemize and compound
+Every new client, capture the work as a skill. Your library of repeatable solutions grows
+Move ongoing client work to background agents running on Kimi 2.6 so delivery happens without your hands on it
+Start the content/referral flywheel for inbound, now that you have wins to show
+Tighten QA into a fast, repeatable checklist so your time-per-client keeps dropping
+Milestone: 5-7 clients, $10k+ MRR, and a system that needs less of you each week
+From there it's repetition. Every client gets cheaper to deliver, your skill library gets deeper, your content pulls more inbound, and the margin stays north of 90% the entire way up because the delivery engine never needs a payroll
+[ Your first move ] ↓↓↓
+Do This in the Next 30 Minutes
+
+You don't need a whole agency to feel what I'm talking about. You need one real task running on Kimi 2.6 today
+Here's the 30-minute version:
+Grab a Kimi 2.6 API key from Moonshot
+Point a tool you already use (n8n, Make, Cursor, Claude Code, your own scripts) at it as a custom model
+Take the most repetitive, token-heavy task on your plate right now and run it through Kimi 2.6 instead of whatever you default to
+Then check two things: did the output ship, and what did it cost
+Here's the minimal routing setup I started with, long before I had 14 clients:
+yaml
+# default everything to Kimi 2.6, escalate only when it actually matters
+default: kimi-2.6
+
+routes:
+  production:     # coding, content, automations, debugging
+    model: kimi-2.6
+  high_stakes:    # architecture, security, genuinely novel problems
+    model: claude-opus-4-6
+  cleanup:        # lint, format, boilerplate
+    model: local-qwen
+That's the whole thing. Default to Kimi 2.6, send the rare high-stakes call to a premium model, dump cleanup on something free
+I'm not asking you to take my word for any of this. Run one real task through Kimi 2.6 and look at the result the next morning. The output ships and the bill barely moved. Once you've seen that happen with your OWN work, paying 6x for the same outcome just starts to feel stupid
+That's the whole reason I default to it. Not loyalty. Math
+[ The bigger picture ] ↓↓↓
+The Bigger Picture
+
+For a hundred years, the way you scaled a service business was people. More revenue meant more headcount, and the founders who won were the ones who could recruit, manage, and retain the biggest, best teams
+That era is ending faster than anyone is admitting
+When the production layer of your business can run on Kimi 2.6 for a couple hundred dollars a month instead of a team that costs thirty thousand, headcount stops being leverage and becomes a liability. The agency with 20 employees isn't more powerful than the solo operator with a sharp system. It's slower, heavier, and running on a fraction of the margin
+In 2027, the gap between the agency owner clearing $12k on $40k MRR and the one clearing $37k on the same revenue won't be talent. It won't be clients. It'll be whether they figured out that delivery got automated and built their operation around that fact, or whether they kept hiring like it was 2019
+I run an agency that does $40k MRR with no employees because I stopped trying to build a team and started building a system. Kimi 2.6 is the engine that does the work. I'm the one who decides what work to do
+You're not too late to do this. You're early. Most people still think you need a team

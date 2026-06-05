@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
+import { useSearch } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useGetGenerations,
   useGetGeneration,
+  useGetGenerationSteps,
   useDeleteGeneration,
   useSetGenerationFeedback,
   useGetProposals,
@@ -11,8 +13,10 @@ import {
   useRejectProposal,
   getGetGenerationsQueryKey,
   getGetGenerationQueryKey,
+  getGetGenerationStepsQueryKey,
   getGetProposalsQueryKey,
   type GenerationSummary,
+  type GenerationStep,
   type ImprovementProposal,
 } from "@workspace/api-client-react";
 import ReactMarkdown from "react-markdown";
@@ -27,6 +31,10 @@ import {
   ThumbsUp,
   ThumbsDown,
   Lightbulb,
+  Crown,
+  User,
+  Package,
+  AlertTriangle,
 } from "lucide-react";
 import Reveal from "@/components/Reveal";
 
@@ -39,6 +47,59 @@ function formatDate(iso: string): string {
     hour: "2-digit",
     minute: "2-digit",
   }).format(d);
+}
+
+const TRIGGER_LABEL: Record<string, string> = {
+  user: "Handmatig",
+  auto: "Autonoom",
+  scheduled: "Gepland",
+};
+
+const RUN_STATUS_LABEL: Record<string, string> = {
+  completed: "Voltooid",
+  partial: "Gedeeltelijk",
+};
+
+const STEP_STATUS_LABEL: Record<string, string> = {
+  completed: "Voltooid",
+  truncated: "Afgekapt",
+  aborted: "Afgebroken",
+  failed: "Mislukt",
+};
+
+const ROLE_LABEL: Record<string, string> = {
+  lead: "Lead",
+  member: "Teamlid",
+  deliverable: "Eindproduct",
+};
+
+function roleIcon(role: string) {
+  if (role === "lead") return Crown;
+  if (role === "deliverable") return Package;
+  return User;
+}
+
+// Color cue for a step's outcome, kept within the Newsroom palette.
+function stepStatusClass(status: string): string {
+  if (status === "completed") return "text-green-700 border-green-700";
+  if (status === "failed" || status === "aborted")
+    return "text-destructive border-destructive";
+  return "text-amber-700 border-amber-700";
+}
+
+function formatStepDuration(ms: number | null): string {
+  if (ms == null) return "—";
+  const totalSec = Math.round(ms / 1000);
+  if (totalSec < 60) return `${totalSec}s`;
+  const min = Math.floor(totalSec / 60);
+  const sec = totalSec % 60;
+  return sec ? `${min}m ${sec}s` : `${min}m`;
+}
+
+function formatTokenCount(n: number | null): string {
+  if (n == null) return "—";
+  if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
+  return String(n);
 }
 
 function snippet(text: string, max = 120): string {
@@ -61,6 +122,29 @@ export default function History() {
       queryKey: getGetGenerationQueryKey(selected ?? 0),
     },
   });
+
+  const stepsQuery = useGetGenerationSteps(selected ?? 0, {
+    query: {
+      enabled: selected !== null,
+      queryKey: getGetGenerationStepsQueryKey(selected ?? 0),
+    },
+  });
+  const steps: GenerationStep[] = stepsQuery.data?.steps ?? [];
+
+  // Deep-link support: /history?id=123 (e.g. from a team member's run list)
+  // pre-opens that edition once.
+  const search = useSearch();
+  useEffect(() => {
+    const params = new URLSearchParams(search);
+    const idParam = params.get("id");
+    if (idParam) {
+      const id = Number(idParam);
+      if (Number.isFinite(id)) setSelected(id);
+    }
+    // Only react to the initial query string, not later selections.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const deleteMut = useDeleteGeneration();
 
   const feedbackMut = useSetGenerationFeedback();
@@ -361,6 +445,34 @@ export default function History() {
                         {detail.data.teamTitles.join(" → ")}
                       </p>
                     )}
+                    {detail.data && (
+                      <div className="flex flex-wrap items-center gap-2 mt-3">
+                        <span
+                          className={`font-['Space_Mono'] text-[10px] uppercase tracking-widest px-2 py-0.5 border ${
+                            detail.data.status === "partial"
+                              ? "border-amber-700 text-amber-700"
+                              : "border-foreground text-foreground"
+                          }`}
+                        >
+                          {RUN_STATUS_LABEL[detail.data.status] ??
+                            detail.data.status}
+                        </span>
+                        <span className="font-['Space_Mono'] text-[10px] uppercase tracking-widest px-2 py-0.5 border border-foreground/40 text-muted-foreground">
+                          {TRIGGER_LABEL[detail.data.triggerSource] ??
+                            detail.data.triggerSource}
+                        </span>
+                        {detail.data.durationMs != null && (
+                          <span className="font-['Space_Mono'] text-[10px] uppercase tracking-widest text-muted-foreground">
+                            {formatStepDuration(detail.data.durationMs)}
+                          </span>
+                        )}
+                        {detail.data.totalTokens != null && (
+                          <span className="font-['Space_Mono'] text-[10px] uppercase tracking-widest text-muted-foreground">
+                            {formatTokenCount(detail.data.totalTokens)} tokens
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
                     <button
@@ -409,6 +521,73 @@ export default function History() {
                     <p className="text-sm text-foreground font-['Inter'] whitespace-pre-wrap">
                       {detail.data.requestText}
                     </p>
+                  </div>
+                )}
+
+                {/* Audit trail: what each agent did, in order */}
+                {steps.length > 0 && (
+                  <div className="border-b border-foreground/20 px-6 lg:px-10 py-6">
+                    <p className="font-['Space_Mono'] text-[10px] uppercase tracking-widest text-muted-foreground mb-1">
+                      Verloop
+                    </p>
+                    <h3 className="font-['Playfair_Display'] font-black text-lg uppercase tracking-tight mb-5">
+                      Wat er gebeurde
+                    </h3>
+                    <ol className="flex flex-col">
+                      {steps.map((s, i) => {
+                        const Icon = roleIcon(s.role);
+                        const isLast = i === steps.length - 1;
+                        return (
+                          <li
+                            key={s.id}
+                            className="relative flex gap-4 pb-5 last:pb-0"
+                            data-testid={`step-${s.id}`}
+                          >
+                            {!isLast && (
+                              <span
+                                className="absolute left-[15px] top-8 bottom-0 w-px bg-foreground/20"
+                                aria-hidden="true"
+                              />
+                            )}
+                            <div className="shrink-0 w-8 h-8 rounded-full border-2 border-foreground bg-card flex items-center justify-center">
+                              <Icon className="w-4 h-4 text-foreground" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="font-['Inter'] font-semibold text-sm text-foreground truncate">
+                                  {s.agentTitle}
+                                </span>
+                                <span className="font-['Space_Mono'] text-[9px] uppercase tracking-widest text-muted-foreground">
+                                  {ROLE_LABEL[s.role] ?? s.role}
+                                </span>
+                                <span
+                                  className={`font-['Space_Mono'] text-[9px] uppercase tracking-widest px-1.5 py-0.5 border ${stepStatusClass(
+                                    s.status,
+                                  )}`}
+                                >
+                                  {STEP_STATUS_LABEL[s.status] ?? s.status}
+                                </span>
+                              </div>
+                              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1.5 font-['Space_Mono'] text-[10px] uppercase tracking-wider text-muted-foreground">
+                                <span>{formatStepDuration(s.durationMs)}</span>
+                                <span>
+                                  {formatTokenCount(s.outputTokens)} out-tokens
+                                </span>
+                                {s.charCount != null && (
+                                  <span>{s.charCount.toLocaleString("nl-BE")} tekens</span>
+                                )}
+                              </div>
+                              {s.errorMessage && (
+                                <p className="flex items-start gap-1.5 mt-2 text-xs text-destructive font-['Inter']">
+                                  <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                                  {s.errorMessage}
+                                </p>
+                              )}
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ol>
                   </div>
                 )}
 

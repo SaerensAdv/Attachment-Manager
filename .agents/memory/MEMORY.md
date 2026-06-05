@@ -17,3 +17,4 @@
 - [DocPanel reader features](doc-panel-features.md) — ToC must read rendered rehype-slug ids (not recompute); local Transformers.js search w/ Orama fallback; edit guards on clients/db/* both sides.
 - [System architecture direction](system-architecture-direction.md) — app = brain + source of truth (agents/knowledge/client state + decision endpoint); n8n = stateless executor that triggers, acts, and writes results back.
 - [Google Ads live intake (Fase 3)](google-ads-live.md) — read-only REST searchStream pull per client; sandbox lacks secrets so test via workspace `node`; verify secret SHAPE on auth errors.
+- [Run archival & audit trail](run-archival-audit-trail.md) — archive a run on any markdown OR ≥1 step, persist on every exit path (idempotent), and keep run status consistent with its worst step.

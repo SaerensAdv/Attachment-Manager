@@ -6,6 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './agentRun';
+export * from './agentRunList';
+export * from './agentStats';
 export * from './backlink';
 export * from './backlinkList';
 export * from './client';
@@ -25,6 +28,8 @@ export * from './feedbackInput';
 export * from './feedbackInputVerdict';
 export * from './generation';
 export * from './generationList';
+export * from './generationStep';
+export * from './generationStepList';
 export * from './generationSummary';
 export * from './getDocBacklinksParams';
 export * from './getDocContentParams';

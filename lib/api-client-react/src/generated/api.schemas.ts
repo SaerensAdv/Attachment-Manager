@@ -291,6 +291,8 @@ export interface GenerationSummary {
   teamTitles: string[];
   requestText: string;
   createdAt: string;
+  status: string;
+  triggerSource: string;
 }
 
 export interface Generation {
@@ -306,6 +308,12 @@ export interface Generation {
   leadAgentPath: string;
   teamPaths: string[];
   finalMarkdown: string;
+  status: string;
+  triggerSource: string;
+  /** @nullable */
+  durationMs: number | null;
+  /** @nullable */
+  totalTokens: number | null;
   /** @nullable */
   feedbackVerdict: string | null;
   /** @nullable */
@@ -316,6 +324,62 @@ export interface Generation {
 
 export interface GenerationList {
   generations: GenerationSummary[];
+}
+
+export interface GenerationStep {
+  id: number;
+  agentPath: string;
+  agentTitle: string;
+  stepOrder: number;
+  role: string;
+  status: string;
+  /** @nullable */
+  durationMs: number | null;
+  /** @nullable */
+  inputTokens: number | null;
+  /** @nullable */
+  outputTokens: number | null;
+  /** @nullable */
+  charCount: number | null;
+  /** @nullable */
+  errorMessage: string | null;
+  createdAt: string;
+}
+
+export interface GenerationStepList {
+  steps: GenerationStep[];
+}
+
+export interface AgentStats {
+  agentPath: string;
+  runsLed: number;
+  runsParticipated: number;
+  approved: number;
+  rejected: number;
+  pending: number;
+  /** @nullable */
+  lastActiveAt: string | null;
+  /** @nullable */
+  avgDurationMs: number | null;
+  totalOutputTokens: number;
+  stepCount: number;
+}
+
+export interface AgentRun {
+  id: number;
+  clientName: string;
+  workflowTitle: string;
+  leadAgentTitle: string;
+  teamTitles: string[];
+  requestText: string;
+  createdAt: string;
+  status: string;
+  triggerSource: string;
+  role: string;
+}
+
+export interface AgentRunList {
+  runs: AgentRun[];
 }
 
 export type FeedbackInputVerdict = typeof FeedbackInputVerdict[keyof typeof FeedbackInputVerdict];

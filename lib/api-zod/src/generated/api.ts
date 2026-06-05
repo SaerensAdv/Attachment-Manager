@@ -175,6 +175,50 @@ export const GetTeamResponse = zod.object({
 
 
 /**
+ * @summary Aggregate KPIs for a single agent
+ */
+export const GetAgentStatsParams = zod.object({
+  "slug": zod.coerce.string()
+})
+
+export const GetAgentStatsResponse = zod.object({
+  "agentPath": zod.string(),
+  "runsLed": zod.number(),
+  "runsParticipated": zod.number(),
+  "approved": zod.number(),
+  "rejected": zod.number(),
+  "pending": zod.number(),
+  "lastActiveAt": zod.coerce.date().nullable(),
+  "avgDurationMs": zod.number().nullable(),
+  "totalOutputTokens": zod.number(),
+  "stepCount": zod.number()
+})
+
+
+/**
+ * @summary Recent runs this agent took part in (lead or member)
+ */
+export const GetAgentRunsParams = zod.object({
+  "slug": zod.coerce.string()
+})
+
+export const GetAgentRunsResponse = zod.object({
+  "runs": zod.array(zod.object({
+  "id": zod.number(),
+  "clientName": zod.string(),
+  "workflowTitle": zod.string(),
+  "leadAgentTitle": zod.string(),
+  "teamTitles": zod.array(zod.string()),
+  "requestText": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "status": zod.string(),
+  "triggerSource": zod.string(),
+  "role": zod.string()
+}))
+})
+
+
+/**
  * @summary List all persisted clients
  */
 export const GetClientsResponse = zod.object({
@@ -431,7 +475,9 @@ export const GetGenerationsResponse = zod.object({
   "leadAgentTitle": zod.string(),
   "teamTitles": zod.array(zod.string()),
   "requestText": zod.string(),
-  "createdAt": zod.coerce.date()
+  "createdAt": zod.coerce.date(),
+  "status": zod.string(),
+  "triggerSource": zod.string()
 }))
 })
 
@@ -456,6 +502,10 @@ export const GetGenerationResponse = zod.object({
   "leadAgentPath": zod.string(),
   "teamPaths": zod.array(zod.string()),
   "finalMarkdown": zod.string(),
+  "status": zod.string(),
+  "triggerSource": zod.string(),
+  "durationMs": zod.number().nullable(),
+  "totalTokens": zod.number().nullable(),
   "feedbackVerdict": zod.string().nullable(),
   "feedbackNote": zod.string().nullable(),
   "feedbackAt": zod.coerce.date().nullable()
@@ -495,9 +545,38 @@ export const SetGenerationFeedbackResponse = zod.object({
   "leadAgentPath": zod.string(),
   "teamPaths": zod.array(zod.string()),
   "finalMarkdown": zod.string(),
+  "status": zod.string(),
+  "triggerSource": zod.string(),
+  "durationMs": zod.number().nullable(),
+  "totalTokens": zod.number().nullable(),
   "feedbackVerdict": zod.string().nullable(),
   "feedbackNote": zod.string().nullable(),
   "feedbackAt": zod.coerce.date().nullable()
+})
+
+
+/**
+ * @summary Per-agent audit-trail steps for a generation
+ */
+export const GetGenerationStepsParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetGenerationStepsResponse = zod.object({
+  "steps": zod.array(zod.object({
+  "id": zod.number(),
+  "agentPath": zod.string(),
+  "agentTitle": zod.string(),
+  "stepOrder": zod.number(),
+  "role": zod.string(),
+  "status": zod.string(),
+  "durationMs": zod.number().nullable(),
+  "inputTokens": zod.number().nullable(),
+  "outputTokens": zod.number().nullable(),
+  "charCount": zod.number().nullable(),
+  "errorMessage": zod.string().nullable(),
+  "createdAt": zod.coerce.date()
+}))
 })
 
 

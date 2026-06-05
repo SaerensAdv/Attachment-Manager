@@ -6,7 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface GenerationSummary {
+export interface AgentRun {
   id: number;
   clientName: string;
   workflowTitle: string;
@@ -16,4 +16,5 @@ export interface GenerationSummary {
   createdAt: Date;
   status: string;
   triggerSource: string;
+  role: string;
 }

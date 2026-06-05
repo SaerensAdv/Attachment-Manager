@@ -20,6 +20,8 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AgentRunList,
+  AgentStats,
   BacklinkList,
   Client,
   ClientInput,
@@ -33,6 +35,7 @@ import type {
   FeedbackInput,
   Generation,
   GenerationList,
+  GenerationStepList,
   GetDocBacklinksParams,
   GetDocContentParams,
   HealthStatus,
@@ -674,6 +677,160 @@ export function useGetTeam<TData = Awaited<ReturnType<typeof getTeam>>, TError =
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetTeamQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetAgentStatsUrl = (slug: string,) => {
+
+
+
+
+  return `/api/team/${slug}/stats`
+}
+
+/**
+ * @summary Aggregate KPIs for a single agent
+ */
+export const getAgentStats = async (slug: string, options?: RequestInit): Promise<AgentStats> => {
+
+  return customFetch<AgentStats>(getGetAgentStatsUrl(slug),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAgentStatsQueryKey = (slug: string,) => {
+    return [
+    `/api/team/${slug}/stats`
+    ] as const;
+    }
+
+
+export const getGetAgentStatsQueryOptions = <TData = Awaited<ReturnType<typeof getAgentStats>>, TError = ErrorType<unknown>>(slug: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAgentStats>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAgentStatsQueryKey(slug);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAgentStats>>> = ({ signal }) => getAgentStats(slug, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(slug), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAgentStats>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAgentStatsQueryResult = NonNullable<Awaited<ReturnType<typeof getAgentStats>>>
+export type GetAgentStatsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Aggregate KPIs for a single agent
+ */
+
+export function useGetAgentStats<TData = Awaited<ReturnType<typeof getAgentStats>>, TError = ErrorType<unknown>>(
+ slug: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAgentStats>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAgentStatsQueryOptions(slug,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetAgentRunsUrl = (slug: string,) => {
+
+
+
+
+  return `/api/team/${slug}/runs`
+}
+
+/**
+ * @summary Recent runs this agent took part in (lead or member)
+ */
+export const getAgentRuns = async (slug: string, options?: RequestInit): Promise<AgentRunList> => {
+
+  return customFetch<AgentRunList>(getGetAgentRunsUrl(slug),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAgentRunsQueryKey = (slug: string,) => {
+    return [
+    `/api/team/${slug}/runs`
+    ] as const;
+    }
+
+
+export const getGetAgentRunsQueryOptions = <TData = Awaited<ReturnType<typeof getAgentRuns>>, TError = ErrorType<unknown>>(slug: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAgentRuns>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAgentRunsQueryKey(slug);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAgentRuns>>> = ({ signal }) => getAgentRuns(slug, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(slug), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAgentRuns>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAgentRunsQueryResult = NonNullable<Awaited<ReturnType<typeof getAgentRuns>>>
+export type GetAgentRunsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Recent runs this agent took part in (lead or member)
+ */
+
+export function useGetAgentRuns<TData = Awaited<ReturnType<typeof getAgentRuns>>, TError = ErrorType<unknown>>(
+ slug: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAgentRuns>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAgentRunsQueryOptions(slug,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -1488,6 +1645,83 @@ export const useSetGenerationFeedback = <TError = ErrorType<ErrorResponse>,
       > => {
       return useMutation(getSetGenerationFeedbackMutationOptions(options));
     }
+
+export const getGetGenerationStepsUrl = (id: number,) => {
+
+
+
+
+  return `/api/generations/${id}/steps`
+}
+
+/**
+ * @summary Per-agent audit-trail steps for a generation
+ */
+export const getGenerationSteps = async (id: number, options?: RequestInit): Promise<GenerationStepList> => {
+
+  return customFetch<GenerationStepList>(getGetGenerationStepsUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetGenerationStepsQueryKey = (id: number,) => {
+    return [
+    `/api/generations/${id}/steps`
+    ] as const;
+    }
+
+
+export const getGetGenerationStepsQueryOptions = <TData = Awaited<ReturnType<typeof getGenerationSteps>>, TError = ErrorType<ErrorResponse>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGenerationSteps>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetGenerationStepsQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getGenerationSteps>>> = ({ signal }) => getGenerationSteps(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getGenerationSteps>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetGenerationStepsQueryResult = NonNullable<Awaited<ReturnType<typeof getGenerationSteps>>>
+export type GetGenerationStepsQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary Per-agent audit-trail steps for a generation
+ */
+
+export function useGetGenerationSteps<TData = Awaited<ReturnType<typeof getGenerationSteps>>, TError = ErrorType<ErrorResponse>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGenerationSteps>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetGenerationStepsQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getGetProposalsUrl = (id: number,) => {
 

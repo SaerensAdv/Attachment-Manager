@@ -210,6 +210,42 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/TeamRoster"
+  /team/{slug}/stats:
+    get:
+      operationId: getAgentStats
+      tags: [team]
+      summary: Aggregate KPIs for a single agent
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The agent's KPIs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentStats"
+  /team/{slug}/runs:
+    get:
+      operationId: getAgentRuns
+      tags: [team]
+      summary: Recent runs this agent took part in (lead or member)
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The agent's recent runs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentRunList"
   /clients:
     get:
       operationId: getClients
@@ -482,6 +518,30 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
         "404":
           description: Generation not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /generations/{id}/steps:
+    get:
+      operationId: getGenerationSteps
+      tags: [generations]
+      summary: Per-agent audit-trail steps for a generation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: The generation's steps
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenerationStepList"
+        "400":
+          description: Invalid request
           content:
             application/json:
               schema:
@@ -1005,6 +1065,8 @@ components:
         - teamTitles
         - requestText
         - createdAt
+        - status
+        - triggerSource
       properties:
         id:
           type: integer
@@ -1023,6 +1085,10 @@ components:
         createdAt:
           type: string
           format: date-time
+        status:
+          type: string
+        triggerSource:
+          type: string
     Generation:
       type: object
       required:
@@ -1038,6 +1104,10 @@ components:
         - leadAgentPath
         - teamPaths
         - finalMarkdown
+        - status
+        - triggerSource
+        - durationMs
+        - totalTokens
         - feedbackVerdict
         - feedbackNote
         - feedbackAt
@@ -1071,6 +1141,14 @@ components:
             type: string
         finalMarkdown:
           type: string
+        status:
+          type: string
+        triggerSource:
+          type: string
+        durationMs:
+          type: ["integer", "null"]
+        totalTokens:
+          type: ["integer", "null"]
         feedbackVerdict:
           type: ["string", "null"]
         feedbackNote:
@@ -1086,6 +1164,135 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/GenerationSummary"
+    GenerationStep:
+      type: object
+      required:
+        - id
+        - agentPath
+        - agentTitle
+        - stepOrder
+        - role
+        - status
+        - durationMs
+        - inputTokens
+        - outputTokens
+        - charCount
+        - errorMessage
+        - createdAt
+      properties:
+        id:
+          type: integer
+        agentPath:
+          type: string
+        agentTitle:
+          type: string
+        stepOrder:
+          type: integer
+        role:
+          type: string
+        status:
+          type: string
+        durationMs:
+          type: ["integer", "null"]
+        inputTokens:
+          type: ["integer", "null"]
+        outputTokens:
+          type: ["integer", "null"]
+        charCount:
+          type: ["integer", "null"]
+        errorMessage:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+    GenerationStepList:
+      type: object
+      required: [steps]
+      properties:
+        steps:
+          type: array
+          items:
+            $ref: "#/components/schemas/GenerationStep"
+    AgentStats:
+      type: object
+      required:
+        - agentPath
+        - runsLed
+        - runsParticipated
+        - approved
+        - rejected
+        - pending
+        - lastActiveAt
+        - avgDurationMs
+        - totalOutputTokens
+        - stepCount
+      properties:
+        agentPath:
+          type: string
+        runsLed:
+          type: integer
+        runsParticipated:
+          type: integer
+        approved:
+          type: integer
+        rejected:
+          type: integer
+        pending:
+          type: integer
+        lastActiveAt:
+          type: ["string", "null"]
+          format: date-time
+        avgDurationMs:
+          type: ["integer", "null"]
+        totalOutputTokens:
+          type: integer
+        stepCount:
+          type: integer
+    AgentRun:
+      type: object
+      required:
+        - id
+        - clientName
+        - workflowTitle
+        - leadAgentTitle
+        - teamTitles
+        - requestText
+        - createdAt
+        - status
+        - triggerSource
+        - role
+      properties:
+        id:
+          type: integer
+        clientName:
+          type: string
+        workflowTitle:
+          type: string
+        leadAgentTitle:
+          type: string
+        teamTitles:
+          type: array
+          items:
+            type: string
+        requestText:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        status:
+          type: string
+        triggerSource:
+          type: string
+        role:
+          type: string
+    AgentRunList:
+      type: object
+      required: [runs]
+      properties:
+        runs:
+          type: array
+          items:
+            $ref: "#/components/schemas/AgentRun"
     FeedbackInput:
       type: object
       required: [verdict]

@@ -3,7 +3,7 @@ import { anthropic } from "@workspace/integrations-anthropic-ai";
 import { buildGenerationContext } from "../lib/generate-context";
 import { getDocFile, type DocFile } from "../lib/docs";
 import { loadClientDocs } from "../lib/clients-store";
-import { saveGeneration } from "../lib/generations-store";
+import { saveGeneration, saveGenerationSteps } from "../lib/generations-store";
 import {
   getDeliverableKind,
   deliverableMeta,
@@ -121,12 +121,40 @@ router.post("/generate", async (req, res) => {
   // persist a partial run if the stream fails partway through.
   let priorWork = "";
   let persisted = false;
+  // Run outcome — flipped to "partial" whenever the run is stopped or fails
+  // part-way but some work was already produced and is worth keeping.
+  let runStatus = "completed";
+  // Per-step audit trail, filled as each agent (and the deliverable) runs. Saved
+  // alongside the generation so KPIs and a "what happened" timeline can be built.
+  interface StepRecord {
+    agentPath: string;
+    agentTitle: string;
+    stepOrder: number;
+    role: string;
+    status: string;
+    durationMs: number | null;
+    inputTokens: number | null;
+    outputTokens: number | null;
+    charCount: number | null;
+    errorMessage: string | null;
+  }
+  const steps: StepRecord[] = [];
+
   const persistRun = async (): Promise<boolean> => {
     if (persisted) return true;
     const markdown = priorWork.trim();
-    if (!markdown) return false;
+    // Archive the run when there's either produced markdown OR at least one
+    // recorded step. The step condition is what makes failed/aborted runs (and
+    // future autonomous runs) reviewable: even a run that broke before any
+    // markdown was written still leaves a generation row + audit trail.
+    if (!markdown && steps.length === 0) return false;
     try {
-      await saveGeneration({
+      const totalTokens = steps.reduce(
+        (a, s) => a + (s.inputTokens ?? 0) + (s.outputTokens ?? 0),
+        0,
+      );
+      const durationMs = steps.reduce((a, s) => a + (s.durationMs ?? 0), 0);
+      const row = await saveGeneration({
         clientPath,
         clientName,
         workflowPath,
@@ -140,7 +168,23 @@ router.post("/generate", async (req, res) => {
         teamTitles: JSON.stringify(memberTitles),
         requestText: request,
         finalMarkdown: markdown,
+        triggerSource: "user",
+        status: runStatus,
+        durationMs: durationMs || null,
+        totalTokens: totalTokens || null,
       });
+      // Best-effort: a failure to write the step trail must never lose the run
+      // itself, which is already safely stored above.
+      try {
+        await saveGenerationSteps(
+          steps.map((s) => ({ ...s, generationId: row.id })),
+        );
+      } catch (stepErr) {
+        console.error(
+          "Kon stappen niet opslaan:",
+          stepErr instanceof Error ? stepErr.message : String(stepErr),
+        );
+      }
       persisted = true;
       return true;
     } catch (err) {
@@ -174,6 +218,23 @@ router.post("/generate", async (req, res) => {
           },
         }));
       } catch (err) {
+        // Record the failed step so the audit trail shows where the run broke.
+        steps.push({
+          agentPath: path,
+          agentTitle: memberTitles[i],
+          stepOrder: i,
+          role: i === 0 ? "lead" : "member",
+          status: "failed",
+          durationMs: null,
+          inputTokens: null,
+          outputTokens: null,
+          charCount: null,
+          errorMessage: (err instanceof Error
+            ? err.message
+            : String(err)
+          ).slice(0, 500),
+        });
+        runStatus = "partial";
         // Crash-safety: any team members that already ran produced `priorWork`.
         // Persist that partial run before bailing so it isn't silently lost
         // (persistRun is idempotent and best-effort).
@@ -195,44 +256,103 @@ router.post("/generate", async (req, res) => {
         role: i === 0 ? "lead" : "member",
       });
 
-      const stream = anthropic.messages.stream(
-        {
-          model: "claude-sonnet-4-6",
-          // Per-member cap: each agent contributes one section. 4096 turned out
-          // to cut longer sections off mid-sentence in multi-agent runs, so we
-          // give each agent more room while still staying responsive.
-          max_tokens: 8192,
-          system: systemPrompt,
-          messages: [{ role: "user", content: request }],
-        },
-        { signal: controller.signal },
-      );
-
+      const startedAt = Date.now();
       let agentText = "";
-      for await (const event of stream) {
-        if (clientGone) break;
-        if (
-          event.type === "content_block_delta" &&
-          event.delta.type === "text_delta"
-        ) {
-          agentText += event.delta.text;
-          send({ content: event.delta.text, index: i });
-        }
-      }
-
       // Detect a hard token-limit cutoff so the UI can flag a section that was
       // cut off mid-sentence instead of letting it silently look unfinished.
+      // Token usage is captured here too — the one place the final message is
+      // known — so KPIs reflect real cost.
       let truncated = false;
-      if (!clientGone) {
-        try {
+      let inputTokens: number | null = null;
+      let outputTokens: number | null = null;
+
+      try {
+        const stream = anthropic.messages.stream(
+          {
+            model: "claude-sonnet-4-6",
+            // Per-member cap: each agent contributes one section. 4096 turned out
+            // to cut longer sections off mid-sentence in multi-agent runs, so we
+            // give each agent more room while still staying responsive.
+            max_tokens: 8192,
+            system: systemPrompt,
+            messages: [{ role: "user", content: request }],
+          },
+          { signal: controller.signal },
+        );
+
+        for await (const event of stream) {
+          if (clientGone) break;
+          if (
+            event.type === "content_block_delta" &&
+            event.delta.type === "text_delta"
+          ) {
+            agentText += event.delta.text;
+            send({ content: event.delta.text, index: i });
+          }
+        }
+
+        if (!clientGone) {
           const finalMsg = await stream.finalMessage();
           truncated = finalMsg.stop_reason === "max_tokens";
-        } catch {
-          // best-effort; never let detection break a successful run
+          inputTokens = finalMsg.usage?.input_tokens ?? null;
+          outputTokens = finalMsg.usage?.output_tokens ?? null;
         }
+      } catch (streamErr) {
+        const isAbort =
+          streamErr instanceof Error && streamErr.name === "AbortError";
+        if (!isAbort && !clientGone) {
+          // A real mid-step stream failure: record exactly where the run broke
+          // (with any partial output kept) so the audit trail is faithful at the
+          // failure point, then let the outer handler archive + report it.
+          steps.push({
+            agentPath: path,
+            agentTitle: memberTitles[i],
+            stepOrder: i,
+            role: i === 0 ? "lead" : "member",
+            status: "failed",
+            durationMs: Date.now() - startedAt,
+            inputTokens,
+            outputTokens,
+            charCount: agentText.length || null,
+            errorMessage: (streamErr instanceof Error
+              ? streamErr.message
+              : String(streamErr)
+            ).slice(0, 500),
+          });
+          runStatus = "partial";
+          if (agentText.trim()) {
+            priorWork += `\n\n## ${memberTitles[i]}\n\n${agentText.trim()}`;
+          }
+          throw streamErr;
+        }
+        // Abort / client disconnect: fall through to the clientGone path, which
+        // records the step as "aborted" and archives the partial run.
       }
 
-      if (clientGone) break;
+      // Record this agent's step for the audit trail + KPIs, including a run
+      // the user stopped (status "aborted") so the trail reflects what happened.
+      steps.push({
+        agentPath: path,
+        agentTitle: memberTitles[i],
+        stepOrder: i,
+        role: i === 0 ? "lead" : "member",
+        status: clientGone ? "aborted" : truncated ? "truncated" : "completed",
+        durationMs: Date.now() - startedAt,
+        inputTokens,
+        outputTokens,
+        charCount: agentText.length,
+        errorMessage: null,
+      });
+
+      if (clientGone) {
+        runStatus = "partial";
+        break;
+      }
+
+      // A truncated (token-cutoff) agent section means this run did not finish
+      // cleanly, so keep run-level status consistent with its step trail instead
+      // of reporting "completed" over a section that was cut off mid-sentence.
+      if (truncated) runStatus = "partial";
 
       send({ type: "agent_done", index: i, truncated });
       priorWork += `\n\n## ${memberTitles[i]}\n\n${agentText.trim()}`;
@@ -252,6 +372,11 @@ router.post("/generate", async (req, res) => {
         })
       : null;
     if (!clientGone && meta && prompt) {
+      const delStartedAt = Date.now();
+      let delChars = 0;
+      let delIn: number | null = null;
+      let delOut: number | null = null;
+      let delStatus = "completed";
       try {
         send({ type: "deliverable_start", deliverable: meta });
         const dstream = anthropic.messages.stream(
@@ -272,6 +397,7 @@ router.post("/generate", async (req, res) => {
             event.type === "content_block_delta" &&
             event.delta.type === "text_delta"
           ) {
+            delChars += event.delta.text.length;
             send({ type: "deliverable_delta", content: event.delta.text });
           }
         }
@@ -280,18 +406,45 @@ router.post("/generate", async (req, res) => {
           try {
             const dfinal = await dstream.finalMessage();
             deliverableTruncated = dfinal.stop_reason === "max_tokens";
+            delIn = dfinal.usage?.input_tokens ?? null;
+            delOut = dfinal.usage?.output_tokens ?? null;
           } catch {
             // best-effort truncation detection
           }
         }
+        delStatus = clientGone
+          ? "aborted"
+          : deliverableTruncated
+            ? "truncated"
+            : "completed";
         if (!clientGone)
           send({ type: "deliverable_done", truncated: deliverableTruncated });
       } catch (err) {
+        delStatus = "failed";
         if (!clientGone && !(err instanceof Error && err.name === "AbortError")) {
           const message = err instanceof Error ? err.message : String(err);
           send({ type: "deliverable_error", message });
         }
       }
+      // Record the deliverable as a closing step. Its agentPath is the workflow
+      // (not an agent), so it shows in the run timeline without skewing any
+      // single agent's KPIs.
+      steps.push({
+        agentPath: workflowPath,
+        agentTitle: meta.title ?? "Eindproduct",
+        stepOrder: teamPaths.length,
+        role: "deliverable",
+        status: delStatus,
+        durationMs: Date.now() - delStartedAt,
+        inputTokens: delIn,
+        outputTokens: delOut,
+        charCount: delChars || null,
+        errorMessage: null,
+      });
+      // A failed/aborted/truncated closing product means the run did not finish
+      // cleanly, so reflect that at the run level instead of reporting it
+      // "completed" while it contains a broken final step.
+      if (delStatus !== "completed") runStatus = "partial";
     }
 
     if (!clientGone) {
@@ -303,13 +456,22 @@ router.post("/generate", async (req, res) => {
       const archived = await persistRun();
       send({ done: true, archived });
       res.end();
+    } else {
+      // The client disconnected or stopped the run mid-flight. There's no one to
+      // stream to anymore, but the partial trail still matters: archive it so the
+      // aborted run (and what each agent managed to do) is reviewable afterward.
+      await persistRun();
     }
   } catch (err) {
     if (clientGone || (err instanceof Error && err.name === "AbortError")) {
+      // Aborted/disconnected: still archive the partial run + audit trail so it
+      // can be inspected later (e.g. autonomous runs nobody was watching).
+      await persistRun();
       return;
     }
     // Save whatever the team produced before the failure, so a crash partway
     // through a long run doesn't discard the work already generated.
+    runStatus = "partial";
     await persistRun();
     const message = err instanceof Error ? err.message : String(err);
     send({ error: message });

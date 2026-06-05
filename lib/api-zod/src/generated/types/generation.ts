@@ -19,6 +19,12 @@ export interface Generation {
   leadAgentPath: string;
   teamPaths: string[];
   finalMarkdown: string;
+  status: string;
+  triggerSource: string;
+  /** @nullable */
+  durationMs: number | null;
+  /** @nullable */
+  totalTokens: number | null;
   /** @nullable */
   feedbackVerdict: string | null;
   /** @nullable */

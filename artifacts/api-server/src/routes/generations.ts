@@ -1,10 +1,15 @@
 import { Router, type IRouter } from "express";
-import type { Generation, ImprovementProposal } from "@workspace/db";
+import type {
+  Generation,
+  GenerationStep,
+  ImprovementProposal,
+} from "@workspace/db";
 import {
   listGenerations,
   getGeneration,
   deleteGeneration,
   updateGenerationFeedback,
+  listGenerationSteps,
 } from "../lib/generations-store";
 import {
   createProposals,
@@ -57,6 +62,8 @@ function serializeSummary(g: Generation) {
     teamTitles: parseList(g.teamTitles),
     requestText: g.requestText,
     createdAt: g.createdAt.toISOString(),
+    status: g.status,
+    triggerSource: g.triggerSource,
   };
 }
 
@@ -69,9 +76,29 @@ function serializeDetail(g: Generation) {
     leadAgentPath: g.leadAgentPath,
     teamPaths: parseList(g.teamPaths),
     finalMarkdown: g.finalMarkdown,
+    durationMs: g.durationMs ?? null,
+    totalTokens: g.totalTokens ?? null,
     feedbackVerdict: g.feedbackVerdict ?? null,
     feedbackNote: g.feedbackNote ?? null,
     feedbackAt: g.feedbackAt ? g.feedbackAt.toISOString() : null,
+  };
+}
+
+/** Wire shape for a single audit-trail step. */
+function serializeStep(s: GenerationStep) {
+  return {
+    id: s.id,
+    agentPath: s.agentPath,
+    agentTitle: s.agentTitle,
+    stepOrder: s.stepOrder,
+    role: s.role,
+    status: s.status,
+    durationMs: s.durationMs ?? null,
+    inputTokens: s.inputTokens ?? null,
+    outputTokens: s.outputTokens ?? null,
+    charCount: s.charCount ?? null,
+    errorMessage: s.errorMessage ?? null,
+    createdAt: s.createdAt.toISOString(),
   };
 }
 
@@ -92,6 +119,16 @@ router.get("/generations/:id", async (req, res) => {
     return;
   }
   res.json(serializeDetail(row));
+});
+
+router.get("/generations/:id/steps", async (req, res) => {
+  const id = parseId(req.params.id);
+  if (id === null) {
+    res.status(400).json({ error: "Ongeldige id." });
+    return;
+  }
+  const rows = await listGenerationSteps(id);
+  res.json({ steps: rows.map(serializeStep) });
 });
 
 router.put("/generations/:id/feedback", async (req, res) => {

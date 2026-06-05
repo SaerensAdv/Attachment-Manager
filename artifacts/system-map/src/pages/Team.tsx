@@ -2,11 +2,15 @@ import { useEffect, useMemo, useState } from "react";
 import {
   useGetTeam,
   useGetDocGraph,
+  useGetAgentStats,
+  useGetAgentRuns,
   type TeamMember,
   type DocNode,
+  type AgentRun,
 } from "@workspace/api-client-react";
-import { Loader2, ArrowLeft, ArrowRight, X } from "lucide-react";
+import { Loader2, ArrowLeft, ArrowRight, X, Activity } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { Link } from "wouter";
 import Reveal from "@/components/Reveal";
 
 const KIND_LABEL: Record<string, string> = {
@@ -15,6 +19,42 @@ const KIND_LABEL: Record<string, string> = {
   reference: "verwijst naar",
   mention: "vermeldt",
 };
+
+const RUN_STATUS_LABEL: Record<string, string> = {
+  completed: "Voltooid",
+  partial: "Gedeeltelijk",
+};
+
+const TRIGGER_LABEL: Record<string, string> = {
+  user: "Handmatig",
+  auto: "Autonoom",
+  scheduled: "Gepland",
+};
+
+// Compact, human-readable duration (e.g. "1m 12s", "8s").
+function formatDuration(ms: number | null): string {
+  if (ms == null) return "—";
+  const totalSec = Math.round(ms / 1000);
+  if (totalSec < 60) return `${totalSec}s`;
+  const min = Math.floor(totalSec / 60);
+  const sec = totalSec % 60;
+  return sec ? `${min}m ${sec}s` : `${min}m`;
+}
+
+// Thousands-grouped token counts (e.g. "12.4k", "980").
+function formatTokens(n: number): string {
+  if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
+  return String(n);
+}
+
+// Short Dutch date for a run row.
+function formatRunDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("nl-BE", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
 
 // Persona fields shown in the profile dossier, in reading order.
 const PERSONA_FIELDS: { key: keyof TeamMember; label: string }[] = [
@@ -64,6 +104,115 @@ function Portrait({
       >
         {initialsOf(member)}
       </span>
+    </div>
+  );
+}
+
+function KpiCell({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="border border-foreground/20 bg-background/40 px-3 py-3">
+      <div className="font-['Playfair_Display'] font-black text-2xl leading-none">
+        {value}
+      </div>
+      <div className="font-['Space_Mono'] text-[9px] uppercase tracking-widest text-muted-foreground mt-1.5">
+        {label}
+      </div>
+    </div>
+  );
+}
+
+// KPIs + recent run history for one agent, fetched lazily when the dossier
+// opens. This is the "see afterward what happened" surface — it also links each
+// run through to its full audit trail in the archive.
+function AgentDossier({ slug }: { slug: string }) {
+  const { data: stats } = useGetAgentStats(slug);
+  const { data: runsData } = useGetAgentRuns(slug);
+  const runs: AgentRun[] = runsData?.runs ?? [];
+
+  return (
+    <div className="border-t-2 border-foreground p-6 bg-background/30">
+      <div className="flex items-center gap-2 mb-5">
+        <Activity className="w-4 h-4 text-accent" />
+        <h3 className="font-['Playfair_Display'] font-bold text-lg uppercase tracking-wider">
+          Activiteit & prestaties
+        </h3>
+      </div>
+
+      {stats ? (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-7">
+          <KpiCell label="Runs geleid" value={String(stats.runsLed)} />
+          <KpiCell
+            label="Deelgenomen"
+            value={String(stats.runsParticipated)}
+          />
+          <KpiCell
+            label="Gem. duur"
+            value={formatDuration(stats.avgDurationMs)}
+          />
+          <KpiCell
+            label="Tokens (out)"
+            value={formatTokens(stats.totalOutputTokens)}
+          />
+          <KpiCell label="Goedgekeurd" value={String(stats.approved)} />
+          <KpiCell label="Afgekeurd" value={String(stats.rejected)} />
+          <KpiCell label="In afwachting" value={String(stats.pending)} />
+          <KpiCell
+            label="Laatst actief"
+            value={
+              stats.lastActiveAt ? formatRunDate(stats.lastActiveAt) : "—"
+            }
+          />
+        </div>
+      ) : (
+        <div className="flex items-center gap-2 text-muted-foreground mb-7">
+          <Loader2 className="w-4 h-4 animate-spin" />
+          <span className="font-['Space_Mono'] text-[10px] uppercase tracking-widest">
+            KPI's laden...
+          </span>
+        </div>
+      )}
+
+      <h4 className="font-['Space_Mono'] text-[10px] uppercase tracking-[0.3em] text-muted-foreground mb-3 border-b border-foreground/20 pb-1">
+        Recente runs
+      </h4>
+      {runs.length === 0 ? (
+        <p className="font-['Inter'] text-sm text-muted-foreground italic">
+          Nog geen runs vastgelegd voor dit teamlid.
+        </p>
+      ) : (
+        <ul className="flex flex-col divide-y divide-foreground/10">
+          {runs.map((run) => (
+            <li key={run.id}>
+              <Link
+                href={`/history?id=${run.id}`}
+                className="group flex items-center gap-3 py-2.5 hover:bg-foreground/5 -mx-2 px-2 transition-colors"
+                data-testid={`run-${run.id}`}
+              >
+                <span
+                  className={`font-['Space_Mono'] text-[9px] uppercase tracking-widest px-1.5 py-0.5 border shrink-0 ${
+                    run.role === "lead"
+                      ? "border-foreground text-foreground"
+                      : "border-foreground/40 text-muted-foreground"
+                  }`}
+                >
+                  {run.role === "lead" ? "Lead" : "Teamlid"}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block font-['Inter'] text-sm font-medium text-foreground truncate group-hover:text-accent">
+                    {run.clientName} · {run.workflowTitle}
+                  </span>
+                  <span className="block font-['Space_Mono'] text-[10px] uppercase tracking-wider text-muted-foreground mt-0.5">
+                    {formatRunDate(run.createdAt)} ·{" "}
+                    {RUN_STATUS_LABEL[run.status] ?? run.status} ·{" "}
+                    {TRIGGER_LABEL[run.triggerSource] ?? run.triggerSource}
+                  </span>
+                </span>
+                <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-accent shrink-0" />
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
@@ -212,6 +361,9 @@ function Profile({ member, nodes, edges, onClose }: ProfileProps) {
           )}
         </div>
       </div>
+
+      {/* Activity & KPIs */}
+      <AgentDossier slug={member.slug} />
     </div>
   );
 }

@@ -243,6 +243,23 @@ Three patterns worth borrowing (each validates a direction already on the roadma
 
 Out of scope from Mark-XXXIX: OS control, voice, screen vision, games, flight search — desktop-assistant territory, not relevant to an agency brain.
 
+### Insights from the solo-agency model (external article)
+Source: a "$40k MRR solo AI agency" article. Note: largely a business-model piece plus a marketing pitch for Kimi 2.6 — its specific numbers (6x cheaper, "indistinguishable quality", 300-agent swarm) are vendor claims, not independently verified. Saerens is an established Google Ads agency, not a solo automation shop, so the acquisition/economics parts are inspiration, not app features. The patterns below are what we actually take.
+
+What we apply:
+- **Cost-aware model-tier routing** — in the orchestrator, route by *cost of failure*: a cheap-but-capable workhorse for ~90% of work, a premium tier only for the ~10% high-stakes calls (anchor client, production data, novel problems), a free/local tier for cleanup. Feasible via the Replit proxy (OpenAI / Anthropic / Gemini / OpenRouter — OpenRouter can reach models like Kimi). Adding a specific external model is its own integration choice, not a free step.
+- **Reusable skills capture ("solve once, reuse forever")** — distill accepted outputs into SOPs/templates so each similar job skips discovery. Folds into the "content to add" library and the self-improvement section.
+- **Background + parallel agents** — continuous work (monitoring/maintenance) and fan-out for batch jobs. Ties to Phase 6 and the anomaly watchdog.
+
+What sharpens the core idea (the map itself):
+- **Add a cost/model dimension to the System Map** — show not just who does what in which layer, but on which model/at what cost. A cost-aware org chart — a distinctive feature few tools visualize.
+- **Make the lifecycle explicit** — show each deliverable moving through Intake → Production → QA → Handoff, marking where a human *must* step in. Visually sells the human-in-the-loop principle.
+- **"Graduated" status per workflow** — mark which workflows are proven/reusable vs still manual, and let the human-effort KPI show them getting cheaper over time. The map becomes a living picture of a system that gets smarter.
+- **Re-prioritize around QA as the bottleneck** — if review capacity is the real limit, the QA agent + golden-set + fast-review tooling rank higher than "more agents." A direction shift, not a new feature.
+- **Encode the "cost-of-failure" routing rule** explicitly in the orchestrator: the higher the stakes, the more careful/expensive the model — a principled, explainable routing policy.
+
+Reframe: this pushes us from "a map of an AI team" toward "a map of a cost-aware, self-improving delivery system."
+
 ---
 
 ## What stays true across all phases

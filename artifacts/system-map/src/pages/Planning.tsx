@@ -16,6 +16,8 @@ import {
   Play,
   Trash2,
   Plus,
+  Pencil,
+  X,
   AlertTriangle,
 } from "lucide-react";
 import Reveal from "@/components/Reveal";
@@ -54,6 +56,18 @@ function describeCron(cron: string): string {
   if (dom === "*" && dow === "1") return `Wekelijks (ma) om ${time}`;
   if (dom === "*" && dow === "*") return `Dagelijks om ${time}`;
   return cron;
+}
+
+/** Parse one of our preset cron expressions back into a frequency + HH:MM. */
+function parseCron(cron: string): { frequency: Frequency; time: string } | null {
+  const parts = cron.trim().split(/\s+/);
+  if (parts.length !== 5) return null;
+  const [m, h, dom, , dow] = parts;
+  const time = `${h.padStart(2, "0")}:${m.padStart(2, "0")}`;
+  if (dom === "1" && dow === "*") return { frequency: "monthly", time };
+  if (dom === "*" && dow === "1") return { frequency: "weekly", time };
+  if (dom === "*" && dow === "*") return { frequency: "daily", time };
+  return null;
 }
 
 const dateFmt = new Intl.DateTimeFormat("nl-BE", {
@@ -105,6 +119,8 @@ export default function Planning() {
   const [request, setRequest] = useState("");
   const [frequency, setFrequency] = useState<Frequency>("weekly");
   const [time, setTime] = useState("08:00");
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [cronTouched, setCronTouched] = useState(false);
 
   const invalidate = () =>
     queryClient.invalidateQueries({ queryKey: getGetSchedulesQueryKey() });
@@ -169,9 +185,77 @@ export default function Planning() {
     request.trim() &&
     /^\d{2}:\d{2}$/.test(time);
 
-  function handleCreate(e: React.FormEvent) {
+  function resetForm() {
+    setName("");
+    setClientPath("");
+    setWorkflowPath("");
+    setAgentPath("");
+    setRequest("");
+    setFrequency("weekly");
+    setTime("08:00");
+    setEditingId(null);
+    setCronTouched(false);
+  }
+
+  function startEdit(s: Schedule) {
+    setEditingId(s.id);
+    setCronTouched(false);
+    setName(s.name);
+    setClientPath(s.clientPath);
+    setWorkflowPath(s.workflowPath);
+    setAgentPath(s.agentPath);
+    setRequest(s.request);
+    const parsed = parseCron(s.cronExpr);
+    if (parsed) {
+      setFrequency(parsed.frequency);
+      setTime(parsed.time);
+    }
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }
+
+  function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!canSubmit) return;
+    if (editingId !== null) {
+      updateMut.mutate(
+        {
+          id: editingId,
+          data: {
+            name: name.trim(),
+            // Only resend timing when the user actually changed it, so a
+            // schedule with a non-preset cron keeps its original schedule.
+            ...(cronTouched
+              ? {
+                  cronExpr: buildCron(frequency, time),
+                  timezone: "Europe/Brussels",
+                }
+              : {}),
+            agentPath,
+            clientPath,
+            workflowPath,
+            request: request.trim(),
+          },
+        },
+        {
+          onSuccess: () => {
+            resetForm();
+            toast({
+              title: "Planning bijgewerkt",
+              description: "De wijzigingen zijn opgeslagen.",
+            });
+          },
+          onError: (err) =>
+            toast({
+              title: "Bijwerken mislukt",
+              description:
+                err instanceof Error ? err.message : "Onbekende fout.",
+            }),
+        },
+      );
+      return;
+    }
     createMut.mutate({
       data: {
         name: name.trim(),
@@ -229,12 +313,25 @@ export default function Planning() {
           {/* Create form */}
           <Reveal>
             <form
-              onSubmit={handleCreate}
+              onSubmit={handleSubmit}
               className="border-2 border-foreground bg-card p-5 shadow-[3px_3px_0px_hsl(var(--foreground))]"
             >
-              <h2 className="font-['Playfair_Display'] font-black text-xl uppercase tracking-tight mb-5">
-                Nieuwe planning
-              </h2>
+              <div className="flex items-center justify-between mb-5">
+                <h2 className="font-['Playfair_Display'] font-black text-xl uppercase tracking-tight">
+                  {editingId !== null ? "Planning bewerken" : "Nieuwe planning"}
+                </h2>
+                {editingId !== null && (
+                  <button
+                    type="button"
+                    onClick={resetForm}
+                    className="flex items-center gap-1 font-['Space_Mono'] text-[9px] uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors"
+                    data-testid="button-cancel-edit"
+                  >
+                    <X className="w-3 h-3" />
+                    Annuleren
+                  </button>
+                )}
+              </div>
 
               <div className="space-y-4">
                 <div>
@@ -335,9 +432,10 @@ export default function Planning() {
                     <select
                       id="sch-freq"
                       value={frequency}
-                      onChange={(e) =>
-                        setFrequency(e.target.value as Frequency)
-                      }
+                      onChange={(e) => {
+                        setFrequency(e.target.value as Frequency);
+                        setCronTouched(true);
+                      }}
                       className={selectClass}
                       data-testid="select-schedule-frequency"
                     >
@@ -354,7 +452,10 @@ export default function Planning() {
                       id="sch-time"
                       type="time"
                       value={time}
-                      onChange={(e) => setTime(e.target.value)}
+                      onChange={(e) => {
+                        setTime(e.target.value);
+                        setCronTouched(true);
+                      }}
                       className={selectClass}
                       data-testid="input-schedule-time"
                     />
@@ -364,16 +465,20 @@ export default function Planning() {
 
               <button
                 type="submit"
-                disabled={!canSubmit || createMut.isPending}
+                disabled={
+                  !canSubmit || createMut.isPending || updateMut.isPending
+                }
                 className="mt-6 w-full flex items-center justify-center gap-2 bg-foreground text-background font-['Space_Mono'] text-[11px] uppercase tracking-widest px-4 py-3 disabled:opacity-40 hover:bg-foreground/90 transition-colors"
                 data-testid="button-create-schedule"
               >
-                {createMut.isPending ? (
+                {createMut.isPending || updateMut.isPending ? (
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : editingId !== null ? (
+                  <Pencil className="w-3.5 h-3.5" />
                 ) : (
                   <Plus className="w-3.5 h-3.5" />
                 )}
-                Inplannen
+                {editingId !== null ? "Wijzigingen opslaan" : "Inplannen"}
               </button>
             </form>
           </Reveal>
@@ -411,6 +516,8 @@ export default function Planning() {
                   <ScheduleCard
                     key={s.id}
                     schedule={s}
+                    editing={editingId === s.id}
+                    onEdit={() => startEdit(s)}
                     onToggle={() =>
                       updateMut.mutate({
                         id: s.id,
@@ -438,6 +545,8 @@ export default function Planning() {
 
 function ScheduleCard({
   schedule: s,
+  editing,
+  onEdit,
   onToggle,
   onDelete,
   onRunNow,
@@ -445,6 +554,8 @@ function ScheduleCard({
   deleting,
 }: {
   schedule: Schedule;
+  editing: boolean;
+  onEdit: () => void;
   onToggle: () => void;
   onDelete: () => void;
   onRunNow: () => void;
@@ -457,9 +568,9 @@ function ScheduleCard({
 
   return (
     <div
-      className={`border-2 border-foreground bg-card p-5 shadow-[3px_3px_0px_hsl(var(--foreground))] ${
-        s.enabled ? "" : "opacity-60"
-      }`}
+      className={`border-2 bg-card p-5 shadow-[3px_3px_0px_hsl(var(--foreground))] ${
+        editing ? "border-accent" : "border-foreground"
+      } ${s.enabled ? "" : "opacity-60"}`}
       data-testid={`schedule-${s.id}`}
     >
       <div className="flex items-start justify-between gap-4">
@@ -521,6 +632,15 @@ function ScheduleCard({
               <Play className="w-3 h-3" />
             )}
             Nu draaien
+          </button>
+          <button
+            type="button"
+            onClick={onEdit}
+            className="flex items-center justify-center border border-foreground/40 text-muted-foreground p-1.5 hover:border-accent hover:text-accent transition-colors"
+            aria-label="Bewerken"
+            data-testid={`button-edit-${s.id}`}
+          >
+            <Pencil className="w-3.5 h-3.5" />
           </button>
           <button
             type="button"

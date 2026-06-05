@@ -10,7 +10,7 @@ import {
 import type { GenerationController } from "@/hooks/useGeneration";
 
 const selectTriggerClass =
-  "h-10 w-[11rem] rounded-none border-0 border-r border-foreground bg-transparent font-['Space_Mono'] text-[11px] uppercase tracking-widest focus:ring-0 focus:ring-offset-0 shadow-none";
+  "h-10 w-[7.5rem] sm:w-[11rem] shrink-0 rounded-none border-0 border-r border-foreground bg-transparent font-['Space_Mono'] text-[11px] uppercase tracking-widest focus:ring-0 focus:ring-offset-0 shadow-none";
 const selectContentClass =
   "rounded-none border-foreground bg-card text-foreground shadow-[4px_4px_0px_hsl(var(--foreground))]";
 const selectItemClass =

@@ -207,7 +207,7 @@ export default function Home() {
       </div>
 
       {/* Foreground UI Layer */}
-      <div className="absolute inset-0 z-10 pointer-events-none p-4 pt-16 sm:p-6 sm:pt-20 flex justify-between items-start">
+      <div className="absolute inset-0 z-10 pointer-events-none p-4 pt-16 sm:p-6 sm:pt-20 flex items-start">
         
         {/* Left column: Legend & Search */}
         <div className="w-72 sm:w-80 max-w-[calc(100vw-2rem)] flex flex-col gap-6 pointer-events-none">
@@ -253,20 +253,22 @@ export default function Home() {
           </AnimatePresence>
         </div>
 
-        {/* Right column: Document Panel */}
-        <div className={`w-[min(32rem,calc(100vw-2rem))] h-full transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${selectedNodePath ? 'translate-x-0' : 'translate-x-[110%]'} pointer-events-auto`}>
-          {selectedNodePath && (
-            <DocPanel 
-              path={selectedNodePath} 
-              onClose={() => setSelectedNodePath(null)}
-              node={selectedNode}
-              nodes={graphData.nodes}
-              edges={graphData.edges}
-              onSelectPath={selectNodeByPath}
-            />
-          )}
-        </div>
+      </div>
 
+      {/* Document Panel — overlay pinned to the right, above the legend and the
+          docked command bar. Full-width on mobile (covers the legend so it never
+          overflows), fixed 32rem from md up. */}
+      <div className={`absolute right-0 top-0 z-30 h-full w-[min(32rem,100vw)] p-4 pt-16 sm:p-6 sm:pt-20 transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${selectedNodePath ? 'translate-x-0 pointer-events-auto' : 'translate-x-[110%] pointer-events-none'}`}>
+        {selectedNodePath && (
+          <DocPanel 
+            path={selectedNodePath} 
+            onClose={() => setSelectedNodePath(null)}
+            node={selectedNode}
+            nodes={graphData.nodes}
+            edges={graphData.edges}
+            onSelectPath={selectNodeByPath}
+          />
+        )}
       </div>
     </div>
   );

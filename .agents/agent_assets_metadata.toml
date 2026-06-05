@@ -1,5 +1,4 @@
 uploads = []
-outputs = []
 
 [[generated]]
 id = "ixrwRlPC3pAn6uQMwx1mf"
@@ -162,3 +161,9 @@ id = "aJnEpWRSk-SO-1zqguD8D"
 uri = "file://attached_assets/generated_images/creative-designer-portrait.png"
 type = "image"
 title = "vince creative designer portrait"
+
+[[outputs]]
+id = "q9rbjXrS4RCaDv1H9FWZh"
+uri = "file://n8n-templates/saerens-autonome-run.json"
+type = "unspecified"
+title = "n8n-workflow — Saerens autonome AI-run"

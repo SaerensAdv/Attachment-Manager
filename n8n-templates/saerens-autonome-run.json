@@ -1,0 +1,75 @@
+{
+  "name": "Saerens — Autonome AI-run",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 7 * * 1"
+            }
+          ]
+        }
+      },
+      "id": "63fa086c-4513-4948-93c7-e54ebe954c53",
+      "name": "Elke maandag 07:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        260,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://e9be4314-e12b-4007-a229-08dc90cf6f89-00-1ahcsis3q3vco.kirk.replit.dev/api/generate/autonomous",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-trigger-secret",
+              "value": "__VERVANG_MET_JE_AUTONOMOUS_TRIGGER_SECRET__"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"agentPath\": \"agents/google-ads-optimization-specialist.md\",\n  \"clientPath\": \"clients/db/5.md\",\n  \"workflowPath\": \"workflows/account-audit.md\",\n  \"request\": \"Voer een autonome maandelijkse account-audit uit voor deze klant en lever concrete optimalisatievoorstellen.\"\n}",
+        "options": {
+          "timeout": 600000
+        }
+      },
+      "id": "0e2315b0-1252-4adc-bf3b-f89c2954548d",
+      "name": "Start autonome run",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        520,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Elke maandag 07:00": {
+      "main": [
+        [
+          {
+            "node": "Start autonome run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templatecredsSetupCompleted": true
+  }
+}

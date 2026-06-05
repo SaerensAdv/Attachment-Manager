@@ -382,6 +382,51 @@ export interface AgentRunList {
   runs: AgentRun[];
 }
 
+export interface LeaderboardEntry {
+  agentPath: string;
+  slug: string;
+  title: string;
+  runsLed: number;
+  runsParticipated: number;
+  totalOutputTokens: number;
+  /** @nullable */
+  avgDurationMs: number | null;
+  /** @nullable */
+  lastActiveAt: string | null;
+  /** @nullable */
+  portraitThumbUrl: string | null;
+}
+
+export interface TeamStats {
+  totalRuns: number;
+  completed: number;
+  partial: number;
+  approved: number;
+  rejected: number;
+  pending: number;
+  totalTokens: number;
+  /** @nullable */
+  avgDurationMs: number | null;
+  leaderboard: LeaderboardEntry[];
+}
+
+export interface AutonomousGenerateRequest {
+  agentPath: string;
+  additionalAgentPaths?: string[];
+  clientPath: string;
+  workflowPath: string;
+  request: string;
+}
+
+export interface AutonomousGenerateResult {
+  /** @nullable */
+  id: number | null;
+  status: string;
+  archived: boolean;
+  /** @nullable */
+  error: string | null;
+}
+
 export type FeedbackInputVerdict = typeof FeedbackInputVerdict[keyof typeof FeedbackInputVerdict];
 
 

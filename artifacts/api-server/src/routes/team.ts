@@ -2,7 +2,11 @@ import { Router, type IRouter } from "express";
 import type { Generation } from "@workspace/db";
 import { GetTeamResponse } from "@workspace/api-zod";
 import { getTeamRoster } from "../lib/team";
-import { getAgentStats, listAgentRuns } from "../lib/generations-store";
+import {
+  getAgentStats,
+  getTeamStats,
+  listAgentRuns,
+} from "../lib/generations-store";
 
 const router: IRouter = Router();
 
@@ -42,6 +46,21 @@ function serializeAgentRun(g: Generation, agentPath: string) {
 router.get("/team", async (req, res): Promise<void> => {
   const employees = await getTeamRoster();
   res.json(GetTeamResponse.parse({ employees }));
+});
+
+router.get("/team/stats", async (req, res): Promise<void> => {
+  const [stats, roster] = await Promise.all([getTeamStats(), getTeamRoster()]);
+  const byPath = new Map(roster.map((m) => [m.path, m]));
+  const leaderboard = stats.leaderboard.map((e) => {
+    const member = byPath.get(e.agentPath);
+    return {
+      ...e,
+      slug: member?.slug ?? e.agentPath.replace(/^agents\//, "").replace(/\.md$/, ""),
+      title: member?.title ?? e.agentPath,
+      portraitThumbUrl: member?.portraitThumbUrl ?? null,
+    };
+  });
+  res.json({ ...stats, leaderboard });
 });
 
 router.get("/team/:slug/stats", async (req, res): Promise<void> => {

@@ -7,7 +7,13 @@ description: Invariants for archiving generation runs and keeping run-level stat
 
 The generation flow records a per-agent step trail (one step per agent + a
 deliverable step) alongside the run row, so any run — including failed, aborted,
-truncated, and future autonomous runs nobody watched — is reviewable afterward.
+truncated, and autonomous runs nobody watched — is reviewable afterward.
+
+**Single source of truth:** the team loop + deliverable + persistRun live in ONE
+engine shared by both the interactive SSE route and the autonomous trigger route.
+Never fork this logic per-route — the archival/status invariants below must hold
+identically for every trigger source. The engine takes a `sink` (SSE writer vs
+no-op) and an `AbortSignal`; routes only format output.
 
 ## Invariants (must hold)
 - **Archive on any recorded work.** A run is persisted when it has produced

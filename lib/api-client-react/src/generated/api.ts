@@ -22,6 +22,8 @@ import type {
 import type {
   AgentRunList,
   AgentStats,
+  AutonomousGenerateRequest,
+  AutonomousGenerateResult,
   BacklinkList,
   Client,
   ClientInput,
@@ -42,6 +44,7 @@ import type {
   ImprovementProposal,
   ProposalList,
   TeamRoster,
+  TeamStats,
   ValidationReport
 } from './api.schemas';
 
@@ -688,6 +691,156 @@ export function useGetTeam<TData = Awaited<ReturnType<typeof getTeam>>, TError =
 
 
 
+
+export const getGetTeamStatsUrl = () => {
+
+
+
+
+  return `/api/team/stats`
+}
+
+/**
+ * @summary Team-wide aggregate KPIs and per-agent leaderboard
+ */
+export const getTeamStats = async ( options?: RequestInit): Promise<TeamStats> => {
+
+  return customFetch<TeamStats>(getGetTeamStatsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetTeamStatsQueryKey = () => {
+    return [
+    `/api/team/stats`
+    ] as const;
+    }
+
+
+export const getGetTeamStatsQueryOptions = <TData = Awaited<ReturnType<typeof getTeamStats>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTeamStats>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetTeamStatsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getTeamStats>>> = ({ signal }) => getTeamStats({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTeamStats>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetTeamStatsQueryResult = NonNullable<Awaited<ReturnType<typeof getTeamStats>>>
+export type GetTeamStatsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Team-wide aggregate KPIs and per-agent leaderboard
+ */
+
+export function useGetTeamStats<TData = Awaited<ReturnType<typeof getTeamStats>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTeamStats>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetTeamStatsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getTriggerAutonomousGenerationUrl = () => {
+
+
+
+
+  return `/api/generate/autonomous`
+}
+
+/**
+ * Runs the team server-side to completion and archives the result with triggerSource="autonomous". Gated behind the x-trigger-secret header (matched against AUTONOMOUS_TRIGGER_SECRET); returns 503 when that env var is unset. Intended for n8n flows or schedulers.
+
+ * @summary Trigger a non-watched (autonomous) generation run
+ */
+export const triggerAutonomousGeneration = async (autonomousGenerateRequest: AutonomousGenerateRequest, options?: RequestInit): Promise<AutonomousGenerateResult> => {
+
+  return customFetch<AutonomousGenerateResult>(getTriggerAutonomousGenerationUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      autonomousGenerateRequest,)
+  }
+);}
+
+
+
+
+export const getTriggerAutonomousGenerationMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof triggerAutonomousGeneration>>, TError,{data: BodyType<AutonomousGenerateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof triggerAutonomousGeneration>>, TError,{data: BodyType<AutonomousGenerateRequest>}, TContext> => {
+
+const mutationKey = ['triggerAutonomousGeneration'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof triggerAutonomousGeneration>>, {data: BodyType<AutonomousGenerateRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  triggerAutonomousGeneration(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type TriggerAutonomousGenerationMutationResult = NonNullable<Awaited<ReturnType<typeof triggerAutonomousGeneration>>>
+    export type TriggerAutonomousGenerationMutationBody = BodyType<AutonomousGenerateRequest>
+    export type TriggerAutonomousGenerationMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Trigger a non-watched (autonomous) generation run
+ */
+export const useTriggerAutonomousGeneration = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof triggerAutonomousGeneration>>, TError,{data: BodyType<AutonomousGenerateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof triggerAutonomousGeneration>>,
+        TError,
+        {data: BodyType<AutonomousGenerateRequest>},
+        TContext
+      > => {
+      return useMutation(getTriggerAutonomousGenerationMutationOptions(options));
+    }
 
 export const getGetAgentStatsUrl = (slug: string,) => {
 

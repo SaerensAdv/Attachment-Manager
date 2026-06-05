@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
+import Dashboard from "@/pages/Dashboard";
 import Team from "@/pages/Team";
 import Clients from "@/pages/Clients";
 import History from "@/pages/History";
@@ -24,6 +25,7 @@ function Router() {
       <Route path="/generate">
         <Redirect to="/" />
       </Route>
+      <Route path="/dashboard" component={Dashboard} />
       <Route path="/team" component={Team} />
       <Route path="/clients" component={Clients} />
       <Route path="/history" component={History} />

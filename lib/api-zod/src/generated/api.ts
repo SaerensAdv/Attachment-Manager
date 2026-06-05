@@ -175,6 +175,57 @@ export const GetTeamResponse = zod.object({
 
 
 /**
+ * @summary Team-wide aggregate KPIs and per-agent leaderboard
+ */
+export const GetTeamStatsResponse = zod.object({
+  "totalRuns": zod.number(),
+  "completed": zod.number(),
+  "partial": zod.number(),
+  "approved": zod.number(),
+  "rejected": zod.number(),
+  "pending": zod.number(),
+  "totalTokens": zod.number(),
+  "avgDurationMs": zod.number().nullable(),
+  "leaderboard": zod.array(zod.object({
+  "agentPath": zod.string(),
+  "slug": zod.string(),
+  "title": zod.string(),
+  "runsLed": zod.number(),
+  "runsParticipated": zod.number(),
+  "totalOutputTokens": zod.number(),
+  "avgDurationMs": zod.number().nullable(),
+  "lastActiveAt": zod.coerce.date().nullable(),
+  "portraitThumbUrl": zod.string().nullable()
+}))
+})
+
+
+/**
+ * Runs the team server-side to completion and archives the result with triggerSource="autonomous". Gated behind the x-trigger-secret header (matched against AUTONOMOUS_TRIGGER_SECRET); returns 503 when that env var is unset. Intended for n8n flows or schedulers.
+
+ * @summary Trigger a non-watched (autonomous) generation run
+ */
+export const TriggerAutonomousGenerationHeader = zod.object({
+  "x-trigger-secret": zod.string()
+})
+
+export const TriggerAutonomousGenerationBody = zod.object({
+  "agentPath": zod.string(),
+  "additionalAgentPaths": zod.array(zod.string()).optional(),
+  "clientPath": zod.string(),
+  "workflowPath": zod.string(),
+  "request": zod.string()
+})
+
+export const TriggerAutonomousGenerationResponse = zod.object({
+  "id": zod.number().nullable(),
+  "status": zod.string(),
+  "archived": zod.boolean(),
+  "error": zod.string().nullable()
+})
+
+
+/**
  * @summary Aggregate KPIs for a single agent
  */
 export const GetAgentStatsParams = zod.object({

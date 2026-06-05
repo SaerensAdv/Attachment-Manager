@@ -110,6 +110,126 @@ export async function getAgentStats(agentPath: string): Promise<AgentStats> {
   };
 }
 
+/** One agent's row in the team leaderboard. */
+export interface AgentLeaderboardEntry {
+  agentPath: string;
+  runsLed: number;
+  runsParticipated: number;
+  totalOutputTokens: number;
+  avgDurationMs: number | null;
+  lastActiveAt: string | null;
+}
+
+/** Team-wide aggregate KPIs + a per-agent leaderboard. */
+export interface TeamStats {
+  totalRuns: number;
+  completed: number;
+  partial: number;
+  approved: number;
+  rejected: number;
+  pending: number;
+  totalTokens: number;
+  avgDurationMs: number | null;
+  leaderboard: AgentLeaderboardEntry[];
+}
+
+/**
+ * Aggregate KPIs across the whole team plus a per-agent leaderboard. Computed
+ * from a single pass over the archive + step trail (no per-agent re-querying),
+ * so it stays cheap as the team grows. The leaderboard only counts real agents
+ * (the deliverable pseudo-step, keyed by a workflow path, is excluded so it
+ * never shows up as an "agent").
+ */
+export async function getTeamStats(): Promise<TeamStats> {
+  const [runs, steps] = await Promise.all([
+    db.select().from(generationsTable),
+    db.select().from(generationStepsTable),
+  ]);
+
+  const completed = runs.filter((g) => g.status === "completed").length;
+  const partial = runs.filter((g) => g.status === "partial").length;
+  const approved = runs.filter((g) => g.feedbackVerdict === "approved").length;
+  const rejected = runs.filter((g) => g.feedbackVerdict === "rejected").length;
+  const pending = runs.length - approved - rejected;
+  const totalTokens = runs.reduce((a, g) => a + (g.totalTokens ?? 0), 0);
+  const runDurations = runs
+    .map((g) => g.durationMs)
+    .filter((n): n is number => typeof n === "number");
+  const avgDurationMs = runDurations.length
+    ? Math.round(runDurations.reduce((a, b) => a + b, 0) / runDurations.length)
+    : null;
+
+  // Build the leaderboard keyed by agent path. runsLed/runsParticipated and
+  // last-active come from the run rows; tokens/duration from the agent's own
+  // step rows (the only true per-agent measurement), excluding the deliverable.
+  const board = new Map<string, AgentLeaderboardEntry & { _durations: number[] }>();
+  const ensure = (agentPath: string) => {
+    let e = board.get(agentPath);
+    if (!e) {
+      e = {
+        agentPath,
+        runsLed: 0,
+        runsParticipated: 0,
+        totalOutputTokens: 0,
+        avgDurationMs: null,
+        lastActiveAt: null,
+        _durations: [],
+      };
+      board.set(agentPath, e);
+    }
+    return e;
+  };
+
+  for (const g of runs) {
+    const members = new Set<string>();
+    if (g.leadAgentPath) members.add(g.leadAgentPath);
+    try {
+      const arr = JSON.parse(g.teamPaths);
+      if (Array.isArray(arr))
+        for (const p of arr) if (typeof p === "string") members.add(p);
+    } catch {
+      /* tolerate bad data */
+    }
+    for (const p of members) {
+      if (!p.startsWith("agents/")) continue;
+      const e = ensure(p);
+      e.runsParticipated += 1;
+      if (g.leadAgentPath === p) e.runsLed += 1;
+      const at = g.createdAt.toISOString();
+      if (!e.lastActiveAt || at > e.lastActiveAt) e.lastActiveAt = at;
+    }
+  }
+
+  for (const s of steps) {
+    if (s.role === "deliverable") continue;
+    if (!s.agentPath.startsWith("agents/")) continue;
+    const e = ensure(s.agentPath);
+    e.totalOutputTokens += s.outputTokens ?? 0;
+    if (typeof s.durationMs === "number") e._durations.push(s.durationMs);
+  }
+
+  const leaderboard: AgentLeaderboardEntry[] = [...board.values()]
+    .map(({ _durations, ...rest }) => ({
+      ...rest,
+      avgDurationMs: _durations.length
+        ? Math.round(_durations.reduce((a, b) => a + b, 0) / _durations.length)
+        : null,
+    }))
+    .sort((a, b) => b.runsParticipated - a.runsParticipated);
+
+  return {
+    totalRuns: runs.length,
+    completed,
+    partial,
+    approved,
+    rejected,
+    pending,
+    totalTokens,
+    avgDurationMs,
+    leaderboard,
+  };
+}
+
 /** Recent runs an agent took part in (lead or member), newest first. */
 export async function listAgentRuns(
   agentPath: string,

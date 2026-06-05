@@ -210,6 +210,47 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/TeamRoster"
+  /team/stats:
+    get:
+      operationId: getTeamStats
+      tags: [team]
+      summary: Team-wide aggregate KPIs and per-agent leaderboard
+      responses:
+        "200":
+          description: Aggregate team KPIs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamStats"
+  /generate/autonomous:
+    post:
+      operationId: triggerAutonomousGeneration
+      tags: [generate]
+      summary: Trigger a non-watched (autonomous) generation run
+      description: >
+        Runs the team server-side to completion and archives the result with
+        triggerSource="autonomous". Gated behind the x-trigger-secret header
+        (matched against AUTONOMOUS_TRIGGER_SECRET); returns 503 when that env
+        var is unset. Intended for n8n flows or schedulers.
+      parameters:
+        - name: x-trigger-secret
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AutonomousGenerateRequest"
+      responses:
+        "200":
+          description: The archived run outcome
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AutonomousGenerateResult"
   /team/{slug}/stats:
     get:
       operationId: getAgentStats
@@ -1293,6 +1334,99 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/AgentRun"
+    LeaderboardEntry:
+      type: object
+      required:
+        - agentPath
+        - slug
+        - title
+        - runsLed
+        - runsParticipated
+        - totalOutputTokens
+        - avgDurationMs
+        - lastActiveAt
+        - portraitThumbUrl
+      properties:
+        agentPath:
+          type: string
+        slug:
+          type: string
+        title:
+          type: string
+        runsLed:
+          type: integer
+        runsParticipated:
+          type: integer
+        totalOutputTokens:
+          type: integer
+        avgDurationMs:
+          type: ["integer", "null"]
+        lastActiveAt:
+          type: ["string", "null"]
+          format: date-time
+        portraitThumbUrl:
+          type: ["string", "null"]
+    TeamStats:
+      type: object
+      required:
+        - totalRuns
+        - completed
+        - partial
+        - approved
+        - rejected
+        - pending
+        - totalTokens
+        - avgDurationMs
+        - leaderboard
+      properties:
+        totalRuns:
+          type: integer
+        completed:
+          type: integer
+        partial:
+          type: integer
+        approved:
+          type: integer
+        rejected:
+          type: integer
+        pending:
+          type: integer
+        totalTokens:
+          type: integer
+        avgDurationMs:
+          type: ["integer", "null"]
+        leaderboard:
+          type: array
+          items:
+            $ref: "#/components/schemas/LeaderboardEntry"
+    AutonomousGenerateRequest:
+      type: object
+      required: [agentPath, clientPath, workflowPath, request]
+      properties:
+        agentPath:
+          type: string
+        additionalAgentPaths:
+          type: array
+          items:
+            type: string
+        clientPath:
+          type: string
+        workflowPath:
+          type: string
+        request:
+          type: string
+    AutonomousGenerateResult:
+      type: object
+      required: [id, status, archived, error]
+      properties:
+        id:
+          type: ["integer", "null"]
+        status:
+          type: string
+        archived:
+          type: boolean
+        error:
+          type: ["string", "null"]
     FeedbackInput:
       type: object
       required: [verdict]

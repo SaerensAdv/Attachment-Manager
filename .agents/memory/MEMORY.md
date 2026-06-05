@@ -10,6 +10,7 @@
 - [Client DB ↔ doc-graph bridge](client-db-doc-bridge.md) — DB clients become synthetic `clients/db/<id>.md` DocFiles; every doc consumer must inject loadClientDocs(); invalidate clients+doc-graph keys after mutations.
 - [Website-intake (Fase 2)](website-intake.md) — server-side read of client's own site into raw agent context; SSRF guardrails (block private IPs + manual redirect re-validation) must never regress.
 - [Learning loop (review→proposals→apply)](learning-loop.md) — per-change confirmation; non-destructive append; accept/reject must be an atomic compare-and-set (claim WHERE pending) + revert-on-apply-failure.
+- [Responsive breakpoints](responsive-breakpoints.md) — TabNav labels reveal at lg (not sm) for 7 tabs; page px-4 sm:px-6; cap floating panels to viewport.
 - [App motion layer](app-motion-layer.md) — Lenis smooth scroll must be OFF on the full-screen Kaart route ("/"); all motion must honour prefers-reduced-motion.
 - [Replit-docs knowledge nodes](replit-docs-thread.md) — Replit nodes are how-to usage docs in knowledge/, English; wire multi-flow tools (e.g. Canvas) into every agent/workflow they touch via exact knowledge/<file>.md path.
 - [Team heads / reporting line](team-heads-reporting-line.md) — 2nd grouping (CEO→Orchestrator→head→specialist) parsed from AGENTS.md; organizational only, every agent MUST have a head (headless-agent check, no opt-out).

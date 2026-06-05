@@ -36,7 +36,7 @@ function StatCard({
       <div className="font-['Space_Mono'] text-[9px] uppercase tracking-[0.25em] text-muted-foreground mb-2">
         {label}
       </div>
-      <div className="font-['Playfair_Display'] font-black text-4xl leading-none">
+      <div className="font-['Playfair_Display'] font-black text-3xl sm:text-4xl leading-none">
         {value}
       </div>
       {sub ? (
@@ -113,7 +113,7 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-[100dvh] w-full bg-background text-foreground font-['Inter']">
-      <div className="mx-auto max-w-7xl px-6 pt-20 pb-16">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 pt-20 pb-16">
         <header className="border-b-2 border-foreground pb-5 mb-10">
           <div className="flex items-center gap-2 mb-2">
             <BarChart3 className="w-4 h-4 text-accent" />
@@ -121,7 +121,7 @@ export default function Dashboard() {
               Prestatie-overzicht
             </span>
           </div>
-          <h1 className="font-['Playfair_Display'] font-black text-4xl md:text-5xl uppercase tracking-tight leading-none">
+          <h1 className="font-['Playfair_Display'] font-black text-3xl sm:text-4xl md:text-5xl uppercase tracking-tight leading-none">
             Dashboard
           </h1>
           <p className="font-['Inter'] text-sm text-muted-foreground mt-5 max-w-2xl">
@@ -132,7 +132,7 @@ export default function Dashboard() {
         </header>
 
         <Reveal>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
             <StatCard
               label="Runs totaal"
               value={String(stats.totalRuns)}

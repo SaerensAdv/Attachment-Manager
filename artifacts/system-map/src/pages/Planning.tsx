@@ -279,7 +279,7 @@ export default function Planning() {
 
   return (
     <div className="min-h-[100dvh] w-full bg-background text-foreground font-['Inter']">
-      <div className="mx-auto max-w-7xl px-6 pt-20 pb-16">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 pt-20 pb-16">
         <header className="border-b-2 border-foreground pb-5 mb-8">
           <div className="flex items-center gap-2 mb-2">
             <CalendarClock className="w-4 h-4 text-accent" />
@@ -287,7 +287,7 @@ export default function Planning() {
               Automatische runs
             </span>
           </div>
-          <h1 className="font-['Playfair_Display'] font-black text-4xl md:text-5xl uppercase tracking-tight leading-none">
+          <h1 className="font-['Playfair_Display'] font-black text-3xl sm:text-4xl md:text-5xl uppercase tracking-tight leading-none">
             Planning
           </h1>
           <p className="font-['Inter'] text-sm text-muted-foreground mt-5 max-w-2xl">

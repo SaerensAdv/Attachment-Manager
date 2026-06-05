@@ -25,9 +25,9 @@ export default function TabNav() {
   const reduce = useReducedMotion();
 
   return (
-    <div className="fixed top-5 left-1/2 -translate-x-1/2 z-50 pointer-events-auto">
+    <div className="fixed top-3 sm:top-5 left-1/2 -translate-x-1/2 z-50 pointer-events-auto max-w-[calc(100vw-1rem)]">
       <div className="flex items-stretch bg-card border border-foreground shadow-[3px_3px_0px_hsl(var(--foreground))]">
-        <div className="hidden sm:flex items-center px-3 border-r border-foreground/20">
+        <div className="hidden lg:flex items-center px-3 border-r border-foreground/20">
           <span className="font-['Playfair_Display'] font-black text-sm tracking-tight leading-none">
             SA
           </span>
@@ -39,7 +39,9 @@ export default function TabNav() {
             <Link
               key={href}
               href={href}
-              className={`relative flex items-center gap-2 px-4 py-2 font-['Space_Mono'] text-[11px] uppercase tracking-widest transition-colors border-r border-foreground/20 last:border-r-0 ${
+              aria-label={label}
+              title={label}
+              className={`relative flex items-center gap-0 lg:gap-2 px-3 lg:px-4 py-2.5 lg:py-2 font-['Space_Mono'] text-[11px] uppercase tracking-widest transition-colors border-r border-foreground/20 last:border-r-0 ${
                 active
                   ? "text-background"
                   : "text-foreground/60 hover:text-foreground hover:bg-foreground/5"
@@ -57,8 +59,8 @@ export default function TabNav() {
                   />
                 ))}
               <span className="relative z-10 flex items-center gap-2">
-                <Icon className="w-3.5 h-3.5" />
-                {label}
+                <Icon className="w-3.5 h-3.5 shrink-0" />
+                <span className="hidden lg:inline">{label}</span>
               </span>
             </Link>
           );

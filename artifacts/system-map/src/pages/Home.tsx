@@ -199,7 +199,7 @@ export default function Home() {
       {/* Command bar + generation panel — docked bottom-center over the map. The
           stack itself ignores pointer events so the map stays pannable; only the
           bar and panel capture interaction. */}
-      <div ref={dockRef} className="absolute inset-x-0 bottom-0 z-20 flex flex-col items-center gap-3 px-6 pb-6 pointer-events-none">
+      <div ref={dockRef} className="absolute inset-x-0 bottom-0 z-20 flex flex-col items-center gap-3 px-4 pb-4 sm:px-6 sm:pb-6 pointer-events-none">
         <AnimatePresence>
           {gen.hasActiveFlow && <GenerationPanel key="gen-panel" gen={gen} />}
         </AnimatePresence>
@@ -207,10 +207,10 @@ export default function Home() {
       </div>
 
       {/* Foreground UI Layer */}
-      <div className="absolute inset-0 z-10 pointer-events-none p-6 pt-20 flex justify-between items-start">
+      <div className="absolute inset-0 z-10 pointer-events-none p-4 pt-16 sm:p-6 sm:pt-20 flex justify-between items-start">
         
         {/* Left column: Legend & Search */}
-        <div className="w-80 flex flex-col gap-6 pointer-events-none">
+        <div className="w-72 sm:w-80 max-w-[calc(100vw-2rem)] flex flex-col gap-6 pointer-events-none">
           <div className="pointer-events-auto bg-card border border-foreground shadow-[4px_4px_0px_hsl(var(--foreground))] overflow-hidden flex flex-col">
             <div className="p-5 border-b border-foreground">
               <div className="flex items-baseline justify-between mb-1">
@@ -254,7 +254,7 @@ export default function Home() {
         </div>
 
         {/* Right column: Document Panel */}
-        <div className={`w-[32rem] h-full transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${selectedNodePath ? 'translate-x-0' : 'translate-x-[110%]'} pointer-events-auto`}>
+        <div className={`w-[min(32rem,calc(100vw-2rem))] h-full transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${selectedNodePath ? 'translate-x-0' : 'translate-x-[110%]'} pointer-events-auto`}>
           {selectedNodePath && (
             <DocPanel 
               path={selectedNodePath} 

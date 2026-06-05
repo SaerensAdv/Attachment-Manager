@@ -111,7 +111,7 @@ export default function Controle() {
 
   return (
     <div className="min-h-[100dvh] w-full bg-background text-foreground font-['Inter']">
-      <div className="mx-auto max-w-5xl px-6 pt-20 pb-16">
+      <div className="mx-auto max-w-5xl px-4 sm:px-6 pt-20 pb-16">
         {/* Masthead */}
         <Reveal>
           <header className="border-b-2 border-foreground pb-5 mb-10">
@@ -120,7 +120,7 @@ export default function Controle() {
                 <p className="font-['Space_Mono'] text-[10px] uppercase tracking-widest text-muted-foreground mb-3">
                   Saerens Advertising — Redactie
                 </p>
-                <h1 className="font-['Playfair_Display'] font-black text-4xl md:text-5xl uppercase tracking-tight leading-none">
+                <h1 className="font-['Playfair_Display'] font-black text-3xl sm:text-4xl md:text-5xl uppercase tracking-tight leading-none">
                   Controle
                 </h1>
               </div>

@@ -166,7 +166,7 @@ export default function CommandPalette() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="overflow-hidden p-0 gap-0 rounded-none border border-foreground bg-card shadow-[6px_6px_0px_hsl(var(--foreground))]">
+      <DialogContent className="w-[95vw] max-w-lg overflow-hidden p-0 gap-0 rounded-none border border-foreground bg-card shadow-[6px_6px_0px_hsl(var(--foreground))]">
         <DialogTitle className="sr-only">Zoeken in de kaart</DialogTitle>
         {/* Orama drives the filtering, so cmdk's own filter is disabled. */}
         <Command

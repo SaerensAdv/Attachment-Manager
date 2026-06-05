@@ -289,7 +289,7 @@ export default function DocPanel({ path, node, nodes, edges, onClose, onSelectPa
                 ) : (
                   <Save className="w-3.5 h-3.5" />
                 )}
-                Opslaan
+                <span className="hidden sm:inline">Opslaan</span>
               </button>
               <button
                 onClick={() => setEditing(false)}
@@ -308,7 +308,7 @@ export default function DocPanel({ path, node, nodes, edges, onClose, onSelectPa
                 className="inline-flex items-center gap-1.5 px-3 py-2 border border-foreground rounded-none hover:bg-foreground hover:text-background transition-colors font-['Space_Mono'] text-[10px] uppercase tracking-[0.2em] text-foreground"
               >
                 <Pencil className="w-3.5 h-3.5" />
-                Bewerken
+                <span className="hidden sm:inline">Bewerken</span>
               </button>
             )
           )}

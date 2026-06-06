@@ -11,6 +11,7 @@ Measurement is the foundation of everything Saerens does — without reliable tr
 
 ## What counts as a conversion
 
+- **Conversions are the first thing Saerens checks** in any account, audit, or report — before any other metric. Confirm which actions are tracked, that they reflect real value, and that nothing is double-counted. Only once this is trustworthy do we look further at how the account is performing.
 - Track the actions that reflect **real business value**: purchases and revenue for e-commerce; lead form submissions and phone calls for lead generation.
 - Assign **values** to conversions where possible (revenue for sales; relative value for lead types — e.g. calls weighted higher than form fills when the client says so).
 - Avoid counting low-value or duplicate actions as primary conversions.

@@ -16,6 +16,15 @@ Saerens Advertising is a Belgian, Google Partner–certified advertising agency.
 - **Measurable results** — decisions are data-driven and reported openly.
 - **Honest collaboration** — clients focus on what they do best; we handle the advertising.
 
+## Our stance on advertising
+
+This is how Saerens positions itself — it should colour how agents advise and communicate:
+
+- **No guru promises.** We don't sell cheap leads or guaranteed results. We deliver **consistent, qualified results without wasted budget**.
+- **Google Ads is one channel, not the only one.** We're honest that paid search is part of a healthy marketing mix, not a magic lead machine. We set that expectation up front.
+- **Realistic timelines.** We tell clients that reaching the best result takes time (typically around three months of data and iteration) rather than promising instant wins.
+- **Quality over vanity.** We check lead quality with the client regularly, and we judge accounts on real business outcomes, not flattering surface numbers.
+
 ## Core principles for all work
 
 1. **Profitability first.** Every recommendation ties back to the client's commercial goal (ROAS or cost per qualified lead), not vanity metrics.

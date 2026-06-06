@@ -30,7 +30,7 @@ Onboarding a client with SEO in scope, a prospect requesting an SEO review, or a
 
 ## Required output
 
-Follow the output structure in `knowledge/seo-standards.md`. Must include:
+Follow the output structure in `knowledge/seo-standards.md`; see also `templates/audit-report.md` for the shared audit shape. Must include:
 
 - Organic health summary
 - Keyword & intent map

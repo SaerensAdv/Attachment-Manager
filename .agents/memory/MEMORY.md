@@ -1,5 +1,6 @@
 - [System Map generator (Phase 2)](system-map-generator.md) — generation flow is a command bar docked on the Kaart (no standalone page); doc-context assembly + SSE + live-run map model.
 - [Hybrid doc retrieval (RRF)](retrieval-no-embeddings.md) — BM25 (Orama) fused with local-embedding semantic via Reciprocal Rank Fusion; degrades to lexical-only when semantic empty; proxies have no embeddings API.
+- [Persistent embeddings (pgvector)](persistent-embeddings-pgvector.md) — embedding cache is a self-bootstrapping pgvector table OUTSIDE drizzle schema (push can't order the extension); best-effort, in-memory fallback never regresses.
 - [Account signals (read-only Ads diagnostics)](account-signals.md) — pure tracking-health + waste signals over already-pulled metrics, injected into report text; never invent a target; gate on campaign-fetch success.
 - [Monorepo composite project refs](monorepo-composite-refs.md) — new workspace libs need built dist declarations (tsc -b) or api-server typecheck fails TS6305; after a merge run api-spec codegen to refresh stale generated/built libs.
 - [System Map legend categories](system-map-categories.md) — "core"=Fundament holds only AGENTS+ARCHITECTURE; labels Dutch, ids stay stable (colors/filtering key off id); README/ROADMAP excluded from graph.

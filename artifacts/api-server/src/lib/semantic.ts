@@ -1,5 +1,10 @@
 import { createHash } from "node:crypto";
 import { listDocFiles, type DocFile } from "./docs";
+import {
+  loadStoredEmbeddings,
+  upsertEmbeddings,
+  deleteEmbeddings,
+} from "./semantic-store";
 
 const MODEL = "Xenova/paraphrase-multilingual-MiniLM-L12-v2";
 
@@ -47,6 +52,25 @@ async function getExtractor(): Promise<(texts: string[], opts: unknown) => Promi
 // hash changes, so runtime edits are reflected automatically.
 const vecByPath = new Map<string, number[]>();
 const hashByPath = new Map<string, string>();
+
+// Seed the in-memory cache from persisted embeddings exactly once per process.
+// Memoized as an in-flight promise so concurrent first queries await the same
+// seed instead of each racing to recompute the whole corpus. Best-effort: a
+// failed load just means an empty cache and a normal (re)compute.
+let seedPromise: Promise<void> | null = null;
+async function seedOnce(): Promise<void> {
+  if (!seedPromise) {
+    seedPromise = (async () => {
+      for (const e of await loadStoredEmbeddings(MODEL)) {
+        if (e.embedding.length > 0) {
+          vecByPath.set(e.path, e.embedding);
+          hashByPath.set(e.path, e.contentHash);
+        }
+      }
+    })().catch(() => {});
+  }
+  return seedPromise;
+}
 
 function sha1(s: string): string {
   return createHash("sha1").update(s).digest("hex");
@@ -97,6 +121,10 @@ export async function semanticSearch(
     const docs = listDocFiles(extra);
     if (docs.length === 0) return [];
 
+    // Cold start: seed the cache from persisted vectors so unchanged docs are
+    // not re-embedded. Best-effort — an empty/failed load just means we compute.
+    await seedOnce();
+
     // (Re)embed any new or changed docs in a single batch.
     const stale = docs.filter((d) => hashByPath.get(d.path) !== sha1(d.content));
     if (stale.length > 0) {
@@ -105,15 +133,27 @@ export async function semanticSearch(
         vecByPath.set(d.path, rows[i]);
         hashByPath.set(d.path, sha1(d.content));
       });
+      // Persist so the next cold start reuses these instead of recomputing.
+      void upsertEmbeddings(
+        MODEL,
+        stale.map((d, i) => ({
+          path: d.path,
+          contentHash: sha1(d.content),
+          embedding: rows[i],
+        })),
+      );
     }
-    // Drop embeddings for docs that no longer exist.
+    // Drop embeddings for docs that no longer exist — in memory and persisted.
     const present = new Set(docs.map((d) => d.path));
+    const removed: string[] = [];
     for (const key of [...vecByPath.keys()]) {
       if (!present.has(key)) {
         vecByPath.delete(key);
         hashByPath.delete(key);
+        removed.push(key);
       }
     }
+    if (removed.length > 0) void deleteEmbeddings(removed);
 
     const [qvec] = await embedBatch(extractor, [term]);
     return docs

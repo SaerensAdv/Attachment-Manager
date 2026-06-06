@@ -270,6 +270,54 @@ function fmtNum(value: unknown, decimals = 0): string {
   return num(value).toFixed(decimals);
 }
 
+/** Format a 0..1 fraction (e.g. impression share) as a percentage string. */
+function fmtPct(value: unknown, decimals = 1): string {
+  return `${(num(value) * 100).toFixed(decimals)}%`;
+}
+
+/** Title-case a GAQL enum like "DESKTOP" / "MONDAY" → "Desktop" / "Monday". */
+function titleEnum(value: unknown): string {
+  const s = String(value ?? "").replace(/_/g, " ").trim();
+  if (!s) return "(unknown)";
+  return s
+    .toLowerCase()
+    .split(" ")
+    .map((w) => (w ? w[0].toUpperCase() + w.slice(1) : w))
+    .join(" ");
+}
+
+/** Aggregate cost/clicks/conversions rows by a segment key, for compact splits. */
+interface SegAgg {
+  cost: number;
+  clicks: number;
+  conversions: number;
+}
+function aggregateBy(
+  rows: Record<string, unknown>[],
+  keyPath: string,
+): Map<string, SegAgg> {
+  const map = new Map<string, SegAgg>();
+  for (const row of rows) {
+    const k = String(pick(row, keyPath) ?? "");
+    if (!k) continue;
+    const cur = map.get(k) ?? { cost: 0, clicks: 0, conversions: 0 };
+    cur.cost += num(pick(row, "metrics.costMicros")) / 1_000_000;
+    cur.clicks += num(pick(row, "metrics.clicks"));
+    cur.conversions += num(pick(row, "metrics.conversions"));
+    map.set(k, cur);
+  }
+  return map;
+}
+
+/** One-line summary for a segment bucket: cost, conversions, CPA. */
+function segLine(label: string, a: SegAgg, currency: string): string {
+  const cpa = a.conversions > 0 ? (a.cost / a.conversions).toFixed(2) : "n.v.t.";
+  return (
+    `- ${label} — cost ${a.cost.toFixed(2)} ${currency}`.trim() +
+    `, clicks ${a.clicks.toFixed(0)}, conversions ${a.conversions.toFixed(2)}, CPA ${cpa} ${currency}`.trim()
+  );
+}
+
 /**
  * Pull a live, read-only Google Ads report for a single customer id.
  * Returns formatted text plus the timestamp it was fetched.
@@ -709,14 +757,20 @@ export async function fetchGoogleAdsAdCopyContext(
 }
 
 /**
- * Pull a live, read-only snapshot for NEGATIVE KEYWORD mining (weekly account
- * optimization). Returns formatted text the engine injects so the team and the
- * deliverable editor work from real data: the active SEARCH campaigns (so
- * negatives map to real campaign names), the search terms report with metrics
- * and the campaign each term ran in (so terms are excluded at the right
- * campaign), and the EXISTING campaign-level negatives (so we never recommend a
- * duplicate). Each section is best-effort: a failure becomes a warning, not a
- * thrown run. We only read — applying negatives stays a human action.
+ * Pull a live, read-only snapshot for the WEEKLY ACCOUNT OPTIMIZATION pass
+ * (negative-keyword mining plus the deeper analytical read). Returns formatted
+ * text the engine injects so the team and the deliverable editor work from real
+ * data:
+ *   - the active SEARCH campaigns (so negatives map to real campaign names);
+ *   - per-campaign impression share + where it is lost (budget vs. rank), so the
+ *     impression-share read in the workflow runs on live numbers;
+ *   - the search terms report with metrics and the campaign each term ran in (so
+ *     terms are excluded at the right campaign);
+ *   - performance segmentation (device, day-of-week, hour-of-day, geo) for the
+ *     deeper analyst pass;
+ *   - the EXISTING campaign-level negatives (so we never recommend a duplicate).
+ * Each section is best-effort: a failure becomes a warning, not a thrown run. We
+ * only read — applying any change stays a human action.
  */
 export async function fetchGoogleAdsNegativesContext(
   rawCustomerId: string,
@@ -849,9 +903,157 @@ export async function fetchGoogleAdsNegativesContext(
     );
   }
 
+  // 4. Per-campaign impression share + where it is lost (budget vs. rank).
+  interface ImpShare {
+    campaign: string;
+    is: number;
+    budgetLost: number;
+    rankLost: number;
+    topIs: number;
+  }
+  const impShare: ImpShare[] = [];
+  try {
+    const rows = await runGaql(
+      cfg,
+      accessToken,
+      customerId,
+      `SELECT campaign.name, metrics.cost_micros,
+              metrics.search_impression_share,
+              metrics.search_budget_lost_impression_share,
+              metrics.search_rank_lost_impression_share,
+              metrics.search_top_impression_share
+       FROM campaign
+       WHERE segments.date DURING LAST_30_DAYS
+         AND campaign.status = 'ENABLED'
+         AND campaign.advertising_channel_type = 'SEARCH'
+       ORDER BY metrics.cost_micros DESC
+       LIMIT ${MAX_CAMPS}`,
+    );
+    for (const row of rows) {
+      const name = String(pick(row, "campaign.name") ?? "");
+      if (!name) continue;
+      impShare.push({
+        campaign: name,
+        is: num(pick(row, "metrics.searchImpressionShare")),
+        budgetLost: num(pick(row, "metrics.searchBudgetLostImpressionShare")),
+        rankLost: num(pick(row, "metrics.searchRankLostImpressionShare")),
+        topIs: num(pick(row, "metrics.searchTopImpressionShare")),
+      });
+    }
+  } catch (err) {
+    warnings.push(
+      `Impression share could not be fetched: ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+
+  // 5. Device / day-of-week / hour-of-day splits (deeper analyst pass). Each is
+  //    queried from the SEARCH campaigns and aggregated across them.
+  let deviceAgg = new Map<string, SegAgg>();
+  let dayAgg = new Map<string, SegAgg>();
+  let hourAgg = new Map<string, SegAgg>();
+  const segSelect =
+    "metrics.cost_micros, metrics.clicks, metrics.conversions";
+  const segWhere =
+    "segments.date DURING LAST_30_DAYS AND campaign.status = 'ENABLED' AND campaign.advertising_channel_type = 'SEARCH'";
+  try {
+    deviceAgg = aggregateBy(
+      await runGaql(
+        cfg,
+        accessToken,
+        customerId,
+        `SELECT segments.device, ${segSelect} FROM campaign WHERE ${segWhere}`,
+      ),
+      "segments.device",
+    );
+  } catch (err) {
+    warnings.push(
+      `Device split could not be fetched: ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+  try {
+    dayAgg = aggregateBy(
+      await runGaql(
+        cfg,
+        accessToken,
+        customerId,
+        `SELECT segments.day_of_week, ${segSelect} FROM campaign WHERE ${segWhere}`,
+      ),
+      "segments.dayOfWeek",
+    );
+  } catch (err) {
+    warnings.push(
+      `Day-of-week split could not be fetched: ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+  try {
+    hourAgg = aggregateBy(
+      await runGaql(
+        cfg,
+        accessToken,
+        customerId,
+        `SELECT segments.hour, ${segSelect} FROM campaign WHERE ${segWhere}`,
+      ),
+      "segments.hour",
+    );
+  } catch (err) {
+    warnings.push(
+      `Hour-of-day split could not be fetched: ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+
+  // 6. Geo split (region), best-effort, with canonical-name resolution.
+  let geoAgg = new Map<string, SegAgg>();
+  const geoNames = new Map<string, string>();
+  try {
+    geoAgg = aggregateBy(
+      await runGaql(
+        cfg,
+        accessToken,
+        customerId,
+        `SELECT segments.geo_target_region, metrics.cost_micros, metrics.clicks, metrics.conversions
+         FROM geographic_view
+         WHERE segments.date DURING LAST_30_DAYS
+         ORDER BY metrics.cost_micros DESC
+         LIMIT 200`,
+      ),
+      "segments.geoTargetRegion",
+    );
+  } catch (err) {
+    warnings.push(
+      `Geo split could not be fetched: ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+  if (geoAgg.size > 0) {
+    const ids = Array.from(geoAgg.keys())
+      .map((rn) => rn.split("/").pop() ?? "")
+      .filter((id) => /^\d+$/.test(id))
+      .slice(0, 100);
+    if (ids.length > 0) {
+      try {
+        const rows = await runGaql(
+          cfg,
+          accessToken,
+          customerId,
+          `SELECT geo_target_constant.id, geo_target_constant.canonical_name
+           FROM geo_target_constant
+           WHERE geo_target_constant.id IN (${ids.join(",")})`,
+        );
+        for (const row of rows) {
+          const id = String(pick(row, "geoTargetConstant.id") ?? "");
+          const nm = String(pick(row, "geoTargetConstant.canonicalName") ?? "");
+          if (id && nm) geoNames.set(id, nm);
+        }
+      } catch (err) {
+        warnings.push(
+          `Geo region names could not be resolved: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+    }
+  }
+
   const lines: string[] = [];
   lines.push(`Account: ${customerId}`);
-  lines.push("Live data for negative keyword mining (read-only).");
+  lines.push("Live data for the weekly account optimization pass (read-only).");
   lines.push("");
 
   lines.push(`== Active search campaigns (top ${MAX_CAMPS}) ==`);
@@ -859,6 +1061,20 @@ export async function fetchGoogleAdsNegativesContext(
     lines.push("(none found)");
   } else {
     for (const name of campaignNames) lines.push(`- ${name}`);
+  }
+  lines.push("");
+
+  lines.push("== Impression share (last 30 days, by campaign) ==");
+  if (impShare.length === 0) {
+    lines.push("(no impression share data in this period)");
+  } else {
+    for (const c of impShare) {
+      lines.push(
+        `- ${c.campaign} — search IS ${fmtPct(c.is)}, ` +
+          `lost to budget ${fmtPct(c.budgetLost)}, lost to rank ${fmtPct(c.rankLost)}, ` +
+          `top IS ${fmtPct(c.topIs)}`,
+      );
+    }
   }
   lines.push("");
 
@@ -872,6 +1088,67 @@ export async function fetchGoogleAdsNegativesContext(
           `cost ${t.cost.toFixed(2)} ${currency}`.trim() +
           `, clicks ${t.clicks.toFixed(0)}, conversions ${t.conversions.toFixed(2)}`,
       );
+    }
+  }
+  lines.push("");
+
+  lines.push("== Performance by device (last 30 days) ==");
+  if (deviceAgg.size === 0) {
+    lines.push("(no device data)");
+  } else {
+    for (const [k, v] of [...deviceAgg.entries()].sort(
+      (a, b) => b[1].cost - a[1].cost,
+    )) {
+      lines.push(segLine(titleEnum(k), v, currency));
+    }
+  }
+  lines.push("");
+
+  lines.push("== Performance by day of week (last 30 days) ==");
+  if (dayAgg.size === 0) {
+    lines.push("(no day-of-week data)");
+  } else {
+    const order = [
+      "MONDAY",
+      "TUESDAY",
+      "WEDNESDAY",
+      "THURSDAY",
+      "FRIDAY",
+      "SATURDAY",
+      "SUNDAY",
+    ];
+    for (const d of order) {
+      const v = dayAgg.get(d);
+      if (v) lines.push(segLine(titleEnum(d), v, currency));
+    }
+  }
+  lines.push("");
+
+  lines.push("== Performance by hour of day (last 30 days) ==");
+  if (hourAgg.size === 0) {
+    lines.push("(no hour-of-day data)");
+  } else {
+    const hours = [...hourAgg.keys()]
+      .map(Number)
+      .filter((n) => !Number.isNaN(n))
+      .sort((a, b) => a - b);
+    for (const h of hours) {
+      const v = hourAgg.get(String(h));
+      if (v) lines.push(segLine(`${String(h).padStart(2, "0")}:00`, v, currency));
+    }
+  }
+  lines.push("");
+
+  lines.push("== Performance by region (last 30 days, top 15 by cost) ==");
+  if (geoAgg.size === 0) {
+    lines.push("(no geo data)");
+  } else {
+    const sorted = [...geoAgg.entries()]
+      .sort((a, b) => b[1].cost - a[1].cost)
+      .slice(0, 15);
+    for (const [rn, v] of sorted) {
+      const id = rn.split("/").pop() ?? "";
+      lines.push(segLine(geoNames.get(id) ?? rn, v, currency));
     }
   }
   lines.push("");

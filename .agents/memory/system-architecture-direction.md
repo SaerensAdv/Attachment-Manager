@@ -31,3 +31,15 @@ n8n. The app needs only a stable "decision endpoint" (generate loop already
 exists) plus a way to receive results back. Phase 1 ("current state" per client)
 is the structure n8n will write results into. Live integrations (Google Ads dev
 token, Search Console/GA4 OAuth) are deferred (phase 3).
+
+**Cost/licensing (confirmed June 2026):** self-hosted n8n Community Edition is
+free for commercial use, full API, unlimited runs; only n8n *Cloud* is paid (its
+permanent free plan was discontinued). So n8n-as-executor is NOT cost-blocked —
+the founder's belief that local self-hosting is free is correct. `pg-boss` / the
+in-app croner scheduler is the in-app trigger fallback.
+
+**Founder's working style (interview, encoded in the doc-graph):** Saerens accepts
+clients in principle (onboarding is setup, not a screening gate); client comms are
+monthly report + ad-hoc proactive triggers with NO always-on channel today; first
+automation priorities are monthly reports, search-term->negative-keyword checks,
+and ad copy generation; everything is still manual today.

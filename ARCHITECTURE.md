@@ -124,6 +124,17 @@ saerens-ai-team/
 
 A small app will assemble layers 1–5 automatically (an "agent loader" + "prompt builder"), send them to an AI model, and return the formatted output. The documentation in this repo is the configuration that app will read — which is why the structure is kept clean now.
 
+## Execution layer (brain vs. executor)
+
+Today everything is still done by hand. The target split keeps control in one place:
+
+- **The app is the brain and source of truth.** It holds the agents, knowledge, client dossiers and live account data, and it *decides* what should happen.
+- **An executor only carries out actions** — pulls data, performs the approved change, and writes the result back. It holds no strategy of its own.
+- The intended executor is **n8n, self-hosted**. Its Community Edition is free for commercial use with unlimited runs (only n8n *Cloud* is paid), so cost is not a blocker; an equivalent executor or the built-in scheduler (`pg-boss`, see `ROADMAP.md`) can fill the same role.
+- Two safety categories carry over from `ROADMAP.md`: **read-only/reporting** may run end-to-end automatically; **proposing/acting** (anything touching the ad account or the client) always needs human approval before the executor writes.
+
+First automations to target (founder priority): **monthly reports, search-term checks for negative keywords, and ad copy generation.**
+
 ## Design rules
 
 - One concept per folder. Do not mix client data into agent files or standards into workflows.

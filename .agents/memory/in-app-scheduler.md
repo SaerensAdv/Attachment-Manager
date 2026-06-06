@@ -5,10 +5,16 @@ description: How scheduled autonomous runs work after n8n was dropped; the firin
 
 # In-app scheduler (replaces n8n)
 
-n8n was abandoned (their trial has no public API). Scheduled runs are now owned
-entirely by the app: schedules live in a DB table, the api-server runs a 60s tick
-loop (croner) that finds due rows and calls the existing generation engine with
-`triggerSource:"scheduled"`. Results archive + count in KPIs like any run.
+The app owns its own *in-app* scheduled runs: schedules live in a DB table, the
+api-server runs a 60s tick loop (croner) that finds due rows and calls the existing
+generation engine with `triggerSource:"scheduled"`. Results archive + count in KPIs
+like any run.
+
+NOTE (corrected): the earlier "n8n has no public API / was dropped" blocker was
+about the n8n *Cloud* trial only. Self-hosted n8n Community Edition is free for
+commercial use with a full API and unlimited runs — so n8n remains the intended
+external real-world executor (see system-architecture-direction.md). The in-app
+croner scheduler is the in-app trigger fallback, not a replacement for that vision.
 
 **Firing model / invariants (do not regress):**
 - Double-fire prevention is a compare-and-set claim on `nextRunAt`

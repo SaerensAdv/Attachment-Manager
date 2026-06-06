@@ -101,10 +101,13 @@ Once the dossiers are richly filled (briefing, website intake, live Google Ads, 
 | Automation | Trigger | Category | Status / notes |
 | :--- | :--- | :--- | :--- |
 | Monthly Google Ads report | Monthly (schedule) | Read-only | Closest to ready — `monthly-reporting.md` + `account-audit.md` + live Ads data exist; needs trigger + delivery. |
-| Weekly search-term audit → negative keywords | Weekly (schedule) | Proposing/acting | Needs an SOP defining when a term is wasteful + an approval gate before n8n writes negatives. |
+| Weekly search-term audit → negative keywords | Weekly (schedule) | Proposing/acting | Founder priority. Needs an SOP defining when a term is wasteful + an approval gate before the executor writes negatives. |
+| Ad copy generation | On request / schedule | Proposing/acting | Founder priority. Agent drafts ad copy from the dossier + `tone-of-voice.md` standards; generation is read-only, but a human approves before anything goes live. |
 | Incoming client email handling | Email received (event) | Proposing/acting | Sensitive — human-in-the-loop required. `client-email.md` + client agents exist. Still to be discussed. |
 | Monthly skill-refresh digest per agent | Monthly (schedule) | Proposing/acting | Self-initiated upkeep: each agent scans vetted, field-specific sources for what's new and returns proposals **with source + date**. Reuses the existing learning loop (one digest, per-item human approve/reject, non-destructive append). Guardrails against low-quality input: a pre-approved source whitelist per field (e.g. official Google Ads / Meta / GA4 changelogs), source+date mandatory, and dedupe against what the agent already knows. Default monthly; cadence can differ per role (fast-moving fields more often, stable roles softer or off). |
 | _…more to be added_ | | | |
+
+> **Today everything is still done by hand** — there are no automations yet. The founder's first three priorities are, in order, the **monthly report**, **search-term → negative-keyword checks**, and **ad copy generation** (the rows above). On tooling: **self-hosted n8n is free** (Community Edition — unlimited runs, commercial use allowed); only n8n *Cloud* is paid, so the executor choice is not cost-blocked. `pg-boss` remains the in-app scheduler fallback.
 
 ### New building block this phase needs
 

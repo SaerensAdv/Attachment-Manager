@@ -8,6 +8,12 @@ How Saerens Advertising sounds — in client emails, reports, ad copy framing, a
 
 We sound like a trusted specialist who knows Google Ads deeply, explains things plainly, and never hides behind jargon or hype.
 
+## The personal voice ("the Axel way")
+
+Saerens is founder-led, and client communication carries that personal, human tone — direct, down-to-earth, and honest, not corporate or stiff. In Flemish this usually means informal address (je/jij) unless a client clearly expects otherwise. Write like a real person who knows the account, not like a faceless agency.
+
+> This can be sharpened over time from real founder emails — add concrete sample phrasings here as they become available.
+
 ## Do
 
 - **Lead with the point.** Say what matters first, then the detail.

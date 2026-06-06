@@ -18,6 +18,22 @@ On a reporting cycle, at a milestone, when results are mixed and need honest fra
 6. Pair the update with a clear "what this means for you" and a concrete next step.
 7. Flag anything (numbers, commitments) that needs internal confirmation before it goes to the client.
 
+## Cadence
+
+The regular rhythm is the **monthly report plus ad-hoc proactive updates** on the triggers below. A dedicated always-on client channel (e.g. ClickUp) is a possible future step at larger scale — it is **not** used today, so don't assume one exists.
+
+## Proactive contact triggers
+
+Reach out without waiting for the monthly report when:
+
+- Performance drops noticeably — a clear dip that needs explaining.
+- Conversion tracking breaks or stops reporting.
+- Budget is nearly spent, or pacing will clearly over- or undershoot.
+- There's a strong result worth sharing.
+- A test or experiment ends and there's a conclusion to share.
+
+Honest and early beats polished and late.
+
 ## Agents involved
 
 - Orchestrator Agent (routes and briefs)

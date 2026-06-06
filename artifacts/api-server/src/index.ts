@@ -1,21 +1,16 @@
-import app from "./app";
 import { logger } from "./lib/logger";
-import { warmSemanticIndex } from "./lib/semantic";
-import { startScheduler } from "./lib/scheduler";
+import { validateEnv } from "./lib/env";
 
-const rawPort = process.env["PORT"];
+// Validate env BEFORE importing the app graph. The app transitively imports the
+// db client, which throws at import time on a missing DATABASE_URL — so we keep
+// these as dynamic imports below, after validateEnv(), so env.ts owns the
+// boot-time error messages and warns about a partial optional integration first.
+const env = validateEnv();
+const port = env.PORT;
 
-if (!rawPort) {
-  throw new Error(
-    "PORT environment variable is required but was not provided.",
-  );
-}
-
-const port = Number(rawPort);
-
-if (Number.isNaN(port) || port <= 0) {
-  throw new Error(`Invalid PORT value: "${rawPort}"`);
-}
+const { default: app } = await import("./app");
+const { warmSemanticIndex } = await import("./lib/semantic");
+const { startScheduler } = await import("./lib/scheduler");
 
 app.listen(port, (err) => {
   if (err) {

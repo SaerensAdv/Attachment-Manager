@@ -173,3 +173,9 @@ id = "JABXezwBAy18eO1wGphge"
 uri = "file://.local/report-design-preview.pdf"
 type = "pdf"
 title = "Voorbeeld nieuw maandrapport (met testdata)"
+
+[[outputs]]
+id = "iMhljIDmrCkAjAP7uYR6D"
+uri = "file://SYSTEM-MAP.md"
+type = "text"
+title = "AI Team System Map — tekstoverzicht"

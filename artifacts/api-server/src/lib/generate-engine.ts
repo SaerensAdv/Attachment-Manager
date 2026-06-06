@@ -12,6 +12,7 @@ import {
 import {
   fetchGoogleAdsReport,
   fetchGoogleAdsAdCopyContext,
+  fetchGoogleAdsNegativesContext,
   type GoogleAdsMetrics,
 } from "./google-ads";
 import { renderReportPdf } from "./report-pdf";
@@ -461,6 +462,7 @@ export async function runGeneration(
   let reportMetrics: GoogleAdsMetrics | null = null;
   // Live SEARCH ad-group structure captured at run start for the ad-copy CSV.
   let adCopyLiveData: string | null = null;
+  let negativesLiveData: string | null = null;
 
   const persistRun = async (): Promise<boolean> => {
     if (persisted) return true;
@@ -663,6 +665,61 @@ export async function runGeneration(
       }
     }
 
+    // Negatives CSV: pull the client's live search-term data (terms with metrics
+    // and the campaign each ran in), the active search campaigns, and existing
+    // negatives so the team mines for irrelevant terms against REAL data and the
+    // CSV maps onto real campaigns without duplicating existing negatives.
+    // Injected into the client doc for the team, and kept for the deliverable
+    // prompt. Best-effort: a failure is reported and the CSV falls back to the
+    // team's recommendations.
+    if (deliverableKind === "negative-keywords-csv" && !isGone()) {
+      const clientId = dbClientIdFromPath(clientPath);
+      if (clientId !== null) {
+        try {
+          const negClient = await getClientRow(clientId);
+          const customerId = negClient?.googleAdsCustomerId?.trim();
+          if (customerId) {
+            const live = await fetchGoogleAdsNegativesContext(customerId);
+            if (live.text.trim()) {
+              negativesLiveData = live.text.trim();
+              const doc = clientDocs.find((d) => d.path === clientPath);
+              if (doc) {
+                doc.content +=
+                  "\n\n## Google Ads live data (for negative keyword mining)\n\n```\n" +
+                  negativesLiveData +
+                  "\n```\n";
+              }
+            } else {
+              send({
+                type: "deliverable_note",
+                message:
+                  "Geen live zoekterm-data gevonden voor deze klant; de CSV gebruikt de aanbevelingen van het team.",
+              });
+            }
+          } else {
+            send({
+              type: "deliverable_note",
+              message:
+                "Geen Google Ads customer ID voor deze klant; de CSV is gebaseerd op de aanbevelingen van het team, niet op live zoektermen.",
+            });
+          }
+        } catch (err) {
+          send({
+            type: "deliverable_note",
+            message:
+              "Live Google Ads-data kon niet opgehaald worden; de CSV gebruikt de aanbevelingen van het team. " +
+              (err instanceof Error ? err.message : String(err)).slice(0, 200),
+          });
+        }
+      } else {
+        send({
+          type: "deliverable_note",
+          message:
+            "Deze klant is geen gekoppelde account; de CSV is gebaseerd op de aanbevelingen van het team, niet op live zoektermen.",
+        });
+      }
+    }
+
     for (let i = 0; i < teamPaths.length; i++) {
       if (isGone()) break;
 
@@ -810,7 +867,7 @@ export async function runGeneration(
           clientContent,
           request,
           teamWork: priorWork,
-          liveData: adCopyLiveData ?? undefined,
+          liveData: adCopyLiveData ?? negativesLiveData ?? undefined,
         })
       : null;
     if (!isGone() && meta && prompt) {

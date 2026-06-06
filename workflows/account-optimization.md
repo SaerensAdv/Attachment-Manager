@@ -1,5 +1,7 @@
 # Workflow: Google Ads Account Optimization (Weekly)
 
+<!-- deliverable: negative-keywords-csv -->
+
 ## Goal
 
 Run the recurring **weekly** optimization pass on a live Google Ads account: cut wasted spend, mine search terms for negatives, steer impression share and bidding toward the goal, and surface deeper analyst-grade insights — delivered as a prioritized action list plus an import-ready negatives CSV for human review.

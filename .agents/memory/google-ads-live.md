@@ -44,6 +44,14 @@ client→markdown bridge. No gRPC and no SDK — plain `fetch` against the REST
   then match on descriptive_name. Run from the workspace shell via a throwaway
   `/tmp/*.mjs` (sandbox has no secrets).
 
+## Reusing the live read for deliverables (negatives, ad-copy)
+- Each generation sets at most ONE google-ads live payload, gated by deliverable
+  kind (ad-copy vs negatives are mutually exclusive). The live fetch is best-effort:
+  a failure emits a note and the team run continues — it must never sink the run.
+- **search_term_view surfaces terms from Shopping campaigns too**, not only SEARCH.
+  So negative-keyword mining must judge relevance/channel per term, not assume every
+  search term belongs to a Search campaign.
+
 ## Secret-entry gotcha
 - Secrets pasted into the dialog can be swapped/mistyped. A token refresh that
   returns `invalid_client — The OAuth client was not found` usually means the

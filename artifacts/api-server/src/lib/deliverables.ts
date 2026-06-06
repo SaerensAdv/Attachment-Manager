@@ -13,6 +13,7 @@ export type DeliverableKind =
   | "replit-prompt"
   | "monthly-report-email"
   | "google-ads-csv"
+  | "negative-keywords-csv"
   | "meta-ad-image"
   | "markdown";
 
@@ -64,6 +65,7 @@ const KNOWN: ReadonlySet<DeliverableKind> = new Set([
   "replit-prompt",
   "monthly-report-email",
   "google-ads-csv",
+  "negative-keywords-csv",
 ]);
 
 export function getDeliverableKind(workflow: DocFile | null): DeliverableKind {
@@ -110,6 +112,15 @@ export function deliverableMeta(
         mimeType: "text/csv;charset=utf-8",
         format: "text",
       };
+    case "negative-keywords-csv":
+      return {
+        kind,
+        title: "Negatieve zoekwoorden-CSV",
+        note: "Controleer en importeer dit CSV-bestand in Google Ads Editor; niets gaat automatisch live.",
+        filename: `${slug(clientName)}-negatives.csv`,
+        mimeType: "text/csv;charset=utf-8",
+        format: "text",
+      };
     default:
       return null;
   }
@@ -124,9 +135,62 @@ export function buildDeliverablePrompt(
       return buildReplitPrompt(ctx);
     case "google-ads-csv":
       return buildAdCopyCsvPrompt(ctx);
+    case "negative-keywords-csv":
+      return buildNegativesCsvPrompt(ctx);
     default:
       return null;
   }
+}
+
+/** Exact Google Ads Editor header row for a campaign-level negative keyword import. */
+const NEGATIVES_CSV_HEADER =
+  "Campaign,Ad group,Keyword,Match Type,Criterion Type";
+
+function buildNegativesCsvPrompt(ctx: DeliverableContext): DeliverablePrompt {
+  const system = [
+    "You are the deliverable editor of Saerens Advertising's AI team. Your job is NOT to invent new negatives, but to convert the team's approved negative-keyword recommendations into ONE Google Ads Editor-compatible CSV the user can review and bulk-import. Follow knowledge/google-ads-standards.md: negatives are driven by relevance to the client's intent, excluded at campaign level by default.",
+    "",
+    "## What you receive",
+    "- The client context (brand, services, what counts as relevant intent).",
+    "- The original request.",
+    "- The client's REAL live data when available: active search campaigns, the search terms report (term, campaign, cost, clicks, conversions), and existing campaign-level negatives.",
+    "- The team's analysis and approved list of search terms to exclude (with the campaign and, where given, match type).",
+    "",
+    "## What you return",
+    "Output ONLY the CSV text — no intro, no explanation, no markdown, no ``` code fences.",
+    `The FIRST line is exactly this header: ${NEGATIVES_CSV_HEADER}`,
+    "Then ONE data row per negative keyword.",
+    "",
+    "## Hard rules",
+    "- Wrap EVERY field in double quotes. Escape an internal double quote by doubling it (\"\").",
+    '- "Criterion Type" is always "Negative".',
+    '- "Ad group" is empty ("") for campaign-level negatives (Saerens default). Only fill an ad group when the team explicitly scoped a negative to one ad group.',
+    '- "Match Type" is one of Broad, Phrase, Exact. Use what the team specified; when unspecified, default to "Phrase".',
+    "- Use the REAL Campaign name from the live data. If the team named a campaign that is not in the live data, keep the team's name as written.",
+    "- Only include a term as a negative when the team recommended excluding it. NEVER add a negative for a term that produced conversions unless the team explicitly says so.",
+    "- Do NOT duplicate an existing negative (same campaign + same keyword text + same match type) that already appears in the live 'existing negatives' list.",
+    "- Keep the keyword text in the language it was searched in. No emojis, no ALL CAPS. Respect Google Ads policy.",
+    "- If there are no usable negatives to add, output only the header row.",
+  ].join("\n");
+
+  const user = [
+    "## Client context",
+    ctx.clientContent.trim(),
+    "",
+    "## Original request",
+    ctx.request.trim(),
+    "",
+    "## Live negatives data (real account data)",
+    ctx.liveData?.trim() ||
+      "(no live data available — use the team's recommendations and the campaign names as written)",
+    "",
+    "## Team's analysis and approved negatives",
+    ctx.teamWork.trim() || "(none)",
+    "",
+    "Now produce the single Google Ads Editor negative-keywords CSV per your instructions.",
+  ].join("\n");
+
+  return { system, user };
 }
 
 /** Exact Google Ads Editor header row for an RSA bulk import. */

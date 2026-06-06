@@ -707,3 +707,194 @@ export async function fetchGoogleAdsAdCopyContext(
     text = `${text.slice(0, MAX_REPORT_LEN)}\n…(truncated)`;
   return { text, fetchedAt: new Date() };
 }
+
+/**
+ * Pull a live, read-only snapshot for NEGATIVE KEYWORD mining (weekly account
+ * optimization). Returns formatted text the engine injects so the team and the
+ * deliverable editor work from real data: the active SEARCH campaigns (so
+ * negatives map to real campaign names), the search terms report with metrics
+ * and the campaign each term ran in (so terms are excluded at the right
+ * campaign), and the EXISTING campaign-level negatives (so we never recommend a
+ * duplicate). Each section is best-effort: a failure becomes a warning, not a
+ * thrown run. We only read — applying negatives stays a human action.
+ */
+export async function fetchGoogleAdsNegativesContext(
+  rawCustomerId: string,
+): Promise<{ text: string; fetchedAt: Date }> {
+  const cfg = readConfig();
+  const customerId = digitsOnly(rawCustomerId);
+  if (!customerId) {
+    throw new GoogleAdsConfigError("Ongeldig Google Ads customer ID.");
+  }
+  const MAX_TERMS = 200;
+  const MAX_CAMPS = 50;
+  const MAX_EXISTING = 500;
+  const accessToken = await getAccessToken(cfg);
+  const warnings: string[] = [];
+
+  // 0. Currency (and a sanity check the account is reachable).
+  let currency = "";
+  try {
+    const rows = await runGaql(
+      cfg,
+      accessToken,
+      customerId,
+      "SELECT customer.currency_code FROM customer LIMIT 1",
+    );
+    currency = String(pick(rows[0] ?? {}, "customer.currencyCode") ?? "");
+  } catch (err) {
+    warnings.push(
+      `Account currency could not be fetched: ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+
+  // 1. Active SEARCH campaigns — the real names negatives must map onto.
+  const campaignNames: string[] = [];
+  try {
+    const rows = await runGaql(
+      cfg,
+      accessToken,
+      customerId,
+      `SELECT campaign.name
+       FROM campaign
+       WHERE campaign.status = 'ENABLED'
+         AND campaign.advertising_channel_type = 'SEARCH'
+       ORDER BY campaign.name
+       LIMIT ${MAX_CAMPS}`,
+    );
+    for (const row of rows) {
+      const name = String(pick(row, "campaign.name") ?? "");
+      if (name && !campaignNames.includes(name)) campaignNames.push(name);
+    }
+  } catch (err) {
+    warnings.push(
+      `Search campaigns could not be fetched: ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+
+  // 2. Search terms (last 30 days) with the campaign each ran in, highest spend
+  //    first — the raw candidates the team screens for relevance.
+  interface Term {
+    term: string;
+    campaign: string;
+    cost: number;
+    clicks: number;
+    conversions: number;
+  }
+  const terms: Term[] = [];
+  try {
+    const rows = await runGaql(
+      cfg,
+      accessToken,
+      customerId,
+      `SELECT campaign.name, search_term_view.search_term,
+              metrics.cost_micros, metrics.clicks, metrics.conversions
+       FROM search_term_view
+       WHERE segments.date DURING LAST_30_DAYS
+       ORDER BY metrics.cost_micros DESC
+       LIMIT ${MAX_TERMS}`,
+    );
+    for (const row of rows) {
+      const term = String(pick(row, "searchTermView.searchTerm") ?? "");
+      if (!term) continue;
+      terms.push({
+        term,
+        campaign: String(pick(row, "campaign.name") ?? ""),
+        cost: num(pick(row, "metrics.costMicros")) / 1_000_000,
+        clicks: num(pick(row, "metrics.clicks")),
+        conversions: num(pick(row, "metrics.conversions")),
+      });
+    }
+  } catch (err) {
+    warnings.push(
+      `Search terms could not be fetched: ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+
+  // 3. Existing campaign-level negatives — so we never recommend a duplicate.
+  interface ExistingNeg {
+    campaign: string;
+    text: string;
+    matchType: string;
+  }
+  const existing: ExistingNeg[] = [];
+  try {
+    const rows = await runGaql(
+      cfg,
+      accessToken,
+      customerId,
+      `SELECT campaign.name,
+              campaign_criterion.keyword.text,
+              campaign_criterion.keyword.match_type
+       FROM campaign_criterion
+       WHERE campaign_criterion.type = 'KEYWORD'
+         AND campaign_criterion.negative = TRUE
+         AND campaign.status != 'REMOVED'
+       LIMIT ${MAX_EXISTING}`,
+    );
+    for (const row of rows) {
+      const t = String(pick(row, "campaignCriterion.keyword.text") ?? "");
+      if (!t) continue;
+      existing.push({
+        campaign: String(pick(row, "campaign.name") ?? ""),
+        text: t,
+        matchType: String(
+          pick(row, "campaignCriterion.keyword.matchType") ?? "",
+        ),
+      });
+    }
+  } catch (err) {
+    warnings.push(
+      `Existing negative keywords could not be fetched: ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+
+  const lines: string[] = [];
+  lines.push(`Account: ${customerId}`);
+  lines.push("Live data for negative keyword mining (read-only).");
+  lines.push("");
+
+  lines.push(`== Active search campaigns (top ${MAX_CAMPS}) ==`);
+  if (campaignNames.length === 0) {
+    lines.push("(none found)");
+  } else {
+    for (const name of campaignNames) lines.push(`- ${name}`);
+  }
+  lines.push("");
+
+  lines.push(`== Search terms (last 30 days, top ${MAX_TERMS} by cost) ==`);
+  if (terms.length === 0) {
+    lines.push("(no search term data in this period)");
+  } else {
+    for (const t of terms) {
+      lines.push(
+        `- "${t.term}" | campaign: ${t.campaign || "(unknown)"} | ` +
+          `cost ${t.cost.toFixed(2)} ${currency}`.trim() +
+          `, clicks ${t.clicks.toFixed(0)}, conversions ${t.conversions.toFixed(2)}`,
+      );
+    }
+  }
+  lines.push("");
+
+  lines.push("== Existing campaign negative keywords (do NOT duplicate) ==");
+  if (existing.length === 0) {
+    lines.push("(none found)");
+  } else {
+    for (const e of existing) {
+      lines.push(
+        `- ${e.campaign || "(unknown)"}: "${e.text}" [${e.matchType || "?"}]`,
+      );
+    }
+  }
+
+  if (warnings.length) {
+    lines.push("");
+    lines.push("== Warnings ==");
+    for (const w of warnings) lines.push(`- ${w}`);
+  }
+
+  let text = lines.join("\n").trim();
+  if (text.length > MAX_REPORT_LEN)
+    text = `${text.slice(0, MAX_REPORT_LEN)}\n…(truncated)`;
+  return { text, fetchedAt: new Date() };
+}

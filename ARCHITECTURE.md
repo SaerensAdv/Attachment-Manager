@@ -135,6 +135,12 @@ Today everything is still done by hand. The target split keeps control in one pl
 
 First automations to target (founder priority): **monthly reports, search-term checks for negative keywords, and ad copy generation.**
 
+### ClickUp as the work-management & approval layer
+
+Axel already runs the agency in ClickUp, so it is the natural surface for *tasks, assignment, statuses, and human approval* — the visible layer on top of the brain. The intent: the app creates a task per deliverable, assigns the responsible agent, posts the generated draft back, and a human moves the task to `Approved`; that approval (delivered via webhook) is what lets the executor act. ClickUp does **not** become a second brain — agent definitions, knowledge, and dossiers stay in this repo.
+
+ClickUp also offers AI teammates ("Super Agents") that can be assigned tasks directly. That is appealing but gated behind a per-seat, all-or-nothing AI add-on, so the recommended default is a hybrid: app-as-brain, ClickUp-as-layer, agents represented by a custom field or a single bot user rather than a paid seat each. The full analysis and the platform/API details live in `knowledge/clickup-platform.md`, `knowledge/clickup-api.md`, `knowledge/clickup-webhooks.md`, and `knowledge/clickup-ai-agents.md`.
+
 ## Design rules
 
 - One concept per folder. Do not mix client data into agent files or standards into workflows.

@@ -22,34 +22,37 @@ Autopilot Agents are good for narrow, repeatable, in-ClickUp reactions. They are
 ClickUp's "human-level" AI teammates. The headline capabilities (from ClickUp's own description):
 
 - **Assign, message, and @mention** them like a human teammate — they pick up context and act.
+- **No per-role setup required.** You don't have to define a fixed "role" for a Super Agent before using it; you simply assign it work (a task, a mention, a message) and it acts on the Workspace context. So a Super Agent is an assignment target, not a job description to maintain.
 - **500+ work skills** (send emails, DM users, schedule events, act across connected apps).
 - **24/7, ambient, self-learning**, with multi-layer memory and Workspace-wide context.
 - Built to "own outcomes" across multi-step workflows, not just answer single prompts.
 
 This is exactly the mental model Axel described: each AI team member appears in ClickUp as a Super Agent that can be assigned to tasks, forming a visible extra layer on top of our system.
 
-## The cost reality (read before deciding)
+## Our plan and the cost reality (read before deciding)
 
-ClickUp's AI (ClickUp Brain, which powers these agents) is a **paid add-on billed per member seat**, and it is **all-or-nothing**: you license it for *every* member in the Workspace, not just the few who use it. Guests are usually free but limited. So:
+Saerens is on the ClickUp **Business** plan. That sets two practical reference points:
 
-- Representing our AI team as Super Agents is gated behind the Brain add-on across the whole Workspace, on top of the base plan.
-- This is a recurring, per-seat cost that scales with the team — verify current pricing before committing, because it materially changes the build-vs-buy maths.
+- **API throughput:** 100 requests/min/token (see `knowledge/clickup-api.md`) — design automations to batch reads, not loop per item.
+- **AI access:** Super Agents and Autopilot Agents are powered by **ClickUp Brain**, a paid add-on on top of the Business plan. Brain is billed **per human-member seat** and is **all-or-nothing** — you license it for *every* member in the Workspace, not just the few who use it (guests are usually free but limited).
 
-> Verification note: the per-seat, all-or-nothing Brain pricing model and the Super Agents capabilities below were last verified June 2026 against `clickup.com/brain/pricing` and `clickup.com/brain/agents`. ClickUp's AI packaging changes often — re-check both pages before committing budget or build decisions.
+So the cost question is about the *human-member Brain seats* needed to unlock the AI layer, plus any AI usage/credits Super Agent actions consume — **not** a separate seat per AI agent (a Super Agent is just an assignment target). Verify current pricing and usage limits before committing, because it materially changes the build-vs-buy maths.
+
+> Verification note: the per-member, all-or-nothing Brain pricing model and the Super Agents capabilities below were last verified June 2026 against `clickup.com/brain/pricing` and `clickup.com/brain/agents`. ClickUp's AI packaging changes often — re-check both pages (and confirm what's included on the Business plan) before committing budget or build decisions.
 
 ## The strategic question for Saerens
 
 There are two honest ways to realise "AI team members as assignable teammates":
 
-1. **ClickUp-native (Super Agents).** Our agents become ClickUp Super Agents. Pros: zero custom UI, native assign/mention/message, Axel works where he already is, mobile + notifications for free. Cons: per-seat Brain cost, agent behaviour partly lives in ClickUp (a second place to maintain), and it risks ClickUp becoming a competing brain.
-2. **App-as-brain + ClickUp-as-layer (recommended hybrid).** The app stays the single source of truth (agent definitions, knowledge, dossiers, decisions). ClickUp holds **tasks, assignment, statuses, and approvals**. Agents are represented either as a single "AI" bot user or as an `Assigned agent` custom field — avoiding a paid Super Agent seat per agent — while the actual generation runs in the app and posts results back via the API. Pros: one brain, controlled cost, full control of agent behaviour. Cons: we build the task/approval glue (create task, post comment, react to `Approved` webhook).
+1. **ClickUp-native (Super Agents).** Our agents become ClickUp Super Agents that Axel assigns work to directly (no per-role setup). Pros: zero custom UI, native assign/mention/message, Axel works where he already is, mobile + notifications for free, and ClickUp owns the agent runtime. Cons: needs the Brain add-on on the Business plan, behaviour is configured inside ClickUp (less of our own control), and it risks ClickUp drifting into a competing brain if strategy leaks out of this repo.
+2. **App-as-brain + ClickUp-as-layer (recommended hybrid).** The app stays the single source of truth (agent definitions, knowledge, dossiers, decisions). ClickUp holds **tasks, assignment, statuses, and approvals**. Work is assigned in ClickUp (to a Super Agent, a bot user, or via an `Assigned agent` custom field), while the actual generation runs in the app and posts results back via the API. Pros: one brain, full control of agent behaviour, AI cost stays predictable. Cons: we build the task/approval glue (create task, post comment, react to `Approved` webhook).
 
-**Recommendation:** start with the hybrid. Keep the brain in the app, use ClickUp as the visible task and approval surface, and represent agents with a custom field or one bot user rather than a paid seat each. Adopt Super Agents later *only* if the native assign/message experience proves worth the per-seat Brain cost and the duplicated agent logic. Either way, the rule from `ARCHITECTURE.md` holds: the app decides, ClickUp tracks and gates, the executor acts only after human approval.
+**Recommendation:** keep the brain in the app and use ClickUp as the visible task and approval surface. Since Super Agents are simply assignable (no roles to maintain) and the Business plan already supports the Brain add-on, Super Agents are a fine *assignment and conversation surface* — Axel can assign and message them naturally — as long as the actual decisions and generations still run from the app, not from logic buried in ClickUp. Either way, the rule from `ARCHITECTURE.md` holds: the app decides, ClickUp tracks and gates, the executor acts only after human approval.
 
 ## Notes and cautions
 
 - **One brain.** Whatever we choose, agent strategy lives in this repo's `agents/` and `knowledge/`, not split across ClickUp.
-- **Confirm seat pricing first.** The per-member, all-or-nothing Brain model is the deciding cost factor — do not assume; check.
+- **Confirm Brain pricing on Business first.** The per-member, all-or-nothing Brain seat model (and any AI usage limits) is the deciding cost factor on the Business plan — do not assume; check what's included.
 - **Approval stays human.** Neither Autopilot nor Super Agents should write to a live ad account without the approval gate.
 
 ## Related

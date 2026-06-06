@@ -26,7 +26,7 @@ Per **token**, by the Workspace's plan:
 - Business Plus: **1,000** requests/min/token
 - Enterprise: **10,000** requests/min/token
 
-Exceeding the limit returns **HTTP 429**. Every response carries `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `X-RateLimit-Reset` (Unix seconds). Build a client that reads these headers and backs off before hitting 429 — at 100/min, batch reads and avoid per-item loops.
+Saerens is on the **Business** plan, so we design against **100 requests/min/token**. Exceeding the limit returns **HTTP 429**. Every response carries `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `X-RateLimit-Reset` (Unix seconds). Build a client that reads these headers and backs off before hitting 429 — at 100/min, batch reads and avoid per-item loops.
 
 ## Walking the hierarchy (read)
 

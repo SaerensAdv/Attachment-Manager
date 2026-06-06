@@ -13,7 +13,7 @@ ClickUp = the visible **task / assignment / status / approval** layer; the **app
 
 **Why:** matches the existing brain-vs-executor model; avoids two drifting sources of truth and avoids paying per-agent for ClickUp's AI.
 
-**How to apply:** represent AI team members as a custom field or one bot user (recommended hybrid), not one paid Super Agent seat each. Super Agents are the native "assign/@mention an AI teammate" feature but are gated behind ClickUp Brain, which is billed **per member seat, all-or-nothing** across the whole Workspace — re-verify pricing before any build decision.
+**How to apply:** Super Agents are simply assignable teammates — **no per-role setup**, you just assign/@mention them. They are NOT billed per AI agent; they're gated behind ClickUp Brain, an add-on billed **per human-member seat, all-or-nothing** across the Workspace. So Super Agents are fine as the assignment/conversation surface as long as decisions+generation still run from the app (the brain). Saerens plan = **Business** (rate limit 100 req/min/token; Brain is an add-on on top). Re-verify Brain pricing/usage before any build decision.
 
 ## Easy-to-trip facts
 

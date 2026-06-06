@@ -1,11 +1,11 @@
 # Template: Reporting Output
 
-> Used by the Reporting Specialist for monthly and ad-hoc performance reports. Transparent and honest — every number comes from real data; mark missing metrics as "not available".
+> Used by the Reporting Specialist for monthly and ad-hoc performance reports. The intended deliverable is a structured, client-tailored report (PDF) combining written analysis, recommendations, and charts — not just a plain email. Transparent and honest — every number comes from real data; mark missing metrics as "not available". No emojis or decorative symbols.
 
 ## Client & period
 - Client: [name]
 - Period: [start–end]
-- Compared to: [previous period]
+- Compared to: [previous period] and [same period last year, where available]
 - Goal: [target ROAS / target cost per lead]
 
 ## 1. Headline
@@ -13,27 +13,30 @@
 
 ## 2. Key results
 
-| Metric | This period | Previous period | Change |
-|---|---|---|---|
-| Spend | | | |
-| Conversions | | | |
-| Conversion value / revenue | | | |
-| Leads | | | |
-| Cost per lead (CPL) | | | |
-| ROAS | | | |
-| CPC | | | |
-| CTR | | | |
+| Metric | This period | Previous period | Same period last year | Change |
+|---|---|---|---|---|
+| Spend | | | | |
+| Conversions | | | | |
+| Conversion value / revenue | | | | |
+| Leads | | | | |
+| Cost per lead (CPL) | | | | |
+| ROAS | | | | |
+| CPC | | | | |
+| CTR | | | | |
 
-[Include only the rows relevant to the client's world. Leave blanks as "n/a" if not available.]
+[Include only the rows relevant to the client's world. Leave blanks as "n/a" if not available. Year-over-year is often the fairer comparison because of seasonality.]
 
 ## 3. What drove the results
-[Plain-language explanation of the main movements — why numbers changed, not just that they did.]
+[Plain-language explanation of the main movements — why numbers changed, not just that they did. If the period was weak, trace the dip to its specific cause (usually a particular campaign or change).]
 
-## 4. What worked / what didn't
+## 4. What we did this period
+[The concrete work and optimizations carried out this period.]
+
+## 5. What worked / what didn't
 [Honest and balanced. Do not hide underperformance.]
 
-## 5. Recommended next steps
-[Concrete actions for the coming period.]
+## 6. What's planned next
+[Recommended next steps and the plan for the coming period, based on the insights above.]
 
-## 6. Notes & caveats
+## 7. Notes & caveats
 [Data gaps, one-off events, seasonality, tracking changes, anything the client should know.]

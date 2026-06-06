@@ -29,19 +29,38 @@ Report the metrics relevant to the client's world; mark anything unavailable as 
 
 **Always:**
 - Spend vs budget
-- Period-over-period change
+- Period-over-period change, and **same period last year** (year-over-year) where available
 - Performance vs goal
 
 ## Structure of a report
 
-Follow `templates/reporting-output.md`:
+Every report — whatever its length — always covers **the KPIs, what we did, and what's planned**. Follow `templates/reporting-output.md`:
 
 1. Headline — performance vs goal in one or two sentences.
-2. Key results — table with period-over-period change.
-3. What drove the results — plain-language explanation.
-4. What worked / what didn't — balanced and honest.
-5. Recommended next steps — concrete actions.
-6. Notes & caveats — data gaps, one-offs, context.
+2. Key results — table with the period, the **previous period**, and the **same period last year** (year-over-year) where available, plus the change.
+3. What drove the results — plain-language explanation of the main movements.
+4. What we did this period — the concrete work and optimizations carried out.
+5. What worked / what didn't — balanced and honest.
+6. What's planned next — recommended next steps for the coming period, based on the insights above.
+7. Notes & caveats — data gaps, one-offs, context.
+
+Depth flexes with the month: some periods warrant a short, punchy update, others a fuller analysis. The sections stay the same so reports stay comparable over time.
+
+## Comparison baselines
+
+Compare against the **previous period** and, where available, the **same month last year**, and read both against the client's **goal**. Because of seasonality, year-over-year is often the fairer comparison.
+
+## Handling a disappointing period
+
+Be honest and transparent — never hide or spin a weak month. Explain plainly where it went wrong and **trace the dip to its specific cause** (usually a particular campaign or change), then say what we are doing about it.
+
+Example tone:
+
+> "This past month we see a dip in the account. Digging deeper, it is mainly driven by campaign X, where [cause]. Here is what we are changing next ..."
+
+## Format
+
+The intended deliverable is a **structured, client-tailored report (PDF)** that combines written analysis, recommendations, and charts — not just a plain email. Keep it clean and on-brand; no emojis or decorative symbols.
 
 ## Quality bar
 

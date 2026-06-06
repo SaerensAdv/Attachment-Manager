@@ -12,7 +12,7 @@ The regular monthly reporting cycle for an active client, or any ad-hoc performa
 
 ## Steps
 
-1. Confirm the reporting period and comparison period.
+1. Confirm the reporting period and comparison periods (previous period and the same month last year, where available).
 2. Review the client's goals and KPIs (`clients/<client>.md`).
 3. Gather performance data for both periods.
 4. Calculate the metrics that matter for the client's world (ROAS/revenue for e-commerce; leads/CPL for lead gen) plus spend, conversions, CPC, CTR.
@@ -33,8 +33,9 @@ The regular monthly reporting cycle for an active client, or any ad-hoc performa
 Use `templates/reporting-output.md`. Must include:
 
 - Headline (performance vs goal)
-- Key results with period-over-period change
+- Key results with period-over-period **and** year-over-year change (same month last year, where available)
 - Explanation of what drove the results
-- What worked / what didn't (honest)
-- Recommended next steps
+- What we did this period (work and optimizations carried out)
+- What worked / what didn't (honest; trace any dip to its specific cause)
+- What's planned next (recommended next steps for the coming period)
 - Notes & caveats (data gaps, one-offs)

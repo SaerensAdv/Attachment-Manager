@@ -11,10 +11,10 @@ A client wants to launch a new campaign, enter a new channel (Search, Shopping, 
 ## Steps
 
 1. Understand the business and offer.
-2. Review the client context (`clients/<client>.md`).
+2. Review the client context (`clients/<client>.md`) and **gather what's needed from the client** — especially the **budget**, which drives how the campaign(s) are set up.
 3. Confirm the campaign objective and the client's "world" (e-commerce or lead generation).
-4. Define the campaign type(s).
-5. Define the account/campaign structure.
+4. Define the campaign type(s), **starting bottom-of-funnel (BOFU)** to land the first leads/sales before broadening.
+5. Define the account/campaign structure — **keep brand and non-brand separate from the start**.
 6. Define targeting (locations, languages, audiences).
 7. Prepare keyword themes / audiences and an initial keyword list with match types.
 8. Prepare negative keywords.
@@ -22,6 +22,13 @@ A client wants to launch a new campaign, enter a new channel (Search, Shopping, 
 10. Prepare the conversion tracking checklist.
 11. Apply naming conventions.
 12. Prepare the human approval summary (budget, go-live, tracking).
+
+## Saerens approach
+
+- **Budget first.** The available budget drives how the campaign(s) are structured — confirm it before designing the setup.
+- **Land then expand.** Start **bottom-of-funnel (BOFU)** to win the first leads/sales; early results build trust and naturally lead to expanding the account (more themes, higher-funnel, new campaign types).
+- **Brand vs non-brand separated** from day one; thematic build-out comes as the account evolves.
+- **Conversion tracking is the non-negotiable go-live gate** — a campaign does not go live without verified conversion tracking, full stop.
 
 ## Agents involved
 

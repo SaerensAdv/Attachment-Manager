@@ -5,6 +5,11 @@ import { getDocFile, type DocFile } from "./docs";
 import { loadClientDocs, getClientRow, dbClientIdFromPath } from "./clients-store";
 import { saveGeneration, saveGenerationSteps } from "./generations-store";
 import {
+  listMonitoredTerms,
+  recordMonitoredTerms,
+  type MonitoredTermInput,
+} from "./monitored-terms-store";
+import {
   getDeliverableKind,
   deliverableMeta,
   buildDeliverablePrompt,
@@ -28,6 +33,48 @@ function stripAgentHeadings(text: string, titles: string[]): string {
       return !(m && set.has(m[1].trim().toLowerCase()));
     })
     .join("\n");
+}
+
+/**
+ * Extract the optional machine-readable monitor list the optimization
+ * specialist emits as an HTML comment (`<!-- monitor-list [ ... ] -->`). The
+ * comment never renders in the UI (HTML comments are stripped before
+ * markdown), so it is an invisible side channel: we parse the JSON array of
+ * monitored terms, then return the team text with the block removed so it never
+ * leaks into the deliverable or the archived run. Best-effort: malformed JSON
+ * yields no items but still strips the block.
+ */
+function extractMonitorList(text: string): {
+  items: MonitoredTermInput[];
+  stripped: string;
+} {
+  const re = /<!--\s*monitor-list\b([\s\S]*?)-->/i;
+  const m = re.exec(text);
+  if (!m) return { items: [], stripped: text };
+  const stripped = text.replace(re, "").trim();
+  let items: MonitoredTermInput[] = [];
+  try {
+    const parsed = JSON.parse(m[1].trim());
+    if (Array.isArray(parsed)) {
+      items = parsed
+        .filter(
+          (p): p is Record<string, unknown> =>
+            !!p && typeof p === "object" && typeof (p as any).term === "string",
+        )
+        .map((p) => ({
+          term: String(p.term),
+          campaign: typeof p.campaign === "string" ? p.campaign : null,
+          reason: typeof p.reason === "string" ? p.reason : null,
+          suggestedAction:
+            typeof p.suggestedAction === "string" ? p.suggestedAction : null,
+          status: typeof p.status === "string" ? p.status : null,
+          note: typeof p.note === "string" ? p.note : null,
+        }));
+    }
+  } catch {
+    // malformed monitor block — drop it, never sink the run
+  }
+  return { items, stripped };
 }
 
 /**
@@ -720,6 +767,52 @@ export async function runGeneration(
       }
     }
 
+    // Resurface terms already on the monitor list from prior weeks, with their
+    // age, so the team escalates stale ones (Saerens' rule: fix the landing page
+    // / bid first, exclude only if that also fails) instead of letting them
+    // linger unseen. Decoupled from the live read above: the monitor list must
+    // resurface even when the live fetch fails or the client has no customer ID.
+    if (deliverableKind === "negative-keywords-csv" && !isGone()) {
+      const monClientId = dbClientIdFromPath(clientPath);
+      if (monClientId !== null) {
+        try {
+          const monitored = await listMonitoredTerms(monClientId);
+          if (monitored.length > 0) {
+            const lines = monitored.map((m) => {
+              const parts = [
+                `- "${m.term}"`,
+                m.campaign ? `campaign: ${m.campaign}` : null,
+                `${m.weeksMonitored} week(s) monitored`,
+                m.suggestedAction ? `prior action: ${m.suggestedAction}` : null,
+                m.reason ? `reason: ${m.reason}` : null,
+                m.note ? `note: ${m.note}` : null,
+              ].filter(Boolean);
+              return parts.join(" — ");
+            });
+            const doc = clientDocs.find((d) => d.path === clientPath);
+            if (doc) {
+              doc.content +=
+                "\n\n## Monitor list (relevant terms tracked across weeks)\n\n" +
+                "These terms were judged relevant but not yet converting in earlier weeks. " +
+                "Apply Saerens' escalation rule: address the landing page or bid first; only " +
+                "if that also fails over time does a term become a candidate for exclusion. " +
+                "Re-emit each still-monitored term in this run's monitor-list block (and mark " +
+                "any that converted as resolved, or any you exclude as excluded).\n\n" +
+                lines.join("\n") +
+                "\n";
+            }
+          }
+        } catch (monErr) {
+          send({
+            type: "deliverable_note",
+            message:
+              "Bestaande monitor-lijst kon niet geladen worden; deze run start zonder eerdere monitor-termen. " +
+              (monErr instanceof Error ? monErr.message : String(monErr)).slice(0, 160),
+          });
+        }
+      }
+    }
+
     for (let i = 0; i < teamPaths.length; i++) {
       if (isGone()) break;
 
@@ -855,6 +948,39 @@ export async function runGeneration(
 
       send({ type: "agent_done", index: i, truncated });
       priorWork += `\n\n## ${memberTitles[i]}\n\n${agentText.trim()}`;
+    }
+
+    // Capture this run's monitor list from the team output and persist it, so
+    // monitored terms carry across weeks with their age. The list rides in an
+    // HTML comment that never renders; parse it, upsert by client + term, and
+    // strip the block from priorWork so it never reaches the deliverable or the
+    // archived run. Best-effort: monitor bookkeeping never sinks the run.
+    if (deliverableKind === "negative-keywords-csv") {
+      // Always strip the monitor block from priorWork — even on an aborted run —
+      // so the invisible side-channel comment never reaches the deliverable or
+      // the archived markdown. Only persist when the run actually completed.
+      const monClientId = dbClientIdFromPath(clientPath);
+      const { items, stripped } = extractMonitorList(priorWork);
+      priorWork = stripped;
+      if (!isGone() && monClientId !== null && items.length > 0) {
+        try {
+          const { inserted, updated } = await recordMonitoredTerms(
+            monClientId,
+            items,
+          );
+          send({
+            type: "deliverable_note",
+            message: `Monitor-lijst bijgewerkt: ${inserted} nieuw, ${updated} herzien.`,
+          });
+        } catch (monErr) {
+          send({
+            type: "deliverable_note",
+            message:
+              "Monitor-lijst kon niet bewaard worden; de termen worden volgende week opnieuw beoordeeld. " +
+              (monErr instanceof Error ? monErr.message : String(monErr)).slice(0, 160),
+          });
+        }
+      }
     }
 
     // Deliverable layer: turn the combined team work into the concrete end

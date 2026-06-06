@@ -19,5 +19,6 @@
 
 export * from "./clients";
 export * from "./generations";
+export * from "./monitored-terms";
 export * from "./proposals";
 export * from "./schedules";

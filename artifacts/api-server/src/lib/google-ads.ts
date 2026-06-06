@@ -1051,6 +1051,36 @@ export async function fetchGoogleAdsNegativesContext(
     }
   }
 
+  // 7. Ad-group structure (enabled search), best-effort. Grounds the
+  // cross-campaign positive side: when a term is mis-routed, the team can name
+  // the real ad group in the correct campaign it should be added to.
+  const adGroupsByCampaign = new Map<string, string[]>();
+  try {
+    const rows = await runGaql(
+      cfg,
+      accessToken,
+      customerId,
+      `SELECT campaign.name, ad_group.name
+       FROM ad_group
+       WHERE campaign.status = 'ENABLED' AND ad_group.status = 'ENABLED'
+         AND campaign.advertising_channel_type = 'SEARCH'
+       ORDER BY campaign.name, ad_group.name
+       LIMIT 300`,
+    );
+    for (const row of rows) {
+      const camp = String(pick(row, "campaign.name") ?? "");
+      const ag = String(pick(row, "ad_group.name") ?? "");
+      if (!camp || !ag) continue;
+      const arr = adGroupsByCampaign.get(camp) ?? [];
+      if (!arr.includes(ag)) arr.push(ag);
+      adGroupsByCampaign.set(camp, arr);
+    }
+  } catch (err) {
+    warnings.push(
+      `Ad-group structure could not be fetched: ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+
   const lines: string[] = [];
   lines.push(`Account: ${customerId}`);
   lines.push("Live data for the weekly account optimization pass (read-only).");
@@ -1061,6 +1091,16 @@ export async function fetchGoogleAdsNegativesContext(
     lines.push("(none found)");
   } else {
     for (const name of campaignNames) lines.push(`- ${name}`);
+  }
+  lines.push("");
+
+  lines.push("== Ad-group structure per campaign (enabled search) ==");
+  if (adGroupsByCampaign.size === 0) {
+    lines.push("(none found)");
+  } else {
+    for (const [camp, ags] of adGroupsByCampaign) {
+      lines.push(`- ${camp}: ${ags.join(" | ")}`);
+    }
   }
   lines.push("");
 

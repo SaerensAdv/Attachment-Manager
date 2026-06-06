@@ -46,6 +46,18 @@
 
 [Indicative monthly budget or range, if known. Note "to confirm" if not.]
 
+## Margins
+
+[Gross margin or unit economics, if known — needed to set a realistic profit/ROAS target (break-even ROAS = 1 / margin). Note "to confirm" if not.]
+
+## USPs / differentiators
+
+- [What sets this client apart from competitors]
+
+## Competitors
+
+- [Known competitors to be aware of]
+
 ## Tone of voice
 
 [How this client should sound, e.g. "Professional, trustworthy, local, direct."]
@@ -59,6 +71,18 @@
 - [Claims that cannot be made]
 - [Sensitive topics or things to avoid]
 - [Anything an agent must know before producing work for this client]
+
+## Accounts & access needed
+
+> Note which accounts/access are required to start — never store credentials here; a human arranges secure access.
+
+- Google Ads account
+- Google Analytics 4 (GA4)
+- Google Tag Manager (GTM)
+- Google Search Console
+- Google Merchant Center (e-commerce)
+- Website / CMS access
+- [Other platforms relevant to this client]
 
 ## Links
 

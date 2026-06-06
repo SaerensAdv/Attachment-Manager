@@ -12,7 +12,9 @@ export interface LeaderboardEntry {
   title: string;
   runsLed: number;
   runsParticipated: number;
+  totalInputTokens: number;
   totalOutputTokens: number;
+  estimatedCostEur: number;
   /** @nullable */
   avgDurationMs: number | null;
   /** @nullable */

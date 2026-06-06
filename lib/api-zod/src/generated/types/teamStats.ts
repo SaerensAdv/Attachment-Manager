@@ -15,6 +15,9 @@ export interface TeamStats {
   rejected: number;
   pending: number;
   totalTokens: number;
+  totalInputTokens: number;
+  totalOutputTokens: number;
+  estimatedCostEur: number;
   /** @nullable */
   avgDurationMs: number | null;
   leaderboard: LeaderboardEntry[];

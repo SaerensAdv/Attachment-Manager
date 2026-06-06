@@ -1584,7 +1584,9 @@ components:
         - title
         - runsLed
         - runsParticipated
+        - totalInputTokens
         - totalOutputTokens
+        - estimatedCostEur
         - avgDurationMs
         - lastActiveAt
         - portraitThumbUrl
@@ -1599,8 +1601,12 @@ components:
           type: integer
         runsParticipated:
           type: integer
+        totalInputTokens:
+          type: integer
         totalOutputTokens:
           type: integer
+        estimatedCostEur:
+          type: number
         avgDurationMs:
           type: ["integer", "null"]
         lastActiveAt:
@@ -1618,6 +1624,9 @@ components:
         - rejected
         - pending
         - totalTokens
+        - totalInputTokens
+        - totalOutputTokens
+        - estimatedCostEur
         - avgDurationMs
         - leaderboard
       properties:
@@ -1635,6 +1644,12 @@ components:
           type: integer
         totalTokens:
           type: integer
+        totalInputTokens:
+          type: integer
+        totalOutputTokens:
+          type: integer
+        estimatedCostEur:
+          type: number
         avgDurationMs:
           type: ["integer", "null"]
         leaderboard:

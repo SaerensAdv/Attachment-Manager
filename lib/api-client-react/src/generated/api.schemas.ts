@@ -416,7 +416,9 @@ export interface LeaderboardEntry {
   title: string;
   runsLed: number;
   runsParticipated: number;
+  totalInputTokens: number;
   totalOutputTokens: number;
+  estimatedCostEur: number;
   /** @nullable */
   avgDurationMs: number | null;
   /** @nullable */
@@ -433,6 +435,9 @@ export interface TeamStats {
   rejected: number;
   pending: number;
   totalTokens: number;
+  totalInputTokens: number;
+  totalOutputTokens: number;
+  estimatedCostEur: number;
   /** @nullable */
   avgDurationMs: number | null;
   leaderboard: LeaderboardEntry[];

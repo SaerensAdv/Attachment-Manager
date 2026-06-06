@@ -8,6 +8,7 @@ import {
   type InsertGenerationStep,
 } from "@workspace/db";
 import { asc, desc, eq } from "drizzle-orm";
+import { estimateCostEur } from "./model-pricing";
 
 /** Persist a finished generation. Returns the stored row. */
 export async function saveGeneration(
@@ -115,7 +116,9 @@ export interface AgentLeaderboardEntry {
   agentPath: string;
   runsLed: number;
   runsParticipated: number;
+  totalInputTokens: number;
   totalOutputTokens: number;
+  estimatedCostEur: number;
   avgDurationMs: number | null;
   lastActiveAt: string | null;
 }
@@ -129,6 +132,9 @@ export interface TeamStats {
   rejected: number;
   pending: number;
   totalTokens: number;
+  totalInputTokens: number;
+  totalOutputTokens: number;
+  estimatedCostEur: number;
   avgDurationMs: number | null;
   leaderboard: AgentLeaderboardEntry[];
 }
@@ -151,7 +157,13 @@ export async function getTeamStats(): Promise<TeamStats> {
   const approved = runs.filter((g) => g.feedbackVerdict === "approved").length;
   const rejected = runs.filter((g) => g.feedbackVerdict === "rejected").length;
   const pending = runs.length - approved - rejected;
-  const totalTokens = runs.reduce((a, g) => a + (g.totalTokens ?? 0), 0);
+  // Token totals come from the step trail (the only place input/output are split
+  // out). Includes every step — agent steps *and* the deliverable — because the
+  // cost estimate must reflect all LLM usage, not just per-agent work.
+  const totalInputTokens = steps.reduce((a, s) => a + (s.inputTokens ?? 0), 0);
+  const totalOutputTokens = steps.reduce((a, s) => a + (s.outputTokens ?? 0), 0);
+  const totalTokens = totalInputTokens + totalOutputTokens;
+  const estimatedCostEur = estimateCostEur(totalInputTokens, totalOutputTokens);
   const runDurations = runs
     .map((g) => g.durationMs)
     .filter((n): n is number => typeof n === "number");
@@ -170,7 +182,9 @@ export async function getTeamStats(): Promise<TeamStats> {
         agentPath,
         runsLed: 0,
         runsParticipated: 0,
+        totalInputTokens: 0,
         totalOutputTokens: 0,
+        estimatedCostEur: 0,
         avgDurationMs: null,
         lastActiveAt: null,
         _durations: [],
@@ -204,6 +218,7 @@ export async function getTeamStats(): Promise<TeamStats> {
     if (s.role === "deliverable") continue;
     if (!s.agentPath.startsWith("agents/")) continue;
     const e = ensure(s.agentPath);
+    e.totalInputTokens += s.inputTokens ?? 0;
     e.totalOutputTokens += s.outputTokens ?? 0;
     if (typeof s.durationMs === "number") e._durations.push(s.durationMs);
   }
@@ -211,6 +226,10 @@ export async function getTeamStats(): Promise<TeamStats> {
   const leaderboard: AgentLeaderboardEntry[] = [...board.values()]
     .map(({ _durations, ...rest }) => ({
       ...rest,
+      estimatedCostEur: estimateCostEur(
+        rest.totalInputTokens,
+        rest.totalOutputTokens,
+      ),
       avgDurationMs: _durations.length
         ? Math.round(_durations.reduce((a, b) => a + b, 0) / _durations.length)
         : null,
@@ -225,6 +244,9 @@ export async function getTeamStats(): Promise<TeamStats> {
     rejected,
     pending,
     totalTokens,
+    totalInputTokens,
+    totalOutputTokens,
+    estimatedCostEur,
     avgDurationMs,
     leaderboard,
   };

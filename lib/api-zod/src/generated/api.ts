@@ -185,6 +185,9 @@ export const GetTeamStatsResponse = zod.object({
   "rejected": zod.number(),
   "pending": zod.number(),
   "totalTokens": zod.number(),
+  "totalInputTokens": zod.number(),
+  "totalOutputTokens": zod.number(),
+  "estimatedCostEur": zod.number(),
   "avgDurationMs": zod.number().nullable(),
   "leaderboard": zod.array(zod.object({
   "agentPath": zod.string(),
@@ -192,7 +195,9 @@ export const GetTeamStatsResponse = zod.object({
   "title": zod.string(),
   "runsLed": zod.number(),
   "runsParticipated": zod.number(),
+  "totalInputTokens": zod.number(),
   "totalOutputTokens": zod.number(),
+  "estimatedCostEur": zod.number(),
   "avgDurationMs": zod.number().nullable(),
   "lastActiveAt": zod.coerce.date().nullable(),
   "portraitThumbUrl": zod.string().nullable()

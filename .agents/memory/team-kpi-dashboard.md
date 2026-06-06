@@ -25,3 +25,17 @@ with real agents; counting them inflates run counts and breaks the leaderboard.
 `/dashboard` page (system-map) reuses the editorial Newsroom theme: stat cards +
 a leaderboard table with portraits. Tab lives in TabNav between Kaart and Team.
 Uses `useGetTeamStats()`. Leaderboard rows link to `/team`.
+
+## Cost + token split
+- Team token totals (`totalTokens`/`totalInputTokens`/`totalOutputTokens`) are
+  computed from the **step trail**, not run rows — steps are the only place the
+  input/output split exists. Team totals include **every** step (deliverable
+  too) because cost must reflect all LLM usage; the per-agent leaderboard still
+  excludes deliverable + non-`agents/`, so per-agent costs sum to **less** than
+  the team total (expected, not a bug).
+- `estimatedCostEur` (team + per-agent) comes from `model-pricing.ts`
+  (`estimateCostEur(in,out)`), which holds editable Sonnet USD list-price + an
+  approximate EUR FX constant. Rough indication, **not** billing-accurate.
+- **Why:** the headline "Tokens totaal" (input+output) vs leaderboard
+  "Tokens (out)" gap confused the user; the split + euro cost makes input-heavy
+  context cost legible. Keep the split steps-based so total == in+out always.

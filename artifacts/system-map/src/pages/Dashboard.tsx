@@ -22,6 +22,14 @@ function formatTokens(n: number): string {
   return String(n);
 }
 
+// Euro amount: cents-precise below €100, abbreviated above €1k (e.g. "€2.41",
+// "€128", "€3.2k"). Rough cost estimate, so precision tapers with magnitude.
+function formatEur(n: number): string {
+  if (n >= 1000) return `€${(n / 1000).toFixed(1)}k`;
+  if (n >= 100) return `€${Math.round(n)}`;
+  return `€${n.toFixed(2)}`;
+}
+
 function StatCard({
   label,
   value,
@@ -152,9 +160,49 @@ export default function Dashboard() {
               value={formatDuration(stats.avgDurationMs)}
             />
             <StatCard
-              label="Tokens totaal"
-              value={formatTokens(stats.totalTokens)}
+              label="Geschatte kosten"
+              value={formatEur(stats.estimatedCostEur)}
+              sub={
+                stats.totalRuns
+                  ? `~${formatEur(stats.estimatedCostEur / stats.totalRuns)} / run`
+                  : undefined
+              }
             />
+          </div>
+        </Reveal>
+
+        <Reveal>
+          <div className="border-2 border-foreground bg-card shadow-[3px_3px_0px_hsl(var(--foreground))] mb-12 grid grid-cols-3 divide-x-2 divide-foreground">
+            <div className="px-5 py-4">
+              <div className="font-['Space_Mono'] text-[9px] uppercase tracking-[0.25em] text-muted-foreground mb-1">
+                Tokens totaal
+              </div>
+              <div className="font-['Playfair_Display'] font-black text-2xl sm:text-3xl leading-none">
+                {formatTokens(stats.totalTokens)}
+              </div>
+            </div>
+            <div className="px-5 py-4">
+              <div className="font-['Space_Mono'] text-[9px] uppercase tracking-[0.25em] text-muted-foreground mb-1">
+                Input
+              </div>
+              <div className="font-['Playfair_Display'] font-black text-2xl sm:text-3xl leading-none">
+                {formatTokens(stats.totalInputTokens)}
+              </div>
+              <div className="font-['Inter'] text-[11px] text-muted-foreground mt-1">
+                context naar het model
+              </div>
+            </div>
+            <div className="px-5 py-4">
+              <div className="font-['Space_Mono'] text-[9px] uppercase tracking-[0.25em] text-muted-foreground mb-1">
+                Output
+              </div>
+              <div className="font-['Playfair_Display'] font-black text-2xl sm:text-3xl leading-none">
+                {formatTokens(stats.totalOutputTokens)}
+              </div>
+              <div className="font-['Inter'] text-[11px] text-muted-foreground mt-1">
+                door het team geschreven
+              </div>
+            </div>
           </div>
         </Reveal>
 
@@ -175,7 +223,7 @@ export default function Dashboard() {
             </p>
           ) : (
             <div className="border-2 border-foreground bg-card shadow-[3px_3px_0px_hsl(var(--foreground))] overflow-x-auto">
-              <table className="w-full text-left border-collapse min-w-[640px]">
+              <table className="w-full text-left border-collapse min-w-[760px]">
                 <thead>
                   <tr className="border-b-2 border-foreground font-['Space_Mono'] text-[9px] uppercase tracking-[0.2em] text-muted-foreground">
                     <th className="px-4 py-3 font-normal">Specialist</th>
@@ -187,8 +235,9 @@ export default function Dashboard() {
                       Gem. duur
                     </th>
                     <th className="px-4 py-3 font-normal text-right">
-                      Tokens (out)
+                      Tokens (in/out)
                     </th>
+                    <th className="px-4 py-3 font-normal text-right">Kosten</th>
                     <th className="px-4 py-3 font-normal w-8" />
                   </tr>
                 </thead>
@@ -226,8 +275,13 @@ export default function Dashboard() {
                       <td className="px-4 py-3 text-right font-['Space_Mono'] text-xs">
                         {formatDuration(e.avgDurationMs)}
                       </td>
-                      <td className="px-4 py-3 text-right font-['Space_Mono'] text-xs">
+                      <td className="px-4 py-3 text-right font-['Space_Mono'] text-xs whitespace-nowrap">
+                        {formatTokens(e.totalInputTokens)}
+                        <span className="text-muted-foreground"> / </span>
                         {formatTokens(e.totalOutputTokens)}
+                      </td>
+                      <td className="px-4 py-3 text-right font-['Space_Mono'] text-xs">
+                        {formatEur(e.estimatedCostEur)}
                       </td>
                       <td className="px-4 py-3 text-right">
                         <ArrowUpRight className="w-3.5 h-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity inline" />

@@ -40,7 +40,8 @@ structure).
 4. Respect Google Ads **character limits** (headline <= 30, description <= 90, each
    display path <= 15) and **policy** (no unverifiable superlatives, no excessive
    punctuation, no competitor trademarks, no emojis).
-5. Add a **QA & Compliance** pass for claims/policy before the human approval note.
+5. Add a **QA & Compliance** pass for claims/policy against `knowledge/google-ads-policy.md`
+   before the human approval note.
 6. The deliverable layer converts the approved copy + the real structure into one
    **Google Ads Editor CSV** for the user to review and import.
 

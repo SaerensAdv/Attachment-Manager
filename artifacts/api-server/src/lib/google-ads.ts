@@ -11,6 +11,11 @@
  * website-intake approach.
  */
 
+import {
+  computeAccountSignals,
+  renderAccountSignals,
+} from "./account-signals";
+
 const GOOGLE_ADS_API_VERSION = "v24";
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
 const API_BASE = `https://googleads.googleapis.com/${GOOGLE_ADS_API_VERSION}`;
@@ -512,17 +517,6 @@ export async function fetchGoogleAdsReport(
     }
   }
 
-  if (warnings.length > 0) {
-    lines.push("");
-    lines.push("== Waarschuwingen ==");
-    for (const w of warnings) lines.push(`- ${w}`);
-  }
-
-  let text = lines.join("\n").trim();
-  if (text.length > MAX_REPORT_LEN) {
-    text = `${text.slice(0, MAX_REPORT_LEN)}\n…(ingekort)`;
-  }
-
   const metrics: GoogleAdsMetrics = {
     accountName,
     customerId,
@@ -541,6 +535,28 @@ export async function fetchGoogleAdsReport(
     },
     campaigns: campaignMetrics,
   };
+
+  // Read-only diagnostic signals derived purely from the numbers above (no extra
+  // API call). Only added when the campaign pull succeeded, so we never flag a
+  // "spend without conversions" that is really just a failed data fetch.
+  if (!campaignFailed) {
+    const signalLines = renderAccountSignals(computeAccountSignals(metrics));
+    if (signalLines.length > 0) {
+      lines.push("");
+      lines.push(...signalLines);
+    }
+  }
+
+  if (warnings.length > 0) {
+    lines.push("");
+    lines.push("== Waarschuwingen ==");
+    for (const w of warnings) lines.push(`- ${w}`);
+  }
+
+  let text = lines.join("\n").trim();
+  if (text.length > MAX_REPORT_LEN) {
+    text = `${text.slice(0, MAX_REPORT_LEN)}\n…(ingekort)`;
+  }
 
   return { text, fetchedAt: new Date(), metrics };
 }

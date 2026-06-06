@@ -79,6 +79,7 @@ saerens-ai-team/
 ├── workflows/           # Repeatable processes
 │   ├── campaign-setup.md
 │   ├── account-audit.md
+│   ├── account-optimization.md
 │   ├── monthly-reporting.md
 │   ├── client-email.md
 │   ├── seo-audit.md

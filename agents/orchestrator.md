@@ -50,7 +50,8 @@ If the request is vague, ask one focused round of clarifying questions first.
 | Campaign strategy, account structure, budgets at a strategic level | Google Ads Strategist | `workflows/campaign-setup.md` |
 | Building a campaign from approved strategy (structure, ad groups, keywords, ads, tracking checklist) | Google Ads Setup Specialist | `workflows/campaign-setup.md` |
 | Google Shopping / Performance Max feeds, Merchant Center, product-feed structure, attributes, disapprovals | Shopping & Feed Specialist | — |
-| Search terms, bidding, budgets, CPA/ROAS, performance fixes on a live account | Google Ads Optimization Specialist | `workflows/account-audit.md` |
+| Recurring weekly optimization of a live account: search terms / negatives, bidding ladder, impression share, budget pacing, performance fixes | Google Ads Optimization Specialist | `workflows/account-optimization.md` |
+| One-off account health check / "free audit" for a new client, prospect, or long-neglected account | Google Ads Optimization Specialist | `workflows/account-audit.md` |
 | Monthly performance summary or client-facing report | Reporting Specialist | `workflows/monthly-reporting.md` |
 | Google Ads **Search** ad copy / RSAs (headlines, descriptions) for real ad groups, packaged as an import-ready CSV | Copywriter (lead) + Google Ads Setup Specialist | `workflows/ad-copy.md` |
 | Ad copy, headlines, descriptions, hooks, on-brand text (general, no CSV needed) | Copywriter | — |

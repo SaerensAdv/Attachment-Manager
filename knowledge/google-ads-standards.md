@@ -14,6 +14,7 @@ Baseline standards for how Saerens builds and manages Google Ads. Agents apply t
 - Lead with **intent-rich** keyword themes tied to the client's services/products.
 - Prefer **phrase** and **exact** match for control; use **broad** match deliberately and only with strong conversion tracking and smart bidding in place.
 - Build an initial **negative keyword** list from the start, and review the **search terms report** regularly to add more.
+- **Negatives are driven by relevance, not just spend.** The primary trigger for a negative is a search term that is **irrelevant to the client's intent** — add it even if it hasn't yet burned much budget. By default, exclude at **campaign level**; move to a **shared negative list** (cross-campaign waste) or **ad-group level** (theme-specific) only when that is genuinely cleaner.
 - Avoid overly broad single-word keywords for lead gen unless justified and monitored.
 
 ## Ads & assets
@@ -28,6 +29,21 @@ Baseline standards for how Saerens builds and manages Google Ads. Agents apply t
 - Choose the bidding strategy that fits the goal and the data available; smart bidding requires reliable conversion tracking first.
 - Recommend budgets against the goal (target ROAS or target CPA/CPL) and clearly flag that **budget changes need client approval**.
 - Watch for wasted spend (irrelevant search terms, poor placements, low-quality segments) and recommend cuts.
+
+**Bid strategy ladder (Saerens default progression)**
+
+Climb the ladder as conversion volume becomes consistent — never jump ahead of the data:
+
+1. **Maximize Clicks** — the starting point when there are **no (reliable) conversions** yet. Get traffic and data flowing first.
+2. **Maximize Conversions** — start testing once the account hits **~10–15 conversions/month consistently for ~3 months**. Run it for a meaningful stretch before judging.
+3. **Target CPA (tCPA)** — consider only once Maximize Conversions is **consistently delivering ~40–50 conversions/month for ~3 months**. Set the target from real, stable CPA data, not a guess.
+
+The same logic applies to value-based bidding for e-commerce (Maximize Conversion Value → Target ROAS) once conversion **value** is tracked reliably and volume is consistent.
+
+**Impression share is a client conversation**
+
+- Read **search impression share** and split the loss into **lost to budget** vs. **lost to rank** — they call for different fixes.
+- Surface this to the client as a decision, not a silent lever: "we're losing X% to budget and Y% to rank — we can raise budget, raise max CPC, or hold." Let the client choose; budget changes need their approval.
 
 ## Performance benchmarks & decision rules
 

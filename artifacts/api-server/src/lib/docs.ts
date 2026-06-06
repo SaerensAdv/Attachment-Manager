@@ -189,7 +189,7 @@ function isWordChar(ch: string | undefined): boolean {
  * Case-sensitive, word-boundary-aware substring search. Case sensitivity keeps
  * generic all-caps titles like `ARCHITECTURE` from matching lowercase prose.
  */
-function textMentions(text: string, title: string): boolean {
+export function textMentions(text: string, title: string): boolean {
   if (title.length === 0) return false;
   let idx = text.indexOf(title);
   while (idx !== -1) {
@@ -209,7 +209,7 @@ function textMentions(text: string, title: string): boolean {
  * appears inside an example or code listing from producing a spurious link,
  * while real backtick file references (handled separately) remain untouched.
  */
-function stripNonProse(content: string): string {
+export function stripNonProse(content: string): string {
   // Drop HTML comments (e.g. `<!-- deliverable: replit-prompt -->`) so markers
   // and other comments can never influence mention-edge derivation.
   const lines = content.replace(/<!--[\s\S]*?-->/g, "").split("\n");
@@ -313,7 +313,7 @@ const EDGE_PRIORITY: Record<DocEdgeKind, number> = {
   mention: 1,
 };
 
-function deriveEdges(files: DocFile[]): DocEdge[] {
+export function deriveEdges(files: DocFile[]): DocEdge[] {
   const idSet = new Set(files.map((f) => f.id));
   const byId = new Map(files.map((f) => [f.id, f] as const));
   // Best edge per directed pair, chosen by EDGE_PRIORITY.

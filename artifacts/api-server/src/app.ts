@@ -26,6 +26,10 @@ app.use(
   }),
 );
 app.use(cors());
+// Portrait uploads (POST /api/team/:slug/portrait) carry a base64-encoded image
+// that exceeds the default 100kb JSON limit, so parse team routes with a larger
+// cap. body-parser marks the request parsed, so the global parser below skips it.
+app.use("/api/team", express.json({ limit: "12mb" }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

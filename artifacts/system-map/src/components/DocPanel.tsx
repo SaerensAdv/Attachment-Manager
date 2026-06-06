@@ -42,6 +42,11 @@ const KIND_LABEL: Record<string, string> = {
   mention: "mentions",
 };
 
+// Priority order for grouping connections: the most specific/structural
+// relationships (routing, references) come before the looser ones (flow,
+// mentions). Mirrors the edge priority used when the graph is derived.
+const KIND_ORDER = ["routing", "reference", "flow", "mention"];
+
 // DB-backed client docs are synthetic (generated from the clients table) and
 // have no file on disk, so they cannot be edited in place.
 function isEditablePath(path: string): boolean {
@@ -232,27 +237,47 @@ export default function DocPanel({ path, node, nodes, edges, onClose, onSelectPa
     Icon: typeof ArrowRight
   ) => {
     if (items.length === 0) return null;
+    // Group the connections by relationship kind so long lists are scannable.
+    const groups = new Map<string, DocNode[]>();
+    for (const { node: n, kind } of items) {
+      const arr = groups.get(kind);
+      if (arr) arr.push(n);
+      else groups.set(kind, [n]);
+    }
+    const orderedKinds = [
+      ...KIND_ORDER.filter((k) => groups.has(k)),
+      ...[...groups.keys()].filter((k) => !KIND_ORDER.includes(k)),
+    ];
     return (
       <div className="mb-5">
         <div className="flex items-center gap-2 text-[10px] font-['Space_Mono'] uppercase tracking-[0.2em] text-muted-foreground mb-2 border-b border-foreground/20 pb-1">
           <Icon className="w-3.5 h-3.5" />
           {label} ({items.length})
         </div>
-        <div className="flex flex-col">
-          {items.map(({ node: n, kind }) => (
-            <button
-              key={`${label}-${n.id}-${kind}`}
-              type="button"
-              onClick={() => onSelectPath(n.path)}
-              className="group flex items-center gap-2 text-left rounded-none px-2 py-1.5 border-l-2 border-transparent hover:border-accent hover:bg-accent/5 transition-colors"
-            >
-              <CategoryDot category={n.category} />
-              <span className="font-['Inter'] text-sm truncate flex-1">{n.title}</span>
-              <span className="text-[10px] font-['Space_Mono'] uppercase tracking-wider text-muted-foreground/70 shrink-0">
-                {KIND_LABEL[kind] ?? kind}
-              </span>
-            </button>
-          ))}
+        <div className="flex flex-col gap-3">
+          {orderedKinds.map((kind) => {
+            const groupNodes = groups.get(kind)!;
+            return (
+              <div key={`${label}-${kind}`}>
+                <div className="text-[10px] font-['Space_Mono'] uppercase tracking-wider text-muted-foreground/70 mb-1 px-2">
+                  {KIND_LABEL[kind] ?? kind} ({groupNodes.length})
+                </div>
+                <div className="flex flex-col">
+                  {groupNodes.map((n) => (
+                    <button
+                      key={`${label}-${kind}-${n.id}`}
+                      type="button"
+                      onClick={() => onSelectPath(n.path)}
+                      className="group flex items-center gap-2 text-left rounded-none px-2 py-1.5 border-l-2 border-transparent hover:border-accent hover:bg-accent/5 transition-colors"
+                    >
+                      <CategoryDot category={n.category} />
+                      <span className="font-['Inter'] text-sm truncate flex-1">{n.title}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
     );

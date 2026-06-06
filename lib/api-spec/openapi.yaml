@@ -287,6 +287,84 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AgentRunList"
+  /team/{slug}/persona:
+    put:
+      operationId: updateAgentPersona
+      tags: [team]
+      summary: Save edited persona text back to the agent's markdown
+      description: >
+        Surgically rewrites the agent's "Character & personality" bullets (name,
+        one-liner, personality, communication style, what they care about,
+        signature habit, cultural fit note) and the first paragraph of the Role
+        section, persisting to agents/<slug>.md. Empty persona fields remove
+        their bullet; an empty role paragraph is left untouched. Returns the
+        updated team member.
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdatePersonaRequest"
+      responses:
+        "200":
+          description: The updated team member
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamMember"
+        "404":
+          description: No agent exists for the given slug
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /team/{slug}/portrait:
+    post:
+      operationId: uploadAgentPortrait
+      tags: [team]
+      summary: Upload a portrait image for an agent
+      description: >
+        Accepts a raw image (PNG, JPEG or WebP), normalizes it to a PNG capped at
+        a sane width, and stores it at portraits/<slug>.png in object storage so
+        the avatar appears immediately across the roster, profile and map.
+        Returns the updated team member with versioned portrait URLs.
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UploadPortraitRequest"
+      responses:
+        "200":
+          description: The updated team member
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamMember"
+        "400":
+          description: The uploaded body is not a usable image
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: No agent exists for the given slug
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /clients:
     get:
       operationId: getClients
@@ -1096,6 +1174,52 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/TeamMember"
+    UpdatePersonaRequest:
+      type: object
+      description: >
+        Editable persona fields. Every field is sent on each save (the editor
+        form holds them all). A non-empty value upserts its "Character &
+        personality" bullet; an empty string removes that bullet. An empty
+        roleSummary leaves the Role paragraph untouched.
+      required:
+        - name
+        - oneLiner
+        - personality
+        - communicationStyle
+        - caresMostAbout
+        - signatureHabit
+        - culturalFitNote
+        - roleSummary
+      properties:
+        name:
+          type: string
+          description: The persona's first name (e.g. Marie).
+        oneLiner:
+          type: string
+          description: The persona's "In a line" summary.
+        personality:
+          type: string
+        communicationStyle:
+          type: string
+        caresMostAbout:
+          type: string
+        signatureHabit:
+          type: string
+        culturalFitNote:
+          type: string
+        roleSummary:
+          type: string
+          description: First paragraph of the agent's Role section.
+    UploadPortraitRequest:
+      type: object
+      required: [imageBase64]
+      properties:
+        imageBase64:
+          type: string
+          description: >
+            The portrait image encoded as base64. A data-URL prefix
+            (e.g. "data:image/png;base64,") is tolerated and stripped. The
+            decoded bytes must be a PNG, JPEG or WebP image.
     Client:
       type: object
       required: [id, name, createdAt, updatedAt]

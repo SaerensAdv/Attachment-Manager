@@ -1,4 +1,10 @@
-import { extractSection, getDocFile, listDocFiles, type DocFile } from "./docs";
+import {
+  extractSection,
+  getDocFile,
+  listDocFiles,
+  writeDocFile,
+  type DocFile,
+} from "./docs";
 import {
   loadPortraitIndex,
   portraitObjectName,
@@ -375,6 +381,7 @@ export async function getTeamRoster(): Promise<TeamMember[]> {
     const slug = slugFromPath(doc.path);
     const persona = parsePersona(doc.content);
     const hasPortrait = index.portraits.has(slug);
+    const version = index.portraits.get(slug) || undefined;
     return {
       slug,
       path: doc.path,
@@ -388,13 +395,14 @@ export async function getTeamRoster(): Promise<TeamMember[]> {
       culturalFitNote: persona.culturalFitNote,
       roleSummary: parseRoleSummary(doc.content),
       portraitUrl: hasPortrait
-        ? publicObjectUrl(portraitObjectName(slug))
+        ? publicObjectUrl(portraitObjectName(slug), { version })
         : null,
       // Small WebP variant for the roster avatars and round Kaart nodes, so
       // faces appear instantly instead of streaming the full-size portrait.
       portraitThumbUrl: hasPortrait
         ? publicObjectUrl(portraitObjectName(slug), {
             width: PORTRAIT_THUMB_WIDTH,
+            version,
           })
         : null,
       layer: layerForSlug(slug, layerBySlug),
@@ -404,4 +412,155 @@ export async function getTeamRoster(): Promise<TeamMember[]> {
 
   members.sort((a, b) => a.title.localeCompare(b.title));
   return members;
+}
+
+/** The editable persona fields, all sent on every save (empty = cleared). */
+export type PersonaEdits = Record<PersonaKey, string> & { roleSummary: string };
+
+const HEADING_LINE = /^#{1,6}\s/;
+const BULLET_LINE = /^\s*[-*]\s+/;
+
+/**
+ * Locate the body line range of a markdown section (the lines after its heading,
+ * up to the next heading). Returns null when no matching heading exists.
+ */
+function findSectionBody(
+  lines: string[],
+  headingMatch: RegExp,
+): { start: number; end: number } | null {
+  let heading = -1;
+  for (let i = 0; i < lines.length; i++) {
+    if (HEADING_LINE.test(lines[i]) && headingMatch.test(lines[i])) {
+      heading = i;
+      break;
+    }
+  }
+  if (heading === -1) return null;
+  let end = lines.length;
+  for (let i = heading + 1; i < lines.length; i++) {
+    if (HEADING_LINE.test(lines[i])) {
+      end = i;
+      break;
+    }
+  }
+  return { start: heading + 1, end };
+}
+
+/** A `- **Label:** value` bullet matcher; group 1 captures the prefix. */
+function bulletPrefixRegex(label: string): RegExp {
+  return new RegExp(
+    `^(\\s*[-*]\\s*\\*\\*${escapeRegExp(label)}:\\*\\*\\s*).*$`,
+    "i",
+  );
+}
+
+/**
+ * Apply persona edits to the bullet lines of the "Character & personality"
+ * section body: a non-empty value upserts its bullet (in PERSONA_FIELDS order
+ * when newly inserted), an empty value removes it.
+ */
+function applyPersonaBullets(bodyLines: string[], edits: PersonaEdits): string[] {
+  const out = [...bodyLines];
+  for (const [key, label] of Object.entries(PERSONA_FIELDS) as [
+    PersonaKey,
+    string,
+  ][]) {
+    const value = (edits[key] ?? "").trim();
+    const re = bulletPrefixRegex(label);
+    const idx = out.findIndex((line) => re.test(line));
+    if (idx !== -1) {
+      if (value) {
+        // Function replacement so `$` in the value isn't treated specially.
+        out[idx] = out[idx].replace(re, (_m, prefix: string) => prefix + value);
+      } else {
+        out.splice(idx, 1);
+      }
+    } else if (value) {
+      let lastBullet = -1;
+      for (let i = 0; i < out.length; i++) {
+        if (BULLET_LINE.test(out[i])) lastBullet = i;
+      }
+      out.splice(lastBullet + 1, 0, `- **${label}:** ${value}`);
+    }
+  }
+  return out;
+}
+
+/** Build fresh persona bullets (used when the section doesn't exist yet). */
+function personaBulletsFor(edits: PersonaEdits): string[] {
+  const bullets: string[] = [];
+  for (const [key, label] of Object.entries(PERSONA_FIELDS) as [
+    PersonaKey,
+    string,
+  ][]) {
+    const value = (edits[key] ?? "").trim();
+    if (value) bullets.push(`- **${label}:** ${value}`);
+  }
+  return bullets;
+}
+
+/**
+ * Replace the first prose paragraph of the Role section with `value`. Leaves the
+ * document untouched when the value is empty (so clearing the field never
+ * deletes prose) or when there is no Role section to edit.
+ */
+function applyRoleSummary(lines: string[], value: string): string[] {
+  const trimmed = value.trim();
+  if (!trimmed) return lines;
+  const bounds = findSectionBody(lines, /^#{1,6}\s+Role\b/i);
+  if (!bounds) return lines;
+  const out = [...lines];
+  for (let i = bounds.start; i < bounds.end; i++) {
+    const t = out[i].trim();
+    if (t === "" || t.startsWith(">") || t.startsWith("#")) continue;
+    out[i] = trimmed;
+    return out;
+  }
+  out.splice(bounds.start, 0, trimmed, "");
+  return out;
+}
+
+/**
+ * Persist edited persona text back to the agent's markdown and return the
+ * refreshed team member. Returns null when no agent exists for the slug (or the
+ * write is rejected). Editing is surgical: only the targeted bullets and the
+ * Role paragraph change; the rest of the document is preserved verbatim.
+ */
+export async function updateAgentPersona(
+  slug: string,
+  edits: PersonaEdits,
+): Promise<TeamMember | null> {
+  const path = `agents/${slug}.md`;
+  const doc = getDocFile(path);
+  if (!doc) return null;
+
+  let lines = doc.content.split("\n");
+  const personaBounds = findSectionBody(lines, /Character & personality/i);
+  if (personaBounds) {
+    const body = lines.slice(personaBounds.start, personaBounds.end);
+    const newBody = applyPersonaBullets(body, edits);
+    lines = [
+      ...lines.slice(0, personaBounds.start),
+      ...newBody,
+      ...lines.slice(personaBounds.end),
+    ];
+  } else {
+    const bullets = personaBulletsFor(edits);
+    if (bullets.length > 0) {
+      lines = [...lines, "", "## Character & personality", "", ...bullets];
+    }
+  }
+
+  lines = applyRoleSummary(lines, edits.roleSummary);
+
+  // Skip the write when nothing actually changed, so a no-op save never bumps
+  // the file or invalidates doc caches needlessly.
+  const next = lines.join("\n");
+  if (next !== doc.content) {
+    const updated = writeDocFile(path, next);
+    if (!updated) return null;
+  }
+
+  const roster = await getTeamRoster();
+  return roster.find((m) => m.slug === slug) ?? null;
 }

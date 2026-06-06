@@ -47,6 +47,8 @@ export * from './teamLayer';
 export * from './teamMember';
 export * from './teamRoster';
 export * from './teamStats';
+export * from './updatePersonaRequest';
+export * from './uploadPortraitRequest';
 export * from './validationIssue';
 export * from './validationReport';
 export * from './validationReportCounts';

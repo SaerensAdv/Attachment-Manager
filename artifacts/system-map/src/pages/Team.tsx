@@ -1,14 +1,27 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   useGetTeam,
   useGetDocGraph,
   useGetAgentStats,
   useGetAgentRuns,
+  useUpdateAgentPersona,
+  useUploadAgentPortrait,
+  getGetTeamQueryKey,
+  getGetDocGraphQueryKey,
   type TeamMember,
   type DocNode,
   type AgentRun,
 } from "@workspace/api-client-react";
-import { Loader2, ArrowLeft, ArrowRight, X, Activity } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  Loader2,
+  ArrowLeft,
+  ArrowRight,
+  X,
+  Activity,
+  Pencil,
+  Upload,
+} from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Link } from "wouter";
 import Reveal from "@/components/Reveal";
@@ -56,14 +69,32 @@ function formatRunDate(iso: string): string {
   });
 }
 
-// Persona fields shown in the profile dossier, in reading order.
-const PERSONA_FIELDS: { key: keyof TeamMember; label: string }[] = [
+// Persona bullet fields shown in the profile dossier, in reading order. The key
+// matches both the TeamMember field and the persona PUT body field.
+type PersonaFieldKey =
+  | "personality"
+  | "communicationStyle"
+  | "caresMostAbout"
+  | "signatureHabit"
+  | "culturalFitNote";
+
+const PERSONA_FIELDS: { key: PersonaFieldKey; label: string }[] = [
   { key: "personality", label: "Persoonlijkheid" },
   { key: "communicationStyle", label: "Communicatie" },
   { key: "caresMostAbout", label: "Hecht het meest aan" },
   { key: "signatureHabit", label: "Kenmerkende gewoonte" },
   { key: "culturalFitNote", label: "Culturele match" },
 ];
+
+// Read a file as a base64 data-URL so it can ride in the JSON portrait body.
+function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
 
 function initialsOf(member: TeamMember): string {
   const base = member.name?.trim() || member.title.trim();
@@ -224,8 +255,135 @@ interface ProfileProps {
   onClose: () => void;
 }
 
+// All editable persona fields collapsed into one flat form-state shape.
+type PersonaForm = Record<PersonaFieldKey, string> & {
+  name: string;
+  oneLiner: string;
+  roleSummary: string;
+};
+
+// One labelled editorial input row for the persona editor; single-line by
+// default, multiline for longer prose fields.
+function PersonaInput({
+  label,
+  value,
+  onChange,
+  multiline = false,
+  testId,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  multiline?: boolean;
+  testId: string;
+}) {
+  const shared =
+    "w-full border border-foreground/30 bg-background/60 px-3 py-2 font-['Inter'] text-sm text-foreground focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent";
+  return (
+    <label className="block">
+      <span className="block font-['Space_Mono'] text-[10px] uppercase tracking-widest text-muted-foreground mb-1">
+        {label}
+      </span>
+      {multiline ? (
+        <textarea
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          rows={2}
+          className={`${shared} resize-y leading-relaxed`}
+          data-testid={testId}
+        />
+      ) : (
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className={shared}
+          data-testid={testId}
+        />
+      )}
+    </label>
+  );
+}
+
+function formFromMember(member: TeamMember): PersonaForm {
+  return {
+    name: member.name ?? "",
+    oneLiner: member.oneLiner ?? "",
+    roleSummary: member.roleSummary ?? "",
+    personality: member.personality ?? "",
+    communicationStyle: member.communicationStyle ?? "",
+    caresMostAbout: member.caresMostAbout ?? "",
+    signatureHabit: member.signatureHabit ?? "",
+    culturalFitNote: member.culturalFitNote ?? "",
+  };
+}
+
 function Profile({ member, nodes, edges, onClose }: ProfileProps) {
   const nodeById = useMemo(() => new Map(nodes.map((n) => [n.id, n])), [nodes]);
+  const queryClient = useQueryClient();
+
+  const [editing, setEditing] = useState(false);
+  const [form, setForm] = useState<PersonaForm>(() => formFromMember(member));
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const updatePersona = useUpdateAgentPersona();
+  const uploadPortrait = useUploadAgentPortrait();
+  const isUploading = uploadPortrait.isPending;
+
+  // Refresh the roster + the map (titles/connections feed off the same docs)
+  // after any write so the new persona/portrait shows up everywhere at once.
+  const invalidateAll = () => {
+    queryClient.invalidateQueries({ queryKey: getGetTeamQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetDocGraphQueryKey() });
+  };
+
+  // Re-seed the form whenever a different member is opened, and drop edit mode
+  // so you never carry one agent's draft onto another.
+  useEffect(() => {
+    setForm(formFromMember(member));
+    setEditing(false);
+    setSaveError(null);
+  }, [member]);
+
+  const startEditing = () => {
+    setForm(formFromMember(member));
+    setSaveError(null);
+    setEditing(true);
+  };
+
+  const updateField = (key: keyof PersonaForm, value: string) =>
+    setForm((prev) => ({ ...prev, [key]: value }));
+
+  const handleSave = async () => {
+    setSaveError(null);
+    try {
+      await updatePersona.mutateAsync({ slug: member.slug, data: form });
+      invalidateAll();
+      setEditing(false);
+    } catch {
+      setSaveError("Opslaan mislukt. Probeer het opnieuw.");
+    }
+  };
+
+  const handlePortraitFile = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // allow re-selecting the same file later
+    if (!file) return;
+    setSaveError(null);
+    try {
+      const dataUrl = await fileToDataUrl(file);
+      await uploadPortrait.mutateAsync({
+        slug: member.slug,
+        data: { imageBase64: dataUrl },
+      });
+      invalidateAll();
+    } catch {
+      setSaveError("Portret uploaden mislukt. Probeer een ander beeld.");
+    }
+  };
 
   // Direct graph connections for this agent, derived from the doc-graph edges.
   const { outgoing, incoming } = useMemo(() => {
@@ -288,7 +446,32 @@ function Profile({ member, nodes, edges, onClose }: ProfileProps) {
       {/* Dossier header */}
       <div className="flex items-start justify-between gap-4 border-b-2 border-foreground px-6 py-5">
         <div className="flex items-center gap-5 min-w-0">
-          <Portrait member={member} size="lg" />
+          <div className="relative shrink-0">
+            <Portrait member={member} size="lg" />
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              className="hidden"
+              onChange={handlePortraitFile}
+              data-testid="input-portrait-file"
+            />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploading}
+              className="absolute -bottom-1 -right-1 p-1.5 border border-foreground bg-background hover:bg-foreground hover:text-background transition-colors disabled:opacity-60"
+              aria-label="Portret uploaden"
+              title="Portret uploaden"
+              data-testid="button-upload-portrait"
+            >
+              {isUploading ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Upload className="w-3.5 h-3.5" />
+              )}
+            </button>
+          </div>
           <div className="min-w-0">
             <p className="font-['Space_Mono'] text-[10px] uppercase tracking-widest text-muted-foreground">
               {member.title}
@@ -303,14 +486,26 @@ function Profile({ member, nodes, edges, onClose }: ProfileProps) {
             )}
           </div>
         </div>
-        <button
-          onClick={onClose}
-          className="p-2 border border-foreground hover:bg-foreground hover:text-background transition-colors shrink-0"
-          aria-label="Sluiten"
-          data-testid="button-close-profile"
-        >
-          <X className="w-4 h-4" />
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          {!editing && (
+            <button
+              onClick={startEditing}
+              className="flex items-center gap-1.5 px-3 py-2 border border-foreground hover:bg-foreground hover:text-background transition-colors font-['Space_Mono'] text-[10px] uppercase tracking-widest"
+              data-testid="button-edit-persona"
+            >
+              <Pencil className="w-3.5 h-3.5" />
+              Bewerken
+            </button>
+          )}
+          <button
+            onClick={onClose}
+            className="p-2 border border-foreground hover:bg-foreground hover:text-background transition-colors"
+            aria-label="Sluiten"
+            data-testid="button-close-profile"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_20rem]">
@@ -319,28 +514,95 @@ function Profile({ member, nodes, edges, onClose }: ProfileProps) {
           <h3 className="font-['Playfair_Display'] font-bold text-lg uppercase tracking-wider border-b-2 border-foreground pb-1 mb-5">
             Persona
           </h3>
-          {member.roleSummary && (
-            <p className="font-['Inter'] text-sm text-foreground leading-relaxed mb-6">
-              {member.roleSummary}
-            </p>
-          )}
-          {personaRows.length > 0 ? (
-            <dl className="flex flex-col gap-4">
-              {personaRows.map((r) => (
-                <div key={r.label}>
-                  <dt className="font-['Space_Mono'] text-[10px] uppercase tracking-widest text-muted-foreground mb-1">
-                    {r.label}
-                  </dt>
-                  <dd className="font-['Inter'] text-sm text-foreground leading-relaxed">
-                    {r.value}
-                  </dd>
-                </div>
+          {editing ? (
+            <div className="flex flex-col gap-4">
+              <PersonaInput
+                label="Naam"
+                value={form.name}
+                onChange={(v) => updateField("name", v)}
+                testId="input-persona-name"
+              />
+              <PersonaInput
+                label="In een zin"
+                value={form.oneLiner}
+                onChange={(v) => updateField("oneLiner", v)}
+                testId="input-persona-oneliner"
+              />
+              <PersonaInput
+                label="Rol (eerste alinea)"
+                value={form.roleSummary}
+                onChange={(v) => updateField("roleSummary", v)}
+                multiline
+                testId="input-persona-role"
+              />
+              {PERSONA_FIELDS.map((f) => (
+                <PersonaInput
+                  key={f.key}
+                  label={f.label}
+                  value={form[f.key]}
+                  onChange={(v) => updateField(f.key, v)}
+                  multiline
+                  testId={`input-persona-${f.key}`}
+                />
               ))}
-            </dl>
+
+              {saveError && (
+                <p className="font-['Space_Mono'] text-[10px] uppercase tracking-widest text-destructive">
+                  {saveError}
+                </p>
+              )}
+
+              <div className="flex items-center gap-2 pt-1">
+                <button
+                  onClick={handleSave}
+                  disabled={updatePersona.isPending}
+                  className="flex items-center gap-1.5 px-4 py-2 border border-foreground bg-foreground text-background hover:bg-accent hover:border-accent transition-colors font-['Space_Mono'] text-[10px] uppercase tracking-widest disabled:opacity-60"
+                  data-testid="button-save-persona"
+                >
+                  {updatePersona.isPending && (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  )}
+                  Opslaan
+                </button>
+                <button
+                  onClick={() => {
+                    setEditing(false);
+                    setSaveError(null);
+                  }}
+                  disabled={updatePersona.isPending}
+                  className="px-4 py-2 border border-foreground hover:bg-foreground hover:text-background transition-colors font-['Space_Mono'] text-[10px] uppercase tracking-widest disabled:opacity-60"
+                  data-testid="button-cancel-persona"
+                >
+                  Annuleren
+                </button>
+              </div>
+            </div>
           ) : (
-            <p className="font-['Inter'] text-sm text-muted-foreground italic">
-              Nog geen persona vastgelegd voor dit teamlid.
-            </p>
+            <>
+              {member.roleSummary && (
+                <p className="font-['Inter'] text-sm text-foreground leading-relaxed mb-6">
+                  {member.roleSummary}
+                </p>
+              )}
+              {personaRows.length > 0 ? (
+                <dl className="flex flex-col gap-4">
+                  {personaRows.map((r) => (
+                    <div key={r.label}>
+                      <dt className="font-['Space_Mono'] text-[10px] uppercase tracking-widest text-muted-foreground mb-1">
+                        {r.label}
+                      </dt>
+                      <dd className="font-['Inter'] text-sm text-foreground leading-relaxed">
+                        {r.value}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+              ) : (
+                <p className="font-['Inter'] text-sm text-muted-foreground italic">
+                  Nog geen persona vastgelegd voor dit teamlid.
+                </p>
+              )}
+            </>
           )}
         </div>
 

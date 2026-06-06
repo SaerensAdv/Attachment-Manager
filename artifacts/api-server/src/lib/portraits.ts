@@ -1,4 +1,4 @@
-import { objectStorageClient } from "./objectStorage";
+import { objectStorageClient, ObjectStorageService } from "./objectStorage";
 
 /**
  * Object-storage layout (all under the public search path):
@@ -36,8 +36,12 @@ export interface StyleExample {
 }
 
 export interface PortraitIndex {
-  /** Slugs that have a chosen portrait at portraits/<slug>.png. */
-  portraits: Set<string>;
+  /**
+   * Slugs that have a chosen portrait at portraits/<slug>.png, mapped to the
+   * object's storage generation (used as a cache-busting version in the URL so a
+   * replaced portrait refreshes everywhere despite the immutable thumb cache).
+   */
+  portraits: Map<string, string>;
   /** Generated style examples grouped by slug. */
   styleExamples: Map<string, StyleExample[]>;
 }
@@ -59,13 +63,21 @@ export function styleExampleObjectName(slug: string, style: string): string {
  */
 export function publicObjectUrl(
   objectName: string,
-  opts?: { width?: number },
+  opts?: { width?: number; version?: string },
 ): string {
   const base = `/api/storage/public-objects/${objectName}`;
+  const params = new URLSearchParams();
   if (opts?.width && Number.isFinite(opts.width)) {
-    return `${base}?w=${Math.round(opts.width)}`;
+    params.set("w", String(Math.round(opts.width)));
   }
-  return base;
+  // A cache-busting version keyed off the object's storage generation: the URL
+  // changes whenever the portrait is replaced, so browsers (and the immutable
+  // thumb cache) serve the new face immediately instead of a stale copy.
+  if (opts?.version) {
+    params.set("v", opts.version);
+  }
+  const query = params.toString();
+  return query ? `${base}?${query}` : base;
 }
 
 function labelForStyle(style: string): string {
@@ -94,7 +106,7 @@ function firstPublicSearchPath(): { bucket: string; baseDir: string } | null {
  * still renders with placeholders and "press seal" fallbacks.
  */
 export async function loadPortraitIndex(): Promise<PortraitIndex> {
-  const portraits = new Set<string>();
+  const portraits = new Map<string, string>();
   const styleExamples = new Map<string, StyleExample[]>();
 
   try {
@@ -116,7 +128,15 @@ export async function loadPortraitIndex(): Promise<PortraitIndex> {
 
       if (rel.startsWith(PORTRAIT_PREFIX) && rel.endsWith(".png")) {
         const slug = rel.slice(PORTRAIT_PREFIX.length, -".png".length);
-        if (slug) portraits.add(slug);
+        if (slug) {
+          const version = String(
+            file.metadata?.generation ??
+              file.metadata?.etag ??
+              file.metadata?.updated ??
+              "",
+          );
+          portraits.set(slug, version);
+        }
         continue;
       }
 
@@ -150,8 +170,24 @@ export async function loadPortraitIndex(): Promise<PortraitIndex> {
     }
   } catch {
     // Storage unreachable or not configured — fall back to an empty index.
-    return { portraits: new Set(), styleExamples: new Map() };
+    return { portraits: new Map(), styleExamples: new Map() };
   }
 
   return { portraits, styleExamples };
+}
+
+/**
+ * Store (or replace) the chosen portrait for an employee at portraits/<slug>.png
+ * in the public bucket. The bytes must already be a normalized PNG. Replacing an
+ * existing object bumps its storage generation, which busts the version-keyed
+ * portrait/thumbnail URLs so the new face shows up immediately everywhere.
+ */
+export async function savePortrait(slug: string, body: Buffer): Promise<void> {
+  const service = new ObjectStorageService();
+  await service.publicObjectFile(portraitObjectName(slug)).save(body, {
+    contentType: "image/png",
+    // The full-size object is served with a short TTL; cache-busting happens via
+    // the ?v=<generation> query, so a modest cache here is safe and helpful.
+    metadata: { cacheControl: "public, max-age=3600" },
+  });
 }

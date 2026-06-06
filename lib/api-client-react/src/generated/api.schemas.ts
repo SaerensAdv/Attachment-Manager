@@ -184,6 +184,30 @@ export interface TeamRoster {
   employees: TeamMember[];
 }
 
+/**
+ * Editable persona fields. Every field is sent on each save (the editor form holds them all). A non-empty value upserts its "Character & personality" bullet; an empty string removes that bullet. An empty roleSummary leaves the Role paragraph untouched.
+
+ */
+export interface UpdatePersonaRequest {
+  /** The persona's first name (e.g. Marie). */
+  name: string;
+  /** The persona's "In a line" summary. */
+  oneLiner: string;
+  personality: string;
+  communicationStyle: string;
+  caresMostAbout: string;
+  signatureHabit: string;
+  culturalFitNote: string;
+  /** First paragraph of the agent's Role section. */
+  roleSummary: string;
+}
+
+export interface UploadPortraitRequest {
+  /** The portrait image encoded as base64. A data-URL prefix (e.g. "data:image/png;base64,") is tolerated and stripped. The decoded bytes must be a PNG, JPEG or WebP image.
+   */
+  imageBase64: string;
+}
+
 export interface Client {
   id: number;
   name: string;

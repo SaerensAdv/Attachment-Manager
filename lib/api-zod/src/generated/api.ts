@@ -270,6 +270,97 @@ export const GetAgentRunsResponse = zod.object({
 
 
 /**
+ * Surgically rewrites the agent's "Character & personality" bullets (name, one-liner, personality, communication style, what they care about, signature habit, cultural fit note) and the first paragraph of the Role section, persisting to agents/<slug>.md. Empty persona fields remove their bullet; an empty role paragraph is left untouched. Returns the updated team member.
+
+ * @summary Save edited persona text back to the agent's markdown
+ */
+export const UpdateAgentPersonaParams = zod.object({
+  "slug": zod.coerce.string()
+})
+
+export const UpdateAgentPersonaBody = zod.object({
+  "name": zod.string().describe('The persona\'s first name (e.g. Marie).'),
+  "oneLiner": zod.string().describe('The persona\'s \"In a line\" summary.'),
+  "personality": zod.string(),
+  "communicationStyle": zod.string(),
+  "caresMostAbout": zod.string(),
+  "signatureHabit": zod.string(),
+  "culturalFitNote": zod.string(),
+  "roleSummary": zod.string().describe('First paragraph of the agent\'s Role section.')
+}).describe('Editable persona fields. Every field is sent on each save (the editor form holds them all). A non-empty value upserts its \"Character & personality\" bullet; an empty string removes that bullet. An empty roleSummary leaves the Role paragraph untouched.\n')
+
+export const UpdateAgentPersonaResponse = zod.object({
+  "slug": zod.string().describe('The agent filename without extension (e.g. copywriter).'),
+  "path": zod.string().describe('The doc-graph node id for this agent (e.g. agents\/copywriter.md).'),
+  "title": zod.string().describe('The agent\'s role title, from the document\'s first heading.'),
+  "name": zod.string().nullable().describe('The persona\'s first name (e.g. Marie).'),
+  "oneLiner": zod.string().nullable().describe('The persona\'s \"In a line\" summary.'),
+  "personality": zod.string().nullable(),
+  "communicationStyle": zod.string().nullable().describe('The persona\'s \"How they communicate\" trait.'),
+  "caresMostAbout": zod.string().nullable(),
+  "signatureHabit": zod.string().nullable(),
+  "culturalFitNote": zod.string().nullable(),
+  "roleSummary": zod.string().nullable().describe('First paragraph of the agent\'s Role section, if present.'),
+  "portraitUrl": zod.string().nullable().describe('Public URL of the chosen full-size portrait, or null when none exists yet.'),
+  "portraitThumbUrl": zod.string().nullable().describe('Public URL of a small resized WebP thumbnail of the portrait for roster avatars and graph nodes, or null when none exists yet.'),
+  "layer": zod.object({
+  "id": zod.string().describe('Stable layer identifier from the agent hierarchy (e.g. strategy).'),
+  "order": zod.number().describe('Fixed top-to-bottom position of the layer (1 = Orchestrator).'),
+  "title": zod.string().describe('Editorial Dutch title for the hierarchy layer.'),
+  "description": zod.string().describe('Short editorial description of what this layer does.')
+}).describe('The hierarchy layer this member belongs to (group + order).'),
+  "head": zod.object({
+  "id": zod.string().describe('Stable layer identifier from the agent hierarchy (e.g. strategy).'),
+  "order": zod.number().describe('Fixed top-to-bottom position of the layer (1 = Orchestrator).'),
+  "title": zod.string().describe('Editorial Dutch title for the hierarchy layer.'),
+  "description": zod.string().describe('Short editorial description of what this layer does.')
+}).describe('The leadership head this member reports to (organizational reporting line only; reuses the layer shape: id, order, title, description).')
+})
+
+
+/**
+ * Accepts a raw image (PNG, JPEG or WebP), normalizes it to a PNG capped at a sane width, and stores it at portraits/<slug>.png in object storage so the avatar appears immediately across the roster, profile and map. Returns the updated team member with versioned portrait URLs.
+
+ * @summary Upload a portrait image for an agent
+ */
+export const UploadAgentPortraitParams = zod.object({
+  "slug": zod.coerce.string()
+})
+
+export const UploadAgentPortraitBody = zod.object({
+  "imageBase64": zod.string().describe('The portrait image encoded as base64. A data-URL prefix (e.g. \"data:image\/png;base64,\") is tolerated and stripped. The decoded bytes must be a PNG, JPEG or WebP image.\n')
+})
+
+export const UploadAgentPortraitResponse = zod.object({
+  "slug": zod.string().describe('The agent filename without extension (e.g. copywriter).'),
+  "path": zod.string().describe('The doc-graph node id for this agent (e.g. agents\/copywriter.md).'),
+  "title": zod.string().describe('The agent\'s role title, from the document\'s first heading.'),
+  "name": zod.string().nullable().describe('The persona\'s first name (e.g. Marie).'),
+  "oneLiner": zod.string().nullable().describe('The persona\'s \"In a line\" summary.'),
+  "personality": zod.string().nullable(),
+  "communicationStyle": zod.string().nullable().describe('The persona\'s \"How they communicate\" trait.'),
+  "caresMostAbout": zod.string().nullable(),
+  "signatureHabit": zod.string().nullable(),
+  "culturalFitNote": zod.string().nullable(),
+  "roleSummary": zod.string().nullable().describe('First paragraph of the agent\'s Role section, if present.'),
+  "portraitUrl": zod.string().nullable().describe('Public URL of the chosen full-size portrait, or null when none exists yet.'),
+  "portraitThumbUrl": zod.string().nullable().describe('Public URL of a small resized WebP thumbnail of the portrait for roster avatars and graph nodes, or null when none exists yet.'),
+  "layer": zod.object({
+  "id": zod.string().describe('Stable layer identifier from the agent hierarchy (e.g. strategy).'),
+  "order": zod.number().describe('Fixed top-to-bottom position of the layer (1 = Orchestrator).'),
+  "title": zod.string().describe('Editorial Dutch title for the hierarchy layer.'),
+  "description": zod.string().describe('Short editorial description of what this layer does.')
+}).describe('The hierarchy layer this member belongs to (group + order).'),
+  "head": zod.object({
+  "id": zod.string().describe('Stable layer identifier from the agent hierarchy (e.g. strategy).'),
+  "order": zod.number().describe('Fixed top-to-bottom position of the layer (1 = Orchestrator).'),
+  "title": zod.string().describe('Editorial Dutch title for the hierarchy layer.'),
+  "description": zod.string().describe('Short editorial description of what this layer does.')
+}).describe('The leadership head this member reports to (organizational reporting line only; reuses the layer shape: id, order, title, description).')
+})
+
+
+/**
  * @summary List all persisted clients
  */
 export const GetClientsResponse = zod.object({

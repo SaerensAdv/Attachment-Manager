@@ -47,8 +47,11 @@ import type {
   ScheduleInput,
   ScheduleList,
   ScheduleUpdate,
+  TeamMember,
   TeamRoster,
   TeamStats,
+  UpdatePersonaRequest,
+  UploadPortraitRequest,
   ValidationReport
 } from './api.schemas';
 
@@ -999,6 +1002,154 @@ export function useGetAgentRuns<TData = Awaited<ReturnType<typeof getAgentRuns>>
 
 
 
+
+export const getUpdateAgentPersonaUrl = (slug: string,) => {
+
+
+
+
+  return `/api/team/${slug}/persona`
+}
+
+/**
+ * Surgically rewrites the agent's "Character & personality" bullets (name, one-liner, personality, communication style, what they care about, signature habit, cultural fit note) and the first paragraph of the Role section, persisting to agents/<slug>.md. Empty persona fields remove their bullet; an empty role paragraph is left untouched. Returns the updated team member.
+
+ * @summary Save edited persona text back to the agent's markdown
+ */
+export const updateAgentPersona = async (slug: string,
+    updatePersonaRequest: UpdatePersonaRequest, options?: RequestInit): Promise<TeamMember> => {
+
+  return customFetch<TeamMember>(getUpdateAgentPersonaUrl(slug),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      updatePersonaRequest,)
+  }
+);}
+
+
+
+
+export const getUpdateAgentPersonaMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAgentPersona>>, TError,{slug: string;data: BodyType<UpdatePersonaRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateAgentPersona>>, TError,{slug: string;data: BodyType<UpdatePersonaRequest>}, TContext> => {
+
+const mutationKey = ['updateAgentPersona'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateAgentPersona>>, {slug: string;data: BodyType<UpdatePersonaRequest>}> = (props) => {
+          const {slug,data} = props ?? {};
+
+          return  updateAgentPersona(slug,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateAgentPersonaMutationResult = NonNullable<Awaited<ReturnType<typeof updateAgentPersona>>>
+    export type UpdateAgentPersonaMutationBody = BodyType<UpdatePersonaRequest>
+    export type UpdateAgentPersonaMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Save edited persona text back to the agent's markdown
+ */
+export const useUpdateAgentPersona = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAgentPersona>>, TError,{slug: string;data: BodyType<UpdatePersonaRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateAgentPersona>>,
+        TError,
+        {slug: string;data: BodyType<UpdatePersonaRequest>},
+        TContext
+      > => {
+      return useMutation(getUpdateAgentPersonaMutationOptions(options));
+    }
+
+export const getUploadAgentPortraitUrl = (slug: string,) => {
+
+
+
+
+  return `/api/team/${slug}/portrait`
+}
+
+/**
+ * Accepts a raw image (PNG, JPEG or WebP), normalizes it to a PNG capped at a sane width, and stores it at portraits/<slug>.png in object storage so the avatar appears immediately across the roster, profile and map. Returns the updated team member with versioned portrait URLs.
+
+ * @summary Upload a portrait image for an agent
+ */
+export const uploadAgentPortrait = async (slug: string,
+    uploadPortraitRequest: UploadPortraitRequest, options?: RequestInit): Promise<TeamMember> => {
+
+  return customFetch<TeamMember>(getUploadAgentPortraitUrl(slug),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      uploadPortraitRequest,)
+  }
+);}
+
+
+
+
+export const getUploadAgentPortraitMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadAgentPortrait>>, TError,{slug: string;data: BodyType<UploadPortraitRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof uploadAgentPortrait>>, TError,{slug: string;data: BodyType<UploadPortraitRequest>}, TContext> => {
+
+const mutationKey = ['uploadAgentPortrait'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof uploadAgentPortrait>>, {slug: string;data: BodyType<UploadPortraitRequest>}> = (props) => {
+          const {slug,data} = props ?? {};
+
+          return  uploadAgentPortrait(slug,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UploadAgentPortraitMutationResult = NonNullable<Awaited<ReturnType<typeof uploadAgentPortrait>>>
+    export type UploadAgentPortraitMutationBody = BodyType<UploadPortraitRequest>
+    export type UploadAgentPortraitMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Upload a portrait image for an agent
+ */
+export const useUploadAgentPortrait = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadAgentPortrait>>, TError,{slug: string;data: BodyType<UploadPortraitRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof uploadAgentPortrait>>,
+        TError,
+        {slug: string;data: BodyType<UploadPortraitRequest>},
+        TContext
+      > => {
+      return useMutation(getUploadAgentPortraitMutationOptions(options));
+    }
 
 export const getGetClientsUrl = () => {
 

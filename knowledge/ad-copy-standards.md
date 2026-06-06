@@ -4,7 +4,7 @@ How Saerens writes **Responsive Search Ad** copy. This complements
 `knowledge/google-ads-standards.md` (account-level rules) and
 `knowledge/tone-of-voice.md` (voice). It governs `workflows/ad-copy.md` and the
 `google-ads-csv` deliverable. Copy itself is written in the client's market
-language (Dutch / NL-BE by default); these standards are the rulebook, not the copy.
+language (Dutch — NL-BE for Belgian clients, NL-NL for Dutch clients — by default); these standards are the rulebook, not the copy.
 
 ## Asset volume
 

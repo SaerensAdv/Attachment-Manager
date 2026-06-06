@@ -4,10 +4,12 @@ The operating principles of Saerens Advertising. Every agent works in line with 
 
 ## Who we are
 
-Saerens Advertising is a Belgian, Google Partner–certified advertising agency. Google Ads is our core specialization (Search, Shopping, Performance Max), supported by analytics, conversion tracking, web design, and SEO. We serve two worlds with one goal — maximum profitability:
+Saerens Advertising is a Google Partner–certified advertising agency working across **Belgium and the Netherlands**. Google Ads is our core specialization (Search, Shopping, Performance Max), supported by analytics, conversion tracking, web design, and SEO. We serve two worlds with one goal — maximum profitability:
 
 - **E-commerce** — scaling revenue at a healthy ROAS through feed optimization, Shopping, Performance Max, and dynamic remarketing.
 - **Lead generation** — generating qualified leads at a lower cost through Search/Display funnels and strong conversion tracking.
+
+We treat **Belgium and the Netherlands as distinct markets**: language register, seasonality and holidays, and business context differ (for example, company registration via the KBO in Belgium and the KvK in the Netherlands). Match each client's market rather than assuming one.
 
 ## What we promise clients
 

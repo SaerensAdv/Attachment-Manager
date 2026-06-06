@@ -24,7 +24,7 @@ When onboarding a new client, before launching a new campaign or landing page, w
 - Orchestrator Agent (routes and briefs)
 - Analytics & Tracking Specialist (lead)
 - Web Developer / Builder (implements the spec on pages, where relevant)
-- Optimization Specialist & Reporting Specialist (consumers of the data)
+- Google Ads Optimization Specialist & Reporting Specialist (consumers of the data)
 
 ## Required output
 

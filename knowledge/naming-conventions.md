@@ -27,6 +27,7 @@ Examples:
 - `Ecom | Search | Brand | Core | BE | NL`
 - `Ecom | Shopping | NonBrand | Catalog | BE | NL`
 - `Leadgen | Search | NonBrand | RoofRepair | Antwerp | NL`
+- `Leadgen | Search | NonBrand | Plumbing | Rotterdam | NL`
 - `Leadgen | PMax | Leads | AllServices | BE | NL`
 
 Element guide:

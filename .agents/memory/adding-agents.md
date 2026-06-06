@@ -32,6 +32,14 @@ mentions, routing edges from exact-title mentions in the orchestrator table, so 
 title mismatch silently drops an agent from routing even though it still renders
 as a node.
 
+**Gotcha — slash-style H1 titles are intentional, do NOT "normalize" them.** Some
+agents' H1 titles differ from their shorter filenames (e.g. `agents/web-developer.md`
+= "Web Developer / Builder"; `landing-page-specialist.md` = "Landing Page / Web
+Design Specialist"; `sales-proposal-agent.md` = "Sales / Proposal Agent"). Workflow
+and AGENTS.md labels match the H1, not the filename — that is correct, because edges
+key off the exact H1. An audit that flags these as "label vs filename mismatch" is a
+false positive; rewriting the label to match the filename would BREAK the edge.
+
 **Deepen vs new (from AGENTS.md):** prefer giving an existing agent an extra
 sub-specialty over a new agent; add a new agent only when the domain/output/boundary
 is genuinely distinct (e.g. cross-cutting review/edit steps like QA Reviewer and

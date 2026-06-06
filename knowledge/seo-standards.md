@@ -25,7 +25,7 @@ Baseline standards for how Saerens approaches organic search. Agents apply these
 
 ### Off-page / authority
 - Build authority through **genuinely earned links and mentions**, not bought or spammy links.
-- Prioritize **relevant, local, and reputable** sources for a Belgian/Flemish market.
+- Prioritize **relevant, local, and reputable** sources for the client's market (Belgium/Flanders or the Netherlands).
 - Be honest about authority: link building is slow; never promise volumes or timelines.
 
 ## Local SEO (important for lead-gen clients)

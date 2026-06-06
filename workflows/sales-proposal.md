@@ -23,7 +23,7 @@ When a new lead or prospect comes in, when a pitch or proposal is requested, or 
 
 - Orchestrator Agent (routes and briefs)
 - Sales / Proposal Agent (lead)
-- Channel strategists (high-level fit on Google / Meta / SEO)
+- Google Ads Strategist, Meta Ads Strategist, SEO Specialist (high-level fit per channel)
 - Copywriter (polish and tone, where needed)
 
 ## Required output

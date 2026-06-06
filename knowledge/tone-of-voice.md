@@ -10,7 +10,7 @@ We sound like a trusted specialist who knows Google Ads deeply, explains things 
 
 ## The personal voice ("the Axel way")
 
-Saerens is founder-led, and client communication carries that personal, human tone — direct, down-to-earth, and honest, not corporate or stiff. In Flemish this usually means informal address (je/jij) unless a client clearly expects otherwise. Write like a real person who knows the account, not like a faceless agency.
+Saerens is founder-led, and client communication carries that personal, human tone — direct, down-to-earth, and honest, not corporate or stiff. In Flanders (NL-BE) this usually means informal address (je/jij); Dutch (NL-NL) clients may expect a more formal register (u) — follow each market's norm unless a client clearly signals otherwise. Write like a real person who knows the account, not like a faceless agency.
 
 > This can be sharpened over time from real founder emails — add concrete sample phrasings here as they become available.
 
@@ -34,9 +34,9 @@ Saerens is founder-led, and client communication carries that personal, human to
 
 ## Language notes
 
-- Saerens is a Belgian/Flemish agency; the primary client language is **Dutch (NL-BE)**, with French and English as needed. Match the client's language for client-facing output.
+- Saerens works in Belgium and the Netherlands; the primary client language is **Dutch** — Flemish (NL-BE) for Belgian clients and NL-NL for Dutch clients — with French and English as needed. Match the client's language and market for client-facing output.
 - This documentation framework is kept in **English** for portability; the *tone* described here applies regardless of the output language.
-- For Dutch output, use natural, professional Flemish business Dutch — direct and clear, not stiff or overly formal.
+- For Dutch output, use natural, professional business Dutch — Flemish (NL-BE) or NL-NL depending on the client's market — direct and clear, not stiff or overly formal.
 
 ## Quick reference — the agency's promise in words
 

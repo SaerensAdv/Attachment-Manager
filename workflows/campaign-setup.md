@@ -36,7 +36,7 @@ A client wants to launch a new campaign, enter a new channel (Search, Shopping, 
 - Google Ads Strategist (objective, structure, budget split)
 - Google Ads Setup Specialist (detailed buildout)
 - Copywriter (ad copy)
-- Analytics & Tracking Specialist (future — tracking review)
+- Analytics & Tracking Specialist (tracking review)
 
 ## Required output
 

@@ -8,6 +8,7 @@ Baseline standards for how Saerens builds and manages Google Ads. Agents apply t
 - Keep **brand** and **non-brand** in separate campaigns so spend and performance are clear.
 - Keep ad groups **tightly themed** so keywords, ads, and landing pages match.
 - One clear objective per campaign; don't mix lead-gen and e-commerce goals in the same campaign.
+- **An intentional intent split is a deliberate structure, not waste.** When campaigns are deliberately separated by fine-grained search intent, honour that split during optimization — do not "simplify" or merge it away. Near-synonymous service terms can carry genuinely different intent (e.g. NL: "dak reinigen" = whole-roof cleaning vs "dakpannen reinigen" = roof-tile cleaning; "reinigen" = cleaning vs "ontmossen" = de-mossing). When in doubt about why an account is split, ask the client rather than assuming overlap.
 
 ## Keywords & match types
 
@@ -15,6 +16,8 @@ Baseline standards for how Saerens builds and manages Google Ads. Agents apply t
 - Prefer **phrase** and **exact** match for control; use **broad** match deliberately and only with strong conversion tracking and smart bidding in place.
 - Build an initial **negative keyword** list from the start, and review the **search terms report** regularly to add more.
 - **Negatives are driven by relevance, not just spend.** The primary trigger for a negative is a search term that is **irrelevant to the client's intent** — add it even if it hasn't yet burned much budget. By default, exclude at **campaign level**; move to a **shared negative list** (cross-campaign waste) or **ad-group level** (theme-specific) only when that is genuinely cleaner.
+- **A term that belongs to another campaign's intent is not "waste" — it is mis-routed.** In an account split by intent, the fix for a term landing in the wrong campaign is a **cross-campaign negative** (exclude it from the campaign it does not belong to so it is freed for the correct one), **not** removing it from the account. Never negative a term out of the wrong campaign if doing so also blocks it from the campaign where it *is* relevant.
+- **Do not negative a relevant term on weak signal alone.** A term that matches the client's core service but simply hasn't converted yet over a short window / low spend should default to **monitor**, not exclude. Reserve negatives for terms that are genuinely irrelevant, foreign-language, DIY/product (not service) intent, or a non-offered service. Flag borderline relevant-but-not-converting terms for human decision instead of excluding them automatically.
 - Avoid overly broad single-word keywords for lead gen unless justified and monitored.
 
 ## Ads & assets

@@ -179,3 +179,9 @@ id = "iMhljIDmrCkAjAP7uYR6D"
 uri = "file://SYSTEM-MAP.md"
 type = "text"
 title = "AI Team System Map — tekstoverzicht"
+
+[[outputs]]
+id = "ucOnEbUgu8t3q6Rdb5ioB"
+uri = "file://.local/exports/schoonpannendak-negatives.csv"
+type = "table"
+title = "Schoonpannendak — negatieve zoekwoorden (Google Ads Editor)"

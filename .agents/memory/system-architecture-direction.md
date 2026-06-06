@@ -38,6 +38,15 @@ permanent free plan was discontinued). So n8n-as-executor is NOT cost-blocked â€
 the founder's belief that local self-hosting is free is correct. `pg-boss` / the
 in-app croner scheduler is the in-app trigger fallback.
 
+**Progressive-intelligence principle (founder directive, June 2026):** every semi-
+or non-automated step should get *smarter over time*, not stay static. Concretely:
+reuse an account's existing state as a memory aid to build on rather than starting
+fresh each run (e.g. existing campaign negatives already ground the negatives-CSV so
+we don't re-suggest or duplicate them; future runs should likewise remember prior
+decisions/learnings). **Why:** the founder wants the system to compound, not repeat.
+**How to apply:** when adding/optimizing any flow, ask "what prior state or past
+decision can this read first so it improves instead of re-deriving from scratch?"
+
 **Founder's working style (interview, encoded in the doc-graph):** Saerens accepts
 clients in principle (onboarding is setup, not a screening gate); client comms are
 monthly report + ad-hoc proactive triggers with NO always-on channel today; first

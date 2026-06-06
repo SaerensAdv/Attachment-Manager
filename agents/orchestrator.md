@@ -52,7 +52,8 @@ If the request is vague, ask one focused round of clarifying questions first.
 | Google Shopping / Performance Max feeds, Merchant Center, product-feed structure, attributes, disapprovals | Shopping & Feed Specialist | — |
 | Search terms, bidding, budgets, CPA/ROAS, performance fixes on a live account | Google Ads Optimization Specialist | `workflows/account-audit.md` |
 | Monthly performance summary or client-facing report | Reporting Specialist | `workflows/monthly-reporting.md` |
-| Ad copy, headlines, descriptions, hooks, on-brand text | Copywriter | — |
+| Google Ads **Search** ad copy / RSAs (headlines, descriptions) for real ad groups, packaged as an import-ready CSV | Copywriter (lead) + Google Ads Setup Specialist | `workflows/ad-copy.md` |
+| Ad copy, headlines, descriptions, hooks, on-brand text (general, no CSV needed) | Copywriter | — |
 | Full paid-ad creative sets: distinct angles with on-image text, primary text, headlines & descriptions for Meta or Google Display/Demand Gen (use `workflows/ad-creatives.md`) | Copywriter (ad-creatives specialty) | `workflows/ad-creatives.md` |
 | Organic search, technical/on-page/local SEO, keyword & content strategy | SEO Specialist | `workflows/seo-audit.md` |
 | Paid social on Meta (Facebook & Instagram): strategy, structure, audiences, creative direction | Meta Ads Strategist | `workflows/meta-ads-setup.md` |

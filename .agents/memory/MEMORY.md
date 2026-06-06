@@ -18,6 +18,7 @@
 - [DocPanel reader features](doc-panel-features.md) — ToC must read rendered rehype-slug ids (not recompute); local Transformers.js search w/ Orama fallback; edit guards on clients/db/* both sides.
 - [System architecture direction](system-architecture-direction.md) — app = brain + source of truth (agents/knowledge/client state + decision endpoint); n8n = stateless executor that triggers, acts, and writes results back.
 - [Google Ads live intake (Fase 3)](google-ads-live.md) — read-only REST searchStream pull per client; sandbox lacks secrets so test via workspace `node`; verify secret SHAPE on auth errors.
+- [Ad-copy CSV deliverable](ad-copy-csv.md) — `google-ads-csv` is a TEXT deliverable (reuses text stream + Blob download); grounds on live ad-group GAQL; every missing-grounding branch must emit a deliverable_note.
 - [ClickUp integration research](clickup-integration.md) — ClickUp = task/approval layer, app stays brain; Super Agents = one agent in two tools (synced from repo); proposer/executor split per "tak"; Brain per human-seat all-or-nothing (plan=Business); OAuth uses Bearer, personal token does not.
 - [Monthly report pipeline](monthly-report-pipeline.md) — client PDF/email use sanitized report (strip internal/placeholder, NO raw fallback); 3 periods (month/MoM/YoY) anchored on Europe/Brussels not UTC.
 - [Schedule editing](schedule-editing.md) — preset-form edit must gate resending cronExpr behind a user-change flag (parseCron→null for non-preset) or it silently rewrites custom crons.

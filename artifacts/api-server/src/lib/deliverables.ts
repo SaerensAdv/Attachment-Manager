@@ -42,6 +42,12 @@ export interface DeliverableContext {
   request: string;
   /** The combined markdown the agent team just produced. */
   teamWork: string;
+  /**
+   * Optional live, read-only data the engine fetched at run start (e.g. a
+   * client's real Google Ads ad-group structure) so the deliverable is grounded
+   * in real account data rather than invented structure.
+   */
+  liveData?: string;
 }
 
 /** A workflow declares its deliverable with an HTML comment: `<!-- deliverable: replit-prompt -->`. */
@@ -57,6 +63,7 @@ const MARKER_RE = /<!--\s*deliverable:\s*([a-z0-9-]+)\s*-->/i;
 const KNOWN: ReadonlySet<DeliverableKind> = new Set([
   "replit-prompt",
   "monthly-report-email",
+  "google-ads-csv",
 ]);
 
 export function getDeliverableKind(workflow: DocFile | null): DeliverableKind {
@@ -94,6 +101,15 @@ export function deliverableMeta(
         mimeType: "text/markdown",
         format: "text",
       };
+    case "google-ads-csv":
+      return {
+        kind,
+        title: "Google Ads RSA-CSV",
+        note: "Controleer en importeer dit CSV-bestand in Google Ads Editor; niets gaat automatisch live.",
+        filename: `${slug(clientName)}-ad-copy.csv`,
+        mimeType: "text/csv;charset=utf-8",
+        format: "text",
+      };
     default:
       return null;
   }
@@ -106,9 +122,65 @@ export function buildDeliverablePrompt(
   switch (kind) {
     case "replit-prompt":
       return buildReplitPrompt(ctx);
+    case "google-ads-csv":
+      return buildAdCopyCsvPrompt(ctx);
     default:
       return null;
   }
+}
+
+/** Exact Google Ads Editor header row for an RSA bulk import. */
+const RSA_CSV_HEADER =
+  "Campaign,Ad group,Ad type," +
+  Array.from({ length: 15 }, (_, i) => `Headline ${i + 1}`).join(",") +
+  "," +
+  Array.from({ length: 4 }, (_, i) => `Description ${i + 1}`).join(",") +
+  ",Path 1,Path 2,Final URL";
+
+function buildAdCopyCsvPrompt(ctx: DeliverableContext): DeliverablePrompt {
+  const system = [
+    "You are the deliverable editor of Saerens Advertising's AI team. Your job is NOT to invent new offers or claims, but to convert the team's approved Responsive Search Ad (RSA) copy into ONE Google Ads Editor-compatible CSV the user can review and bulk-import. Follow knowledge/ad-copy-standards.md.",
+    "",
+    "## What you receive",
+    "- The client context (brand, audience, tone).",
+    "- The original request.",
+    "- The client's REAL live SEARCH ad-group structure (campaigns, ad groups, Final URL, display paths, keyword themes, existing RSA copy) when available.",
+    "- The team's approved copy (headlines and descriptions per ad group).",
+    "",
+    "## What you return",
+    "Output ONLY the CSV text — no intro, no explanation, no markdown, no ``` code fences.",
+    `The FIRST line is exactly this header: ${RSA_CSV_HEADER}`,
+    "Then ONE data row per ad group.",
+    "",
+    "## Hard rules",
+    "- Wrap EVERY field in double quotes. Escape an internal double quote by doubling it (\"\").",
+    '- The "Ad type" column is always "Responsive search ad".',
+    "- Character limits: each headline <= 30 chars, each description <= 90 chars, each display path (Path 1/Path 2) <= 15 chars. Never exceed them; shorten wording instead.",
+    "- Provide as many DISTINCT headlines as the team supplied, ideally up to 15, and up to 4 descriptions. Minimum 3 headlines and 2 descriptions per ad group. Leave any unused headline/description slot as an empty quoted field (\"\").",
+    "- Do not add pin columns in this version.",
+    "- Use the REAL Campaign, Ad group and Final URL from the live structure. If an ad group's Final URL is unknown, put [VUL FINAL URL IN] in that field so the human spots it before upload. Never invent a URL.",
+    "- If the team wrote copy for an ad group that is not in the live structure, still include it, using the campaign/ad group names as written and [VUL FINAL URL IN] for the Final URL.",
+    "- Keep the copy in the language the team wrote it in (Dutch / NL-BE by default). Do not translate. No emojis, no ALL CAPS, no excessive punctuation; respect Google Ads policy.",
+    "- If there is no usable team copy and no live structure, output only the header row.",
+  ].join("\n");
+
+  const user = [
+    "## Client context",
+    ctx.clientContent.trim(),
+    "",
+    "## Original request",
+    ctx.request.trim(),
+    "",
+    "## Live SEARCH ad-group structure (real account data)",
+    ctx.liveData?.trim() || "(no live structure available — mark structure columns for fill-in)",
+    "",
+    "## Team's approved copy",
+    ctx.teamWork.trim() || "(none)",
+    "",
+    "Now produce the single Google Ads Editor CSV per your instructions.",
+  ].join("\n");
+
+  return { system, user };
 }
 
 function buildReplitPrompt(ctx: DeliverableContext): DeliverablePrompt {

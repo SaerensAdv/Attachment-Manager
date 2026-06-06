@@ -87,6 +87,7 @@ export default function GenerationPanel({
     deliverableStatus,
     deliverableError,
     deliverableTruncated,
+    deliverableNotes,
     deliverableCopied,
     handleDeliverableCopy,
     handleDeliverableDownload,
@@ -617,6 +618,25 @@ export default function GenerationPanel({
                   <p className="mb-3 font-['Inter'] text-xs text-muted-foreground">
                     {deliverable.note}
                   </p>
+
+                  {deliverableNotes.length > 0 && (
+                    <div
+                      className="mb-3 border-l-2 border-amber-500 bg-amber-500/10 px-3 py-2 font-['Inter'] text-xs text-amber-700"
+                      data-testid="deliverable-notes"
+                    >
+                      <p className="flex items-start gap-2">
+                        <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                        <span className="font-semibold">
+                          Let op — live accountdata onvolledig
+                        </span>
+                      </p>
+                      <ul className="mt-1 list-disc space-y-0.5 pl-7">
+                        {deliverableNotes.map((note, n) => (
+                          <li key={n}>{note}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
 
                   {deliverableStatus === "error" ? (
                     <div className="border-l-2 border-destructive bg-destructive/5 px-3 py-2 text-sm text-destructive font-['Inter']">

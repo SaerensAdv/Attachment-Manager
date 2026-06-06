@@ -9,7 +9,11 @@ import {
   deliverableMeta,
   buildDeliverablePrompt,
 } from "./deliverables";
-import { fetchGoogleAdsReport, type GoogleAdsMetrics } from "./google-ads";
+import {
+  fetchGoogleAdsReport,
+  fetchGoogleAdsAdCopyContext,
+  type GoogleAdsMetrics,
+} from "./google-ads";
 import { renderReportPdf } from "./report-pdf";
 import { sendEmail } from "./email";
 
@@ -455,6 +459,8 @@ export async function runGeneration(
   let reportClient: Client | null = null;
   // Structured live numbers captured at run start; drive the PDF cover/charts.
   let reportMetrics: GoogleAdsMetrics | null = null;
+  // Live SEARCH ad-group structure captured at run start for the ad-copy CSV.
+  let adCopyLiveData: string | null = null;
 
   const persistRun = async (): Promise<boolean> => {
     if (persisted) return true;
@@ -600,6 +606,60 @@ export async function runGeneration(
               (err instanceof Error ? err.message : String(err)).slice(0, 200),
           });
         }
+      }
+    }
+
+    // Ad-copy CSV: pull the client's live SEARCH ad-group structure (campaigns,
+    // ad groups, Final URLs, display paths, keyword themes, existing RSAs) so the
+    // copy maps onto REAL ad groups and the CSV is import-ready. Injected into the
+    // client doc so the team writes per real ad group, and kept for the
+    // deliverable prompt. Best-effort: a failure is reported and the CSV falls
+    // back to the team's copy with fill-in markers.
+    if (deliverableKind === "google-ads-csv" && !isGone()) {
+      const clientId = dbClientIdFromPath(clientPath);
+      if (clientId !== null) {
+        try {
+          const adClient = await getClientRow(clientId);
+          const customerId = adClient?.googleAdsCustomerId?.trim();
+          if (customerId) {
+            const live = await fetchGoogleAdsAdCopyContext(customerId);
+            if (live.text.trim()) {
+              adCopyLiveData = live.text.trim();
+              const doc = clientDocs.find((d) => d.path === clientPath);
+              if (doc) {
+                doc.content +=
+                  "\n\n## Google Ads live ad-group structure (for ad copy)\n\n```\n" +
+                  adCopyLiveData +
+                  "\n```\n";
+              }
+            } else {
+              send({
+                type: "deliverable_note",
+                message:
+                  "Geen live zoekcampagne-structuur gevonden voor deze klant; de CSV gebruikt de teksten van het team met in-te-vullen velden.",
+              });
+            }
+          } else {
+            send({
+              type: "deliverable_note",
+              message:
+                "Geen Google Ads customer ID voor deze klant; de CSV is gebaseerd op de teksten van het team, niet op live ad-groepen.",
+            });
+          }
+        } catch (err) {
+          send({
+            type: "deliverable_note",
+            message:
+              "Live Google Ads-structuur kon niet opgehaald worden; de CSV gebruikt de teksten van het team. " +
+              (err instanceof Error ? err.message : String(err)).slice(0, 200),
+          });
+        }
+      } else {
+        send({
+          type: "deliverable_note",
+          message:
+            "Deze klant is geen gekoppelde account; de CSV is gebaseerd op de teksten van het team, niet op live ad-groepen.",
+        });
       }
     }
 
@@ -750,6 +810,7 @@ export async function runGeneration(
           clientContent,
           request,
           teamWork: priorWork,
+          liveData: adCopyLiveData ?? undefined,
         })
       : null;
     if (!isGone() && meta && prompt) {

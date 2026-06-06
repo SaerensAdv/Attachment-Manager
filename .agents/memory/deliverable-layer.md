@@ -35,3 +35,17 @@ Reuses the `/api/generate` stream: `deliverable_start {deliverable: meta}` →
 generic `content` handler (which is keyed by agent index), or deltas get
 misrouted into an agent segment. Reset deliverable UI state in every flow entry
 point (resetFlow, handleRoute, handleGenerate) to avoid stale "Eindproduct".
+
+## deliverable_note (non-blocking, MUST be surfaced)
+A run can emit `deliverable_note {message}` when a deliverable is produced but a
+grounding source was unavailable (e.g. live account data missing, so the file
+used fallbacks). This is the **honesty-on-failure** channel: a fallback must
+never be silent.
+- **Why:** the user has to know the file was *not* grounded in the promised live
+  data before they act on it. Earlier this event was emitted but had no web
+  handler, so it silently dropped — that is a bug, not the intended behavior.
+- **How to apply:** any new fallback path in a deliverable builder should emit a
+  `deliverable_note`. The web side must keep handling it: `onDeliverableNote` in
+  the stream parser → `deliverableNotes[]` in the generation hook (reset in every
+  flow entry point, dedupe) → amber notice panel in GenerationPanel. Notes are
+  additive and never block archive or the final `{done}`.

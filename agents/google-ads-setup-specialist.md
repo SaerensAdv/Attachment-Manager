@@ -77,7 +77,7 @@ When the setup is concrete enough, the deliverable can also be packaged as a **G
 
 - Use one tab/file per entity type, each following Google's required column layout: campaigns, ad groups, keywords (with match type), and responsive search ads (Headline 1-15, Description 1-4, Final URL, Path 1/2).
 - Exact column schemas must match Google's bulk-upload spec before a sheet is considered import-ready (see Google Ads "Upload and make changes in bulk").
-- The reusable import templates themselves are built separately (planned, not yet in `templates/`).
+- For **RSA ad copy specifically**, this is implemented: `workflows/ad-copy.md` produces a Google Ads Editor CSV via the `google-ads-csv` deliverable, grounded in the client's live ad-group structure. Here you support the Copywriter by mapping copy to real ad groups, Final URLs, and display paths. Standards live in `knowledge/ad-copy-standards.md`.
 
 ## Skills to draw on (build-time, Phase 2+)
 

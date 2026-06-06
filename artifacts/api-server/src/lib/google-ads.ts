@@ -496,3 +496,214 @@ export async function fetchGoogleAdsReport(
 
   return { text, fetchedAt: new Date(), metrics };
 }
+
+/**
+ * Pull a live, read-only snapshot of a customer's SEARCH ad-group structure for
+ * ad-copy generation: campaigns, ad groups, their landing page (Final URL) and
+ * display paths from existing RSAs, the keyword themes per ad group, and any
+ * existing RSA copy (as refresh context). Returns formatted text the engine
+ * injects so generated copy maps to REAL ad groups and the CSV is import-ready.
+ * Each section is best-effort: a failure becomes a warning, not a thrown run.
+ */
+export async function fetchGoogleAdsAdCopyContext(
+  rawCustomerId: string,
+): Promise<{ text: string; fetchedAt: Date }> {
+  const cfg = readConfig();
+  const customerId = digitsOnly(rawCustomerId);
+  if (!customerId) {
+    throw new GoogleAdsConfigError("Ongeldig Google Ads customer ID.");
+  }
+  const MAX_GROUPS = 60;
+  const MAX_KW = 8;
+  const accessToken = await getAccessToken(cfg);
+
+  interface Group {
+    campaign: string;
+    adGroup: string;
+    finalUrls: Set<string>;
+    path1: string;
+    path2: string;
+    keywords: string[];
+    headlines: string[];
+    descriptions: string[];
+  }
+  const groups = new Map<string, Group>();
+  const key = (c: string, a: string) => `${c}\u0000${a}`;
+  const ensure = (c: string, a: string): Group => {
+    const k = key(c, a);
+    let g = groups.get(k);
+    if (!g) {
+      g = {
+        campaign: c,
+        adGroup: a,
+        finalUrls: new Set(),
+        path1: "",
+        path2: "",
+        keywords: [],
+        headlines: [],
+        descriptions: [],
+      };
+      groups.set(k, g);
+    }
+    return g;
+  };
+  const rsaAssetTexts = (value: unknown): string[] =>
+    Array.isArray(value)
+      ? value
+          .map((a) =>
+            a && typeof a === "object"
+              ? String((a as Record<string, unknown>).text ?? "")
+              : "",
+          )
+          .filter(Boolean)
+      : [];
+
+  const warnings: string[] = [];
+
+  // 1. Enabled SEARCH ad groups (the spine of the structure).
+  try {
+    const rows = await runGaql(
+      cfg,
+      accessToken,
+      customerId,
+      `SELECT campaign.name, ad_group.name
+       FROM ad_group
+       WHERE campaign.status = 'ENABLED' AND ad_group.status = 'ENABLED'
+         AND campaign.advertising_channel_type = 'SEARCH'
+       ORDER BY campaign.name, ad_group.name
+       LIMIT ${MAX_GROUPS}`,
+    );
+    for (const row of rows) {
+      const c = String(pick(row, "campaign.name") ?? "");
+      const a = String(pick(row, "adGroup.name") ?? "");
+      if (c && a) ensure(c, a);
+    }
+  } catch (err) {
+    warnings.push(
+      `Ad groups could not be fetched: ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+
+  // 2. Existing RSAs -> Final URL, display paths, existing copy (refresh context).
+  try {
+    const rows = await runGaql(
+      cfg,
+      accessToken,
+      customerId,
+      `SELECT campaign.name, ad_group.name,
+              ad_group_ad.ad.final_urls,
+              ad_group_ad.ad.responsive_search_ad.headlines,
+              ad_group_ad.ad.responsive_search_ad.descriptions,
+              ad_group_ad.ad.responsive_search_ad.path1,
+              ad_group_ad.ad.responsive_search_ad.path2
+       FROM ad_group_ad
+       WHERE campaign.status = 'ENABLED' AND ad_group.status = 'ENABLED'
+         AND ad_group_ad.status != 'REMOVED'
+         AND ad_group_ad.ad.type = 'RESPONSIVE_SEARCH_AD'
+         AND campaign.advertising_channel_type = 'SEARCH'
+       LIMIT 200`,
+    );
+    for (const row of rows) {
+      const c = String(pick(row, "campaign.name") ?? "");
+      const a = String(pick(row, "adGroup.name") ?? "");
+      if (!c || !a) continue;
+      let g = groups.get(key(c, a));
+      if (!g) {
+        if (groups.size >= MAX_GROUPS) continue;
+        g = ensure(c, a);
+      }
+      const urls = pick(row, "adGroupAd.ad.finalUrls");
+      if (Array.isArray(urls))
+        for (const u of urls) if (u) g.finalUrls.add(String(u));
+      const p1 = pick(row, "adGroupAd.ad.responsiveSearchAd.path1");
+      const p2 = pick(row, "adGroupAd.ad.responsiveSearchAd.path2");
+      if (p1 && !g.path1) g.path1 = String(p1);
+      if (p2 && !g.path2) g.path2 = String(p2);
+      for (const h of rsaAssetTexts(
+        pick(row, "adGroupAd.ad.responsiveSearchAd.headlines"),
+      ))
+        if (!g.headlines.includes(h)) g.headlines.push(h);
+      for (const d of rsaAssetTexts(
+        pick(row, "adGroupAd.ad.responsiveSearchAd.descriptions"),
+      ))
+        if (!g.descriptions.includes(d)) g.descriptions.push(d);
+    }
+  } catch (err) {
+    warnings.push(
+      `Existing RSAs could not be fetched: ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+
+  // 3. Enabled keyword themes per ad group.
+  try {
+    const rows = await runGaql(
+      cfg,
+      accessToken,
+      customerId,
+      `SELECT campaign.name, ad_group.name, ad_group_criterion.keyword.text
+       FROM ad_group_criterion
+       WHERE campaign.status = 'ENABLED' AND ad_group.status = 'ENABLED'
+         AND ad_group_criterion.type = 'KEYWORD'
+         AND ad_group_criterion.status = 'ENABLED'
+         AND ad_group_criterion.negative = FALSE
+         AND campaign.advertising_channel_type = 'SEARCH'
+       LIMIT 1000`,
+    );
+    for (const row of rows) {
+      const c = String(pick(row, "campaign.name") ?? "");
+      const a = String(pick(row, "adGroup.name") ?? "");
+      const kw = String(pick(row, "adGroupCriterion.keyword.text") ?? "");
+      if (!c || !a || !kw) continue;
+      let g = groups.get(key(c, a));
+      if (!g) {
+        if (groups.size >= MAX_GROUPS) continue;
+        g = ensure(c, a);
+      }
+      if (g.keywords.length < MAX_KW && !g.keywords.includes(kw))
+        g.keywords.push(kw);
+    }
+  } catch (err) {
+    warnings.push(
+      `Keywords could not be fetched: ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+
+  const lines: string[] = [];
+  lines.push(`Account: ${customerId}`);
+  lines.push("Live SEARCH ad-group structure (read-only, for ad copy).");
+  lines.push("");
+  const all = Array.from(groups.values()).slice(0, MAX_GROUPS);
+  if (all.length === 0) {
+    lines.push("No active search ad groups found for this account.");
+  } else {
+    for (const g of all) {
+      lines.push(`== Campaign: ${g.campaign} | Ad group: ${g.adGroup} ==`);
+      lines.push(
+        `Final URL: ${g.finalUrls.size ? Array.from(g.finalUrls).join(" , ") : "(unknown - needs fill-in)"}`,
+      );
+      lines.push(
+        `Display paths: ${[g.path1, g.path2].filter(Boolean).join(" / ") || "(none)"}`,
+      );
+      lines.push(
+        `Keyword themes: ${g.keywords.length ? g.keywords.slice(0, MAX_KW).join(", ") : "(none found)"}`,
+      );
+      if (g.headlines.length)
+        lines.push(
+          `Existing RSA headlines: ${g.headlines.slice(0, 15).join(" | ")}`,
+        );
+      if (g.descriptions.length)
+        lines.push(
+          `Existing RSA descriptions: ${g.descriptions.slice(0, 4).join(" | ")}`,
+        );
+      lines.push("");
+    }
+  }
+  if (warnings.length) {
+    lines.push("== Warnings ==");
+    for (const w of warnings) lines.push(`- ${w}`);
+  }
+  let text = lines.join("\n").trim();
+  if (text.length > MAX_REPORT_LEN)
+    text = `${text.slice(0, MAX_REPORT_LEN)}\n…(truncated)`;
+  return { text, fetchedAt: new Date() };
+}

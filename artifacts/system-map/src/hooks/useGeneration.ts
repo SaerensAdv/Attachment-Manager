@@ -82,6 +82,9 @@ export function useGeneration(
   const [deliverableCopied, setDeliverableCopied] = useState(false);
   // True when the deliverable hit the model's token limit and may be cut off.
   const [deliverableTruncated, setDeliverableTruncated] = useState(false);
+  // Non-blocking notes from the run (e.g. live account data unavailable, so the
+  // deliverable used fallbacks) — surfaced so a fallback is never silent.
+  const [deliverableNotes, setDeliverableNotes] = useState<string[]>([]);
 
   // Elapsed time since generation started.
   const [elapsed, setElapsed] = useState(0);
@@ -145,6 +148,7 @@ export function useGeneration(
     setDeliverableStatus("idle");
     setDeliverableError(null);
     setDeliverableTruncated(false);
+    setDeliverableNotes([]);
     setRunCompleted(false);
     setJustSaved(false);
     intakeAbortRef.current?.abort();
@@ -184,6 +188,7 @@ export function useGeneration(
     setDeliverableStatus("idle");
     setDeliverableError(null);
     setDeliverableTruncated(false);
+    setDeliverableNotes([]);
 
     try {
       const r = await routeRequest(
@@ -310,6 +315,7 @@ export function useGeneration(
     setDeliverableStatus("idle");
     setDeliverableError(null);
     setDeliverableTruncated(false);
+    setDeliverableNotes([]);
     setIsStreaming(true);
     startedAtRef.current = Date.now();
     setElapsed(0);
@@ -371,6 +377,10 @@ export function useGeneration(
           setDeliverableError(message);
           setDeliverableStatus("error");
         },
+        onDeliverableNote: (message) =>
+          setDeliverableNotes((prev) =>
+            prev.includes(message) ? prev : [...prev, message],
+          ),
         onDone: (archived) => {
           setIsStreaming(false);
           abortRef.current = null;
@@ -573,6 +583,7 @@ export function useGeneration(
     deliverableStatus,
     deliverableError,
     deliverableTruncated,
+    deliverableNotes,
     deliverableCopied,
     handleDeliverableCopy,
     handleDeliverableDownload,

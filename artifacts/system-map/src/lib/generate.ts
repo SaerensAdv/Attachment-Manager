@@ -30,6 +30,8 @@ export interface TeamStreamHandlers {
   onDeliverableDelta?: (text: string) => void;
   onDeliverableDone?: (truncated: boolean) => void;
   onDeliverableError?: (message: string) => void;
+  /** Non-blocking notes (e.g. live data unavailable, so the file used fallbacks). */
+  onDeliverableNote?: (message: string) => void;
   onDone: (archived: boolean) => void;
   onError: (message: string) => void;
   signal?: AbortSignal;
@@ -42,7 +44,8 @@ interface StreamEvent {
     | "deliverable_start"
     | "deliverable_delta"
     | "deliverable_done"
-    | "deliverable_error";
+    | "deliverable_error"
+    | "deliverable_note";
   index?: number;
   total?: number;
   agent?: { path: string; title: string };
@@ -74,6 +77,7 @@ export async function streamGenerateTeam(
     onDeliverableDelta,
     onDeliverableDone,
     onDeliverableError,
+    onDeliverableNote,
     onDone,
     onError,
     signal,
@@ -169,6 +173,12 @@ export async function streamGenerateTeam(
           }
           if (parsed.type === "deliverable_error") {
             onDeliverableError?.(parsed.message ?? "Onbekende fout");
+            continue;
+          }
+          if (parsed.type === "deliverable_note") {
+            if (typeof parsed.message === "string" && parsed.message.trim()) {
+              onDeliverableNote?.(parsed.message.trim());
+            }
             continue;
           }
           if (typeof parsed.content === "string") {

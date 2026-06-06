@@ -18,6 +18,7 @@
 - [DocPanel reader features](doc-panel-features.md) — ToC must read rendered rehype-slug ids (not recompute); local Transformers.js search w/ Orama fallback; edit guards on clients/db/* both sides.
 - [System architecture direction](system-architecture-direction.md) — app = brain + source of truth (agents/knowledge/client state + decision endpoint); n8n = stateless executor that triggers, acts, and writes results back.
 - [Google Ads live intake (Fase 3)](google-ads-live.md) — read-only REST searchStream pull per client; sandbox lacks secrets so test via workspace `node`; verify secret SHAPE on auth errors.
+- [Monthly report pipeline](monthly-report-pipeline.md) — client PDF/email use sanitized report (strip internal/placeholder, NO raw fallback); 3 periods (month/MoM/YoY) anchored on Europe/Brussels not UTC.
 - [Schedule editing](schedule-editing.md) — preset-form edit must gate resending cronExpr behind a user-change flag (parseCron→null for non-preset) or it silently rewrites custom crons.
 - [Branded report PDF (pdfkit)](report-pdf-rendering.md) — hand-drawn PDF; doc.x is sticky after explicit-x text; footers need margins.bottom=0; range method is bufferedPageRange().
 - [Monthly report email deliverable](monthly-report-email.md) — `monthly-report-email` kind: LAST_MONTH Ads → team report → PDF → Gmail to client.reportEmail; best-effort by design; pdfkit/fontkit must stay esbuild-external; sanitize all MIME headers.

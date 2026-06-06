@@ -35,7 +35,9 @@ Use `templates/reporting-output.md`. Must include:
 - Headline (performance vs goal)
 - Key results with period-over-period **and** year-over-year change (same month last year, where available)
 - Explanation of what drove the results
-- What we did this period (work and optimizations carried out)
+- What we did this period (work and optimizations carried out) — omit this section if no work notes are available rather than leaving a placeholder
 - What worked / what didn't (honest; trace any dip to its specific cause)
 - What's planned next (recommended next steps for the coming period)
 - Notes & caveats (data gaps, one-offs)
+
+The client-facing report must contain no placeholders and no internal-only sections. Put anything needing internal follow-up or approval under a final `## Interne nota's (niet voor de klant)` section, which is stripped from the client PDF and email. Use only the period data actually supplied — never invent figures for a missing comparison period; mark it "n/a".

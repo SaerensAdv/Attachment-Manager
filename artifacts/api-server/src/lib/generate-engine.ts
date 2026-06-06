@@ -49,6 +49,108 @@ function extractFinalReport(teamWork: string, titles: string[]): string {
   return stripAgentHeadings(teamWork, titles).trim();
 }
 
+const REPORT_PLACEHOLDER = /AAN TE VULLEN|\[(in |nog )?te vullen|\[to fill|\[todo|\[placeholder/i;
+const REPORT_INTERNAL_HEADING =
+  /interne nota|niet voor de klant|menselijke goedkeuring|intern gebruik|approval required|internal note/i;
+
+/**
+ * Reduce a report to the client-facing version that goes into the PDF + cover
+ * email. The archived run keeps the full text (internal notes + approval
+ * checklist) for the team; the client never sees unfinished placeholders or
+ * internal-only sections. Drops, deterministically:
+ *  - whole heading-sections that are internal-only (e.g. "Interne nota's"),
+ *  - whole sections whose body is essentially just a "[AAN TE VULLEN]" stub,
+ *  - any stray placeholder lines elsewhere.
+ */
+function toClientFacingReport(markdown: string): string {
+  const lines = markdown.replace(/\r\n/g, "\n").split("\n");
+  const headingRe = /^(#{1,6})\s+(.*?)\s*$/;
+  const out: string[] = [];
+  let i = 0;
+  while (i < lines.length) {
+    const m = headingRe.exec(lines[i]);
+    if (m) {
+      const level = m[1].length;
+      const title = m[2];
+      let j = i + 1;
+      while (j < lines.length) {
+        const mj = headingRe.exec(lines[j]);
+        if (mj && mj[1].length <= level) break;
+        j++;
+      }
+      const body = lines.slice(i + 1, j).join("\n");
+      const meaningful = body
+        .replace(/^>.*$/gm, "")
+        .replace(REPORT_PLACEHOLDER, "")
+        .replace(/[*_>#`\-\s]/g, "")
+        .trim();
+      const dropSection =
+        REPORT_INTERNAL_HEADING.test(title) ||
+        (REPORT_PLACEHOLDER.test(body) && meaningful.length < 40);
+      if (dropSection) {
+        i = j;
+        continue;
+      }
+      out.push(lines[i]);
+      i++;
+      continue;
+    }
+    if (REPORT_PLACEHOLDER.test(lines[i])) {
+      i++;
+      continue;
+    }
+    out.push(lines[i]);
+    i++;
+  }
+  return out
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .replace(/(?:\s*\n-{3,}\s*)+$/g, "") // drop trailing separators left by stripped sections
+    .trim();
+}
+
+/**
+ * The three calendar periods a monthly report compares: the report month (the
+ * previous calendar month), the month before it (period-over-period), and the
+ * same month one year earlier (year-over-year). Dates are inclusive YYYY-MM-DD.
+ */
+function buildMonthlyPeriods(base: Date): {
+  current: { start: string; end: string; label: string; short: string };
+  previous: { start: string; end: string; label: string; short: string };
+  yearAgo: { start: string; end: string; label: string; short: string };
+} {
+  // Anchor on the agency timezone so a run in the first/last hours of a month
+  // still resolves to the correct "previous calendar month" (UTC could still be
+  // in the prior month at e.g. 00:30 Brussels on the 1st).
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Brussels",
+    year: "numeric",
+    month: "2-digit",
+  }).formatToParts(base);
+  const nowY = Number(parts.find((p) => p.type === "year")?.value);
+  const nowM = Number(parts.find((p) => p.type === "month")?.value); // 1-based
+  // The report covers the previous calendar month relative to the run date.
+  const repStart = new Date(Date.UTC(nowY, nowM - 2, 1));
+  const ry = repStart.getUTCFullYear();
+  const rm = repStart.getUTCMonth();
+  const mk = (y: number, m: number, short: string) => {
+    const s = new Date(Date.UTC(y, m, 1));
+    const e = new Date(Date.UTC(y, m + 1, 0));
+    const fmt = (d: Date) => d.toISOString().slice(0, 10);
+    const label = s.toLocaleDateString("nl-BE", {
+      month: "long",
+      year: "numeric",
+      timeZone: "UTC",
+    });
+    return { start: fmt(s), end: fmt(e), label, short };
+  };
+  return {
+    current: mk(ry, rm, "rapportmaand"),
+    previous: mk(ry, rm - 1, "vorige maand"),
+    yearAgo: mk(ry - 1, rm, "zelfde periode vorig jaar"),
+  };
+}
+
 function escapeHtml(s: string): string {
   return s
     .replace(/&/g, "&amp;")
@@ -416,10 +518,12 @@ export async function runGeneration(
   });
 
   try {
-    // Monthly report: before the team writes, pull the client's *previous
-    // calendar month* live Google Ads data and inject it into the selected
-    // client doc, so the report is built from real, period-correct numbers.
-    // Best-effort: any failure leaves the run with whatever data already exists.
+    // Monthly report: before the team writes, pull the client's live Google Ads
+    // data for THREE periods — the report month, the previous month (MoM) and the
+    // same month last year (YoY) — and inject each as a clearly labelled block so
+    // the report compares real, period-correct numbers instead of guessing.
+    // Best-effort: the report month is required; MoM/YoY each fail independently
+    // (e.g. a client with no history last year) without sinking the report.
     if (deliverableKind === "monthly-report-email" && !isGone()) {
       const clientId = dbClientIdFromPath(clientPath);
       if (clientId !== null) {
@@ -427,24 +531,72 @@ export async function runGeneration(
           reportClient = await getClientRow(clientId);
           const customerId = reportClient?.googleAdsCustomerId?.trim();
           if (customerId) {
-            const live = await fetchGoogleAdsReport(customerId, {
-              range: "LAST_MONTH",
-            });
-            reportMetrics = live.metrics;
+            const periods = buildMonthlyPeriods(new Date());
+            const blocks: string[] = [];
+            const fetchBlock = async (
+              period: { start: string; end: string; label: string; short: string },
+              heading: string,
+            ): Promise<GoogleAdsMetrics | null> => {
+              const live = await fetchGoogleAdsReport(customerId, {
+                custom: period,
+              });
+              if (live.text.trim()) {
+                blocks.push(
+                  `## ${heading} — ${period.label} (${period.start} t.e.m. ${period.end})\n\n` +
+                    "```\n" +
+                    live.text.trim() +
+                    "\n```\n",
+                );
+              }
+              return live.metrics;
+            };
+
+            // Report month — required; its metrics drive the PDF cover + charts.
+            reportMetrics = await fetchBlock(
+              periods.current,
+              "Google Ads live performance — rapportmaand",
+            );
+
+            // Previous month (MoM) — best-effort.
+            try {
+              await fetchBlock(
+                periods.previous,
+                "Google Ads live performance — vorige maand (MoM-vergelijking)",
+              );
+            } catch (err) {
+              send({
+                type: "deliverable_note",
+                message:
+                  `Vergelijkingsdata vorige maand (${periods.previous.label}) kon niet opgehaald worden. ` +
+                  (err instanceof Error ? err.message : String(err)).slice(0, 200),
+              });
+            }
+
+            // Same month last year (YoY) — best-effort.
+            try {
+              await fetchBlock(
+                periods.yearAgo,
+                "Google Ads live performance — zelfde periode vorig jaar (YoY-vergelijking)",
+              );
+            } catch (err) {
+              send({
+                type: "deliverable_note",
+                message:
+                  `Jaar-op-jaar data (${periods.yearAgo.label}) kon niet opgehaald worden. ` +
+                  (err instanceof Error ? err.message : String(err)).slice(0, 200),
+              });
+            }
+
             const doc = clientDocs.find((d) => d.path === clientPath);
-            if (doc && live.text.trim()) {
-              doc.content +=
-                "\n\n## Google Ads live performance (vorige maand)\n\n" +
-                "```\n" +
-                live.text.trim() +
-                "\n```\n";
+            if (doc && blocks.length > 0) {
+              doc.content += "\n\n" + blocks.join("\n") + "\n";
             }
           }
         } catch (err) {
           send({
             type: "deliverable_note",
             message:
-              "Live Google Ads-data (vorige maand) kon niet opgehaald worden; het rapport gebruikt de bestaande data. " +
+              "Live Google Ads-data (rapportmaand) kon niet opgehaald worden; het rapport gebruikt de bestaande data. " +
               (err instanceof Error ? err.message : String(err)).slice(0, 200),
           });
         }
@@ -689,6 +841,20 @@ export async function runGeneration(
           throw new Error("Het team leverde geen rapport om te versturen.");
         }
 
+        // Client-facing version: the PDF + cover email must never contain
+        // unfinished "[AAN TE VULLEN]" placeholders or internal-only sections.
+        // The archived run keeps the full text (incl. approval checklist). No
+        // fallback to the raw body — if sanitizing leaves nothing, we refuse to
+        // send rather than risk leaking internal content to the client.
+        const clientReport = toClientFacingReport(
+          extractFinalReport(teamWork, memberTitles),
+        );
+        if (!clientReport) {
+          throw new Error(
+            "De klantgerichte rapportversie is leeg na het verwijderen van interne/placeholder-secties; rapport niet verzonden.",
+          );
+        }
+
         // Short Dutch cover email summarising the report, generated by the model.
         const periodLabel = "vorige maand";
         let emailBody = "";
@@ -707,7 +873,7 @@ export async function runGeneration(
               messages: [
                 {
                   role: "user",
-                  content: `Klant: ${clientName}\nPeriode: ${periodLabel}\n\nVolledig rapport van het team:\n\n${teamWork}`,
+                  content: `Klant: ${clientName}\nPeriode: ${periodLabel}\n\nKlantgericht rapport:\n\n${clientReport}`,
                 },
               ],
             },
@@ -730,8 +896,7 @@ export async function runGeneration(
           month: "long",
           year: "numeric",
         });
-        const reportBody = extractFinalReport(teamWork, memberTitles);
-        const pdf = await renderReportPdf(reportBody, {
+        const pdf = await renderReportPdf(clientReport, {
           clientName,
           subtitle: `Maandrapport — ${periodLabel}`,
           dateLabel,

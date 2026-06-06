@@ -28,6 +28,17 @@ const MAX_SEARCH_TERMS = 50;
  */
 export type GoogleAdsDateRange = "LAST_30_DAYS" | "LAST_MONTH";
 
+/**
+ * Explicit calendar range (YYYY-MM-DD, inclusive) for comparisons the GAQL
+ * predefined ranges can't express — chiefly "same month last year" (YoY).
+ */
+export interface GoogleAdsCustomRange {
+  start: string;
+  end: string;
+  label: string;
+  short?: string;
+}
+
 /** Structured per-campaign numbers (for charts/tables in the PDF report). */
 export interface GoogleAdsCampaignMetric {
   name: string;
@@ -100,6 +111,13 @@ interface GoogleAdsConfig {
 /** Strip everything but digits (customer ids may be entered with dashes). */
 function digitsOnly(value: string | null | undefined): string {
   return (value ?? "").replace(/\D/g, "");
+}
+
+/** Guard custom range dates so they're safe to interpolate into GAQL. */
+function assertIsoDate(value: string): void {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value) || Number.isNaN(Date.parse(value))) {
+    throw new GoogleAdsConfigError(`Ongeldige datum voor Google Ads-periode: ${value}`);
+  }
 }
 
 function readConfig(): GoogleAdsConfig {
@@ -258,12 +276,29 @@ function fmtNum(value: unknown, decimals = 0): string {
  */
 export async function fetchGoogleAdsReport(
   rawCustomerId: string,
-  opts: { range?: GoogleAdsDateRange } = {},
+  opts: { range?: GoogleAdsDateRange; custom?: GoogleAdsCustomRange } = {},
 ): Promise<{ text: string; fetchedAt: Date; metrics: GoogleAdsMetrics }> {
   const cfg = readConfig();
   const range: GoogleAdsDateRange = opts.range ?? "LAST_30_DAYS";
-  const rangeLabel = RANGE_LABEL[range];
-  const rangeShort = RANGE_SHORT[range];
+  const useCustom = !!opts.custom;
+  if (useCustom) {
+    assertIsoDate(opts.custom!.start);
+    assertIsoDate(opts.custom!.end);
+    if (opts.custom!.start > opts.custom!.end) {
+      throw new GoogleAdsConfigError(
+        "Ongeldige Google Ads-periode: startdatum ligt na einddatum.",
+      );
+    }
+  }
+  const rangeLabel = useCustom ? opts.custom!.label : RANGE_LABEL[range];
+  const rangeShort = useCustom
+    ? (opts.custom!.short ?? opts.custom!.label)
+    : RANGE_SHORT[range];
+  // GAQL predefined ranges (DURING) don't cover "same month last year", so for
+  // the monthly report we pass explicit start/end and use a BETWEEN clause.
+  const dateClause = useCustom
+    ? `segments.date BETWEEN '${opts.custom!.start}' AND '${opts.custom!.end}'`
+    : `segments.date DURING ${range}`;
   const customerId = digitsOnly(rawCustomerId);
   if (!customerId) {
     throw new GoogleAdsConfigError("Ongeldig Google Ads customer ID.");
@@ -280,7 +315,7 @@ export async function fetchGoogleAdsReport(
             metrics.cost_micros, metrics.impressions, metrics.clicks,
             metrics.conversions, metrics.conversions_value
      FROM customer
-     WHERE segments.date DURING ${range}`,
+     WHERE ${dateClause}`,
   );
   const account = accountRows[0] ?? {};
   const currency = String(pick(account, "customer.currencyCode") ?? "");
@@ -306,7 +341,7 @@ export async function fetchGoogleAdsReport(
               metrics.conversions, metrics.conversions_value,
               metrics.ctr, metrics.average_cpc
        FROM campaign
-       WHERE segments.date DURING ${range}
+       WHERE ${dateClause}
          AND campaign.status != 'REMOVED'
        ORDER BY metrics.cost_micros DESC
        LIMIT ${MAX_CAMPAIGNS}`,
@@ -330,7 +365,7 @@ export async function fetchGoogleAdsReport(
               metrics.cost_micros, metrics.clicks,
               metrics.conversions, metrics.conversions_value
        FROM search_term_view
-       WHERE segments.date DURING ${range}
+       WHERE ${dateClause}
        ORDER BY metrics.cost_micros DESC
        LIMIT ${MAX_SEARCH_TERMS}`,
     );

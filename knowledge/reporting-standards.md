@@ -50,6 +50,21 @@ Depth flexes with the month: some periods warrant a short, punchy update, others
 
 Compare against the **previous period** and, where available, the **same month last year**, and read both against the client's **goal**. Because of seasonality, year-over-year is often the fairer comparison.
 
+When live data is supplied, it arrives as clearly labelled blocks — the report month, the previous month (MoM), and the same month last year (YoY). Map each column to its matching block. Use **only** the numbers actually supplied: never estimate, back-fill, or invent a period's figures. If a comparison block is missing, mark that column "n/a" and say why in the notes.
+
+## Client-facing completeness
+
+The report that goes to the client (the PDF and its cover email) must be **complete and self-contained**. It must never contain:
+
+- placeholder markers such as "[AAN TE VULLEN]", "[to fill in]", "TODO", or empty templated fields;
+- internal-only sections (e.g. an approval checklist) or instructions to the account team.
+
+If a client-facing section cannot be completed from the available data — for example "What we did this period" needs the account team's work notes — **omit that section entirely** rather than leaving a stub. Anything that still needs internal follow-up, approval, or Axel's input goes **only** under a final section titled exactly:
+
+`## Interne nota's (niet voor de klant)`
+
+Everything under that heading is stripped from the client PDF and email, so put the human-approval note and any "this still needs X" flags there — never in the client-facing body.
+
 ## Handling a disappointing period
 
 Be honest and transparent — never hide or spin a weak month. Explain plainly where it went wrong and **trace the dip to its specific cause** (usually a particular campaign or change), then say what we are doing about it.

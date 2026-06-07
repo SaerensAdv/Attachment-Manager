@@ -11,6 +11,7 @@
  * website-intake approach.
  */
 
+import { createHash } from "crypto";
 import {
   computeAccountSignals,
   renderAccountSignals,
@@ -24,6 +25,57 @@ const API_BASE = `https://googleads.googleapis.com/${GOOGLE_ADS_API_VERSION}`;
 const MAX_REPORT_LEN = 40_000;
 const MAX_CAMPAIGNS = 50;
 const MAX_SEARCH_TERMS = 50;
+
+/** In-memory cache for GAQL searchStream results. */
+const GAQL_CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
+interface GaqlCacheEntry {
+  rows: Record<string, unknown>[];
+  expiresAt: number;
+}
+const gaqlCache = new Map<string, GaqlCacheEntry>();
+
+function gaqlCacheKey(customerId: string, query: string): string {
+  return createHash("sha256")
+    .update(`${customerId}:${query}`)
+    .digest("hex");
+}
+
+/** Token-bucket rate limiter for GAQL calls.
+ *  Default: 10 requests per minute, burst of 3. */
+class GaqlRateLimiter {
+  private tokens: number;
+  private lastRefill: number;
+  constructor(
+    private capacity: number,
+    private ratePerMs: number,
+  ) {
+    this.tokens = capacity;
+    this.lastRefill = Date.now();
+  }
+
+  async consume(n = 1): Promise<void> {
+    const now = Date.now();
+    const elapsed = now - this.lastRefill;
+    this.tokens = Math.min(
+      this.capacity,
+      this.tokens + elapsed * this.ratePerMs,
+    );
+    this.lastRefill = now;
+    if (this.tokens < n) {
+      const waitMs = (n - this.tokens) / this.ratePerMs;
+      await new Promise((r) => setTimeout(r, waitMs));
+      this.tokens = 0;
+    } else {
+      this.tokens -= n;
+    }
+  }
+
+  halveRate(): void {
+    this.ratePerMs = this.ratePerMs / 2;
+  }
+}
+
+const gaqlLimiter = new GaqlRateLimiter(3, 10 / 60_000);
 
 /**
  * Which period the report covers. "LAST_30_DAYS" is the default ad-hoc refresh;
@@ -98,11 +150,44 @@ export class GoogleAdsConfigError extends Error {
 }
 
 /** Thrown when Google returns an error or the call fails — surfaced as a 502. */
+export type GoogleAdsApiErrorCode =
+  | "AUTH_ERROR"
+  | "RATE_LIMIT"
+  | "NOT_FOUND"
+  | "API_ERROR"
+  | "NETWORK_ERROR"
+  | "UNKNOWN_ERROR";
+
 export class GoogleAdsApiError extends Error {
-  constructor(message: string) {
+  code: GoogleAdsApiErrorCode;
+  constructor(message: string, code: GoogleAdsApiErrorCode = "UNKNOWN_ERROR") {
     super(message);
     this.name = "GoogleAdsApiError";
+    this.code = code;
   }
+}
+
+/** Extract a structured error code from an HTTP response or thrown error. */
+function classifyApiError(
+  status: number,
+  apiError?: { error?: { code?: number; message?: string; status?: string } },
+  isNetwork = false,
+): GoogleAdsApiErrorCode {
+  if (isNetwork) return "NETWORK_ERROR";
+  if (status === 429) return "RATE_LIMIT";
+  if (status === 401 || status === 403) return "AUTH_ERROR";
+  if (status === 404) return "NOT_FOUND";
+  if (status >= 500) return "API_ERROR";
+  // Google Ads API error codes:
+  // 400=INVALID_ARGUMENT, 401=UNAUTHENTICATED, 403=PERMISSION_DENIED,
+  // 404=NOT_FOUND, 429=RESOURCE_EXHAUSTED, 500=INTERNAL, 503=UNAVAILABLE
+  const googleCode = apiError?.error?.code;
+  if (googleCode === 401 || googleCode === 403) return "AUTH_ERROR";
+  if (googleCode === 429) return "RATE_LIMIT";
+  if (googleCode === 404) return "NOT_FOUND";
+  if (googleCode === 500 || googleCode === 503 || googleCode === 502) return "API_ERROR";
+  if (status >= 400) return "API_ERROR";
+  return "UNKNOWN_ERROR";
 }
 
 interface GoogleAdsConfig {
@@ -195,59 +280,95 @@ interface SearchStreamResult {
   results?: Record<string, unknown>[];
 }
 
-/** Run a GAQL query against a customer via the REST searchStream endpoint. */
+/** Run a GAQL query against a customer via the REST searchStream endpoint.
+ *  Uses an in-memory cache (30 min TTL) and a token-bucket rate limiter.
+ *  On 429 rate-limit, halves the rate limit and retries once after a backoff.
+ */
 async function runGaql(
   cfg: GoogleAdsConfig,
   accessToken: string,
   customerId: string,
   query: string,
 ): Promise<Record<string, unknown>[]> {
-  const url = `${API_BASE}/customers/${customerId}/googleAds:searchStream`;
-
-  let res: Response;
-  try {
-    res = await fetch(url, {
-      method: "POST",
-      headers: {
-        authorization: `Bearer ${accessToken}`,
-        "developer-token": cfg.developerToken,
-        "login-customer-id": cfg.loginCustomerId,
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({ query }),
-    });
-  } catch (err) {
-    throw new GoogleAdsApiError(
-      `Kon geen verbinding maken met de Google Ads API: ${(err as Error).message}`,
-    );
+  const cacheKey = gaqlCacheKey(customerId, query);
+  const cached = gaqlCache.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.rows;
   }
 
-  const text = await res.text();
-  if (!res.ok) {
-    let detail = `HTTP ${res.status}`;
+  await gaqlLimiter.consume();
+
+  const doFetch = async (): Promise<Record<string, unknown>[]> => {
+    const url = `${API_BASE}/customers/${customerId}/googleAds:searchStream`;
+    let res: Response;
     try {
-      const parsed = JSON.parse(text);
-      const apiError = Array.isArray(parsed) ? parsed[0] : parsed;
-      detail =
-        apiError?.error?.message ||
-        apiError?.error?.status ||
-        JSON.stringify(apiError).slice(0, 500);
-    } catch {
-      detail = text.slice(0, 500) || detail;
+      res = await fetch(url, {
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${accessToken}`,
+          "developer-token": cfg.developerToken,
+          "login-customer-id": cfg.loginCustomerId,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ query }),
+      });
+    } catch (err) {
+      throw new GoogleAdsApiError(
+        `Kon geen verbinding maken met de Google Ads API: ${(err as Error).message}`,
+        "NETWORK_ERROR",
+      );
     }
-    throw new GoogleAdsApiError(`Google Ads API-fout: ${detail}`);
-  }
 
-  let chunks: SearchStreamResult[];
+    const text = await res.text();
+    let apiError: { error?: { code?: number; message?: string; status?: string } } | undefined;
+    if (!res.ok) {
+      let detail = `HTTP ${res.status}`;
+      try {
+        const parsed = JSON.parse(text);
+        apiError = Array.isArray(parsed) ? parsed[0] : parsed;
+        detail =
+          apiError?.error?.message ||
+          apiError?.error?.status ||
+          JSON.stringify(apiError).slice(0, 500);
+      } catch {
+        detail = text.slice(0, 500) || detail;
+      }
+      throw new GoogleAdsApiError(
+        `Google Ads API-fout: ${detail}`,
+        classifyApiError(res.status, apiError),
+      );
+    }
+
+    let chunks: SearchStreamResult[];
+    try {
+      chunks = JSON.parse(text) as SearchStreamResult[];
+    } catch {
+      throw new GoogleAdsApiError(
+        "Onverwacht antwoord van de Google Ads API (geen geldige JSON).",
+        "API_ERROR",
+      );
+    }
+
+    return chunks.flatMap((chunk) => chunk.results ?? []);
+  };
+
+  let rows: Record<string, unknown>[];
   try {
-    chunks = JSON.parse(text) as SearchStreamResult[];
-  } catch {
-    throw new GoogleAdsApiError(
-      "Onverwacht antwoord van de Google Ads API (geen geldige JSON).",
-    );
+    rows = await doFetch();
+  } catch (err) {
+    if (err instanceof GoogleAdsApiError && err.code === "RATE_LIMIT") {
+      gaqlLimiter.halveRate();
+      const backoffMs = 2000;
+      await new Promise((r) => setTimeout(r, backoffMs));
+      await gaqlLimiter.consume();
+      rows = await doFetch();
+    } else {
+      throw err;
+    }
   }
 
-  return chunks.flatMap((chunk) => chunk.results ?? []);
+  gaqlCache.set(cacheKey, { rows, expiresAt: Date.now() + GAQL_CACHE_TTL_MS });
+  return rows;
 }
 
 function num(value: unknown): number {

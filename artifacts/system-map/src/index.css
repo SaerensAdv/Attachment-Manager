@@ -200,18 +200,33 @@
    and fades, reinforcing that this node is broadcasting work right now. */
 @keyframes atlas-node-ping {
   0% {
-    transform: scale(0.92);
-    opacity: 0.5;
+    transform: scale(0.96);
+    opacity: 0.38;
   }
   100% {
-    transform: scale(1.7);
+    transform: scale(1.55);
     opacity: 0;
   }
 }
 .atlas-node-ping {
   transform-box: fill-box;
   transform-origin: center;
-  animation: atlas-node-ping 1.8s ease-out infinite;
+  animation: atlas-node-ping 2.6s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+
+/* Live-run state frames easing in (active / queued / done / involved) so a node
+   changing state settles smoothly instead of snapping. The keyframe omits a
+   final opacity so each frame fades from 0 up to its own intended opacity. */
+@keyframes atlas-frame-in {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+}
+.atlas-frame-in {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: atlas-frame-in 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @keyframes atlas-spin {
@@ -240,6 +255,7 @@
   .atlas-handoff-line,
   .atlas-node-pulse,
   .atlas-node-ping,
+  .atlas-frame-in,
   .atlas-spin,
   .atlas-spin-slow {
     animation: none;

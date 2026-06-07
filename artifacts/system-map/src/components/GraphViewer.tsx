@@ -607,6 +607,16 @@ export default function GraphViewer({
               <filter id="node-shadow" x="-60%" y="-60%" width="220%" height="220%">
                 <feDropShadow dx="0" dy="2.5" stdDeviation="3" floodColor="#1A1A1A" floodOpacity="0.20" />
               </filter>
+              {/* Luminous bloom for the live-run accents (hand-off line, work
+                  tokens, the writing agent's halo) — a soft glow that lifts the
+                  motion from flat marks to a premium, lit feel. */}
+              <filter id="atlas-glow" x="-80%" y="-80%" width="260%" height="260%">
+                <feGaussianBlur stdDeviation="2.4" result="atlas-blur" />
+                <feMerge>
+                  <feMergeNode in="atlas-blur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
             </defs>
 
             {/* Edges Layer */}
@@ -741,6 +751,7 @@ export default function GraphViewer({
                     strokeLinecap="round"
                     opacity={1}
                     className="atlas-handoff-line"
+                    filter="url(#atlas-glow)"
                   />
                 )}
 
@@ -754,25 +765,31 @@ export default function GraphViewer({
                     key={`handoff-token-${handoff?.source}-${handoff?.target}`}
                     fill="hsl(var(--accent))"
                   >
-                    {[0, 0.37, 0.74].map((t, idx) => {
-                      const begin = `${(t * 1.1).toFixed(2)}s`;
+                    {[0, 0.34, 0.68].map((t, idx) => {
+                      const begin = `${(t * 1.3).toFixed(2)}s`;
+                      // Eased travel (accelerate then settle) so each bead reads
+                      // as work arriving at the writing agent, not a metronome.
+                      const motion = (
+                        <animateMotion
+                          path={handoffPath}
+                          dur="1.3s"
+                          begin={begin}
+                          repeatCount="indefinite"
+                          calcMode="spline"
+                          keyPoints="0;1"
+                          keyTimes="0;1"
+                          keySplines="0.45 0 0.25 1"
+                        />
+                      );
                       return (
                         <g key={idx}>
-                          <circle r={6} opacity={0.16}>
-                            <animateMotion
-                              path={handoffPath}
-                              dur="1.1s"
-                              begin={begin}
-                              repeatCount="indefinite"
-                            />
+                          {/* soft trailing aura */}
+                          <circle r={7} opacity={0.12}>
+                            {motion}
                           </circle>
-                          <circle r={2.6} opacity={0.95}>
-                            <animateMotion
-                              path={handoffPath}
-                              dur="1.1s"
-                              begin={begin}
-                              repeatCount="indefinite"
-                            />
+                          {/* glowing comet head */}
+                          <circle r={3} opacity={0.98} filter="url(#atlas-glow)">
+                            {motion}
                           </circle>
                         </g>
                       );
@@ -829,6 +846,7 @@ export default function GraphViewer({
                           x={-hw - 12} y={-hh - 12} width={w + 24} height={h + 24}
                           fill="hsl(var(--accent))"
                           opacity={0.14}
+                          filter={reducedMotion ? undefined : "url(#atlas-glow)"}
                           className={reducedMotion ? "" : "atlas-node-pulse"}
                         />
                         {/* Sonar ping — an accent frame expanding outward and
@@ -844,6 +862,7 @@ export default function GraphViewer({
                         <rect
                           x={-hw - 6} y={-hh - 6} width={w + 12} height={h + 12}
                           fill="none" stroke="hsl(var(--accent))" strokeWidth={2} opacity={0.9}
+                          className={reducedMotion ? "" : "atlas-frame-in"}
                         />
                       </>
                     )}
@@ -854,6 +873,7 @@ export default function GraphViewer({
                         x={-hw - 6} y={-hh - 6} width={w + 12} height={h + 12}
                         fill="none" stroke="hsl(var(--muted-foreground))" strokeWidth={1.5}
                         opacity={0.6} strokeDasharray="4,5"
+                        className={reducedMotion ? "" : "atlas-frame-in"}
                       />
                     )}
 
@@ -862,6 +882,7 @@ export default function GraphViewer({
                       <rect
                         x={-hw - 6} y={-hh - 6} width={w + 12} height={h + 12}
                         fill="none" stroke="hsl(var(--foreground))" strokeWidth={1.5} opacity={0.3}
+                        className={reducedMotion ? "" : "atlas-frame-in"}
                       />
                     )}
 
@@ -880,6 +901,7 @@ export default function GraphViewer({
                         x={-hw - 6} y={-hh - 6} width={w + 12} height={h + 12}
                         fill="none" stroke="hsl(var(--accent))" strokeWidth={1.5}
                         opacity={0.4} strokeDasharray="3,4"
+                        className={reducedMotion ? "" : "atlas-frame-in"}
                       />
                     )}
 

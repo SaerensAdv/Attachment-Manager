@@ -550,6 +550,42 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /clients/{id}/competitor-ads-refresh:
+    post:
+      operationId: clientCompetitorAdsRefresh
+      tags: [clients]
+      summary: Pull live competitor ads (Ads Transparency Center) and store them
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: The updated client with fresh competitor-ad data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Client"
+        "400":
+          description: Invalid request (e.g. no competitors set, missing config)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Client not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "502":
+          description: Competitor ads could not be read
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /generations:
     get:
       operationId: getGenerations
@@ -1278,6 +1314,13 @@ components:
         googleAdsLiveAt:
           type: ["string", "null"]
           format: date-time
+        competitorAdvertisers:
+          type: ["string", "null"]
+        competitorAdsLive:
+          type: ["string", "null"]
+        competitorAdsLiveAt:
+          type: ["string", "null"]
+          format: date-time
         createdAt:
           type: string
           format: date-time
@@ -1329,6 +1372,8 @@ components:
         reportEmail:
           type: ["string", "null"]
         googleAdsCustomerId:
+          type: ["string", "null"]
+        competitorAdvertisers:
           type: ["string", "null"]
     ClientList:
       type: object

@@ -259,6 +259,12 @@ export interface Client {
   googleAdsLive?: string | null;
   /** @nullable */
   googleAdsLiveAt?: string | null;
+  /** @nullable */
+  competitorAdvertisers?: string | null;
+  /** @nullable */
+  competitorAdsLive?: string | null;
+  /** @nullable */
+  competitorAdsLiveAt?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -305,6 +311,8 @@ export interface ClientInput {
   reportEmail?: string | null;
   /** @nullable */
   googleAdsCustomerId?: string | null;
+  /** @nullable */
+  competitorAdvertisers?: string | null;
 }
 
 export interface ClientList {

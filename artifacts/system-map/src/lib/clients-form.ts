@@ -171,6 +171,7 @@ export const EMPTY_FORM: FormState = {
   searchConsoleData: "",
   reportEmail: "",
   googleAdsCustomerId: "",
+  competitorAdvertisers: "",
 };
 
 export function clientToForm(c: Client): FormState {

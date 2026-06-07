@@ -7,12 +7,22 @@ import {
   useDeleteClient,
   useClientWebsiteIntake,
   useClientGoogleAdsRefresh,
+  useClientCompetitorAdsRefresh,
   getGetClientsQueryKey,
   getGetDocGraphQueryKey,
   type Client,
   type ClientInput,
 } from "@workspace/api-client-react";
-import { BarChart3, Globe, Loader2, Plus, Save, Trash2, X } from "lucide-react";
+import {
+  BarChart3,
+  Globe,
+  Loader2,
+  Plus,
+  Save,
+  Trash2,
+  Users,
+  X,
+} from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import Reveal from "@/components/Reveal";
@@ -58,6 +68,12 @@ export default function Clients() {
     text: string | null;
     at: string | null;
   }>({ text: null, at: null });
+  // Live competitor ads (Ads Transparency Center) — set by the
+  // competitor-ads-refresh endpoint; the advertiser list is an editable field.
+  const [liveCompetitors, setLiveCompetitors] = useState<{
+    text: string | null;
+    at: string | null;
+  }>({ text: null, at: null });
   // Optimistic concurrency: the `updatedAt` of the row as it was loaded into the
   // editor. We echo it back on save so the server can reject (409) if someone
   // else changed the fiche in the meantime, instead of silently overwriting.
@@ -75,11 +91,13 @@ export default function Clients() {
   const deleteMut = useDeleteClient();
   const intakeMut = useClientWebsiteIntake();
   const adsMut = useClientGoogleAdsRefresh();
+  const competMut = useClientCompetitorAdsRefresh();
 
   const saving = createMut.isPending || updateMut.isPending;
   const deleting = deleteMut.isPending;
   const intaking = intakeMut.isPending;
   const refreshingAds = adsMut.isPending;
+  const refreshingCompetitors = competMut.isPending;
 
   const startCreate = () => {
     setEditing("new");
@@ -88,6 +106,7 @@ export default function Clients() {
     setConfirmDelete(false);
     setIntake({ text: null, at: null });
     setLiveAds({ text: null, at: null });
+    setLiveCompetitors({ text: null, at: null });
     setEditingUpdatedAt(null);
   };
 
@@ -101,6 +120,10 @@ export default function Clients() {
       text: c.googleAdsLive ?? null,
       at: c.googleAdsLiveAt ?? null,
     });
+    setLiveCompetitors({
+      text: c.competitorAdsLive ?? null,
+      at: c.competitorAdsLiveAt ?? null,
+    });
     setEditingUpdatedAt(c.updatedAt);
   };
 
@@ -111,6 +134,7 @@ export default function Clients() {
     setConfirmDelete(false);
     setIntake({ text: null, at: null });
     setLiveAds({ text: null, at: null });
+    setLiveCompetitors({ text: null, at: null });
     setEditingUpdatedAt(null);
   };
 
@@ -216,6 +240,30 @@ export default function Clients() {
         onError: (err) =>
           setFormError(
             err instanceof Error ? err.message : "Google Ads ophalen mislukt",
+          ),
+      },
+    );
+  };
+
+  const handleCompetitorAds = () => {
+    if (typeof editing !== "number") return;
+    setFormError(null);
+    competMut.mutate(
+      { id: editing },
+      {
+        onSuccess: (updated) => {
+          invalidate();
+          setForm(clientToForm(updated));
+          setLiveCompetitors({
+            text: updated.competitorAdsLive ?? null,
+            at: updated.competitorAdsLiveAt ?? null,
+          });
+        },
+        onError: (err) =>
+          setFormError(
+            err instanceof Error
+              ? err.message
+              : "Concurrent-advertenties ophalen mislukt",
           ),
       },
     );
@@ -716,6 +764,109 @@ export default function Clients() {
                             className="max-h-72 overflow-auto whitespace-pre-wrap break-words border border-foreground/30 bg-background p-3 font-['Space_Mono'] text-[11px] leading-relaxed text-muted-foreground"
                           >
                             {liveAds.text}
+                          </pre>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {/* Section V — live competitor ads (existing clients only) */}
+                  {typeof editing === "number" && (
+                    <>
+                      <div className="flex items-baseline justify-between border-b-2 border-foreground pb-1">
+                        <h3 className="font-['Playfair_Display'] font-bold text-lg uppercase tracking-wider">
+                          V. Concurrent-advertenties
+                        </h3>
+                        <span className="font-['Space_Mono'] text-xs text-muted-foreground">
+                          Ads Transparency Center
+                        </span>
+                      </div>
+
+                      <p className="font-['Inter'] text-sm text-muted-foreground -mt-4">
+                        Haalt de actieve advertenties van concurrenten op uit het
+                        publieke Google Ads Transparency Center: aantal, formaten
+                        en looptijden. Alleen-lezen. De data wordt bewaard en
+                        meegegeven aan de agents als marktcontext.
+                      </p>
+
+                      <div className="flex flex-col gap-1.5">
+                        <label className="font-['Space_Mono'] text-[10px] uppercase tracking-widest">
+                          Concurrenten
+                        </label>
+                        <Textarea
+                          value={form.competitorAdvertisers}
+                          onChange={(e) =>
+                            setField("competitorAdvertisers", e.target.value)
+                          }
+                          placeholder={
+                            "Eén per regel: een advertiser-ID (bv. AR17828074650563772417)\nof een domein/zoekterm (bv. concurrent.be)"
+                          }
+                          rows={4}
+                          data-testid="input-client-competitorAdvertisers"
+                          className={INPUT_CLASS}
+                        />
+                        <span className="font-['Space_Mono'] text-[9px] tracking-wider text-muted-foreground/60">
+                          Bewaar de lijst eerst met "Wijzigingen opslaan" voor je
+                          ophaalt.
+                        </span>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-3">
+                        <button
+                          onClick={handleCompetitorAds}
+                          disabled={
+                            refreshingCompetitors ||
+                            !form.competitorAdvertisers.trim()
+                          }
+                          data-testid="button-competitor-ads-refresh"
+                          className="py-2.5 px-4 border-2 border-foreground text-foreground font-['Space_Mono'] text-[11px] uppercase tracking-widest flex items-center gap-2 hover:bg-foreground hover:text-background transition-colors disabled:opacity-50 disabled:pointer-events-none"
+                        >
+                          {refreshingCompetitors ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Users className="w-4 h-4" />
+                          )}
+                          {liveCompetitors.text
+                            ? "Opnieuw ophalen"
+                            : "Concurrenten ophalen"}
+                        </button>
+                        {!form.competitorAdvertisers.trim() ? (
+                          <span className="font-['Space_Mono'] text-[10px] uppercase tracking-wider text-muted-foreground/70">
+                            Vul eerst minstens één concurrent in
+                          </span>
+                        ) : liveCompetitors.at ? (
+                          <span className="font-['Space_Mono'] text-[10px] uppercase tracking-wider text-muted-foreground">
+                            Laatst opgehaald:{" "}
+                            {new Date(liveCompetitors.at).toLocaleString(
+                              "nl-BE",
+                              { dateStyle: "medium", timeStyle: "short" },
+                            )}
+                          </span>
+                        ) : (
+                          <span className="font-['Space_Mono'] text-[10px] uppercase tracking-wider text-muted-foreground/70">
+                            Nog niet opgehaald
+                          </span>
+                        )}
+                      </div>
+
+                      {liveCompetitors.text && (
+                        <div className="flex flex-col gap-2">
+                          <div className="flex items-baseline justify-between border-b border-foreground/20 pb-1">
+                            <span className="font-['Space_Mono'] text-[10px] uppercase tracking-widest">
+                              Opgehaalde data
+                            </span>
+                            <span className="font-['Space_Mono'] text-[9px] tracking-wider text-muted-foreground/60">
+                              {liveCompetitors.text.length.toLocaleString(
+                                "nl-BE",
+                              )}{" "}
+                              tekens
+                            </span>
+                          </div>
+                          <pre
+                            data-testid="text-competitor-ads-live"
+                            className="max-h-72 overflow-auto whitespace-pre-wrap break-words border border-foreground/30 bg-background p-3 font-['Space_Mono'] text-[11px] leading-relaxed text-muted-foreground"
+                          >
+                            {liveCompetitors.text}
                           </pre>
                         </div>
                       )}

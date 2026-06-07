@@ -6,6 +6,7 @@ import {
   fetchWebsiteIntake,
 } from "../lib/website-intake";
 import { fetchGoogleAdsReport, GoogleAdsConfigError } from "../lib/google-ads";
+import { fetchCompetitorAds, SerpApiConfigError } from "../lib/serpapi";
 
 const router: IRouter = Router();
 
@@ -31,6 +32,7 @@ const FIELDS = [
   "searchConsoleData",
   "reportEmail",
   "googleAdsCustomerId",
+  "competitorAdvertisers",
 ] as const;
 
 type FieldKey = (typeof FIELDS)[number];
@@ -119,6 +121,9 @@ function serialize(client: Client) {
       : null,
     googleAdsLiveAt: client.googleAdsLiveAt
       ? client.googleAdsLiveAt.toISOString()
+      : null,
+    competitorAdsLiveAt: client.competitorAdsLiveAt
+      ? client.competitorAdsLiveAt.toISOString()
       : null,
     createdAt: client.createdAt.toISOString(),
     updatedAt: client.updatedAt.toISOString(),
@@ -309,6 +314,57 @@ router.post("/clients/:id/google-ads-refresh", async (req, res) => {
     }
     res.status(502).json({
       error: "Kon Google Ads niet uitlezen.",
+      detail: err instanceof Error ? err.message : String(err),
+    });
+  }
+});
+
+router.post("/clients/:id/competitor-ads-refresh", async (req, res) => {
+  const id = parseId(req.params.id);
+  if (id === null) {
+    res.status(400).json({ error: "Ongeldige id." });
+    return;
+  }
+  const [row] = await db
+    .select()
+    .from(clientsTable)
+    .where(eq(clientsTable.id, id));
+  if (!row) {
+    res.status(404).json({ error: "Klant niet gevonden." });
+    return;
+  }
+
+  const targets = (row.competitorAdvertisers ?? "")
+    .split(/\r?\n/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (targets.length === 0) {
+    res.status(400).json({
+      error:
+        "Deze klant heeft nog geen concurrenten ingesteld. Vul advertiser-ID's of domeinen in (één per regel) en bewaar eerst.",
+    });
+    return;
+  }
+
+  try {
+    const result = await fetchCompetitorAds(targets);
+    const [updated] = await db
+      .update(clientsTable)
+      .set({
+        competitorAdsLive: result.text,
+        competitorAdsLiveAt: result.fetchedAt,
+        updatedAt: new Date(),
+      })
+      .where(eq(clientsTable.id, id))
+      .returning();
+    res.json(serialize(updated));
+  } catch (err) {
+    if (err instanceof SerpApiConfigError) {
+      res.status(400).json({ error: err.message });
+      return;
+    }
+    res.status(502).json({
+      error: "Kon concurrent-advertenties niet ophalen.",
       detail: err instanceof Error ? err.message : String(err),
     });
   }

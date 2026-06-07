@@ -34,6 +34,9 @@ export const clientsTable = pgTable("clients", {
   googleAdsCustomerId: text("google_ads_customer_id"),
   googleAdsLive: text("google_ads_live"),
   googleAdsLiveAt: timestamp("google_ads_live_at"),
+  competitorAdvertisers: text("competitor_advertisers"),
+  competitorAdsLive: text("competitor_ads_live"),
+  competitorAdsLiveAt: timestamp("competitor_ads_live_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

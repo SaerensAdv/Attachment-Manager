@@ -1658,6 +1658,76 @@ export const useClientGoogleAdsRefresh = <TError = ErrorType<ErrorResponse>,
       return useMutation(getClientGoogleAdsRefreshMutationOptions(options));
     }
 
+export const getClientCompetitorAdsRefreshUrl = (id: number,) => {
+
+
+
+
+  return `/api/clients/${id}/competitor-ads-refresh`
+}
+
+/**
+ * @summary Pull live competitor ads (Ads Transparency Center) and store them
+ */
+export const clientCompetitorAdsRefresh = async (id: number, options?: RequestInit): Promise<Client> => {
+
+  return customFetch<Client>(getClientCompetitorAdsRefreshUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getClientCompetitorAdsRefreshMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof clientCompetitorAdsRefresh>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof clientCompetitorAdsRefresh>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['clientCompetitorAdsRefresh'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof clientCompetitorAdsRefresh>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  clientCompetitorAdsRefresh(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ClientCompetitorAdsRefreshMutationResult = NonNullable<Awaited<ReturnType<typeof clientCompetitorAdsRefresh>>>
+
+    export type ClientCompetitorAdsRefreshMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Pull live competitor ads (Ads Transparency Center) and store them
+ */
+export const useClientCompetitorAdsRefresh = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof clientCompetitorAdsRefresh>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof clientCompetitorAdsRefresh>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getClientCompetitorAdsRefreshMutationOptions(options));
+    }
+
 export const getGetGenerationsUrl = () => {
 
 

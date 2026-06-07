@@ -92,6 +92,17 @@ export function clientToMarkdown(client: Client): string {
         )
       : null,
     codeBlock("Google Ads live performance", client.googleAdsLive),
+    client.competitorAdsLive?.trim()
+      ? paragraph(
+          "Competitor ads (live)",
+          `Read-only competitor advertising pulled from the Google Ads Transparency Center${
+            client.competitorAdsLiveAt
+              ? ` (fetched ${client.competitorAdsLiveAt.toISOString().slice(0, 10)})`
+              : ""
+          }.`,
+        )
+      : null,
+    codeBlock("Competitor advertising (live)", client.competitorAdsLive),
     codeBlock("Search Console / SEO data (current)", client.searchConsoleData),
     client.websiteIntake?.trim()
       ? paragraph(

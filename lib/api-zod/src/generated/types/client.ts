@@ -57,6 +57,12 @@ export interface Client {
   googleAdsLive?: string | null;
   /** @nullable */
   googleAdsLiveAt?: Date | null;
+  /** @nullable */
+  competitorAdvertisers?: string | null;
+  /** @nullable */
+  competitorAdsLive?: string | null;
+  /** @nullable */
+  competitorAdsLiveAt?: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }

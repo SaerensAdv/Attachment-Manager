@@ -4,13 +4,17 @@
  * refresh token is exchanged for a short-lived access token against Google's
  * OAuth endpoint.
  *
- * The OAuth *client* (id + secret) is the same one already used for Google Ads;
- * only the refresh token differs, because it carries the read-only reporting
- * scopes (`webmasters.readonly`, `analytics.readonly`, `business.manage`)
- * instead of `adwords`. Keeping this in one place means every read-only Google
- * source shares the same config validation, error mapping and token logic — and
- * the read-only guarantee (we only ever request reporting scopes) lives in
- * exactly one spot.
+ * The OAuth *client* (id + secret) may be dedicated to the read-only sources
+ * (`GOOGLE_OAUTH_READONLY_CLIENT_ID` / `_SECRET`) or, when those are unset, falls
+ * back to the Google Ads OAuth client. They are decoupled because a read-only
+ * refresh token is bound to the exact client it was minted on: if that client
+ * differs from the Ads client, exchanging the token against the Ads client fails
+ * with `unauthorized_client`. The refresh token
+ * (`GOOGLE_OAUTH_READONLY_REFRESH_TOKEN`) carries the read-only reporting scopes
+ * (`webmasters.readonly`, `analytics.readonly`, `business.manage`) instead of
+ * `adwords`. Keeping this in one place means every read-only Google source shares
+ * the same config validation, error mapping and token logic — and the read-only
+ * guarantee (we only ever request reporting scopes) lives in exactly one spot.
  */
 
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
@@ -51,14 +55,26 @@ export interface ReadonlyOAuthConfig {
  * holds the read-only reporting scopes.
  */
 export function readReadonlyOAuthConfig(): ReadonlyOAuthConfig {
-  const clientId = process.env.GOOGLE_ADS_OAUTH_CLIENT_ID?.trim() ?? "";
-  const clientSecret = process.env.GOOGLE_ADS_OAUTH_CLIENT_SECRET?.trim() ?? "";
+  // Prefer a dedicated read-only client; fall back to the shared Ads client so
+  // an existing single-client setup keeps working without new secrets.
+  const clientId =
+    (process.env.GOOGLE_OAUTH_READONLY_CLIENT_ID?.trim() ||
+      process.env.GOOGLE_ADS_OAUTH_CLIENT_ID?.trim()) ??
+    "";
+  const clientSecret =
+    (process.env.GOOGLE_OAUTH_READONLY_CLIENT_SECRET?.trim() ||
+      process.env.GOOGLE_ADS_OAUTH_CLIENT_SECRET?.trim()) ??
+    "";
   const refreshToken =
     process.env.GOOGLE_OAUTH_READONLY_REFRESH_TOKEN?.trim() ?? "";
 
   const missing: string[] = [];
-  if (!clientId) missing.push("GOOGLE_ADS_OAUTH_CLIENT_ID");
-  if (!clientSecret) missing.push("GOOGLE_ADS_OAUTH_CLIENT_SECRET");
+  if (!clientId)
+    missing.push("GOOGLE_OAUTH_READONLY_CLIENT_ID (of GOOGLE_ADS_OAUTH_CLIENT_ID)");
+  if (!clientSecret)
+    missing.push(
+      "GOOGLE_OAUTH_READONLY_CLIENT_SECRET (of GOOGLE_ADS_OAUTH_CLIENT_SECRET)",
+    );
   if (!refreshToken) missing.push("GOOGLE_OAUTH_READONLY_REFRESH_TOKEN");
 
   if (missing.length > 0) {

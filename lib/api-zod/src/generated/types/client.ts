@@ -63,6 +63,38 @@ export interface Client {
   competitorAdsLive?: string | null;
   /** @nullable */
   competitorAdsLiveAt?: Date | null;
+  /** @nullable */
+  searchConsoleSiteUrl?: string | null;
+  /** @nullable */
+  searchConsoleLive?: string | null;
+  /** @nullable */
+  searchConsoleLiveAt?: Date | null;
+  /** @nullable */
+  ga4PropertyId?: string | null;
+  /** @nullable */
+  ga4Live?: string | null;
+  /** @nullable */
+  ga4LiveAt?: Date | null;
+  /** @nullable */
+  placesQuery?: string | null;
+  /** @nullable */
+  placesCompetitors?: string | null;
+  /** @nullable */
+  placesLive?: string | null;
+  /** @nullable */
+  placesLiveAt?: Date | null;
+  /** @nullable */
+  pagespeedUrls?: string | null;
+  /** @nullable */
+  pagespeedLive?: string | null;
+  /** @nullable */
+  pagespeedLiveAt?: Date | null;
+  /** @nullable */
+  businessProfileLocationId?: string | null;
+  /** @nullable */
+  businessProfileLive?: string | null;
+  /** @nullable */
+  businessProfileLiveAt?: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }

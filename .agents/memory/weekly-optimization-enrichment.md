@@ -12,10 +12,10 @@ when `ORDER BY` references a metric that is not in the SELECT clause.
 **Rule:** any field used in ORDER BY must also appear in SELECT (e.g. add
 `metrics.cost_micros`). Applies to every GAQL query, not just this one.
 
-## Cross-campaign routing has two sides (Axel's decision)
+## Cross-campaign routing has two sides (the founder's decision)
 A mis-routed term gets a cross-campaign negative AND a named positive (term → correct
 campaign + ad group + match type). **The positives are named in the analysis only —
-never written into the negatives CSV.** Axel applies them by hand.
+never written into the negatives CSV.** the founder applies them by hand.
 **Why:** he wants editorial control over additions; the CSV is for exclusions only.
 **How to apply:** the live read must include ad-group structure so the positive side
 names a real ad group, not an invented one.
@@ -36,7 +36,7 @@ the client exists, regardless of whether the live Google Ads fetch succeeded or 
 has a customer ID. Coupling it to live-fetch success silently drops the list on any fetch
 failure.
 
-## Escalation rule (Axel's decision)
+## Escalation rule (the founder's decision)
 A relevant-but-not-converting term is **never excluded outright**. Escalate by fixing the
 cause: **landing page first, then bid**; exclusion is the last resort, only after those
 interventions and the term still fails over time. The persisted age (`weeksMonitored`)

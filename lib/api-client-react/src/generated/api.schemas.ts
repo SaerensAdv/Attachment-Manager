@@ -265,6 +265,38 @@ export interface Client {
   competitorAdsLive?: string | null;
   /** @nullable */
   competitorAdsLiveAt?: string | null;
+  /** @nullable */
+  searchConsoleSiteUrl?: string | null;
+  /** @nullable */
+  searchConsoleLive?: string | null;
+  /** @nullable */
+  searchConsoleLiveAt?: string | null;
+  /** @nullable */
+  ga4PropertyId?: string | null;
+  /** @nullable */
+  ga4Live?: string | null;
+  /** @nullable */
+  ga4LiveAt?: string | null;
+  /** @nullable */
+  placesQuery?: string | null;
+  /** @nullable */
+  placesCompetitors?: string | null;
+  /** @nullable */
+  placesLive?: string | null;
+  /** @nullable */
+  placesLiveAt?: string | null;
+  /** @nullable */
+  pagespeedUrls?: string | null;
+  /** @nullable */
+  pagespeedLive?: string | null;
+  /** @nullable */
+  pagespeedLiveAt?: string | null;
+  /** @nullable */
+  businessProfileLocationId?: string | null;
+  /** @nullable */
+  businessProfileLive?: string | null;
+  /** @nullable */
+  businessProfileLiveAt?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -313,6 +345,18 @@ export interface ClientInput {
   googleAdsCustomerId?: string | null;
   /** @nullable */
   competitorAdvertisers?: string | null;
+  /** @nullable */
+  searchConsoleSiteUrl?: string | null;
+  /** @nullable */
+  ga4PropertyId?: string | null;
+  /** @nullable */
+  placesQuery?: string | null;
+  /** @nullable */
+  placesCompetitors?: string | null;
+  /** @nullable */
+  pagespeedUrls?: string | null;
+  /** @nullable */
+  businessProfileLocationId?: string | null;
 }
 
 export interface ClientList {

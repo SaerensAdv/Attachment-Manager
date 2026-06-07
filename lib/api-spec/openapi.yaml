@@ -550,6 +550,186 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /clients/{id}/search-console-refresh:
+    post:
+      operationId: clientSearchConsoleRefresh
+      tags: [clients]
+      summary: Pull live Search Console data for the client and store it
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: The updated client with fresh live Search Console data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Client"
+        "400":
+          description: Invalid request (e.g. no property, missing config)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Client not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "502":
+          description: Search Console could not be read
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /clients/{id}/ga4-refresh:
+    post:
+      operationId: clientGa4Refresh
+      tags: [clients]
+      summary: Pull live GA4 analytics for the client and store it
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: The updated client with fresh live GA4 data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Client"
+        "400":
+          description: Invalid request (e.g. no property id, missing config)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Client not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "502":
+          description: GA4 could not be read
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /clients/{id}/places-refresh:
+    post:
+      operationId: clientPlacesRefresh
+      tags: [clients]
+      summary: Pull live Google Maps / Places reputation for the client and store it
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: The updated client with fresh live Places data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Client"
+        "400":
+          description: Invalid request (e.g. no query, missing config)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Client not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "502":
+          description: Google Maps could not be read
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /clients/{id}/pagespeed-refresh:
+    post:
+      operationId: clientPagespeedRefresh
+      tags: [clients]
+      summary: Pull live PageSpeed Insights for the client's landing pages and store it
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: The updated client with fresh live PageSpeed data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Client"
+        "400":
+          description: Invalid request (e.g. no URLs, missing config)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Client not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "502":
+          description: PageSpeed Insights could not be read
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /clients/{id}/business-profile-refresh:
+    post:
+      operationId: clientBusinessProfileRefresh
+      tags: [clients]
+      summary: Pull live Google Business Profile performance for the client and store it
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: The updated client with fresh live Business Profile data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Client"
+        "400":
+          description: Invalid request (e.g. no location id, missing config)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Client not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "502":
+          description: Google Business Profile could not be read
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /clients/{id}/competitor-ads-refresh:
     post:
       operationId: clientCompetitorAdsRefresh
@@ -1321,6 +1501,43 @@ components:
         competitorAdsLiveAt:
           type: ["string", "null"]
           format: date-time
+        searchConsoleSiteUrl:
+          type: ["string", "null"]
+        searchConsoleLive:
+          type: ["string", "null"]
+        searchConsoleLiveAt:
+          type: ["string", "null"]
+          format: date-time
+        ga4PropertyId:
+          type: ["string", "null"]
+        ga4Live:
+          type: ["string", "null"]
+        ga4LiveAt:
+          type: ["string", "null"]
+          format: date-time
+        placesQuery:
+          type: ["string", "null"]
+        placesCompetitors:
+          type: ["string", "null"]
+        placesLive:
+          type: ["string", "null"]
+        placesLiveAt:
+          type: ["string", "null"]
+          format: date-time
+        pagespeedUrls:
+          type: ["string", "null"]
+        pagespeedLive:
+          type: ["string", "null"]
+        pagespeedLiveAt:
+          type: ["string", "null"]
+          format: date-time
+        businessProfileLocationId:
+          type: ["string", "null"]
+        businessProfileLive:
+          type: ["string", "null"]
+        businessProfileLiveAt:
+          type: ["string", "null"]
+          format: date-time
         createdAt:
           type: string
           format: date-time
@@ -1374,6 +1591,18 @@ components:
         googleAdsCustomerId:
           type: ["string", "null"]
         competitorAdvertisers:
+          type: ["string", "null"]
+        searchConsoleSiteUrl:
+          type: ["string", "null"]
+        ga4PropertyId:
+          type: ["string", "null"]
+        placesQuery:
+          type: ["string", "null"]
+        placesCompetitors:
+          type: ["string", "null"]
+        pagespeedUrls:
+          type: ["string", "null"]
+        businessProfileLocationId:
           type: ["string", "null"]
     ClientList:
       type: object

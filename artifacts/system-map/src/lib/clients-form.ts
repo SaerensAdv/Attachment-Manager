@@ -172,6 +172,12 @@ export const EMPTY_FORM: FormState = {
   reportEmail: "",
   googleAdsCustomerId: "",
   competitorAdvertisers: "",
+  searchConsoleSiteUrl: "",
+  ga4PropertyId: "",
+  placesQuery: "",
+  placesCompetitors: "",
+  pagespeedUrls: "",
+  businessProfileLocationId: "",
 };
 
 export function clientToForm(c: Client): FormState {

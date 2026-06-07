@@ -1658,6 +1658,356 @@ export const useClientGoogleAdsRefresh = <TError = ErrorType<ErrorResponse>,
       return useMutation(getClientGoogleAdsRefreshMutationOptions(options));
     }
 
+export const getClientSearchConsoleRefreshUrl = (id: number,) => {
+
+
+
+
+  return `/api/clients/${id}/search-console-refresh`
+}
+
+/**
+ * @summary Pull live Search Console data for the client and store it
+ */
+export const clientSearchConsoleRefresh = async (id: number, options?: RequestInit): Promise<Client> => {
+
+  return customFetch<Client>(getClientSearchConsoleRefreshUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getClientSearchConsoleRefreshMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof clientSearchConsoleRefresh>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof clientSearchConsoleRefresh>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['clientSearchConsoleRefresh'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof clientSearchConsoleRefresh>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  clientSearchConsoleRefresh(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ClientSearchConsoleRefreshMutationResult = NonNullable<Awaited<ReturnType<typeof clientSearchConsoleRefresh>>>
+
+    export type ClientSearchConsoleRefreshMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Pull live Search Console data for the client and store it
+ */
+export const useClientSearchConsoleRefresh = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof clientSearchConsoleRefresh>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof clientSearchConsoleRefresh>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getClientSearchConsoleRefreshMutationOptions(options));
+    }
+
+export const getClientGa4RefreshUrl = (id: number,) => {
+
+
+
+
+  return `/api/clients/${id}/ga4-refresh`
+}
+
+/**
+ * @summary Pull live GA4 analytics for the client and store it
+ */
+export const clientGa4Refresh = async (id: number, options?: RequestInit): Promise<Client> => {
+
+  return customFetch<Client>(getClientGa4RefreshUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getClientGa4RefreshMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof clientGa4Refresh>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof clientGa4Refresh>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['clientGa4Refresh'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof clientGa4Refresh>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  clientGa4Refresh(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ClientGa4RefreshMutationResult = NonNullable<Awaited<ReturnType<typeof clientGa4Refresh>>>
+
+    export type ClientGa4RefreshMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Pull live GA4 analytics for the client and store it
+ */
+export const useClientGa4Refresh = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof clientGa4Refresh>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof clientGa4Refresh>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getClientGa4RefreshMutationOptions(options));
+    }
+
+export const getClientPlacesRefreshUrl = (id: number,) => {
+
+
+
+
+  return `/api/clients/${id}/places-refresh`
+}
+
+/**
+ * @summary Pull live Google Maps / Places reputation for the client and store it
+ */
+export const clientPlacesRefresh = async (id: number, options?: RequestInit): Promise<Client> => {
+
+  return customFetch<Client>(getClientPlacesRefreshUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getClientPlacesRefreshMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof clientPlacesRefresh>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof clientPlacesRefresh>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['clientPlacesRefresh'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof clientPlacesRefresh>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  clientPlacesRefresh(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ClientPlacesRefreshMutationResult = NonNullable<Awaited<ReturnType<typeof clientPlacesRefresh>>>
+
+    export type ClientPlacesRefreshMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Pull live Google Maps / Places reputation for the client and store it
+ */
+export const useClientPlacesRefresh = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof clientPlacesRefresh>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof clientPlacesRefresh>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getClientPlacesRefreshMutationOptions(options));
+    }
+
+export const getClientPagespeedRefreshUrl = (id: number,) => {
+
+
+
+
+  return `/api/clients/${id}/pagespeed-refresh`
+}
+
+/**
+ * @summary Pull live PageSpeed Insights for the client's landing pages and store it
+ */
+export const clientPagespeedRefresh = async (id: number, options?: RequestInit): Promise<Client> => {
+
+  return customFetch<Client>(getClientPagespeedRefreshUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getClientPagespeedRefreshMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof clientPagespeedRefresh>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof clientPagespeedRefresh>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['clientPagespeedRefresh'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof clientPagespeedRefresh>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  clientPagespeedRefresh(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ClientPagespeedRefreshMutationResult = NonNullable<Awaited<ReturnType<typeof clientPagespeedRefresh>>>
+
+    export type ClientPagespeedRefreshMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Pull live PageSpeed Insights for the client's landing pages and store it
+ */
+export const useClientPagespeedRefresh = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof clientPagespeedRefresh>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof clientPagespeedRefresh>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getClientPagespeedRefreshMutationOptions(options));
+    }
+
+export const getClientBusinessProfileRefreshUrl = (id: number,) => {
+
+
+
+
+  return `/api/clients/${id}/business-profile-refresh`
+}
+
+/**
+ * @summary Pull live Google Business Profile performance for the client and store it
+ */
+export const clientBusinessProfileRefresh = async (id: number, options?: RequestInit): Promise<Client> => {
+
+  return customFetch<Client>(getClientBusinessProfileRefreshUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getClientBusinessProfileRefreshMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof clientBusinessProfileRefresh>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof clientBusinessProfileRefresh>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['clientBusinessProfileRefresh'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof clientBusinessProfileRefresh>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  clientBusinessProfileRefresh(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ClientBusinessProfileRefreshMutationResult = NonNullable<Awaited<ReturnType<typeof clientBusinessProfileRefresh>>>
+
+    export type ClientBusinessProfileRefreshMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Pull live Google Business Profile performance for the client and store it
+ */
+export const useClientBusinessProfileRefresh = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof clientBusinessProfileRefresh>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof clientBusinessProfileRefresh>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getClientBusinessProfileRefreshMutationOptions(options));
+    }
+
 export const getClientCompetitorAdsRefreshUrl = (id: number,) => {
 
 

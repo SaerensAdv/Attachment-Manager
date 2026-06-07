@@ -1,11 +1,11 @@
 ---
 name: Alignment interview outcomes (June 2026)
-description: Axel's confirmed direction + priorities from the June 2026 alignment interview, and what the skill library does/doesn't cover.
+description: the founder's confirmed direction + priorities from the June 2026 alignment interview, and what the skill library does/doesn't cover.
 ---
 
 # Alignment interview outcomes (June 2026)
 
-Durable decisions from a full re-alignment interview with Axel. These guide what
+Durable decisions from a full re-alignment interview with the founder. These guide what
 to build next; they are NOT all reflected in code yet.
 
 ## Confirmed direction
@@ -23,7 +23,7 @@ to build next; they are NOT all reflected in code yet.
   holidays/seasonality. Earlier docs/memory said "Belgian" only; treat that as
   too narrow now.
 
-## Priorities Axel named (roughly in his order)
+## Priorities the founder named (roughly in his order)
 budget-pacing -> account watchdog (spend/CPA anomaly) -> new data sources
 (Search Console / GA4) -> competitive intel -> automate the monthly report
 (read-only) -> search-term -> negative keywords. Plus extra "wow" picks:

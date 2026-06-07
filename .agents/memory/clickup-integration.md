@@ -17,12 +17,12 @@ ClickUp = the visible **task / assignment / status / approval** layer; the **app
 
 ## Agreed execution pattern (documented in clickup-ai-agents.md)
 
-For when ClickUp is adopted (NOT yet — only after the app/brain is largely in order). Decided by Axel:
+For when ClickUp is adopted (NOT yet — only after the app/brain is largely in order). Decided by the founder:
 
-- **One agent, two tools.** An AI member is one colleague living in two tools (like Axel). Brain/definition stays in repo `agents/`+`knowledge/`; the ClickUp Super Agent is **generated/synced from the repo def, never re-authored in ClickUp** (avoids drift).
+- **One agent, two tools.** An AI member is one colleague living in two tools (like the founder). Brain/definition stays in repo `agents/`+`knowledge/`; the ClickUp Super Agent is **generated/synced from the repo def, never re-authored in ClickUp** (avoids drift).
 - **Two hats split by the approval gate:** proposer (read-only: gathers data, creates a task) vs executor (writes to live account only after approval). Read always allowed, write never before approval.
-- **Per "tak" loop:** trigger → gather → propose (create task, assign Axel) → human approve (Axel assigns executor / approved status) → execute (webhook signals n8n/app; ClickUp never writes to Google Ads itself) → report back as comment.
-- **Canonical example:** weekly negative-keyword exclusion — proposer pulls candidate negatives via Google Ads API per campaign/adgroup, makes task, assigns Axel; on OK Axel assigns executor which applies + comments back.
+- **Per "tak" loop:** trigger → gather → propose (create task, assign the founder) → human approve (the founder assigns executor / approved status) → execute (webhook signals n8n/app; ClickUp never writes to Google Ads itself) → report back as comment.
+- **Canonical example:** weekly negative-keyword exclusion — proposer pulls candidate negatives via Google Ads API per campaign/adgroup, makes task, assigns the founder; on OK the founder assigns executor which applies + comments back.
 
 ## Easy-to-trip facts
 

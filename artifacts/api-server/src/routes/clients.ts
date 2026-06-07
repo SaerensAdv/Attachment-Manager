@@ -7,6 +7,18 @@ import {
 } from "../lib/website-intake";
 import { fetchGoogleAdsReport, GoogleAdsConfigError } from "../lib/google-ads";
 import { fetchCompetitorAds, SerpApiConfigError } from "../lib/serpapi";
+import {
+  fetchSearchConsoleReport,
+  SearchConsoleConfigError,
+} from "../lib/search-console";
+import { fetchGa4Report, Ga4ConfigError } from "../lib/ga4";
+import { fetchPlacesReport, PlacesConfigError } from "../lib/places";
+import { fetchPageSpeedReport, PageSpeedConfigError } from "../lib/pagespeed";
+import {
+  fetchBusinessProfileReport,
+  BusinessProfileConfigError,
+} from "../lib/business-profile";
+import { GoogleOAuthConfigError } from "../lib/google-oauth";
 
 const router: IRouter = Router();
 
@@ -33,6 +45,12 @@ const FIELDS = [
   "reportEmail",
   "googleAdsCustomerId",
   "competitorAdvertisers",
+  "searchConsoleSiteUrl",
+  "ga4PropertyId",
+  "placesQuery",
+  "placesCompetitors",
+  "pagespeedUrls",
+  "businessProfileLocationId",
 ] as const;
 
 type FieldKey = (typeof FIELDS)[number];
@@ -109,6 +127,32 @@ function parseBody(body: unknown): ClientInput | { error: string } {
     }
   }
 
+  // Search Console property must be a domain property (sc-domain:...) or a
+  // URL-prefix property (https://...). Reject anything else early.
+  const siteUrl = values.searchConsoleSiteUrl;
+  if (siteUrl) {
+    const ok = /^sc-domain:[a-z0-9.-]+$/i.test(siteUrl) || /^https?:\/\/[^\s]+$/i.test(siteUrl);
+    if (!ok) {
+      return {
+        error:
+          'Search Console-property moet "sc-domain:voorbeeld.be" of "https://voorbeeld.be/" zijn.',
+      };
+    }
+  }
+
+  // GA4 property id is numeric (optionally with a "properties/" prefix). Reject
+  // anything else early so a typo never reaches the GA4 Data API.
+  const ga4Raw = values.ga4PropertyId;
+  if (ga4Raw) {
+    const bare = ga4Raw.replace(/^properties\//i, "");
+    if (!/^\d{6,}$/.test(bare)) {
+      return {
+        error:
+          "GA4 property-id moet numeriek zijn (bv. 123456789).",
+      };
+    }
+  }
+
   return { name, values };
 }
 
@@ -124,6 +168,19 @@ function serialize(client: Client) {
       : null,
     competitorAdsLiveAt: client.competitorAdsLiveAt
       ? client.competitorAdsLiveAt.toISOString()
+      : null,
+    searchConsoleLiveAt: client.searchConsoleLiveAt
+      ? client.searchConsoleLiveAt.toISOString()
+      : null,
+    ga4LiveAt: client.ga4LiveAt ? client.ga4LiveAt.toISOString() : null,
+    placesLiveAt: client.placesLiveAt
+      ? client.placesLiveAt.toISOString()
+      : null,
+    pagespeedLiveAt: client.pagespeedLiveAt
+      ? client.pagespeedLiveAt.toISOString()
+      : null,
+    businessProfileLiveAt: client.businessProfileLiveAt
+      ? client.businessProfileLiveAt.toISOString()
       : null,
     createdAt: client.createdAt.toISOString(),
     updatedAt: client.updatedAt.toISOString(),
@@ -365,6 +422,259 @@ router.post("/clients/:id/competitor-ads-refresh", async (req, res) => {
     }
     res.status(502).json({
       error: "Kon concurrent-advertenties niet ophalen.",
+      detail: err instanceof Error ? err.message : String(err),
+    });
+  }
+});
+
+router.post("/clients/:id/search-console-refresh", async (req, res) => {
+  const id = parseId(req.params.id);
+  if (id === null) {
+    res.status(400).json({ error: "Ongeldige id." });
+    return;
+  }
+  const [row] = await db
+    .select()
+    .from(clientsTable)
+    .where(eq(clientsTable.id, id));
+  if (!row) {
+    res.status(404).json({ error: "Klant niet gevonden." });
+    return;
+  }
+
+  const siteUrl = (row.searchConsoleSiteUrl ?? "").trim();
+  if (!siteUrl) {
+    res.status(400).json({
+      error:
+        "Deze klant heeft nog geen Search Console-property. Vul de property in (bv. sc-domain:voorbeeld.be) en bewaar eerst.",
+    });
+    return;
+  }
+
+  try {
+    const report = await fetchSearchConsoleReport(siteUrl);
+    const [updated] = await db
+      .update(clientsTable)
+      .set({
+        searchConsoleLive: report.text,
+        searchConsoleLiveAt: report.fetchedAt,
+        updatedAt: new Date(),
+      })
+      .where(eq(clientsTable.id, id))
+      .returning();
+    res.json(serialize(updated));
+  } catch (err) {
+    if (
+      err instanceof SearchConsoleConfigError ||
+      err instanceof GoogleOAuthConfigError
+    ) {
+      res.status(400).json({ error: err.message });
+      return;
+    }
+    res.status(502).json({
+      error: "Kon Search Console niet uitlezen.",
+      detail: err instanceof Error ? err.message : String(err),
+    });
+  }
+});
+
+router.post("/clients/:id/ga4-refresh", async (req, res) => {
+  const id = parseId(req.params.id);
+  if (id === null) {
+    res.status(400).json({ error: "Ongeldige id." });
+    return;
+  }
+  const [row] = await db
+    .select()
+    .from(clientsTable)
+    .where(eq(clientsTable.id, id));
+  if (!row) {
+    res.status(404).json({ error: "Klant niet gevonden." });
+    return;
+  }
+
+  const propertyId = (row.ga4PropertyId ?? "").trim();
+  if (!propertyId) {
+    res.status(400).json({
+      error:
+        "Deze klant heeft nog geen GA4 property-id. Vul het in (bv. 123456789) en bewaar eerst.",
+    });
+    return;
+  }
+
+  try {
+    const report = await fetchGa4Report(propertyId);
+    const [updated] = await db
+      .update(clientsTable)
+      .set({
+        ga4Live: report.text,
+        ga4LiveAt: report.fetchedAt,
+        updatedAt: new Date(),
+      })
+      .where(eq(clientsTable.id, id))
+      .returning();
+    res.json(serialize(updated));
+  } catch (err) {
+    if (err instanceof Ga4ConfigError || err instanceof GoogleOAuthConfigError) {
+      res.status(400).json({ error: err.message });
+      return;
+    }
+    res.status(502).json({
+      error: "Kon GA4 niet uitlezen.",
+      detail: err instanceof Error ? err.message : String(err),
+    });
+  }
+});
+
+router.post("/clients/:id/places-refresh", async (req, res) => {
+  const id = parseId(req.params.id);
+  if (id === null) {
+    res.status(400).json({ error: "Ongeldige id." });
+    return;
+  }
+  const [row] = await db
+    .select()
+    .from(clientsTable)
+    .where(eq(clientsTable.id, id));
+  if (!row) {
+    res.status(404).json({ error: "Klant niet gevonden." });
+    return;
+  }
+
+  const clientQuery = (row.placesQuery ?? "").trim();
+  if (!clientQuery) {
+    res.status(400).json({
+      error:
+        'Deze klant heeft nog geen Maps-zoekopdracht. Vul de naam + plaats in (bv. "Klant BV Gent") en bewaar eerst.',
+    });
+    return;
+  }
+  const competitors = (row.placesCompetitors ?? "")
+    .split(/\r?\n/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  try {
+    const report = await fetchPlacesReport(clientQuery, competitors);
+    const [updated] = await db
+      .update(clientsTable)
+      .set({
+        placesLive: report.text,
+        placesLiveAt: report.fetchedAt,
+        updatedAt: new Date(),
+      })
+      .where(eq(clientsTable.id, id))
+      .returning();
+    res.json(serialize(updated));
+  } catch (err) {
+    if (err instanceof PlacesConfigError) {
+      res.status(400).json({ error: err.message });
+      return;
+    }
+    res.status(502).json({
+      error: "Kon Google Maps niet uitlezen.",
+      detail: err instanceof Error ? err.message : String(err),
+    });
+  }
+});
+
+router.post("/clients/:id/pagespeed-refresh", async (req, res) => {
+  const id = parseId(req.params.id);
+  if (id === null) {
+    res.status(400).json({ error: "Ongeldige id." });
+    return;
+  }
+  const [row] = await db
+    .select()
+    .from(clientsTable)
+    .where(eq(clientsTable.id, id));
+  if (!row) {
+    res.status(404).json({ error: "Klant niet gevonden." });
+    return;
+  }
+
+  const urls = (row.pagespeedUrls ?? "")
+    .split(/\r?\n/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (urls.length === 0) {
+    res.status(400).json({
+      error:
+        "Deze klant heeft nog geen landingspagina's. Vul één of meer URL's in (één per regel) en bewaar eerst.",
+    });
+    return;
+  }
+
+  try {
+    const report = await fetchPageSpeedReport(urls);
+    const [updated] = await db
+      .update(clientsTable)
+      .set({
+        pagespeedLive: report.text,
+        pagespeedLiveAt: report.fetchedAt,
+        updatedAt: new Date(),
+      })
+      .where(eq(clientsTable.id, id))
+      .returning();
+    res.json(serialize(updated));
+  } catch (err) {
+    if (err instanceof PageSpeedConfigError) {
+      res.status(400).json({ error: err.message });
+      return;
+    }
+    res.status(502).json({
+      error: "Kon PageSpeed Insights niet uitlezen.",
+      detail: err instanceof Error ? err.message : String(err),
+    });
+  }
+});
+
+router.post("/clients/:id/business-profile-refresh", async (req, res) => {
+  const id = parseId(req.params.id);
+  if (id === null) {
+    res.status(400).json({ error: "Ongeldige id." });
+    return;
+  }
+  const [row] = await db
+    .select()
+    .from(clientsTable)
+    .where(eq(clientsTable.id, id));
+  if (!row) {
+    res.status(404).json({ error: "Klant niet gevonden." });
+    return;
+  }
+
+  const locationId = (row.businessProfileLocationId ?? "").trim();
+  if (!locationId) {
+    res.status(400).json({
+      error:
+        "Deze klant heeft nog geen Business Profile-locatie. Vul het locatie-id in en bewaar eerst.",
+    });
+    return;
+  }
+
+  try {
+    const report = await fetchBusinessProfileReport(locationId);
+    const [updated] = await db
+      .update(clientsTable)
+      .set({
+        businessProfileLive: report.text,
+        businessProfileLiveAt: report.fetchedAt,
+        updatedAt: new Date(),
+      })
+      .where(eq(clientsTable.id, id))
+      .returning();
+    res.json(serialize(updated));
+  } catch (err) {
+    if (
+      err instanceof BusinessProfileConfigError ||
+      err instanceof GoogleOAuthConfigError
+    ) {
+      res.status(400).json({ error: err.message });
+      return;
+    }
+    res.status(502).json({
+      error: "Kon Google Business Profile niet uitlezen.",
       detail: err instanceof Error ? err.message : String(err),
     });
   }

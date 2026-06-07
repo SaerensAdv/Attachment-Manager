@@ -83,3 +83,7 @@ The intended deliverable is a **structured, client-tailored report (PDF)** that 
 - No promises about future performance.
 - End with clear, actionable next steps — a report should help the client decide, not just inform.
 - Anything that implies a change to spend or strategy carries a **human approval** note.
+
+## Geleerde regels (uit reviews)
+
+- Voeg bij elke wekelijkse account-optimalisatierapportage altijd een CSV-export bij van de onderzochte zoektermen, inclusief kolommen voor campagne, kosten, klikken, conversies en CPA. Lever deze CSV als bijlage naast het tekstuele rapport.

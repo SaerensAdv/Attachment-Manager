@@ -104,6 +104,61 @@ export function clientToMarkdown(client: Client): string {
       : null,
     codeBlock("Competitor advertising (live)", client.competitorAdsLive),
     codeBlock("Search Console / SEO data (current)", client.searchConsoleData),
+    client.searchConsoleLive?.trim()
+      ? paragraph(
+          "Search Console (live)",
+          `Live read-only organic-search performance pulled from Google Search Console${
+            client.searchConsoleLiveAt
+              ? ` (fetched ${client.searchConsoleLiveAt.toISOString().slice(0, 10)})`
+              : ""
+          }.`,
+        )
+      : null,
+    codeBlock("Search Console live performance", client.searchConsoleLive),
+    client.ga4Live?.trim()
+      ? paragraph(
+          "GA4 analytics (live)",
+          `Live read-only website analytics pulled from Google Analytics 4${
+            client.ga4LiveAt
+              ? ` (fetched ${client.ga4LiveAt.toISOString().slice(0, 10)})`
+              : ""
+          }.`,
+        )
+      : null,
+    codeBlock("GA4 analytics live performance", client.ga4Live),
+    client.placesLive?.trim()
+      ? paragraph(
+          "Google Maps / Places (live)",
+          `Live read-only local-listing reputation (own listing + competitors) from Google Maps${
+            client.placesLiveAt
+              ? ` (fetched ${client.placesLiveAt.toISOString().slice(0, 10)})`
+              : ""
+          }.`,
+        )
+      : null,
+    codeBlock("Google Maps live reputation", client.placesLive),
+    client.pagespeedLive?.trim()
+      ? paragraph(
+          "PageSpeed Insights (live)",
+          `Live read-only landing-page speed (Lighthouse performance score + Core Web Vitals) from PageSpeed Insights${
+            client.pagespeedLiveAt
+              ? ` (fetched ${client.pagespeedLiveAt.toISOString().slice(0, 10)})`
+              : ""
+          }.`,
+        )
+      : null,
+    codeBlock("PageSpeed live performance", client.pagespeedLive),
+    client.businessProfileLive?.trim()
+      ? paragraph(
+          "Google Business Profile (live)",
+          `Live read-only local performance (impressions on Maps + Search, calls, website clicks, direction requests, messages) from Google Business Profile${
+            client.businessProfileLiveAt
+              ? ` (fetched ${client.businessProfileLiveAt.toISOString().slice(0, 10)})`
+              : ""
+          }.`,
+        )
+      : null,
+    codeBlock("Google Business Profile live performance", client.businessProfileLive),
     client.websiteIntake?.trim()
       ? paragraph(
           "Website intake",

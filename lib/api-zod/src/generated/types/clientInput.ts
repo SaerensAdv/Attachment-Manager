@@ -50,4 +50,16 @@ export interface ClientInput {
   googleAdsCustomerId?: string | null;
   /** @nullable */
   competitorAdvertisers?: string | null;
+  /** @nullable */
+  searchConsoleSiteUrl?: string | null;
+  /** @nullable */
+  ga4PropertyId?: string | null;
+  /** @nullable */
+  placesQuery?: string | null;
+  /** @nullable */
+  placesCompetitors?: string | null;
+  /** @nullable */
+  pagespeedUrls?: string | null;
+  /** @nullable */
+  businessProfileLocationId?: string | null;
 }

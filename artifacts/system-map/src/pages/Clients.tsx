@@ -8,17 +8,27 @@ import {
   useClientWebsiteIntake,
   useClientGoogleAdsRefresh,
   useClientCompetitorAdsRefresh,
+  useClientSearchConsoleRefresh,
+  useClientGa4Refresh,
+  useClientPlacesRefresh,
+  useClientPagespeedRefresh,
+  useClientBusinessProfileRefresh,
   getGetClientsQueryKey,
   getGetDocGraphQueryKey,
   type Client,
   type ClientInput,
 } from "@workspace/api-client-react";
 import {
+  Activity,
   BarChart3,
+  Building2,
+  Gauge,
   Globe,
   Loader2,
+  MapPin,
   Plus,
   Save,
+  Search,
   Trash2,
   Users,
   X,
@@ -74,6 +84,36 @@ export default function Clients() {
     text: string | null;
     at: string | null;
   }>({ text: null, at: null });
+  // Live Search Console (fase 4) — set by the search-console-refresh endpoint;
+  // the property URL is an editable field.
+  const [liveSearchConsole, setLiveSearchConsole] = useState<{
+    text: string | null;
+    at: string | null;
+  }>({ text: null, at: null });
+  // Live GA4 analytics (fase 4) — set by the ga4-refresh endpoint; the property
+  // id is an editable field.
+  const [liveGa4, setLiveGa4] = useState<{
+    text: string | null;
+    at: string | null;
+  }>({ text: null, at: null });
+  // Live Google Maps / Places (fase 4) — set by the places-refresh endpoint; the
+  // own-listing query + competitor queries are editable fields.
+  const [livePlaces, setLivePlaces] = useState<{
+    text: string | null;
+    at: string | null;
+  }>({ text: null, at: null });
+  // Live PageSpeed Insights (fase 4) — set by the pagespeed-refresh endpoint; the
+  // landing-page URL list is an editable field.
+  const [livePagespeed, setLivePagespeed] = useState<{
+    text: string | null;
+    at: string | null;
+  }>({ text: null, at: null });
+  // Live Google Business Profile (fase 4) — set by the business-profile-refresh
+  // endpoint; the location id is an editable field.
+  const [liveBusinessProfile, setLiveBusinessProfile] = useState<{
+    text: string | null;
+    at: string | null;
+  }>({ text: null, at: null });
   // Optimistic concurrency: the `updatedAt` of the row as it was loaded into the
   // editor. We echo it back on save so the server can reject (409) if someone
   // else changed the fiche in the meantime, instead of silently overwriting.
@@ -92,12 +132,22 @@ export default function Clients() {
   const intakeMut = useClientWebsiteIntake();
   const adsMut = useClientGoogleAdsRefresh();
   const competMut = useClientCompetitorAdsRefresh();
+  const scMut = useClientSearchConsoleRefresh();
+  const ga4Mut = useClientGa4Refresh();
+  const placesMut = useClientPlacesRefresh();
+  const pagespeedMut = useClientPagespeedRefresh();
+  const businessProfileMut = useClientBusinessProfileRefresh();
 
   const saving = createMut.isPending || updateMut.isPending;
   const deleting = deleteMut.isPending;
   const intaking = intakeMut.isPending;
   const refreshingAds = adsMut.isPending;
   const refreshingCompetitors = competMut.isPending;
+  const refreshingSearchConsole = scMut.isPending;
+  const refreshingGa4 = ga4Mut.isPending;
+  const refreshingPlaces = placesMut.isPending;
+  const refreshingPagespeed = pagespeedMut.isPending;
+  const refreshingBusinessProfile = businessProfileMut.isPending;
 
   const startCreate = () => {
     setEditing("new");
@@ -107,6 +157,11 @@ export default function Clients() {
     setIntake({ text: null, at: null });
     setLiveAds({ text: null, at: null });
     setLiveCompetitors({ text: null, at: null });
+    setLiveSearchConsole({ text: null, at: null });
+    setLiveGa4({ text: null, at: null });
+    setLivePlaces({ text: null, at: null });
+    setLivePagespeed({ text: null, at: null });
+    setLiveBusinessProfile({ text: null, at: null });
     setEditingUpdatedAt(null);
   };
 
@@ -124,6 +179,26 @@ export default function Clients() {
       text: c.competitorAdsLive ?? null,
       at: c.competitorAdsLiveAt ?? null,
     });
+    setLiveSearchConsole({
+      text: c.searchConsoleLive ?? null,
+      at: c.searchConsoleLiveAt ?? null,
+    });
+    setLiveGa4({
+      text: c.ga4Live ?? null,
+      at: c.ga4LiveAt ?? null,
+    });
+    setLivePlaces({
+      text: c.placesLive ?? null,
+      at: c.placesLiveAt ?? null,
+    });
+    setLivePagespeed({
+      text: c.pagespeedLive ?? null,
+      at: c.pagespeedLiveAt ?? null,
+    });
+    setLiveBusinessProfile({
+      text: c.businessProfileLive ?? null,
+      at: c.businessProfileLiveAt ?? null,
+    });
     setEditingUpdatedAt(c.updatedAt);
   };
 
@@ -135,6 +210,11 @@ export default function Clients() {
     setIntake({ text: null, at: null });
     setLiveAds({ text: null, at: null });
     setLiveCompetitors({ text: null, at: null });
+    setLiveSearchConsole({ text: null, at: null });
+    setLiveGa4({ text: null, at: null });
+    setLivePlaces({ text: null, at: null });
+    setLivePagespeed({ text: null, at: null });
+    setLiveBusinessProfile({ text: null, at: null });
     setEditingUpdatedAt(null);
   };
 
@@ -264,6 +344,122 @@ export default function Clients() {
             err instanceof Error
               ? err.message
               : "Concurrent-advertenties ophalen mislukt",
+          ),
+      },
+    );
+  };
+
+  const handleSearchConsole = () => {
+    if (typeof editing !== "number") return;
+    setFormError(null);
+    scMut.mutate(
+      { id: editing },
+      {
+        onSuccess: (updated) => {
+          invalidate();
+          setForm(clientToForm(updated));
+          setLiveSearchConsole({
+            text: updated.searchConsoleLive ?? null,
+            at: updated.searchConsoleLiveAt ?? null,
+          });
+        },
+        onError: (err) =>
+          setFormError(
+            err instanceof Error
+              ? err.message
+              : "Search Console ophalen mislukt",
+          ),
+      },
+    );
+  };
+
+  const handleGa4 = () => {
+    if (typeof editing !== "number") return;
+    setFormError(null);
+    ga4Mut.mutate(
+      { id: editing },
+      {
+        onSuccess: (updated) => {
+          invalidate();
+          setForm(clientToForm(updated));
+          setLiveGa4({
+            text: updated.ga4Live ?? null,
+            at: updated.ga4LiveAt ?? null,
+          });
+        },
+        onError: (err) =>
+          setFormError(
+            err instanceof Error ? err.message : "GA4 ophalen mislukt",
+          ),
+      },
+    );
+  };
+
+  const handlePlaces = () => {
+    if (typeof editing !== "number") return;
+    setFormError(null);
+    placesMut.mutate(
+      { id: editing },
+      {
+        onSuccess: (updated) => {
+          invalidate();
+          setForm(clientToForm(updated));
+          setLivePlaces({
+            text: updated.placesLive ?? null,
+            at: updated.placesLiveAt ?? null,
+          });
+        },
+        onError: (err) =>
+          setFormError(
+            err instanceof Error ? err.message : "Google Maps ophalen mislukt",
+          ),
+      },
+    );
+  };
+
+  const handlePagespeed = () => {
+    if (typeof editing !== "number") return;
+    setFormError(null);
+    pagespeedMut.mutate(
+      { id: editing },
+      {
+        onSuccess: (updated) => {
+          invalidate();
+          setForm(clientToForm(updated));
+          setLivePagespeed({
+            text: updated.pagespeedLive ?? null,
+            at: updated.pagespeedLiveAt ?? null,
+          });
+        },
+        onError: (err) =>
+          setFormError(
+            err instanceof Error
+              ? err.message
+              : "PageSpeed ophalen mislukt",
+          ),
+      },
+    );
+  };
+
+  const handleBusinessProfile = () => {
+    if (typeof editing !== "number") return;
+    setFormError(null);
+    businessProfileMut.mutate(
+      { id: editing },
+      {
+        onSuccess: (updated) => {
+          invalidate();
+          setForm(clientToForm(updated));
+          setLiveBusinessProfile({
+            text: updated.businessProfileLive ?? null,
+            at: updated.businessProfileLiveAt ?? null,
+          });
+        },
+        onError: (err) =>
+          setFormError(
+            err instanceof Error
+              ? err.message
+              : "Business Profile ophalen mislukt",
           ),
       },
     );
@@ -867,6 +1063,506 @@ export default function Clients() {
                             className="max-h-72 overflow-auto whitespace-pre-wrap break-words border border-foreground/30 bg-background p-3 font-['Space_Mono'] text-[11px] leading-relaxed text-muted-foreground"
                           >
                             {liveCompetitors.text}
+                          </pre>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {/* Section VI — live Search Console (existing clients only) */}
+                  {typeof editing === "number" && (
+                    <>
+                      <div className="flex items-baseline justify-between border-b-2 border-foreground pb-1">
+                        <h3 className="font-['Playfair_Display'] font-bold text-lg uppercase tracking-wider">
+                          VI. Live Search Console
+                        </h3>
+                        <span className="font-['Space_Mono'] text-xs text-muted-foreground">
+                          Organisch zoekverkeer
+                        </span>
+                      </div>
+
+                      <p className="font-['Inter'] text-sm text-muted-foreground -mt-4">
+                        Haalt live cijfers op uit Google Search Console (laatste 28
+                        dagen): klikken, impressies, CTR en gemiddelde positie, plus
+                        top-queries en kansen ("striking distance"). Alleen-lezen. De
+                        data wordt bewaard en meegegeven aan de agents als SEO-context.
+                      </p>
+
+                      <div className="flex flex-col gap-1.5">
+                        <label className="font-['Space_Mono'] text-[10px] uppercase tracking-widest">
+                          Search Console-property
+                        </label>
+                        <Input
+                          value={form.searchConsoleSiteUrl}
+                          onChange={(e) =>
+                            setField("searchConsoleSiteUrl", e.target.value)
+                          }
+                          placeholder="Bv. sc-domain:voorbeeld.be of https://voorbeeld.be/"
+                          data-testid="input-client-searchConsoleSiteUrl"
+                          className={INPUT_CLASS}
+                        />
+                        <span className="font-['Space_Mono'] text-[9px] tracking-wider text-muted-foreground/60">
+                          Bewaar de property eerst met "Wijzigingen opslaan" voor je
+                          ophaalt.
+                        </span>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-3">
+                        <button
+                          onClick={handleSearchConsole}
+                          disabled={
+                            refreshingSearchConsole ||
+                            !form.searchConsoleSiteUrl.trim()
+                          }
+                          data-testid="button-search-console-refresh"
+                          className="py-2.5 px-4 border-2 border-foreground text-foreground font-['Space_Mono'] text-[11px] uppercase tracking-widest flex items-center gap-2 hover:bg-foreground hover:text-background transition-colors disabled:opacity-50 disabled:pointer-events-none"
+                        >
+                          {refreshingSearchConsole ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Search className="w-4 h-4" />
+                          )}
+                          {liveSearchConsole.text
+                            ? "Opnieuw ophalen"
+                            : "Search Console ophalen"}
+                        </button>
+                        {!form.searchConsoleSiteUrl.trim() ? (
+                          <span className="font-['Space_Mono'] text-[10px] uppercase tracking-wider text-muted-foreground/70">
+                            Vul eerst de property in
+                          </span>
+                        ) : liveSearchConsole.at ? (
+                          <span className="font-['Space_Mono'] text-[10px] uppercase tracking-wider text-muted-foreground">
+                            Laatst opgehaald:{" "}
+                            {new Date(liveSearchConsole.at).toLocaleString(
+                              "nl-BE",
+                              { dateStyle: "medium", timeStyle: "short" },
+                            )}
+                          </span>
+                        ) : (
+                          <span className="font-['Space_Mono'] text-[10px] uppercase tracking-wider text-muted-foreground/70">
+                            Nog niet opgehaald
+                          </span>
+                        )}
+                      </div>
+
+                      {liveSearchConsole.text && (
+                        <div className="flex flex-col gap-2">
+                          <div className="flex items-baseline justify-between border-b border-foreground/20 pb-1">
+                            <span className="font-['Space_Mono'] text-[10px] uppercase tracking-widest">
+                              Opgehaalde data
+                            </span>
+                            <span className="font-['Space_Mono'] text-[9px] tracking-wider text-muted-foreground/60">
+                              {liveSearchConsole.text.length.toLocaleString(
+                                "nl-BE",
+                              )}{" "}
+                              tekens
+                            </span>
+                          </div>
+                          <pre
+                            data-testid="text-search-console-live"
+                            className="max-h-72 overflow-auto whitespace-pre-wrap break-words border border-foreground/30 bg-background p-3 font-['Space_Mono'] text-[11px] leading-relaxed text-muted-foreground"
+                          >
+                            {liveSearchConsole.text}
+                          </pre>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {/* Section VII — live GA4 analytics (existing clients only) */}
+                  {typeof editing === "number" && (
+                    <>
+                      <div className="flex items-baseline justify-between border-b-2 border-foreground pb-1">
+                        <h3 className="font-['Playfair_Display'] font-bold text-lg uppercase tracking-wider">
+                          VII. Live GA4
+                        </h3>
+                        <span className="font-['Space_Mono'] text-xs text-muted-foreground">
+                          Website-analytics
+                        </span>
+                      </div>
+
+                      <p className="font-['Inter'] text-sm text-muted-foreground -mt-4">
+                        Haalt live cijfers op uit Google Analytics 4 (laatste 28
+                        dagen): sessies, gebruikers, conversies en engagement, plus
+                        top-kanalen en landingspagina's. Alleen-lezen. De data wordt
+                        bewaard en meegegeven aan de agents als analytics-context.
+                      </p>
+
+                      <div className="flex flex-col gap-1.5">
+                        <label className="font-['Space_Mono'] text-[10px] uppercase tracking-widest">
+                          GA4 property-id
+                        </label>
+                        <Input
+                          value={form.ga4PropertyId}
+                          onChange={(e) =>
+                            setField("ga4PropertyId", e.target.value)
+                          }
+                          placeholder="Bv. 123456789"
+                          data-testid="input-client-ga4PropertyId"
+                          className={INPUT_CLASS}
+                        />
+                        <span className="font-['Space_Mono'] text-[9px] tracking-wider text-muted-foreground/60">
+                          Bewaar het property-id eerst met "Wijzigingen opslaan" voor
+                          je ophaalt.
+                        </span>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-3">
+                        <button
+                          onClick={handleGa4}
+                          disabled={
+                            refreshingGa4 || !form.ga4PropertyId.trim()
+                          }
+                          data-testid="button-ga4-refresh"
+                          className="py-2.5 px-4 border-2 border-foreground text-foreground font-['Space_Mono'] text-[11px] uppercase tracking-widest flex items-center gap-2 hover:bg-foreground hover:text-background transition-colors disabled:opacity-50 disabled:pointer-events-none"
+                        >
+                          {refreshingGa4 ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Activity className="w-4 h-4" />
+                          )}
+                          {liveGa4.text ? "Opnieuw ophalen" : "GA4 ophalen"}
+                        </button>
+                        {!form.ga4PropertyId.trim() ? (
+                          <span className="font-['Space_Mono'] text-[10px] uppercase tracking-wider text-muted-foreground/70">
+                            Vul eerst het property-id in
+                          </span>
+                        ) : liveGa4.at ? (
+                          <span className="font-['Space_Mono'] text-[10px] uppercase tracking-wider text-muted-foreground">
+                            Laatst opgehaald:{" "}
+                            {new Date(liveGa4.at).toLocaleString("nl-BE", {
+                              dateStyle: "medium",
+                              timeStyle: "short",
+                            })}
+                          </span>
+                        ) : (
+                          <span className="font-['Space_Mono'] text-[10px] uppercase tracking-wider text-muted-foreground/70">
+                            Nog niet opgehaald
+                          </span>
+                        )}
+                      </div>
+
+                      {liveGa4.text && (
+                        <div className="flex flex-col gap-2">
+                          <div className="flex items-baseline justify-between border-b border-foreground/20 pb-1">
+                            <span className="font-['Space_Mono'] text-[10px] uppercase tracking-widest">
+                              Opgehaalde data
+                            </span>
+                            <span className="font-['Space_Mono'] text-[9px] tracking-wider text-muted-foreground/60">
+                              {liveGa4.text.length.toLocaleString("nl-BE")} tekens
+                            </span>
+                          </div>
+                          <pre
+                            data-testid="text-ga4-live"
+                            className="max-h-72 overflow-auto whitespace-pre-wrap break-words border border-foreground/30 bg-background p-3 font-['Space_Mono'] text-[11px] leading-relaxed text-muted-foreground"
+                          >
+                            {liveGa4.text}
+                          </pre>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {/* Section VIII — live Google Maps / Places (existing clients only) */}
+                  {typeof editing === "number" && (
+                    <>
+                      <div className="flex items-baseline justify-between border-b-2 border-foreground pb-1">
+                        <h3 className="font-['Playfair_Display'] font-bold text-lg uppercase tracking-wider">
+                          VIII. Live Google Maps
+                        </h3>
+                        <span className="font-['Space_Mono'] text-xs text-muted-foreground">
+                          Lokale reputatie
+                        </span>
+                      </div>
+
+                      <p className="font-['Inter'] text-sm text-muted-foreground -mt-4">
+                        Zoekt de Google-listing van de klant en die van opgegeven
+                        concurrenten op: rating, aantal reviews, categorie en status.
+                        Alleen-lezen. De data wordt bewaard en meegegeven aan de agents
+                        als lokale-reputatie-context.
+                      </p>
+
+                      <div className="flex flex-col gap-1.5">
+                        <label className="font-['Space_Mono'] text-[10px] uppercase tracking-widest">
+                          Eigen listing (naam + plaats)
+                        </label>
+                        <Input
+                          value={form.placesQuery}
+                          onChange={(e) => setField("placesQuery", e.target.value)}
+                          placeholder='Bv. "Klant BV Gent"'
+                          data-testid="input-client-placesQuery"
+                          className={INPUT_CLASS}
+                        />
+                      </div>
+
+                      <div className="flex flex-col gap-1.5">
+                        <label className="font-['Space_Mono'] text-[10px] uppercase tracking-widest">
+                          Concurrenten (één per regel)
+                        </label>
+                        <Textarea
+                          value={form.placesCompetitors}
+                          onChange={(e) =>
+                            setField("placesCompetitors", e.target.value)
+                          }
+                          placeholder={"Bv. Concurrent A Gent\nConcurrent B Gent"}
+                          rows={3}
+                          data-testid="input-client-placesCompetitors"
+                          className={INPUT_CLASS}
+                        />
+                        <span className="font-['Space_Mono'] text-[9px] tracking-wider text-muted-foreground/60">
+                          Bewaar eerst met "Wijzigingen opslaan" voor je ophaalt.
+                        </span>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-3">
+                        <button
+                          onClick={handlePlaces}
+                          disabled={
+                            refreshingPlaces || !form.placesQuery.trim()
+                          }
+                          data-testid="button-places-refresh"
+                          className="py-2.5 px-4 border-2 border-foreground text-foreground font-['Space_Mono'] text-[11px] uppercase tracking-widest flex items-center gap-2 hover:bg-foreground hover:text-background transition-colors disabled:opacity-50 disabled:pointer-events-none"
+                        >
+                          {refreshingPlaces ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <MapPin className="w-4 h-4" />
+                          )}
+                          {livePlaces.text ? "Opnieuw ophalen" : "Google Maps ophalen"}
+                        </button>
+                        {!form.placesQuery.trim() ? (
+                          <span className="font-['Space_Mono'] text-[10px] uppercase tracking-wider text-muted-foreground/70">
+                            Vul eerst de eigen listing in
+                          </span>
+                        ) : livePlaces.at ? (
+                          <span className="font-['Space_Mono'] text-[10px] uppercase tracking-wider text-muted-foreground">
+                            Laatst opgehaald:{" "}
+                            {new Date(livePlaces.at).toLocaleString("nl-BE", {
+                              dateStyle: "medium",
+                              timeStyle: "short",
+                            })}
+                          </span>
+                        ) : (
+                          <span className="font-['Space_Mono'] text-[10px] uppercase tracking-wider text-muted-foreground/70">
+                            Nog niet opgehaald
+                          </span>
+                        )}
+                      </div>
+
+                      {livePlaces.text && (
+                        <div className="flex flex-col gap-2">
+                          <div className="flex items-baseline justify-between border-b border-foreground/20 pb-1">
+                            <span className="font-['Space_Mono'] text-[10px] uppercase tracking-widest">
+                              Opgehaalde data
+                            </span>
+                            <span className="font-['Space_Mono'] text-[9px] tracking-wider text-muted-foreground/60">
+                              {livePlaces.text.length.toLocaleString("nl-BE")} tekens
+                            </span>
+                          </div>
+                          <pre
+                            data-testid="text-places-live"
+                            className="max-h-72 overflow-auto whitespace-pre-wrap break-words border border-foreground/30 bg-background p-3 font-['Space_Mono'] text-[11px] leading-relaxed text-muted-foreground"
+                          >
+                            {livePlaces.text}
+                          </pre>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {/* Section IX — live PageSpeed Insights (existing clients only) */}
+                  {typeof editing === "number" && (
+                    <>
+                      <div className="flex items-baseline justify-between border-b-2 border-foreground pb-1">
+                        <h3 className="font-['Playfair_Display'] font-bold text-lg uppercase tracking-wider">
+                          IX. Live PageSpeed
+                        </h3>
+                        <span className="font-['Space_Mono'] text-xs text-muted-foreground">
+                          Snelheid landingspagina's
+                        </span>
+                      </div>
+
+                      <p className="font-['Inter'] text-sm text-muted-foreground -mt-4">
+                        Meet de snelheid van de landingspagina's (mobiel) via Google
+                        Lighthouse: performance-score en Core Web Vitals (LCP, CLS, TBT).
+                        Alleen-lezen. Trage pagina's drukken de Quality Score en de
+                        conversie; de data wordt meegegeven aan de agents.
+                      </p>
+
+                      <div className="flex flex-col gap-1.5">
+                        <label className="font-['Space_Mono'] text-[10px] uppercase tracking-widest">
+                          Landingspagina's (één URL per regel)
+                        </label>
+                        <Textarea
+                          value={form.pagespeedUrls}
+                          onChange={(e) =>
+                            setField("pagespeedUrls", e.target.value)
+                          }
+                          placeholder={
+                            "Bv. https://klant.be/\nhttps://klant.be/diensten"
+                          }
+                          rows={3}
+                          data-testid="input-client-pagespeedUrls"
+                          className={INPUT_CLASS}
+                        />
+                        <span className="font-['Space_Mono'] text-[9px] tracking-wider text-muted-foreground/60">
+                          Bewaar eerst met "Wijzigingen opslaan" voor je ophaalt.
+                        </span>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-3">
+                        <button
+                          onClick={handlePagespeed}
+                          disabled={
+                            refreshingPagespeed || !form.pagespeedUrls.trim()
+                          }
+                          data-testid="button-pagespeed-refresh"
+                          className="py-2.5 px-4 border-2 border-foreground text-foreground font-['Space_Mono'] text-[11px] uppercase tracking-widest flex items-center gap-2 hover:bg-foreground hover:text-background transition-colors disabled:opacity-50 disabled:pointer-events-none"
+                        >
+                          {refreshingPagespeed ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Gauge className="w-4 h-4" />
+                          )}
+                          {livePagespeed.text
+                            ? "Opnieuw meten"
+                            : "PageSpeed meten"}
+                        </button>
+                        {!form.pagespeedUrls.trim() ? (
+                          <span className="font-['Space_Mono'] text-[10px] uppercase tracking-wider text-muted-foreground/70">
+                            Vul eerst een landingspagina in
+                          </span>
+                        ) : livePagespeed.at ? (
+                          <span className="font-['Space_Mono'] text-[10px] uppercase tracking-wider text-muted-foreground">
+                            Laatst gemeten:{" "}
+                            {new Date(livePagespeed.at).toLocaleString("nl-BE", {
+                              dateStyle: "medium",
+                              timeStyle: "short",
+                            })}
+                          </span>
+                        ) : (
+                          <span className="font-['Space_Mono'] text-[10px] uppercase tracking-wider text-muted-foreground/70">
+                            Nog niet gemeten
+                          </span>
+                        )}
+                      </div>
+
+                      {livePagespeed.text && (
+                        <div className="flex flex-col gap-2">
+                          <div className="flex items-baseline justify-between border-b border-foreground/20 pb-1">
+                            <span className="font-['Space_Mono'] text-[10px] uppercase tracking-widest">
+                              Gemeten data
+                            </span>
+                            <span className="font-['Space_Mono'] text-[9px] tracking-wider text-muted-foreground/60">
+                              {livePagespeed.text.length.toLocaleString("nl-BE")}{" "}
+                              tekens
+                            </span>
+                          </div>
+                          <pre
+                            data-testid="text-pagespeed-live"
+                            className="max-h-72 overflow-auto whitespace-pre-wrap break-words border border-foreground/30 bg-background p-3 font-['Space_Mono'] text-[11px] leading-relaxed text-muted-foreground"
+                          >
+                            {livePagespeed.text}
+                          </pre>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {/* Section X — live Google Business Profile (existing clients only) */}
+                  {typeof editing === "number" && (
+                    <>
+                      <div className="flex items-baseline justify-between border-b-2 border-foreground pb-1">
+                        <h3 className="font-['Playfair_Display'] font-bold text-lg uppercase tracking-wider">
+                          X. Live Business Profile
+                        </h3>
+                        <span className="font-['Space_Mono'] text-xs text-muted-foreground">
+                          Lokale aanwezigheid (GMB)
+                        </span>
+                      </div>
+
+                      <p className="font-['Inter'] text-sm text-muted-foreground -mt-4">
+                        Haalt de lokale prestaties van de Google Business-listing op:
+                        vertoningen op Maps en Zoeken, telefoonklikken, websiteklikken,
+                        route-aanvragen en berichten (laatste ~30 dagen). Alleen-lezen.
+                        De data wordt meegegeven aan de agents. Let op: deze API vereist
+                        eerst goedkeuring (allowlist) van Google voor er live data komt.
+                      </p>
+
+                      <div className="flex flex-col gap-1.5">
+                        <label className="font-['Space_Mono'] text-[10px] uppercase tracking-widest">
+                          Locatie-id
+                        </label>
+                        <Input
+                          value={form.businessProfileLocationId}
+                          onChange={(e) =>
+                            setField("businessProfileLocationId", e.target.value)
+                          }
+                          placeholder='Bv. "locations/123456789" of het numerieke id'
+                          data-testid="input-client-businessProfileLocationId"
+                          className={INPUT_CLASS}
+                        />
+                        <span className="font-['Space_Mono'] text-[9px] tracking-wider text-muted-foreground/60">
+                          Bewaar eerst met "Wijzigingen opslaan" voor je ophaalt.
+                        </span>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-3">
+                        <button
+                          onClick={handleBusinessProfile}
+                          disabled={
+                            refreshingBusinessProfile ||
+                            !form.businessProfileLocationId.trim()
+                          }
+                          data-testid="button-business-profile-refresh"
+                          className="py-2.5 px-4 border-2 border-foreground text-foreground font-['Space_Mono'] text-[11px] uppercase tracking-widest flex items-center gap-2 hover:bg-foreground hover:text-background transition-colors disabled:opacity-50 disabled:pointer-events-none"
+                        >
+                          {refreshingBusinessProfile ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Building2 className="w-4 h-4" />
+                          )}
+                          {liveBusinessProfile.text
+                            ? "Opnieuw ophalen"
+                            : "Business Profile ophalen"}
+                        </button>
+                        {!form.businessProfileLocationId.trim() ? (
+                          <span className="font-['Space_Mono'] text-[10px] uppercase tracking-wider text-muted-foreground/70">
+                            Vul eerst een locatie-id in
+                          </span>
+                        ) : liveBusinessProfile.at ? (
+                          <span className="font-['Space_Mono'] text-[10px] uppercase tracking-wider text-muted-foreground">
+                            Laatst opgehaald:{" "}
+                            {new Date(liveBusinessProfile.at).toLocaleString(
+                              "nl-BE",
+                              { dateStyle: "medium", timeStyle: "short" },
+                            )}
+                          </span>
+                        ) : (
+                          <span className="font-['Space_Mono'] text-[10px] uppercase tracking-wider text-muted-foreground/70">
+                            Nog niet opgehaald
+                          </span>
+                        )}
+                      </div>
+
+                      {liveBusinessProfile.text && (
+                        <div className="flex flex-col gap-2">
+                          <div className="flex items-baseline justify-between border-b border-foreground/20 pb-1">
+                            <span className="font-['Space_Mono'] text-[10px] uppercase tracking-widest">
+                              Opgehaalde data
+                            </span>
+                            <span className="font-['Space_Mono'] text-[9px] tracking-wider text-muted-foreground/60">
+                              {liveBusinessProfile.text.length.toLocaleString(
+                                "nl-BE",
+                              )}{" "}
+                              tekens
+                            </span>
+                          </div>
+                          <pre
+                            data-testid="text-business-profile-live"
+                            className="max-h-72 overflow-auto whitespace-pre-wrap break-words border border-foreground/30 bg-background p-3 font-['Space_Mono'] text-[11px] leading-relaxed text-muted-foreground"
+                          >
+                            {liveBusinessProfile.text}
                           </pre>
                         </div>
                       )}

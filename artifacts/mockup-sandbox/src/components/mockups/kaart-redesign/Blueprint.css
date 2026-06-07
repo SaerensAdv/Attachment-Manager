@@ -1,0 +1,36 @@
+.blueprint-container {
+  background-color: #020810;
+  color: #a5f3fc; /* cyan-200 */
+}
+
+.blueprint-grid {
+  background-image: 
+    linear-gradient(rgba(0, 255, 255, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 255, 255, 0.1) 1px, transparent 1px),
+    linear-gradient(rgba(0, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 100px 100px, 100px 100px, 20px 20px, 20px 20px;
+  background-position: -1px -1px, -1px -1px, -1px -1px, -1px -1px;
+}
+
+.blueprint-node {
+  transition: all 0.2s ease-in-out;
+}
+
+.blueprint-node:hover {
+  transform: translate(-50%, -50%) scale(1.05);
+  z-index: 10;
+  filter: brightness(1.2) drop-shadow(0 0 8px rgba(0, 255, 255, 0.5));
+}
+
+.blueprint-edge {
+  transition: all 0.3s ease;
+}
+
+.blueprint-node:hover ~ svg .blueprint-edge {
+  opacity: 0.2;
+}
+
+svg:has(~ .blueprint-node:hover) .blueprint-edge {
+  opacity: 0.2;
+}

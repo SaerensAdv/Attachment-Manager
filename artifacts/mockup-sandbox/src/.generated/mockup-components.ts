@@ -2,5 +2,15 @@
 type ModuleMap = Record<string, () => Promise<Record<string, unknown>>>;
 export const modules: ModuleMap = {
   "./components/mockups/genereren/EveningEdition.tsx": () => import("../components/mockups/genereren/EveningEdition.tsx"),
-  "./components/mockups/genereren/Newsroom.tsx": () => import("../components/mockups/genereren/Newsroom.tsx")
+  "./components/mockups/genereren/Newsroom.tsx": () => import("../components/mockups/genereren/Newsroom.tsx"),
+  "./components/mockups/kaart-redesign/Blueprint.tsx": () => import("../components/mockups/kaart-redesign/Blueprint.tsx"),
+  "./components/mockups/kaart-redesign/CategoryIslands.tsx": () => import("../components/mockups/kaart-redesign/CategoryIslands.tsx"),
+  "./components/mockups/kaart-redesign/Constellation.tsx": () => import("../components/mockups/kaart-redesign/Constellation.tsx"),
+  "./components/mockups/kaart-redesign/EditorialIndex.tsx": () => import("../components/mockups/kaart-redesign/EditorialIndex.tsx"),
+  "./components/mockups/kaart-redesign/GlassDepth.tsx": () => import("../components/mockups/kaart-redesign/GlassDepth.tsx"),
+  "./components/mockups/kaart-redesign/LayeredOrgChart.tsx": () => import("../components/mockups/kaart-redesign/LayeredOrgChart.tsx"),
+  "./components/mockups/kaart-redesign/MinimalMono.tsx": () => import("../components/mockups/kaart-redesign/MinimalMono.tsx"),
+  "./components/mockups/kaart-redesign/RadialOrbit.tsx": () => import("../components/mockups/kaart-redesign/RadialOrbit.tsx"),
+  "./components/mockups/kaart-redesign/RefinedNewsroom.tsx": () => import("../components/mockups/kaart-redesign/RefinedNewsroom.tsx"),
+  "./components/mockups/kaart-redesign/Swimlanes.tsx": () => import("../components/mockups/kaart-redesign/Swimlanes.tsx")
 };

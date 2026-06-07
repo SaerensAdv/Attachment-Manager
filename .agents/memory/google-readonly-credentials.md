@@ -10,23 +10,34 @@ share two credential kinds. The code is correct; the live failures live entirely
 Google Cloud project setup. Verify with a throwaway workspace `node` script (sandbox
 has no secrets) that exercises each over a read-only endpoint.
 
-**Shared OAuth refresh token (GSC + GA4 + GMB):**
-- Reuses the existing Ads OAuth client (GOOGLE_ADS_OAUTH_CLIENT_ID/SECRET); only the
-  refresh token differs (GOOGLE_OAUTH_READONLY_REFRESH_TOKEN), carrying read-only
-  scopes (webmasters.readonly, analytics.readonly, business.manage).
+**OAuth refresh token (GSC + GA4 + GMB) — its own client, not the Ads one:**
+- `readReadonlyOAuthConfig` prefers a DEDICATED read-only client
+  (GOOGLE_OAUTH_READONLY_CLIENT_ID/SECRET) and only falls back to the Ads client
+  (GOOGLE_ADS_OAUTH_CLIENT_ID/SECRET) when those are unset. Refresh token lives in
+  GOOGLE_OAUTH_READONLY_REFRESH_TOKEN with scopes webmasters.readonly,
+  analytics.readonly, business.manage.
+- **Why decoupled:** a refresh token is bound to the exact OAuth client it was minted
+  on. The founder's read-only token came from a different client than Ads, so
+  exchanging it against the Ads client failed with `unauthorized_client`. The three
+  (client-id + client-secret + refresh-token) must come from ONE client; store them as
+  a matched set. Overwriting the shared Ads client would break the Ads refresh token.
 - A real Google refresh token starts with `1//`. A value that does not (e.g. a short
-  72-char string) is almost certainly NOT a refresh token (wrong paste, or an access
-  token / auth code).
-- `invalid_grant` on token exchange = token expired/revoked/malformed OR minted against
-  a DIFFERENT OAuth client than the id/secret supplied. Fix: regenerate via OAuth
-  Playground configured with THIS client id+secret, offline access, the three scopes.
-- **Why:** the read-only token must pair with the same Ads client or every GSC/GA4/GMB
-  pull fails before any per-client config matters.
+  72-char string) is almost certainly NOT a refresh token (wrong paste / access token).
+- Token-exchange error taxonomy: `invalid_grant` (400) = token expired/revoked/malformed;
+  `unauthorized_client` (401) = token minted on a different client than the id/secret
+  supplied (client mismatch — changing only the secret does NOT fix it).
+- Mint via OAuth Playground → gear → "Use your own OAuth credentials" with that client's
+  id+secret (add `https://developers.google.com/oauthplayground` to its redirect URIs),
+  all three scopes selected at once, offline access. Log in as the account that actually
+  has GSC/GA4/GMB access or the token authorizes but returns no data.
 
-**Plain API keys (Places New + PageSpeed):**
-- 403 "Requests to this API ... are blocked" = the API is not enabled on the key's
-  Cloud project (or the key has API restrictions). Same key works once enabled.
-- Enable "Places API (New)" and "PageSpeed Insights API" on the key's project.
+**Two distinct Google 403s (confirmed live):**
+- "...has not been used in project N before or it is disabled" = the API itself is NOT
+  enabled on the project. Fix: enable it (e.g. Google Analytics Data API for GA4 runReport).
+- "Requests to this API <method> are blocked" = an API-key-level **API restriction**
+  excludes that API (NOT a project enablement issue). Fix: edit the KEY → API restrictions
+  → allow the API (or "Don't restrict key"); also check Application restrictions aren't
+  blocking server-side calls. This is the Places (New) + PageSpeed key situation.
 
 **GMB** additionally needs Google allowlist approval for live data even after OAuth works.
 

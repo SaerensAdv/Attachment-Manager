@@ -73,9 +73,17 @@ class GaqlRateLimiter {
   halveRate(): void {
     this.ratePerMs = this.ratePerMs / 2;
   }
+
+  reset(capacity?: number): void {
+    if (capacity !== undefined) this.capacity = capacity;
+    this.tokens = this.capacity;
+    this.lastRefill = Date.now();
+  }
 }
 
 const gaqlLimiter = new GaqlRateLimiter(3, 10 / 60_000);
+
+export { gaqlLimiter, gaqlCache };
 
 /**
  * Which period the report covers. "LAST_30_DAYS" is the default ad-hoc refresh;
@@ -268,8 +276,15 @@ async function getAccessToken(cfg: GoogleAdsConfig): Promise<string> {
   if (!res.ok || !json?.access_token) {
     const detail =
       json?.error_description || json?.error || `HTTP ${res.status}`;
+    const code =
+      res.status === 401 || res.status === 403
+        ? "AUTH_ERROR"
+        : res.status === 429
+          ? "RATE_LIMIT"
+          : "API_ERROR";
     throw new GoogleAdsApiError(
       `Google OAuth gaf een fout bij het vernieuwen van het token: ${detail}`,
+      code,
     );
   }
 

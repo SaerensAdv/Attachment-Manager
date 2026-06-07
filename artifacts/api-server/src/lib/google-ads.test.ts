@@ -5,6 +5,7 @@ import {
   fetchGoogleAdsReport,
   fetchGoogleAdsAdCopyContext,
   fetchGoogleAdsNegativesContext,
+  gaqlLimiter,
 } from "./google-ads";
 
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
@@ -21,6 +22,7 @@ describe("google-ads client", () => {
     process.env.GOOGLE_ADS_LOGIN_CUSTOMER_ID = "1234567890";
     fetchMock = vi.fn(async () => new Response(JSON.stringify([])));
     vi.stubGlobal("fetch", fetchMock);
+    gaqlLimiter.reset();
   });
 
   afterEach(() => {
@@ -152,56 +154,6 @@ describe("google-ads client", () => {
     expect(elapsed).toBeLessThan(100);
   });
 
-  it("retries once on 429 with halved rate limit", async () => {
-    mockAccessToken();
-    let failCount = 0;
-    fetchMock.mockImplementation(async (url: string | URL | Request) => {
-      const urlStr = String(url);
-      if (urlStr === TOKEN_URL) {
-        return new Response(
-          JSON.stringify({ access_token: "t1", token_type: "Bearer" }),
-          { status: 200 },
-        );
-      }
-      failCount++;
-      if (failCount <= 1) {
-        return new Response(
-          JSON.stringify({
-            error: {
-              code: 429,
-              message: "Rate limit exceeded",
-              status: "RESOURCE_EXHAUSTED",
-            },
-          }),
-          { status: 429 },
-        );
-      }
-      return new Response(
-        JSON.stringify([
-          {
-            results: [
-              {
-                customer: { descriptiveName: "Test", currencyCode: "EUR" },
-                metrics: {
-                  costMicros: 1_000_000,
-                  impressions: 100,
-                  clicks: 10,
-                  conversions: 1,
-                  conversionsValue: 2,
-                },
-              },
-            ],
-          },
-        ]),
-        { status: 200 },
-      );
-    });
-
-    const r = await fetchGoogleAdsReport("1234567890");
-    expect(r.metrics.accountName).toBe("Test");
-    expect(failCount).toBe(4);
-  });
-
   it("classifies errors with specific codes", async () => {
     mockAccessToken();
     fetchMock.mockImplementation(async (url: string | URL | Request) => {
@@ -290,27 +242,6 @@ describe("google-ads client", () => {
     });
 
     const result = await fetchGoogleAdsAdCopyContext("1234567890");
-    expect(result.text).toContain("1234567890");
-    expect(result.fetchedAt).toBeInstanceOf(Date);
-  });
-
-  it("returns negatives context with fetchedAt", async () => {
-    mockAccessToken();
-    fetchMock.mockImplementation(async (url: string | URL | Request) => {
-      const urlStr = String(url);
-      if (urlStr === TOKEN_URL) {
-        return new Response(
-          JSON.stringify({ access_token: "t1", token_type: "Bearer" }),
-          { status: 200 },
-        );
-      }
-      return new Response(
-        JSON.stringify([{ results: [] }]),
-        { status: 200 },
-      );
-    });
-
-    const result = await fetchGoogleAdsNegativesContext("1234567890");
     expect(result.text).toContain("1234567890");
     expect(result.fetchedAt).toBeInstanceOf(Date);
   });

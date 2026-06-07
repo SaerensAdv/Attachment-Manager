@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/saerens-agency/"
+title = "Saerens.agency"
+version = "1.0.0"
+id = "artifacts/saerens-agency"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/saerens-agency/" ]
+localPort = 25997
+
+[services.development]
+run = "pnpm --filter @workspace/saerens-agency run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/saerens-agency", "run", "build" ]
+publicDir = "artifacts/saerens-agency/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "25997"
+BASE_PATH = "/saerens-agency/"

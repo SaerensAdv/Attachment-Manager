@@ -6,16 +6,34 @@ import { motion, useReducedMotion } from "framer-motion";
 // finished ones and the faint dashed accent ring for involved-but-waiting team.
 // Keeping the visuals in lock-step with the map is what makes the legend
 // self-explanatory.
-const SEAL_R = 6;
+const PLATE_W = 18;
+const PLATE_H = 12;
 
-function Seal() {
+// The schematic "plate" exactly as it renders on the Kaart, miniaturised.
+function Plate() {
   return (
-    <>
-      <circle cx={16} cy={16} r={SEAL_R} fill="hsl(var(--card))" stroke="hsl(var(--foreground))" strokeWidth={1.5} />
-      <circle cx={16} cy={16} r={2.4} fill="hsl(var(--foreground))" />
-    </>
+    <rect
+      x={16 - PLATE_W / 2}
+      y={16 - PLATE_H / 2}
+      width={PLATE_W}
+      height={PLATE_H}
+      fill="hsl(var(--card))"
+      stroke="hsl(var(--foreground))"
+      strokeWidth={1.2}
+    />
   );
 }
+
+// A rectangular state frame padded out from the plate by `pad`.
+const frame = (pad: number, props: React.SVGProps<SVGRectElement>) => (
+  <rect
+    x={16 - PLATE_W / 2 - pad}
+    y={16 - PLATE_H / 2 - pad}
+    width={PLATE_W + pad * 2}
+    height={PLATE_H + pad * 2}
+    {...props}
+  />
+);
 
 const SWATCHES: {
   id: string;
@@ -29,16 +47,9 @@ const SWATCHES: {
     hint: "Schrijft nu",
     render: (reduced) => (
       <>
-        <circle
-          cx={16}
-          cy={16}
-          r={11}
-          fill="hsl(var(--accent))"
-          opacity={0.15}
-          className={reduced ? "" : "atlas-node-pulse"}
-        />
-        <circle cx={16} cy={16} r={9} fill="none" stroke="hsl(var(--accent))" strokeWidth={2} opacity={0.9} />
-        <Seal />
+        {frame(6, { fill: "hsl(var(--accent))", opacity: 0.15, className: reduced ? "" : "atlas-node-pulse" })}
+        {frame(3, { fill: "none", stroke: "hsl(var(--accent))", strokeWidth: 2, opacity: 0.9 })}
+        <Plate />
       </>
     ),
   },
@@ -46,20 +57,10 @@ const SWATCHES: {
     id: "queued",
     label: "In wachtrij",
     hint: "Wacht op de beurt",
-    render: (reduced) => (
+    render: () => (
       <>
-        <circle
-          cx={16}
-          cy={16}
-          r={9}
-          fill="none"
-          stroke="hsl(var(--muted-foreground))"
-          strokeWidth={1.5}
-          opacity={0.6}
-          strokeDasharray="4,5"
-          className={reduced ? "" : "atlas-spin-slow"}
-        />
-        <Seal />
+        {frame(3, { fill: "none", stroke: "hsl(var(--muted-foreground))", strokeWidth: 1.5, opacity: 0.6, strokeDasharray: "4,5" })}
+        <Plate />
       </>
     ),
   },
@@ -69,8 +70,8 @@ const SWATCHES: {
     hint: "Bijdrage geleverd",
     render: () => (
       <>
-        <circle cx={16} cy={16} r={9} fill="none" stroke="hsl(var(--foreground))" strokeWidth={2} opacity={0.35} />
-        <Seal />
+        {frame(3, { fill: "none", stroke: "hsl(var(--foreground))", strokeWidth: 1.5, opacity: 0.35 })}
+        <Plate />
       </>
     ),
   },
@@ -80,17 +81,8 @@ const SWATCHES: {
     hint: "Onderdeel van het team",
     render: () => (
       <>
-        <circle
-          cx={16}
-          cy={16}
-          r={9}
-          fill="none"
-          stroke="hsl(var(--accent))"
-          strokeWidth={1.5}
-          opacity={0.5}
-          strokeDasharray="3,4"
-        />
-        <Seal />
+        {frame(3, { fill: "none", stroke: "hsl(var(--accent))", strokeWidth: 1.5, opacity: 0.5, strokeDasharray: "3,4" })}
+        <Plate />
       </>
     ),
   },

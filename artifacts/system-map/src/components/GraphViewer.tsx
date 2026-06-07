@@ -10,13 +10,12 @@ import {
 import { Maximize2, Plus, Minus, Download, Image as ImageIcon, Network, Workflow } from "lucide-react";
 import type { DocNode, DocEdge, DocCategory } from "@workspace/api-client-react";
 import {
-  LAYER_ORDER,
   layerRank,
-  LABEL_VISIBLE_SCALE,
   safeId,
-  EDGE_STYLE,
   edgeStyleFor,
   getCategoryColor,
+  PLATE,
+  plateWidth,
   type LayoutMode,
   type SimNode,
   type SimEdge,
@@ -157,9 +156,6 @@ export default function GraphViewer({
     }
     const degreeOf = (n: SimNode) => degree.get(n.id) ?? 0;
 
-    // Visual radius of a node "seal", matching the render-side radiusOf().
-    const radiusOfData = (n: SimNode) => 12 + Math.min(degreeOf(n), 14);
-
     // ---- Layered (dagre) layout -------------------------------------------
     // Build a directed graph, size each node to its seal, and rank by the
     // architecture layer order. Cross-layer edges are oriented downward (low
@@ -180,9 +176,8 @@ export default function GraphViewer({
       g.setDefaultEdgeLabel(() => ({}));
 
       for (const n of simNodesData) {
-        const r = radiusOfData(n);
-        // Pad the box so neighbouring seals + their labels don't collide.
-        g.setNode(n.id, { width: r * 2 + 48, height: r * 2 + 40 });
+        // Size each box to its plate so neighbouring plates + labels don't collide.
+        g.setNode(n.id, { width: plateWidth(n.title) + 48, height: PLATE.height + 56 });
       }
 
       simEdgesData.forEach((e, i) => {
@@ -224,11 +219,6 @@ export default function GraphViewer({
     }
 
     // ---- Organic (d3-force) layout ----------------------------------------
-    // Visual radius of a node circle (16) — collision keeps at least this much
-    // clear space plus a per-degree margin so labels in the dense center don't
-    // collide even when zoomed in.
-    const NODE_RADIUS = 16;
-
     const simulation = d3.forceSimulation<SimNode>(simNodesData)
       // Longer links give connected nodes breathing room; hubs get extra so
       // their many spokes don't bunch up at a single distance.
@@ -256,7 +246,7 @@ export default function GraphViewer({
       .force(
         "collide",
         d3.forceCollide<SimNode>()
-          .radius(n => NODE_RADIUS + 34 + Math.min(degreeOf(n), 12) * 3)
+          .radius(n => Math.max(plateWidth(n.title) / 2, PLATE.height / 2) + 22)
           .strength(1)
           .iterations(3),
       )
@@ -495,21 +485,6 @@ export default function GraphViewer({
     return false;
   };
 
-  // Connectivity per node, used to scale node size: hub documents read as larger
-  // "seals" than leaf docs, giving the atlas a clear visual hierarchy.
-  const degreeMap = useMemo(() => {
-    const m = new Map<string, number>();
-    for (const e of simEdges) {
-      const s = typeof e.source === "string" ? e.source : (e.source as SimNode).id;
-      const t = typeof e.target === "string" ? e.target : (e.target as SimNode).id;
-      m.set(s, (m.get(s) ?? 0) + 1);
-      m.set(t, (m.get(t) ?? 0) + 1);
-    }
-    return m;
-  }, [simEdges]);
-
-  const radiusOf = (node: SimNode) => 12 + Math.min(degreeMap.get(node.id) ?? 0, 14);
-
   // Adjacency for hover highlighting: each node mapped to its directly connected
   // neighbours.
   const neighborMap = useMemo(() => {
@@ -553,29 +528,35 @@ export default function GraphViewer({
       t.y === undefined
     )
       return null;
-    const rOf = (n: SimNode) => 12 + Math.min(degreeMap.get(n.id) ?? 0, 14);
     const dx = t.x - s.x;
     const dy = t.y - s.y;
     const len = Math.hypot(dx, dy) || 1;
     const ux = dx / len;
     const uy = dy / len;
-    const x1 = s.x + ux * (rOf(s) + 3);
-    const y1 = s.y + uy * (rOf(s) + 3);
-    const x2 = t.x - ux * (rOf(t) + 8);
-    const y2 = t.y - uy * (rOf(t) + 8);
+    // Trim each endpoint to its plate's rectangular border (width + height aware).
+    const border = (title: string) =>
+      Math.min(
+        Math.abs(ux) < 1e-6 ? Infinity : plateWidth(title) / 2 / Math.abs(ux),
+        Math.abs(uy) < 1e-6 ? Infinity : PLATE.height / 2 / Math.abs(uy),
+      );
+    const x1 = s.x + ux * (border(s.title) + 3);
+    const y1 = s.y + uy * (border(s.title) + 3);
+    const x2 = t.x - ux * (border(t.title) + 8);
+    const y2 = t.y - uy * (border(t.title) + 8);
     const bow = Math.min(len * 0.14, 70);
     const cx = (x1 + x2) / 2 - uy * bow;
     const cy = (y1 + y2) / 2 + ux * bow;
     return `M${x1},${y1} Q${cx},${cy} ${x2},${y2}`;
-  }, [handoff, simNodes, degreeMap]);
+  }, [handoff, simNodes]);
 
   return (
     <div ref={containerRef} className="w-full h-full bg-background relative overflow-hidden">
       {/* Grid Pattern Background — faint ink dots on cream paper */}
       <div className="absolute inset-0 pointer-events-none opacity-40" 
            style={{
-             backgroundImage: 'radial-gradient(circle at 2px 2px, hsl(var(--foreground) / 0.18) 1px, transparent 0)',
-             backgroundSize: '32px 32px'
+             backgroundImage:
+               'linear-gradient(hsl(var(--foreground) / 0.14) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--foreground) / 0.14) 1px, transparent 1px), linear-gradient(hsl(var(--foreground) / 0.07) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--foreground) / 0.07) 1px, transparent 1px)',
+             backgroundSize: '120px 120px, 120px 120px, 24px 24px, 24px 24px'
            }} 
       />
 
@@ -622,22 +603,42 @@ export default function GraphViewer({
                 const isEdgeHighlighted = activeNode && (source.id === activeNode || target.id === activeNode);
                 const isEdgeDimmed = activeNode && !isEdgeHighlighted;
 
-                // Trim the endpoints to each node's rim and bow the line into a
-                // gentle arc so the dense graph reads as elegant curves rather
-                // than a mechanical web.
-                const dx = target.x - source.x;
-                const dy = target.y - source.y;
-                const len = Math.hypot(dx, dy) || 1;
-                const ux = dx / len;
-                const uy = dy / len;
-                const x1 = source.x + ux * (radiusOf(source) + 2);
-                const y1 = source.y + uy * (radiusOf(source) + 2);
-                const x2 = target.x - ux * (radiusOf(target) + 7);
-                const y2 = target.y - uy * (radiusOf(target) + 7);
-                const bow = Math.min(len * 0.12, 56);
-                const cx = (x1 + x2) / 2 - uy * bow;
-                const cy = (y1 + y2) / 2 + ux * bow;
-                const d = `M${x1},${y1} Q${cx},${cy} ${x2},${y2}`;
+                // Schematic wiring trimmed to each plate's border. In the layered
+                // view it routes at right angles (drop, across the mid-line, in);
+                // in the organic view a straight wire keeps the dense web legible
+                // instead of a tangle of overlapping elbows.
+                const sx = source.x;
+                const sy = source.y;
+                const tx = target.x;
+                const ty = target.y;
+                let d: string;
+                if (layoutMode === "layered") {
+                  const halfH = PLATE.height / 2;
+                  const dir = ty >= sy ? 1 : -1;
+                  const y1 = sy + dir * (halfH + 2);
+                  const y2 = ty - dir * (halfH + 9);
+                  const midY = (y1 + y2) / 2;
+                  d = `M ${sx} ${y1} L ${sx} ${midY} L ${tx} ${midY} L ${tx} ${y2}`;
+                } else {
+                  const dx = tx - sx;
+                  const dy = ty - sy;
+                  const len = Math.hypot(dx, dy) || 1;
+                  const ux = dx / len;
+                  const uy = dy / len;
+                  // Distance from a plate centre to its rectangular border along (ux,uy).
+                  const border = (rx: number, ry: number) =>
+                    Math.min(
+                      Math.abs(ux) < 1e-6 ? Infinity : rx / Math.abs(ux),
+                      Math.abs(uy) < 1e-6 ? Infinity : ry / Math.abs(uy),
+                    );
+                  const sH = border(plateWidth(source.title) / 2, PLATE.height / 2);
+                  const tH = border(plateWidth(target.title) / 2, PLATE.height / 2);
+                  const x1 = sx + ux * (sH + 2);
+                  const y1 = sy + uy * (sH + 2);
+                  const x2 = tx - ux * (tH + 7);
+                  const y2 = ty - uy * (tH + 7);
+                  d = `M ${x1} ${y1} L ${x2} ${y2}`;
+                }
 
                 const opacity = isEdgeDimmed ? 0.06 : isEdgeHighlighted ? 0.95 : style.opacity;
                 const width = isEdgeHighlighted ? style.width + 0.75 : style.width;
@@ -722,11 +723,19 @@ export default function GraphViewer({
                 // (writing) agent, or any involved team member during a run.
                 const lit = isHighlighted || isActive || status === "done";
                 const color = getCategoryColor(node.category);
-                const r = radiusOf(node);
+                const w = plateWidth(node.title);
+                const h = PLATE.height;
+                const hw = w / 2;
+                const hh = h / 2;
+                const isCore = node.category === "core";
                 const portraitUrl = portraits?.[node.id];
                 const clipId = `portrait-clip-${safeId(node.id)}`;
-                const scaleVal = isActive ? 1.18 : (lit ? 1.1 : (isInvolved ? 1.05 : 1));
-                const ringWidth = isActive ? 4 : (lit || isInvolved ? 3.5 : 2.5);
+                const scaleVal = isActive ? 1.12 : (lit ? 1.06 : (isInvolved ? 1.03 : 1));
+                const ringWidth = isCore ? 2.5 : (isActive ? 2.5 : (lit || isInvolved ? 2 : 1.5));
+                const brackOff = 4;
+                // One corner-bracket "registration tick"; sx/sy point inward.
+                const bracket = (bx: number, by: number, sgx: number, sgy: number) =>
+                  `M ${bx + sgx * 5} ${by} L ${bx} ${by} L ${bx} ${by + sgy * 5}`;
 
                 return (
                   <g
@@ -740,140 +749,109 @@ export default function GraphViewer({
                       transform: `translate(${node.x}px,${node.y}px) scale(${scaleVal})`,
                     }}
                   >
-                    {/* Active (working) agent: strong pulsing accent halo rings */}
+                    {/* Active (writing) agent: pulsing accent plate halo */}
                     {isActive && (
                       <>
-                        <circle
-                          r={r + 16}
+                        <rect
+                          x={-hw - 12} y={-hh - 12} width={w + 24} height={h + 24}
                           fill="hsl(var(--accent))"
-                          opacity={0.15}
+                          opacity={0.14}
                           className={reducedMotion ? "" : "atlas-node-pulse"}
                         />
-                        <circle
-                          r={r + 6}
-                          fill="none"
-                          stroke="hsl(var(--accent))"
-                          strokeWidth={2.5}
-                          opacity={0.9}
-                        />
-                        {/* Inner rotating dash ring to show activity */}
-                        <circle
-                          r={r + 2}
-                          fill="none"
-                          stroke="hsl(var(--accent))"
-                          strokeWidth={1.5}
-                          strokeDasharray="4,4"
-                          className={reducedMotion ? "" : "atlas-spin"}
+                        <rect
+                          x={-hw - 6} y={-hh - 6} width={w + 12} height={h + 12}
+                          fill="none" stroke="hsl(var(--accent))" strokeWidth={2} opacity={0.9}
                         />
                       </>
                     )}
 
-                    {/* Queued agent: a dashed waiting ring that rotates slowly */}
+                    {/* Queued agent: a dashed waiting frame */}
                     {status === "queued" && !isActive && (
-                      <circle
-                        r={r + 6}
-                        fill="none"
-                        stroke="hsl(var(--muted-foreground))"
-                        strokeWidth={1.5}
-                        opacity={0.6}
-                        strokeDasharray="4,5"
-                        className={reducedMotion ? "" : "atlas-spin-slow"}
+                      <rect
+                        x={-hw - 6} y={-hh - 6} width={w + 12} height={h + 12}
+                        fill="none" stroke="hsl(var(--muted-foreground))" strokeWidth={1.5}
+                        opacity={0.6} strokeDasharray="4,5"
                       />
                     )}
 
-                    {/* Done agent: solid completed ring */}
+                    {/* Done agent: solid completed frame */}
                     {status === "done" && !isActive && (
-                      <>
-                        <circle
-                          r={r + 6}
-                          fill="none"
-                          stroke="hsl(var(--foreground))"
-                          strokeWidth={2}
-                          opacity={0.3}
-                        />
-                      </>
+                      <rect
+                        x={-hw - 6} y={-hh - 6} width={w + 12} height={h + 12}
+                        fill="none" stroke="hsl(var(--foreground))" strokeWidth={1.5} opacity={0.3}
+                      />
                     )}
 
-                    {/* Soft halo for the highlighted/selected node */}
+                    {/* Soft glow for the highlighted/selected node */}
                     {isHighlighted && !isActive && !status && (
-                      <circle r={r + 10} fill={color} opacity={0.16} className="animate-pulse" />
+                      <rect
+                        x={-hw - 8} y={-hh - 8} width={w + 16} height={h + 16}
+                        fill={color} opacity={0.14}
+                        className={reducedMotion ? "" : "animate-pulse"}
+                      />
                     )}
 
                     {/* Involved-but-waiting team member (if no explicit status yet) */}
                     {isInvolved && !status && !isActive && !isHighlighted && (
-                      <circle
-                        r={r + 6}
-                        fill="none"
-                        stroke="hsl(var(--accent))"
-                        strokeWidth={1.5}
-                        opacity={0.4}
-                        strokeDasharray="3,4"
+                      <rect
+                        x={-hw - 6} y={-hh - 6} width={w + 12} height={h + 12}
+                        fill="none" stroke="hsl(var(--accent))" strokeWidth={1.5}
+                        opacity={0.4} strokeDasharray="3,4"
                       />
                     )}
 
-                    {/* Editorial "press seal": a paper disc lifted with a soft
-                        shadow, ringed in the category accent. */}
+                    {/* Schematic plate: white paper, category-coloured frame, soft lift */}
                     <g filter="url(#node-shadow)">
-                      <circle
-                        r={r}
+                      <rect
+                        x={-hw} y={-hh} width={w} height={h}
                         fill="hsl(var(--card))"
                         stroke={color}
                         strokeWidth={ringWidth}
                         className="transition-all duration-300"
                       />
                     </g>
-
-                    {/* Ink double-frame when active */}
-                    {lit && (
-                      <circle r={r + 5} fill="none" stroke="hsl(var(--foreground))" strokeWidth={1} opacity={0.85} />
+                    {isCore && (
+                      <rect x={-hw} y={-hh} width={w} height={h} fill={color} opacity={0.06} />
                     )}
 
-                    {portraitUrl ? (
-                      /* Circular portrait, clipped inside the seal, with the
-                         category ring kept on top as a frame. */
-                      <>
-                        <clipPath id={clipId}>
-                          <circle r={r - 1} />
-                        </clipPath>
-                        <image
-                          href={portraitUrl}
-                          x={-(r - 1)}
-                          y={-(r - 1)}
-                          width={(r - 1) * 2}
-                          height={(r - 1) * 2}
-                          clipPath={`url(#${clipId})`}
-                          preserveAspectRatio="xMidYMid slice"
-                        />
-                        <circle
-                          r={r}
-                          fill="none"
-                          stroke={color}
-                          strokeWidth={ringWidth}
-                        />
-                      </>
-                    ) : (
-                      /* Category core dot — the "press seal" fallback. */
-                      <circle r={Math.max(3, r * 0.4)} fill={color} />
-                    )}
+                    {/* Registration brackets at the four corners */}
+                    <g stroke="hsl(var(--muted-foreground))" strokeWidth={1} fill="none" opacity={lit ? 0.9 : 0.5}>
+                      <path d={bracket(-hw - brackOff, -hh - brackOff, 1, 1)} />
+                      <path d={bracket(hw + brackOff, -hh - brackOff, -1, 1)} />
+                      <path d={bracket(-hw - brackOff, hh + brackOff, 1, -1)} />
+                      <path d={bracket(hw + brackOff, hh + brackOff, -1, -1)} />
+                    </g>
 
-                    {/* Node Label — hidden when zoomed out so the overview stays
-                        legible, always shown for highlighted/involved nodes. */}
+                    {/* Label, set inside the plate (monospace, centred) */}
                     <text
-                      dy={r + 16}
+                      x={0} y={0}
                       textAnchor="middle"
-                      fill={lit ? "hsl(var(--foreground))" : "hsl(var(--muted-foreground))"}
-                      className={`font-['Space_Mono'] text-[11px] uppercase tracking-wider transition-opacity duration-300 ${lit ? 'font-bold' : ''}`}
-                      style={{
-                        pointerEvents: 'none',
-                        opacity: lit || isInvolved || scale >= LABEL_VISIBLE_SCALE ? 1 : 0,
-                        paintOrder: 'stroke',
-                        stroke: 'hsl(var(--background))',
-                        strokeWidth: 3,
-                        strokeLinejoin: 'round',
-                      }}
+                      dominantBaseline="central"
+                      fill="hsl(var(--foreground))"
+                      className={`font-['Space_Mono'] text-[11px] uppercase tracking-wider ${lit || isCore ? 'font-bold' : ''}`}
+                      style={{ pointerEvents: 'none' }}
                     >
                       {node.title}
                     </text>
+
+                    {/* Portrait "ID stamp" straddling the top-left corner */}
+                    {portraitUrl && (
+                      <>
+                        <clipPath id={clipId}>
+                          <rect x={-hw - 6} y={-hh - 14} width={22} height={22} />
+                        </clipPath>
+                        <image
+                          href={portraitUrl}
+                          x={-hw - 6} y={-hh - 14} width={22} height={22}
+                          clipPath={`url(#${clipId})`}
+                          preserveAspectRatio="xMidYMid slice"
+                        />
+                        <rect
+                          x={-hw - 6} y={-hh - 14} width={22} height={22}
+                          fill="none" stroke={color} strokeWidth={1.5}
+                        />
+                      </>
+                    )}
                   </g>
                 );
               })}

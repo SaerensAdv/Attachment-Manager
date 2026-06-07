@@ -53,3 +53,20 @@ export interface SimEdge extends d3.SimulationLinkDatum<SimNode> {
 export const getCategoryColor = (categoryId: string) => {
   return `hsl(var(--cat-${categoryId}))`;
 };
+
+// Schematic "plate" node geometry. Labels render in Space Mono (a monospace
+// face), so a node's plate width can be derived from its character count —
+// letting both layout engines space the plates correctly without measuring
+// text in the DOM, and keeping render + layout in exact agreement.
+export const PLATE = {
+  charW: 7.2, // advance per glyph at 11px + tracking-wider
+  padX: 14,
+  height: 28,
+  minW: 64,
+} as const;
+
+export const plateWidth = (title: string) =>
+  Math.max(
+    PLATE.minW,
+    Math.round(PLATE.padX * 2 + title.toUpperCase().length * PLATE.charW),
+  );

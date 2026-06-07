@@ -36,4 +36,5 @@
 - [API hardening (Block 1)](api-hardening.md) — env validation must run before the app/db import graph (TLA + dynamic imports); rate limiter intentionally global; helmet CORP cross-origin for the web artifact; eq/and spies guard the optimistic-lock predicate.
 - [Team KPI dashboard](team-kpi-dashboard.md) — /team/stats single-pass aggregate+leaderboard (excludes deliverable pseudo-step & non-agents/ paths); /dashboard page reuses Newsroom theme.
 - [Triggering autonomous/long runs](triggering-autonomous-runs.md) — curl (bg or fg) for long team runs gets torn down/aborted → no archived row; fire server-side via scheduler (due cron + 60s tick), poll generations by max-id delta.
+- [Kaart level-of-detail](kaart-lod.md) — overview hairball is the ~417 combinatorial flow edges, not node count; show only routing skeleton far out, fade flow/ref/mention + labels in on zoom; LOD organic-only; hover + live-run reveals must not regress.
 - [Mockup canvas variants](mockup-canvas-variants.md) — DESIGN subagents emit literal `\`+backtick escapes (tsc TS1127, perl-strip); iframe update needs `updates` w/ `shapeType`; shared read-only `_data.ts` keeps variants comparable.

@@ -15,10 +15,31 @@ export const layerRank = (category: string) => {
 
 export type LayoutMode = "organic" | "layered";
 
-// Below this zoom level labels are hidden to keep the dense overview readable;
-// zooming in past it fades them in so individual nodes can be inspected. The
-// per-node focus zoom (1.4) and a small manual zoom both clear this threshold.
-export const LABEL_VISIBLE_SCALE = 1.15;
+// Level-of-detail. The doc graph is dense (~800 edges): drawn all at once the
+// overview collapses into an unreadable hairball. Each edge class instead fades
+// in as the viewport zooms, so far out only the orchestrator routing skeleton
+// remains and the structural backbone reads cleanly; zooming in progressively
+// reveals the fuller wiring (flow → reference → mention). Tuples are
+// [fadeStart, fadeEnd] in viewport scale: at/below start the class is hidden,
+// at/above end it is fully drawn. routing is the true backbone and never fades.
+export const EDGE_LOD: Record<string, [number, number]> = {
+  routing: [0, 0],
+  flow: [0.5, 0.95],
+  reference: [0.75, 1.1],
+  mention: [1.0, 1.35],
+};
+
+// Non-anchor node labels fade with the same idea: far out the plates read as
+// clean schematic marks; up close every plate is annotated. [fadeStart, fadeEnd]
+// in viewport scale. Core docs and the central hub stay labelled at every zoom
+// as orientation anchors.
+export const LABEL_LOD: [number, number] = [0.55, 1.0];
+
+// Linear ramp from 0 at `start` to 1 at `end`, clamped. end <= start ⇒ always 1.
+export const lodFactor = (scale: number, start: number, end: number) => {
+  if (end <= start) return 1;
+  return Math.max(0, Math.min(1, (scale - start) / (end - start)));
+};
 
 // Turn a node id into a value safe for an SVG element id / clipPath reference.
 export const safeId = (id: string) => id.replace(/[^a-zA-Z0-9_-]/g, "-");

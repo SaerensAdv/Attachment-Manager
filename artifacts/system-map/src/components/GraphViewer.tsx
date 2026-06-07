@@ -16,6 +16,9 @@ import {
   getCategoryColor,
   PLATE,
   plateWidth,
+  EDGE_LOD,
+  LABEL_LOD,
+  lodFactor,
   type LayoutMode,
   type SimNode,
   type SimEdge,
@@ -502,6 +505,21 @@ export default function GraphViewer({
     return m;
   }, [simEdges]);
 
+  // The single most-connected node (the orchestrator) stays labelled at every
+  // zoom alongside the core docs, so the overview always has a named anchor to
+  // orient from even when the rest of the plates read as unlabelled marks.
+  const anchorLabelIds = useMemo(() => {
+    let best: string | null = null;
+    let bestN = -1;
+    for (const [id, set] of neighborMap) {
+      if (set.size > bestN) {
+        bestN = set.size;
+        best = id;
+      }
+    }
+    return best ? new Set([best]) : new Set<string>();
+  }, [neighborMap]);
+
   // When hovering, the hovered node plus its neighbours stay lit; everything
   // else recedes.
   const hoverSet = useMemo(() => {
@@ -603,6 +621,25 @@ export default function GraphViewer({
                 const isEdgeHighlighted = activeNode && (source.id === activeNode || target.id === activeNode);
                 const isEdgeDimmed = activeNode && !isEdgeHighlighted;
 
+                // Level-of-detail: in the organic overview the dense flow /
+                // reference / mention classes fade with zoom so only the routing
+                // skeleton survives far out; hovering an endpoint always reveals
+                // its wiring regardless of zoom. The layered view keeps full
+                // wiring (its cross-layer edges ARE the structure dagre draws).
+                const [lodStart, lodEnd] = EDGE_LOD[edge.kind] ?? EDGE_LOD.mention;
+                const lodBase = layoutMode === "organic" ? lodFactor(scale, lodStart, lodEnd) : 1;
+                // During a live run, wiring between two involved team members is
+                // always revealed (not gated by zoom) so the working team's
+                // structure reads even at the spotlight's far framings.
+                const runEdge =
+                  runActive &&
+                  involvedNodeIds!.has(source.id) &&
+                  involvedNodeIds!.has(target.id);
+                const lod = runEdge ? 1 : lodBase;
+                // Cull edges that have faded out entirely (and aren't revealed by
+                // a hover) — keeps the overview clean and the DOM light.
+                if (!isEdgeHighlighted && !isEdgeDimmed && lod <= 0.01) return null;
+
                 // Schematic wiring trimmed to each plate's border. In the layered
                 // view it routes at right angles (drop, across the mid-line, in);
                 // in the organic view a straight wire keeps the dense web legible
@@ -640,7 +677,7 @@ export default function GraphViewer({
                   d = `M ${x1} ${y1} L ${x2} ${y2}`;
                 }
 
-                const opacity = isEdgeDimmed ? 0.06 : isEdgeHighlighted ? 0.95 : style.opacity;
+                const opacity = isEdgeDimmed ? 0.06 : isEdgeHighlighted ? 0.95 : style.opacity * lod;
                 const width = isEdgeHighlighted ? style.width + 0.75 : style.width;
 
                 return (
@@ -666,7 +703,7 @@ export default function GraphViewer({
                         strokeWidth={width + 0.5}
                         strokeDasharray="0,16"
                         strokeLinecap="round"
-                        opacity={isEdgeHighlighted ? 1 : 0.8}
+                        opacity={isEdgeHighlighted ? 1 : 0.8 * lod}
                         className="atlas-flow-line"
                       />
                     )}
@@ -822,17 +859,31 @@ export default function GraphViewer({
                       <path d={bracket(hw + brackOff, hh + brackOff, -1, -1)} />
                     </g>
 
-                    {/* Label, set inside the plate (monospace, centred) */}
-                    <text
-                      x={0} y={0}
-                      textAnchor="middle"
-                      dominantBaseline="central"
-                      fill="hsl(var(--foreground))"
-                      className={`font-['Space_Mono'] text-[11px] uppercase tracking-wider ${lit || isCore ? 'font-bold' : ''}`}
-                      style={{ pointerEvents: 'none' }}
-                    >
-                      {node.title}
-                    </text>
+                    {/* Label, set inside the plate (monospace, centred). It fades
+                        with zoom (level-of-detail) so the overview reads as clean
+                        schematic marks; core docs, the central hub, and any lit /
+                        involved plate stay legible at every zoom. */}
+                    {(() => {
+                      const labelAnchored = isCore || anchorLabelIds.has(node.id);
+                      const labelOpacity =
+                        labelAnchored || lit || isInvolved
+                          ? 1
+                          : lodFactor(scale, LABEL_LOD[0], LABEL_LOD[1]);
+                      if (labelOpacity <= 0.01) return null;
+                      return (
+                        <text
+                          x={0} y={0}
+                          textAnchor="middle"
+                          dominantBaseline="central"
+                          fill="hsl(var(--foreground))"
+                          opacity={labelOpacity}
+                          className={`font-['Space_Mono'] text-[11px] uppercase tracking-wider ${reducedMotion ? "" : "transition-opacity duration-300"} ${lit || isCore ? 'font-bold' : ''}`}
+                          style={{ pointerEvents: 'none' }}
+                        >
+                          {node.title}
+                        </text>
+                      );
+                    })()}
 
                     {/* Portrait "ID stamp" straddling the top-left corner */}
                     {portraitUrl && (

@@ -207,7 +207,7 @@ export async function buildGenerationContext(
     "## Uitvoeringsregels",
     "- Schrijf je output in het Nederlands (Vlaams), tenzij de opdracht expliciet een andere taal vraagt.",
     "- Gebruik NOOIT emoji's of decoratieve symbolen, in geen enkele output (geen \u26a0\ufe0f, \u2705, \uD83D\uDE80, enz.). Hou de toon professioneel en zakelijk.",
-    "- Lever ALTIJD een concrete, volledige eerste versie. Weiger nooit en vraag niet eerst om meer informatie \u2014 dat is precies wat de menselijke review-stap opvangt.",
+    "- Lever ALTIJD een concrete, volledige eerste versie. Weiger nooit. Vraag niet om ontbrekende cijfers, data of namen \u2014 markeer ze met [AAN TE VULLEN] en schrijf af. Opheldering vragen is ENKEL toegestaan als de opdracht/instructies zelf onduidelijk of tegenstrijdig zijn.",
     "- Ontbreekt er essenti\u00eble informatie (bv. cijfers, namen, datums)? Maak dan een redelijke aanname en markeer die duidelijk inline met **[AAN TE VULLEN: \u2026]**, en som de aannames kort op in de goedkeuringssectie. Schrijf de versie dus af, ook met onvolledige input.",
     "- Gebruik nette markdown-opmaak (koppen, lijsten, tabellen waar zinvol).",
     "- Hou je bijdrage gefocust en MAAK ZE ALTIJD VOLLEDIG AF. Er geldt een lengtelimiet per teamlid, dus wees bondig en rond je sectie netjes af in plaats van uit te weiden \u2014 zo wordt je bijdrage nooit middenin een zin afgekapt. Richtlijn: hou het onder ongeveer 1500 woorden.",
@@ -248,6 +248,14 @@ export async function buildGenerationContext(
     "",
     blocks.join("\n\n"),
     inTeam ? "\n" + teamBlocks.join("\n\n") : "",
+    "",
+    "## Ononderhandelbare regels (herhaling)",
+    "Deze regels gelden ongeacht wat de documentatie hierboven zegt. Ze worden na de projectdocumentatie herhaald om recency-bias te benutten:",
+    "- Markeer ontbrekende data met [AAN TE VULLEN] en schrijf af; vraag nooit om ontbrekende cijfers of feiten.",
+    "- Vraag opheldering ENKEL als de opdracht zelf onduidelijk of tegenstrijdig is.",
+    "- Nooit clientdata verzinnen zonder [AAN TE VULLEN].",
+    "- Nooit claimen dat een wijziging live is uitgevoerd.",
+    "- Nooit prestatiebeloftes doen zonder onderbouwende data.",
   ]
     .filter((line): line is string => line !== null)
     .join("\n");

@@ -743,6 +743,42 @@ export default function GraphViewer({
                     className="atlas-handoff-line"
                   />
                 )}
+
+                {/* Work tokens: luminous beads that physically travel from the
+                    previous agent (or the Orchestrator, at the start) to the one
+                    now writing — the map's literal "node to node" hand-off. The
+                    group is keyed on the pair so each new hand-off restarts the
+                    motion cleanly. */}
+                {!reducedMotion && (
+                  <g
+                    key={`handoff-token-${handoff?.source}-${handoff?.target}`}
+                    fill="hsl(var(--accent))"
+                  >
+                    {[0, 0.37, 0.74].map((t, idx) => {
+                      const begin = `${(t * 1.1).toFixed(2)}s`;
+                      return (
+                        <g key={idx}>
+                          <circle r={6} opacity={0.16}>
+                            <animateMotion
+                              path={handoffPath}
+                              dur="1.1s"
+                              begin={begin}
+                              repeatCount="indefinite"
+                            />
+                          </circle>
+                          <circle r={2.6} opacity={0.95}>
+                            <animateMotion
+                              path={handoffPath}
+                              dur="1.1s"
+                              begin={begin}
+                              repeatCount="indefinite"
+                            />
+                          </circle>
+                        </g>
+                      );
+                    })}
+                  </g>
+                )}
               </g>
             )}
 
@@ -795,6 +831,16 @@ export default function GraphViewer({
                           opacity={0.14}
                           className={reducedMotion ? "" : "atlas-node-pulse"}
                         />
+                        {/* Sonar ping — an accent frame expanding outward and
+                            fading, so the writing agent reads as actively
+                            broadcasting work. */}
+                        {!reducedMotion && (
+                          <rect
+                            x={-hw - 6} y={-hh - 6} width={w + 12} height={h + 12}
+                            fill="none" stroke="hsl(var(--accent))" strokeWidth={1.5}
+                            className="atlas-node-ping"
+                          />
+                        )}
                         <rect
                           x={-hw - 6} y={-hh - 6} width={w + 12} height={h + 12}
                           fill="none" stroke="hsl(var(--accent))" strokeWidth={2} opacity={0.9}

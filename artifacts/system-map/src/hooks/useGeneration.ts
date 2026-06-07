@@ -509,7 +509,11 @@ export function useGeneration(
     const i = segments.findIndex((s) => s.status === "working");
     if (i < 0) return { activePath: null, handoff: null };
     const active = segments[i].path;
-    const prev = i > 0 ? segments[i - 1].path : null;
+    // For the first agent the work flows from the Orchestrator (the hub that
+    // routed the request) into the lead, so the very first step also shows a
+    // node-to-node hand-off rather than a lone lit node. GraphViewer resolves
+    // the source to a real node and falls back to no line if it is absent.
+    const prev = i > 0 ? segments[i - 1].path : "agents/orchestrator.md";
     return {
       activePath: active,
       handoff:

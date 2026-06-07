@@ -196,6 +196,24 @@
   animation: atlas-node-pulse 2s ease-in-out infinite;
 }
 
+/* Live-run active agent — a sonar "ping": an accent frame that expands outward
+   and fades, reinforcing that this node is broadcasting work right now. */
+@keyframes atlas-node-ping {
+  0% {
+    transform: scale(0.92);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(1.7);
+    opacity: 0;
+  }
+}
+.atlas-node-ping {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: atlas-node-ping 1.8s ease-out infinite;
+}
+
 @keyframes atlas-spin {
   from {
     transform: rotate(0deg);
@@ -221,6 +239,7 @@
   .atlas-flow-line,
   .atlas-handoff-line,
   .atlas-node-pulse,
+  .atlas-node-ping,
   .atlas-spin,
   .atlas-spin-slow {
     animation: none;

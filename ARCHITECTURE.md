@@ -70,7 +70,8 @@ saerens-ai-team/
 │   ├── humanizer.md
 │   ├── shopping-feed-specialist.md
 │   ├── email-automation-specialist.md
-│   └── creative-designer.md
+│   ├── creative-designer.md
+│   └── brand-identity-designer.md
 │
 ├── clients/             # Client context (data, kept separate from agents)
 │   ├── _template.md

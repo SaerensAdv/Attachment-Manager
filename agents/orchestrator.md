@@ -68,6 +68,7 @@ If the request is vague, ask one focused round of clarifying questions first.
 | Organic social posts, newsletters, content calendars, video scripts | Copywriter (content & social specialty) | — |
 | Email marketing, newsletters as a channel, automation flows, lifecycle/retention, list segmentation | Email & Marketing Automation Specialist | — |
 | Producing the actual visual ad assets, banners, email visuals, or motion/video from an approved creative direction | Creative Designer | `workflows/ad-creatives.md` |
+| Brand identity from the ground up: positioning into a visual identity system — naming (if needed), logo/wordmark, colour palette, typography, brand guidelines | Brand & Identity Designer | — |
 | Conversion-rate testing program, experiment design, funnel optimization, reading test results | CRO Specialist | — |
 | Who the client competes with, market/landscape research, competitor offers & ad angles, SERP/auction read | Competitive Research Analyst | `workflows/competitor-research.md` |
 | Onboarding a newly signed client: intake, building the client fiche, kickoff checklist | Client Onboarding Agent | `workflows/client-onboarding.md` |

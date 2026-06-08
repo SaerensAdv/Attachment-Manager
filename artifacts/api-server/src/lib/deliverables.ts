@@ -11,6 +11,9 @@ import type { DocFile } from "./docs";
  */
 export type DeliverableKind =
   | "replit-prompt"
+  | "slide-deck-prompt"
+  | "animated-video-prompt"
+  | "data-app-prompt"
   | "monthly-report-email"
   | "google-ads-csv"
   | "negative-keywords-csv"
@@ -63,6 +66,9 @@ const MARKER_RE = /<!--\s*deliverable:\s*([a-z0-9-]+)\s*-->/i;
  */
 const KNOWN: ReadonlySet<DeliverableKind> = new Set([
   "replit-prompt",
+  "slide-deck-prompt",
+  "animated-video-prompt",
+  "data-app-prompt",
   "monthly-report-email",
   "google-ads-csv",
   "negative-keywords-csv",
@@ -97,9 +103,36 @@ export function deliverableMeta(
     case "replit-prompt":
       return {
         kind,
-        title: "Replit-projectprompt",
-        note: "Plak deze prompt in een nieuw Replit-project om de pagina te laten bouwen.",
-        filename: `${slug(clientName)}-replit-prompt.md`,
+        title: "Replit-bouwprompt (website)",
+        note: "Plak deze prompt in een nieuw Replit-project (type: Web App) om de website te laten bouwen. Een mens reviewt en publiceert; niets gaat live.",
+        filename: `${slug(clientName)}-website-prompt.md`,
+        mimeType: "text/markdown",
+        format: "text",
+      };
+    case "slide-deck-prompt":
+      return {
+        kind,
+        title: "Replit-bouwprompt (slide deck)",
+        note: "Plak deze prompt in een nieuw Replit-project (type: Slides) om de presentatie te laten bouwen. Een mens reviewt en exporteert; niets gaat live.",
+        filename: `${slug(clientName)}-slide-deck-prompt.md`,
+        mimeType: "text/markdown",
+        format: "text",
+      };
+    case "animated-video-prompt":
+      return {
+        kind,
+        title: "Replit-bouwprompt (animatievideo)",
+        note: "Plak deze prompt in een nieuw Replit-project (type: Animation) om de video te laten bouwen. Een mens reviewt en rendert; niets gaat live.",
+        filename: `${slug(clientName)}-animated-video-prompt.md`,
+        mimeType: "text/markdown",
+        format: "text",
+      };
+    case "data-app-prompt":
+      return {
+        kind,
+        title: "Replit-bouwprompt (data-app)",
+        note: "Plak deze prompt in een nieuw Replit-project (type: Data Visualization) om het dashboard te laten bouwen. Een mens koppelt de echte data en publiceert; niets gaat live.",
+        filename: `${slug(clientName)}-data-app-prompt.md`,
         mimeType: "text/markdown",
         format: "text",
       };
@@ -133,6 +166,12 @@ export function buildDeliverablePrompt(
   switch (kind) {
     case "replit-prompt":
       return buildReplitPrompt(ctx);
+    case "slide-deck-prompt":
+      return buildSlideDeckPrompt(ctx);
+    case "animated-video-prompt":
+      return buildAnimatedVideoPrompt(ctx);
+    case "data-app-prompt":
+      return buildDataAppPrompt(ctx);
     case "google-ads-csv":
       return buildAdCopyCsvPrompt(ctx);
     case "negative-keywords-csv":
@@ -250,31 +289,52 @@ function buildAdCopyCsvPrompt(ctx: DeliverableContext): DeliverablePrompt {
   return { system, user };
 }
 
-function buildReplitPrompt(ctx: DeliverableContext): DeliverablePrompt {
+/**
+ * Spec for a "Replit build prompt" deliverable. Every build prompt (website,
+ * slide deck, animated video, data app) converts the team's markdown into ONE
+ * paste-ready prompt for the Replit Agent. The skeleton (`sections`) and the
+ * artifact wording differ per kind; the rules, intake and "nothing goes live"
+ * guarantee are shared so no single kind is secretly web-biased.
+ */
+interface BuildPromptSpec {
+  /** NL phrase for what gets built, e.g. "de website of landingspagina". */
+  artifactNL: string;
+  /** Replit app type the user picks when starting the project. */
+  replitAppType: string;
+  /** Knowledge node that grounds this artifact type, e.g. "knowledge/replit-slide-decks.md". */
+  knowledgeRef: string;
+  /** Ordered, numbered "## Wat je teruggeeft" section lines. */
+  sections: string[];
+  /** Optional artifact-specific extra rules appended after the shared rules. */
+  extraRules?: string[];
+}
+
+function buildBuildPrompt(
+  ctx: DeliverableContext,
+  spec: BuildPromptSpec,
+): DeliverablePrompt {
   const system = [
-    "Je bent de eindredacteur van het AI-team van Saerens Advertising. Je taak is NIET om nieuwe inhoud te bedenken, maar om het werk dat het team net leverde om te zetten in één kant-en-klare bouwopdracht (een 'prompt') die de gebruiker rechtstreeks in een nieuw Replit-project kan plakken om de website of landingspagina te laten bouwen.",
+    `Je bent de eindredacteur van het AI-team van Saerens Advertising. Je taak is NIET om nieuwe inhoud te bedenken, maar om het werk dat het team net leverde om te zetten in één kant-en-klare bouwopdracht (een 'prompt') die de gebruiker rechtstreeks in een nieuw Replit-project (type: ${spec.replitAppType}) kan plakken om ${spec.artifactNL} te laten bouwen.`,
+    `Volg ${spec.knowledgeRef} voor wat dit Replit-artefacttype kan en hoe je er goed voor prompt.`,
     "",
     "## Wat je krijgt",
     "- De klantcontext (merk, doelgroep, toon).",
     "- De oorspronkelijke opdracht van de gebruiker.",
-    "- Het gezamenlijke werk van het team (paginastructuur, copy, designrichting, technische notities).",
+    "- Het gezamenlijke werk van het team (structuur, copy/inhoud, designrichting, technische notities).",
     "",
     "## Wat je teruggeeft",
-    "Uitsluitend de bouwprompt zelf — geen inleiding, geen uitleg, geen ```-codeblok eromheen. De prompt is in het Nederlands, gericht aan een AI-bouwer, en bevat in deze volgorde:",
-    "1. **Doel & context** — wat moet er gebouwd worden, voor welke klant/business, en het doel van de pagina (de gewenste actie/conversie).",
-    "2. **Doelgroep & toon** — voor wie, en de gewenste tone-of-voice.",
-    "3. **Paginastructuur** — alle secties van boven naar onder, in volgorde, met per sectie de bedoeling.",
-    "4. **Inhoud & copy** — de concrete teksten per sectie (koppen, paragrafen, knoppen/CTA's) zoals het team ze leverde. Verzin geen nieuwe copy; gebruik wat er is en behoud [AAN TE VULLEN: …]-markeringen ongewijzigd.",
-    "5. **Merk & visueel** — kleuren, lettertypes, logo, beeldstijl en eventuele merkrestricties uit de klantcontext en de designrichting.",
-    "6. **Functioneel & technisch** — responsief en mobiel-first, toegankelijk, snelle laadtijd; formulieren/CTA's die werken; en alle technische notities van het team.",
-    "7. **Belangrijke regels** — verzin NOOIT tracking-ID's, pixels of analytics-codes; laat die als duidelijke placeholder staan. Niets gaat automatisch live; een mens reviewt en publiceert.",
+    "Uitsluitend de bouwprompt zelf — geen inleiding, geen uitleg, geen ```-codeblok eromheen. De prompt is in het Nederlands, gericht aan een AI-bouwer (de Replit Agent), en bevat in deze volgorde:",
+    ...spec.sections,
     "",
     "## Regels",
     "- Schrijf concreet en compleet, zodat de bouwer meteen aan de slag kan zonder verdere vragen.",
-    "- Gebruik NOOIT emoji's of decoratieve symbolen, niet in de prompt zelf en niet als instructie voor de website. De te bouwen site moet professioneel en emoji-vrij zijn.",
-    "- Verlies geen enkele inhoudelijke beslissing of copy uit het teamwerk.",
-    "- Laat aannames en open punten staan als **[AAN TE VULLEN: …]** in plaats van ze te verzinnen.",
+    "- Gebruik NOOIT emoji's of decoratieve symbolen, niet in de prompt zelf en niet in het eindresultaat. Het resultaat moet professioneel en emoji-vrij zijn.",
+    "- Verlies geen enkele inhoudelijke beslissing, copy of cijfer uit het teamwerk.",
+    "- Behoud bestaande **[AAN TE VULLEN: …]**-markeringen uit het teamwerk ongewijzigd, en laat nieuwe aannames of open punten op dezelfde manier staan in plaats van ze te verzinnen.",
+    "- Verzin NOOIT tracking-ID's, pixels, analytics-codes, prijzen, cijfers of claims; laat onbevestigde zaken als duidelijke placeholder staan.",
+    "- Niets gaat automatisch live; een mens reviewt, exporteert/rendert en publiceert.",
     "- Geen goedkeuringssectie en geen meta-commentaar — enkel de bouwprompt.",
+    ...(spec.extraRules ?? []),
   ].join("\n");
 
   const user = [
@@ -283,12 +343,87 @@ function buildReplitPrompt(ctx: DeliverableContext): DeliverablePrompt {
     "",
     "## Oorspronkelijke opdracht",
     ctx.request.trim(),
+    ...(ctx.liveData?.trim()
+      ? ["", "## Live data (echte accountdata)", ctx.liveData.trim()]
+      : []),
     "",
     "## Werk van het team",
     ctx.teamWork.trim() || "(geen)",
     "",
-    "Zet dit nu om in één kant-en-klare Replit-bouwprompt volgens je instructies.",
+    `Zet dit nu om in één kant-en-klare Replit-bouwprompt om ${spec.artifactNL} te laten bouwen, volgens je instructies.`,
   ].join("\n");
 
   return { system, user };
+}
+
+function buildReplitPrompt(ctx: DeliverableContext): DeliverablePrompt {
+  return buildBuildPrompt(ctx, {
+    artifactNL: "de website of landingspagina",
+    replitAppType: "Web App",
+    knowledgeRef: "knowledge/replit-prompting.md",
+    sections: [
+      "1. **Doel & context** — wat moet er gebouwd worden, voor welke klant/business, en het doel van de pagina (de gewenste actie/conversie).",
+      "2. **Doelgroep & toon** — voor wie, en de gewenste tone-of-voice.",
+      "3. **Paginastructuur** — alle secties van boven naar onder, in volgorde, met per sectie de bedoeling.",
+      "4. **Inhoud & copy** — de concrete teksten per sectie (koppen, paragrafen, knoppen/CTA's) zoals het team ze leverde. Verzin geen nieuwe copy; neem de definitieve copy uit het teamwerk over en behoud [AAN TE VULLEN: …]-markeringen ongewijzigd.",
+      "5. **Merk & visueel** — kleuren, lettertypes, logo, beeldstijl en eventuele merkrestricties uit de klantcontext en de designrichting.",
+      "6. **Functioneel & technisch** — responsief en mobiel-first, toegankelijk, snelle laadtijd; formulieren/CTA's die werken; en alle technische notities van het team.",
+      "7. **Belangrijke regels** — verzin NOOIT tracking-ID's, pixels of analytics-codes; laat die als duidelijke placeholder staan.",
+    ],
+    extraRules: [
+      "- Bij een site met meerdere pagina's: zet de paginastructuur en de copy per pagina/sectie apart en overzichtelijk neer, zodat de bouwer pagina per pagina kan bouwen in plaats van alles in één blok.",
+    ],
+  });
+}
+
+function buildSlideDeckPrompt(ctx: DeliverableContext): DeliverablePrompt {
+  return buildBuildPrompt(ctx, {
+    artifactNL: "de presentatie (slide deck)",
+    replitAppType: "Slides",
+    knowledgeRef: "knowledge/replit-slide-decks.md",
+    sections: [
+      "1. **Doel & doelgroep** — wat de presentatie moet bereiken en voor wie (de zaal).",
+      "2. **Verhaallijn** — de slides in volgorde, met per slide één duidelijk doel (één idee per slide).",
+      "3. **Inhoud per slide** — de kop en de concrete bullets/cijfers per slide zoals het team ze leverde; verzin geen cijfers.",
+      "4. **Visueel per slide** — grafieken (welk type en op basis van welke data), iconen, beeldrichting.",
+      "5. **Thema & merk** — kleuren, lettertypes en stijl, geënt op het merk van de klant; licht of donker.",
+      "6. **Aantal slides & export** — een expliciet aantal slides; bouw als React-deck dat exporteerbaar is naar PPTX/Google Slides/PDF.",
+      "7. **Belangrijke regels** — verzin geen logo's, testimonials of cijfers; gebruik duidelijke placeholders.",
+    ],
+  });
+}
+
+function buildAnimatedVideoPrompt(ctx: DeliverableContext): DeliverablePrompt {
+  return buildBuildPrompt(ctx, {
+    artifactNL: "de geanimeerde video",
+    replitAppType: "Animation",
+    knowledgeRef: "knowledge/replit-animated-videos.md",
+    sections: [
+      "1. **Doel & lengte** — waar de video voor dient en een richtduur (explainers/promo's werken best op ~30–60s).",
+      "2. **Storyboard per scène** — elke scène in volgorde met: wat er te zien is, de tekst/overlay op het scherm, en de overgang naar de volgende scène.",
+      "3. **Visuele stijl** — kleurenschema, typografie, sfeer en tempo.",
+      "4. **Merk & assets** — logo en waar het verschijnt (bv. een logo-reveal op het einde), merkkleuren en beeldrichting.",
+      "5. **Afsluiting/CTA** — de slotboodschap of call-to-action.",
+      "6. **Technisch** — React-motion graphics (geen Remotion, geen AI-gegenereerde video), auto-play loop, exporteerbaar als MP4 (720p/1080p, 16:9).",
+      "7. **Belangrijke regels** — verzin geen claims, prijzen of cijfers; gebruik duidelijke placeholders.",
+    ],
+  });
+}
+
+function buildDataAppPrompt(ctx: DeliverableContext): DeliverablePrompt {
+  return buildBuildPrompt(ctx, {
+    artifactNL: "het interactieve dashboard (data-app)",
+    replitAppType: "Data Visualization",
+    knowledgeRef: "knowledge/replit-data-apps.md",
+    sections: [
+      "1. **Doel** — welke beslissing het dashboard ondersteunt en wat het moet tonen/volgen.",
+      "2. **Databron & koppeling** — exact waar de data leeft en hoe te koppelen (Replit DB, warehouse-connector, externe API of geüpload bestand); verzin nooit een databron.",
+      "3. **Metrics/KPI's** — de concrete cijfers die zichtbaar moeten zijn, geënt op het werk van het team; verzin geen data.",
+      "4. **Grafiektypes** — welk visueel voor welke metric (trendlijn, balk per campagne, tabel, single-stat tegel).",
+      "5. **Filters & interactie** — bv. datumbereik, campagne-/regioselector, zoekbalk, drill-downs.",
+      "6. **Layout & merk** — groepering en prioriteit van tegels; kleuren/typografie in het merk; licht/donker.",
+      "7. **Ingebouwd** — refresh/auto-refresh, export naar PDF, grafiekdata naar CSV, en een korte analyse-samenvatting.",
+      "8. **Belangrijke regels** — verzin geen metrics, rijen of koppelingen; gebruik duidelijke placeholders.",
+    ],
+  });
 }

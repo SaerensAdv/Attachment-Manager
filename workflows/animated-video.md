@@ -1,0 +1,39 @@
+# Workflow: Animated Video Build
+
+<!-- deliverable: animated-video-prompt -->
+
+## Goal
+
+Turn an approved concept into a paste-ready Replit build prompt for an **animated video** — short motion graphics the Replit Agent builds with React (not Remotion, not AI-generated video) that export to MP4. A human reviews, renders, and shares; nothing goes live automatically. This workflow's deliverable is a Replit prompt; write it per `knowledge/replit-animated-videos.md`, `knowledge/replit-prompting.md`, and `knowledge/premium-web-motion.md`.
+
+## When to use
+
+A client needs a short animated video: a product/feature promo, a 30–60s explainer, a brand/cinematic clip, a social motion graphic, or an animated landing-page hero — and we want it buildable by the Replit Agent.
+
+## Steps
+
+1. Identify the client and the video's goal and target duration (`clients/<client>.md`).
+2. Set the creative concept with the Creative Designer (and Meta/social context where relevant).
+3. Write the scene-by-scene storyboard: per scene what is shown, the on-screen text/overlay (from the Copywriter), and the transition to the next scene.
+4. Set the visual style (palette, typography, mood, pacing) and brand assets (logo placement, e.g. a logo reveal at the end), grounded in the brand and `knowledge/tone-of-voice.md`.
+5. Define the closing message / CTA.
+6. Keep claims and figures exactly as approved; mark unconfirmed items as `[AAN TE VULLEN: …]`. For client-facing wording add a Humanizer pass; prepare the human approval summary.
+
+## Agents involved
+
+- Orchestrator Agent (routes and briefs)
+- Web Developer / Builder (lead — assembles the build spec)
+- Creative Designer (concept, storyboard, visual style)
+- Copywriter (script and on-screen text)
+
+## Required output
+
+Follow `templates/task-output.md`. Must include:
+
+- Video goal and target duration
+- Scene-by-scene storyboard (visual + on-screen text + transition per scene)
+- Visual style, pacing, and brand assets (logo placement, colours)
+- Closing message / CTA
+- Technical notes (MP4 export, 16:9, auto-play loop)
+- Open questions / missing assets (claims, prices, figures as placeholders)
+- Human approval required (a human reviews, renders, and shares — nothing goes live automatically)

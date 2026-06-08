@@ -1,39 +1,42 @@
 ---
-name: replit-prompt deliverable scope & web-build truncation
-description: The replit-prompt deliverable is hardwired for web pages; large multi-page builds truncate the builder step. Observed when demoing prompts for site/redesign/animation/slide/ad-creatives.
+name: Replit build-prompt deliverable family
+description: How the Replit build-prompt deliverables are structured (one shared helper, per-artifact kinds) and why the builder step can truncate on big multi-page builds.
 ---
 
-# replit-prompt deliverable is web-page-hardwired
+# Build-prompt deliverable family
 
-The `replit-prompt` deliverable (`buildReplitPrompt` in `deliverables.ts`) is written
-exclusively for web pages: its editor instruction says to build "de website of
-landingspagina", it forces a fixed page skeleton (Doel, Doelgroep, **Paginastructuur**,
-**Inhoud & copy per sectie**, Merk & visueel, ...), and the download note says "Plak deze
-prompt ... om de **pagina** te laten bouwen". It is carried by exactly ONE workflow
-(`workflows/web-build.md`).
+There is a family of Replit build-prompt deliverables — website, slide deck,
+animated video, data app — that all turn the team's markdown into one paste-ready
+prompt for the Replit Agent, and none of them puts anything live.
 
-**Observed:** running this same deliverable for a redesign, an animated hero, a slide
-deck, and an ad-creatives set produced coherent prompts ONLY because the model adapted
-the page skeleton on its own — not because the system models those output types.
+**Decision:** they share ONE builder so the invariants stay identical for every
+kind — output only the prompt, no emoji, preserve existing `[AAN TE VULLEN: …]`
+placeholders, never invent data/IDs/figures, lose no team decision, nothing goes
+live. Only the artifact wording, the Replit app type, the knowledge node, and the
+section skeleton differ per kind.
 
-**How to apply:** if slide/animation/ad-creative builds should be first-class, give them
-their own workflow + DeliverableKind (or make the replit-prompt skeleton output-type
-agnostic) AND add `knowledge/` house standards for them (we have web + ad-creative
-standards, but none for presentations/slides or video/animation). At minimum, neutralise
-the web-only wording ("pagina") before reusing it beyond pages.
+**Why:** the original web deliverable was hardwired to web pages (forced a page
+skeleton + "pagina" wording). New output types only came out clean because the
+model adapted on its own — the system did not model them. Making each output type
+first-class (its own kind + workflow marker + knowledge node) removes that luck.
 
-# web-build builder step truncates on big multi-page builds
+**How to apply:** to add another artifact output type, register the kind in every
+place a deliverable kind is enumerated (type union, KNOWN set, meta, builder
+switch), add a workflow carrying its `<!-- deliverable: … -->` marker, and add a
+`knowledge/` house-standard node it grounds on. Keep the common rules in the
+shared helper, never per-kind, so an invariant can never drift between kinds.
 
-**Observed:** the "new website from scratch" run (3 agents, 6 pages) came back with run
-status `partial` because the Web Developer step was cut off mid-sentence at the output
-token cap.
+# Builder step truncates on big multi-page builds
 
-**Why:** the Copywriter already produces the full page copy upstream, and the Builder
-then re-transcribes that same copy verbatim into the build prompt — roughly doubling the
-tokens and pushing the final step past the cap. The deliverable still came out clean
-because the separate eindredacteur layer re-synthesises from the (truncated) team work.
+**Observed:** a "new website from scratch" run (multiple agents, ~6 pages) came
+back `partial` because the builder step hit the output-token cap mid-sentence.
 
-**How to apply:** for large builds, either have the Builder reference the Copywriter's
-copy instead of repeating it, or build page-by-page (the "build in small slices"
-principle from `knowledge/replit-prompting.md`) rather than one mega-spec. The
-eindredacteur/deliverable-editor split is what saved the output — keep that pattern.
+**Why:** the Copywriter already produces the full page copy upstream; if the
+builder re-transcribes that copy verbatim it roughly doubles the tokens and pushes
+the final step past the cap. The deliverable still came out clean only because the
+separate deliverable-editor (eindredacteur) layer re-synthesises from the team work.
+
+**How to apply:** for large builds, have the builder REFERENCE the Copywriter's
+copy instead of repeating it, and build page-by-page ("small slices", per
+`knowledge/replit-prompting.md`) rather than one mega-spec. Keep the
+team-markdown → deliverable-editor split; it is what saves a truncated run.

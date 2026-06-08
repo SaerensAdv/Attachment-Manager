@@ -36,6 +36,8 @@ Follow `templates/task-output.md`. Must include:
 
 - Build summary (what was built and against which spec)
 - Implementation notes (stack, structure, key components)
+- Page/section structure, with a pointer to the Copywriter's approved copy per section — do **not** re-transcribe the full copy here. The deliverable layer assembles the final paste-ready prompt from this spec plus the Copywriter's copy; re-typing all the copy a second time duplicates content and can truncate large multi-page builds (see `knowledge/replit-prompting.md`).
+- For multi-page sites: structure the spec page by page so the build can proceed in slices.
 - Responsiveness & accessibility coverage
 - Tracking hooks wired, or what's still needed
 - Open questions / missing assets

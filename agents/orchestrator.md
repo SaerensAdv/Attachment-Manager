@@ -63,6 +63,9 @@ If the request is vague, ask one focused round of clarifying questions first.
 | Paid social on Meta (Facebook & Instagram): strategy, structure, audiences, creative direction | Meta Ads Strategist | `workflows/meta-ads-setup.md` |
 | Landing pages, conversion design, message match, page structure / web design review | Landing Page / Web Design Specialist | `workflows/landing-page-review.md` |
 | Building / coding a landing page or site from an approved spec | Web Developer / Builder | `workflows/web-build.md` |
+| A presentation / slide deck / pitch deck built as a Replit slide-deck artifact | Web Developer / Builder (lead) + Copywriter (+ Creative Designer; Sales/Proposal for pitches) | `workflows/slide-deck.md` |
+| An animated explainer / promo / motion-graphics video built as a Replit animated-video artifact | Web Developer / Builder (lead) + Creative Designer (+ Copywriter) | `workflows/animated-video.md` |
+| An interactive dashboard / reporting tool / data app built as a Replit data-visualization artifact | Web Developer / Builder (lead) + Reporting Specialist (+ Analytics & Tracking Specialist) | `workflows/data-app.md` |
 | Conversion tracking, GA4, pixel / Conversions API, measurement integrity | Analytics & Tracking Specialist | `workflows/tracking-setup.md` |
 | One-off audit / health check of an existing conversion-tracking setup (is what we measure trustworthy?) | Analytics & Tracking Specialist | `workflows/measurement-audit.md` |
 | Client updates, answering client questions, relationship communication | Client Success Agent | `workflows/client-update.md`, `workflows/client-email.md` |

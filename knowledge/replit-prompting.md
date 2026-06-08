@@ -55,5 +55,8 @@ Give the exact error message, the relevant snippet, the file where it happens, w
 ## How we use this at Saerens
 
 - The Web Build deliverable is a Replit prompt — write it to this standard so the build matches the approved spec.
+- **The deliverable layer assembles the final paste-ready prompt.** The Web Developer's job in the team step is to deliver the build *spec* (structure, layout, components, technical notes) and to point to the Copywriter's copy — not to re-transcribe all the copy a second time. Re-typing the full copy inside the build step duplicates content and can truncate large multi-page builds. Reference it ("use the Copywriter's approved copy per section, verbatim"); the deliverable editor then weaves the real copy into the single paste-ready prompt.
+- **Build in slices for large sites.** For multi-page sites, structure the spec page by page so the build can proceed one page at a time, rather than one giant "build everything" block.
 - Pair it with `knowledge/replit-canvas.md` for visual exploration, and carry the brand and conversion standards (`knowledge/landing-page-standards.md`) and the motion direction (`knowledge/premium-web-motion.md`) into the prompt's context.
+- The same build loop and prompting habits apply to the other Replit build deliverables — slide decks (`knowledge/replit-slide-decks.md`), animated videos (`knowledge/replit-animated-videos.md`), and data apps (`knowledge/replit-data-apps.md`).
 - Recommend, don't deploy: a human reviews, tests, and publishes — the prompt prepares the build, it does not put anything live.

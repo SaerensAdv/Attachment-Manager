@@ -51,7 +51,16 @@ A workflow opts in with a single marker line, an HTML comment so it stays invisi
 <!-- deliverable: replit-prompt -->
 ```
 
-Workflows without a marker keep markdown as their result, exactly as before. The first implemented deliverable is `replit-prompt` on `workflows/web-build.md`. The deliverable step is best-effort: if it fails, the team's markdown is still returned.
+Workflows without a marker keep markdown as their result, exactly as before. The deliverable step is best-effort: if it fails, the team's markdown is still returned.
+
+There is a family of **Replit build-prompt** deliverables — each converts the team's work into one paste-ready prompt for the Replit Agent, grounded in its artifact-type knowledge node, and none of them puts anything live:
+
+- `replit-prompt` — a website / landing page (`workflows/web-build.md`, `knowledge/replit-prompting.md`).
+- `slide-deck-prompt` — a presentation / slide deck (`workflows/slide-deck.md`, `knowledge/replit-slide-decks.md`).
+- `animated-video-prompt` — a short animated video (`workflows/animated-video.md`, `knowledge/replit-animated-videos.md`).
+- `data-app-prompt` — an interactive dashboard / data app (`workflows/data-app.md`, `knowledge/replit-data-apps.md`).
+
+They share one builder (`buildBuildPrompt`) so the rules (no emoji, preserve `[AAN TE VULLEN: …]` placeholders, lose no team decision, never invent data, nothing goes live) stay identical; only the artifact wording, the Replit app type, the knowledge node, and the section skeleton differ per kind. Other deliverables (`google-ads-csv`, `negative-keywords-csv`, `monthly-report-email`) are bulk-import or action artifacts handled the same way.
 
 ## Folder map
 
@@ -102,6 +111,9 @@ saerens-ai-team/
 │   ├── meta-ads-setup.md
 │   ├── landing-page-review.md
 │   ├── web-build.md
+│   ├── slide-deck.md
+│   ├── animated-video.md
+│   ├── data-app.md
 │   ├── tracking-setup.md
 │   ├── client-update.md
 │   ├── ad-creatives.md

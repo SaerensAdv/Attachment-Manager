@@ -1,6 +1,6 @@
 # Replit Animated Videos — Building Motion Graphics with the Agent
 
-A "how to use it" reference for handing animated-video work to the Replit Agent. Saerens turns an approved concept into a short motion-graphics video that the Replit Agent builds from a prompt. Pair this with `knowledge/replit-prompting.md` (general prompting) and `knowledge/premium-web-motion.md` (restrained, tasteful motion).
+A "how to use it" reference for handing animated-video work to the Replit Agent. Saerens turns an approved concept into a short motion-graphics video that the Replit Agent builds from a prompt. Pair this with `knowledge/replit-prompting.md` (general prompting) and `knowledge/premium-web-motion.md` (restrained, tasteful motion). The client's own brand leads the content; sign it off with a Saerens logo reveal / end-card per `knowledge/saerens-brand.md`.
 
 ## What a Replit animated video is
 

@@ -9,6 +9,7 @@
 - [Adding an agent](adding-agents.md) — agent .md read at runtime (no api restart); routing edge needs exact H1 title in orchestrator table; update AGENTS.md + ARCHITECTURE.md.
 - [System Map branding direction](branding-direction.md) — editorial "Newsroom" light theme (cream/ink/indigo, Playfair+Inter+Space Mono); theme in index.css :root, no dark toggle.
 - [Deliverable layer](deliverable-layer.md) — workflows opt into a typed end product via `<!-- deliverable: kind -->`; best-effort after team loop, never loses markdown; strip HTML comments before any ReactMarkdown (no rehype-raw).
+- [Build-prompt branding & pre-fill](build-prompt-branding.md) — per-kind brand mode (agency=full house style, client=client brand, client+signature=signature-only block, never full house style); pre-fill known facts, keep placeholders only for genuinely-unknown specifics.
 - [Client DB ↔ doc-graph bridge](client-db-doc-bridge.md) — DB clients become synthetic `clients/db/<id>.md` DocFiles; every doc consumer must inject loadClientDocs(); invalidate clients+doc-graph keys after mutations.
 - [Website-intake (Fase 2)](website-intake.md) — server-side read of client's own site into raw agent context; SSRF guardrails (block private IPs + manual redirect re-validation) must never regress.
 - [Learning loop (review→proposals→apply)](learning-loop.md) — per-change confirmation; non-destructive append; accept/reject must be an atomic compare-and-set (claim WHERE pending) + revert-on-apply-failure.

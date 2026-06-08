@@ -16,7 +16,7 @@ A client or the team needs an interactive dashboard: a performance dashboard (Go
 2. Pin the data source and how to connect it (Replit DB, a warehouse connector, an external API, or an uploaded file) — never invent a data source.
 3. Define the metrics/KPIs to surface, grounded in the team's reporting work and `knowledge/reporting-standards.md`; never fabricate data.
 4. Choose chart types per metric and the filters/interactivity (date range, campaign/region selector, search, drill-downs).
-5. Set layout and branding (tile grouping/priority, colours/typography, light/dark).
+5. Set layout and branding: tile grouping/priority, applying the Saerens house style (`knowledge/saerens-brand.md`) — it is an agency reporting tool, like the Saerens report. Pre-fill what the agency already knows; mark only genuinely unknown items as placeholders.
 6. Confirm built-in needs (refresh/auto-refresh, PDF export, chart-to-CSV, analysis summary). Prepare the human approval summary.
 
 ## Agents involved

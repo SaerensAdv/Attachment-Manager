@@ -290,6 +290,35 @@ function buildAdCopyCsvPrompt(ctx: DeliverableContext): DeliverablePrompt {
 }
 
 /**
+ * Saerens Advertising house style, injected verbatim into agency-authored build
+ * prompts (decks, dashboards, agency promos) so the built artifact looks like the
+ * branded Saerens report instead of generic output. Concrete tokens are kept here
+ * (agency-constant) and mirror `knowledge/saerens-brand.md` / `report-pdf.ts`.
+ */
+const SAERENS_HOUSE_STYLE = [
+  "## Saerens-huisstijl",
+  "Dit is bureau-afzendermateriaal: Saerens Advertising is de afzender. Pas de Saerens-huisstijl actief toe in het ontwerp (zoals het Saerens Google Ads-rapport) — niet als losse placeholder.",
+  '- Bureau: Saerens Advertising — officieel Google Partner-bureau voor Google Ads, 100% remote, actief in Vlaanderen en Nederland. Positionering: "Van clicks naar klanten".',
+  "- Werkwijze (gebruik als copy waar relevant, niet als placeholder): vaste maandelijkse vergoeding, geen opstartkosten, geen jaarcontract, maandelijks opzegbaar, transparant via een live dashboard, eerlijk advies, reactie binnen 24 uur.",
+  "- Kleurenpalet: achtergrond near-black #0A0A0B, indigo #29274E, paars #716BEB (primair accent), amber #F4A425 (CTA-accent), tekst-inkt #1A1A22, gedempt grijs #6B6B72, wit #FFFFFF, lichtpaneel #F5F5F8, haarlijn #E4E2EE.",
+  "- Typografie: koppen in 'Plus Jakarta Sans', bodytekst in 'Outfit' (beide via Google Fonts). Gebruik deze lettertypes overal, ook als het team een ander (generiek) lettertype zoals Inter voorstelde — voor merkelementen (kleuren, lettertypes, logo) gaat de huisstijl vóór op generieke teamkeuzes.",
+  '- Logo & merk: gebruik het woordmerk "SAERENS ADVERTISING" (in Plus Jakarta Sans, lichte letterspatiëring) met een "SA"-monogram. Het merkteken staat op https://saerensadvertising.com/SA_logo-100.webp (eenkleurig lijn-logo; op een donkere achtergrond wit maken met CSS-filter brightness(0) invert(1)). Zet de tagline "Van clicks naar klanten" onder het logo.',
+  "- Stijl: zoals het Saerens-rapport — een donkere cover/openingsscherm (near-black met paars + amber accenten en het witte SA-merk), gevolgd door lichte inhoud; pill-vormige knoppen; ruime witruimte; zakelijk, helder, vertrouwenwekkend; nooit emoji's.",
+  "- Contact (bureau): contactpersoon Axel Saerens, e-mail axel@saerensadvertising.com, website saerensadvertising.com. Vul deze in i.p.v. ze open te laten; laat enkel een echt onbekend gegeven (bv. telefoonnummer) als placeholder staan.",
+  "- Bewijspunten (echte cijfers, laatste 365 dagen — alleen op bureau-afzendermateriaal en alleen als de context erom vraagt): 3,93x gemiddelde ROAS, 1,58 miljoen euro conversiewaarde, 1.820+ leads, 456.000 euro beheerd advertentiebudget. Verzin nooit andere cijfers.",
+].join("\n");
+
+const SAERENS_SIGNATURE = [
+  "## Saerens-signatuur",
+  "Bij dit artefact staat het merk van de klant centraal in de inhoud en het ontwerp. Saerens Advertising verschijnt alleen als afzender-signatuur — gebruik de huisstijl NIET om het klantmerk te vervangen of te overschaduwen.",
+  '- Beperk de Saerens-aanwezigheid tot een afsluitende signatuur (bv. een korte logo-reveal of eindkaart): het woordmerk "SAERENS ADVERTISING" met "SA"-monogram en de tagline "Van clicks naar klanten".',
+  "- Logo: het merkteken staat op https://saerensadvertising.com/SA_logo-100.webp (eenkleurig lijn-logo; op een donkere achtergrond wit maken met CSS-filter brightness(0) invert(1)).",
+  "- Saerens-accentkleuren (alleen subtiel in de signatuur, niet in de hele klantinhoud): paars #716BEB, amber #F4A425, near-black #0A0A0B.",
+  "- Vermeld geen bureau-bewijspunten (ROAS, conversiewaarde, leads, budget) en geen bureau-werkwijze op klant-afzendermateriaal — die horen alleen op materiaal waar Saerens zelf de afzender is.",
+  "- Contact in de signatuur indien relevant: Axel Saerens, axel@saerensadvertising.com, saerensadvertising.com.",
+].join("\n");
+
+/**
  * Spec for a "Replit build prompt" deliverable. Every build prompt (website,
  * slide deck, animated video, data app) converts the team's markdown into ONE
  * paste-ready prompt for the Replit Agent. The skeleton (`sections`) and the
@@ -305,6 +334,14 @@ interface BuildPromptSpec {
   knowledgeRef: string;
   /** Ordered, numbered "## Wat je teruggeeft" section lines. */
   sections: string[];
+  /**
+   * Whose brand leads, which decides if the Saerens house style is injected:
+   * - "agency": Saerens is the author (deck, dashboard) — full house style.
+   * - "client": the client's own product (website) — client brand leads, no house style.
+   * - "client+signature": client brand leads the content, Saerens signs it (a logo
+   *   reveal / end-card + accent colours), e.g. a product explainer video.
+   */
+  brand: "agency" | "client" | "client+signature";
   /** Optional artifact-specific extra rules appended after the shared rules. */
   extraRules?: string[];
 }
@@ -313,6 +350,22 @@ function buildBuildPrompt(
   ctx: DeliverableContext,
   spec: BuildPromptSpec,
 ): DeliverablePrompt {
+  const today = new Date().toLocaleDateString("nl-BE", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "Europe/Brussels",
+  });
+  const brandBlock =
+    spec.brand === "client"
+      ? [
+          "",
+          "## Merk",
+          "- Dit artefact is het eigen product van de klant: het merk van de klant staat centraal. Gebruik de merk- en visuele identiteit uit de klantcontext (kleuren, lettertypes, logo, beeldstijl). Leg de Saerens-huisstijl hier NIET op.",
+        ]
+      : spec.brand === "client+signature"
+        ? ["", SAERENS_SIGNATURE]
+        : ["", SAERENS_HOUSE_STYLE];
   const system = [
     `Je bent de eindredacteur van het AI-team van Saerens Advertising. Je taak is NIET om nieuwe inhoud te bedenken, maar om het werk dat het team net leverde om te zetten in één kant-en-klare bouwopdracht (een 'prompt') die de gebruiker rechtstreeks in een nieuw Replit-project (type: ${spec.replitAppType}) kan plakken om ${spec.artifactNL} te laten bouwen.`,
     `Volg ${spec.knowledgeRef} voor wat dit Replit-artefacttype kan en hoe je er goed voor prompt.`,
@@ -330,14 +383,19 @@ function buildBuildPrompt(
     "- Schrijf concreet en compleet, zodat de bouwer meteen aan de slag kan zonder verdere vragen.",
     "- Gebruik NOOIT emoji's of decoratieve symbolen, niet in de prompt zelf en niet in het eindresultaat. Het resultaat moet professioneel en emoji-vrij zijn.",
     "- Verlies geen enkele inhoudelijke beslissing, copy of cijfer uit het teamwerk.",
-    "- Behoud bestaande **[AAN TE VULLEN: …]**-markeringen uit het teamwerk ongewijzigd, en laat nieuwe aannames of open punten op dezelfde manier staan in plaats van ze te verzinnen.",
+    "- Vul alles in wat al bekend is, in plaats van het als placeholder te laten staan: de datum van vandaag (zie 'Vandaag'), de bureaugegevens (zie 'Saerens-huisstijl', indien aanwezig) en alle klantgegevens uit de klantcontext (bedrijfsnaam, sector, website, toon).",
+    "- Los bestaande **[AAN TE VULLEN: …]**-markeringen uit het teamwerk op zodra het antwoord blijkt uit die bronnen; laat alleen markeringen staan die echt opdracht- of klantspecifiek én onbekend blijven (bv. exact maandtarief, opzegtermijn, telefoonnummer). Verzin nooit een ontbrekend gegeven.",
     "- Verzin NOOIT tracking-ID's, pixels, analytics-codes, prijzen, cijfers of claims; laat onbevestigde zaken als duidelijke placeholder staan.",
     "- Niets gaat automatisch live; een mens reviewt, exporteert/rendert en publiceert.",
     "- Geen goedkeuringssectie en geen meta-commentaar — enkel de bouwprompt.",
     ...(spec.extraRules ?? []),
+    ...brandBlock,
   ].join("\n");
 
   const user = [
+    "## Vandaag",
+    today,
+    "",
     "## Klantcontext",
     ctx.clientContent.trim(),
     "",
@@ -361,6 +419,7 @@ function buildReplitPrompt(ctx: DeliverableContext): DeliverablePrompt {
     artifactNL: "de website of landingspagina",
     replitAppType: "Web App",
     knowledgeRef: "knowledge/replit-prompting.md",
+    brand: "client",
     sections: [
       "1. **Doel & context** — wat moet er gebouwd worden, voor welke klant/business, en het doel van de pagina (de gewenste actie/conversie).",
       "2. **Doelgroep & toon** — voor wie, en de gewenste tone-of-voice.",
@@ -381,14 +440,15 @@ function buildSlideDeckPrompt(ctx: DeliverableContext): DeliverablePrompt {
     artifactNL: "de presentatie (slide deck)",
     replitAppType: "Slides",
     knowledgeRef: "knowledge/replit-slide-decks.md",
+    brand: "agency",
     sections: [
       "1. **Doel & doelgroep** — wat de presentatie moet bereiken en voor wie (de zaal).",
       "2. **Verhaallijn** — de slides in volgorde, met per slide één duidelijk doel (één idee per slide).",
       "3. **Inhoud per slide** — de kop en de concrete bullets/cijfers per slide zoals het team ze leverde; verzin geen cijfers.",
       "4. **Visueel per slide** — grafieken (welk type en op basis van welke data), iconen, beeldrichting.",
-      "5. **Thema & merk** — kleuren, lettertypes en stijl, geënt op het merk van de klant; licht of donker.",
+      "5. **Thema & merk** — pas de Saerens-huisstijl toe (zie 'Saerens-huisstijl'): donkere cover/titelslide met het witte SA-merk, daarna lichte inhoudsslides; het kleurenpalet, Plus Jakarta Sans (koppen) en Outfit (body), pill-knoppen.",
       "6. **Aantal slides & export** — een expliciet aantal slides; bouw als React-deck dat exporteerbaar is naar PPTX/Google Slides/PDF.",
-      "7. **Belangrijke regels** — verzin geen logo's, testimonials of cijfers; gebruik duidelijke placeholders.",
+      "7. **Belangrijke regels** — verzin geen testimonials of cijfers; gebruik de echte Saerens-bewijspunten alleen waar de context erom vraagt, en duidelijke placeholders voor de rest.",
     ],
   });
 }
@@ -398,11 +458,12 @@ function buildAnimatedVideoPrompt(ctx: DeliverableContext): DeliverablePrompt {
     artifactNL: "de geanimeerde video",
     replitAppType: "Animation",
     knowledgeRef: "knowledge/replit-animated-videos.md",
+    brand: "client+signature",
     sections: [
       "1. **Doel & lengte** — waar de video voor dient en een richtduur (explainers/promo's werken best op ~30–60s).",
       "2. **Storyboard per scène** — elke scène in volgorde met: wat er te zien is, de tekst/overlay op het scherm, en de overgang naar de volgende scène.",
       "3. **Visuele stijl** — kleurenschema, typografie, sfeer en tempo.",
-      "4. **Merk & assets** — logo en waar het verschijnt (bv. een logo-reveal op het einde), merkkleuren en beeldrichting.",
+      "4. **Merk & assets** — het merk van de klant staat centraal in de inhoud; sluit af met een Saerens-logo-reveal/eindkaart in de Saerens-huisstijl (zie 'Saerens-huisstijl') met de tagline en het SA-merk, en gebruik de Saerens-accentkleuren (paars #716BEB, amber #F4A425) voor de signatuur.",
       "5. **Afsluiting/CTA** — de slotboodschap of call-to-action.",
       "6. **Technisch** — React-motion graphics (geen Remotion, geen AI-gegenereerde video), auto-play loop, exporteerbaar als MP4 (720p/1080p, 16:9).",
       "7. **Belangrijke regels** — verzin geen claims, prijzen of cijfers; gebruik duidelijke placeholders.",
@@ -415,13 +476,14 @@ function buildDataAppPrompt(ctx: DeliverableContext): DeliverablePrompt {
     artifactNL: "het interactieve dashboard (data-app)",
     replitAppType: "Data Visualization",
     knowledgeRef: "knowledge/replit-data-apps.md",
+    brand: "agency",
     sections: [
       "1. **Doel** — welke beslissing het dashboard ondersteunt en wat het moet tonen/volgen.",
       "2. **Databron & koppeling** — exact waar de data leeft en hoe te koppelen (Replit DB, warehouse-connector, externe API of geüpload bestand); verzin nooit een databron.",
       "3. **Metrics/KPI's** — de concrete cijfers die zichtbaar moeten zijn, geënt op het werk van het team; verzin geen data.",
       "4. **Grafiektypes** — welk visueel voor welke metric (trendlijn, balk per campagne, tabel, single-stat tegel).",
       "5. **Filters & interactie** — bv. datumbereik, campagne-/regioselector, zoekbalk, drill-downs.",
-      "6. **Layout & merk** — groepering en prioriteit van tegels; kleuren/typografie in het merk; licht/donker.",
+      "6. **Layout & merk** — groepering en prioriteit van tegels; pas de Saerens-huisstijl toe (zie 'Saerens-huisstijl'): donker dashboard-chrome met paars/amber accenten en het witte SA-merk in de header, Plus Jakarta Sans (koppen) en Outfit (body).",
       "7. **Ingebouwd** — refresh/auto-refresh, export naar PDF, grafiekdata naar CSV, en een korte analyse-samenvatting.",
       "8. **Belangrijke regels** — verzin geen metrics, rijen of koppelingen; gebruik duidelijke placeholders.",
     ],

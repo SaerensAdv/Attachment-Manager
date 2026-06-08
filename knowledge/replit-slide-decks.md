@@ -1,6 +1,6 @@
 # Replit Slide Decks — Building Presentations with the Agent
 
-A "how to use it" reference for handing slide-deck work to the Replit Agent. When Saerens turns an approved narrative into a presentation, the build is produced by the Replit Agent from a prompt. The quality of the deck depends on the quality of that prompt. Pair this with `knowledge/replit-prompting.md` (general prompting habits) and `knowledge/tone-of-voice.md` (Saerens voice).
+A "how to use it" reference for handing slide-deck work to the Replit Agent. When Saerens turns an approved narrative into a presentation, the build is produced by the Replit Agent from a prompt. The quality of the deck depends on the quality of that prompt. Pair this with `knowledge/replit-prompting.md` (general prompting habits), `knowledge/tone-of-voice.md` (Saerens voice), and — because a pitch/sales/results deck is agency-authored — `knowledge/saerens-brand.md` (the Saerens house style to apply).
 
 ## What a Replit slide deck is
 
@@ -15,7 +15,7 @@ A "how to use it" reference for handing slide-deck work to the Replit Agent. Whe
 - **Narrative arc** — the slides in order, each with its single purpose. A strong deck has one idea per slide.
 - **Per-slide content** — the headline and the concrete bullet points / numbers for each slide, taken from the team's work. Do not invent figures.
 - **Visuals per slide** — charts (and what they show), icons, imagery direction. Name the chart type and the data behind it.
-- **Theme** — colours, fonts, and visual style, grounded in the client's brand; light or dark.
+- **Theme** — colours, fonts, and visual style. A pitch/sales/results deck is agency-authored, so apply the Saerens house style (`knowledge/saerens-brand.md`): the deck is Saerens-branded, not the client's brand. Light or dark sections per the house style.
 - **Slide count** — an explicit number (e.g. "10 slides").
 
 ## Good prompting habits for decks

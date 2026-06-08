@@ -15,9 +15,9 @@ A client needs a short animated video: a product/feature promo, a 30–60s expla
 1. Identify the client and the video's goal and target duration (`clients/<client>.md`).
 2. Set the creative concept with the Creative Designer (and Meta/social context where relevant).
 3. Write the scene-by-scene storyboard: per scene what is shown, the on-screen text/overlay (from the Copywriter), and the transition to the next scene.
-4. Set the visual style (palette, typography, mood, pacing) and brand assets (logo placement, e.g. a logo reveal at the end), grounded in the brand and `knowledge/tone-of-voice.md`.
+4. Set the visual style (palette, typography, mood, pacing). The client's own brand leads the content; sign it off with a Saerens logo reveal / end-card per the Saerens house style (`knowledge/saerens-brand.md`), grounded also in `knowledge/tone-of-voice.md`.
 5. Define the closing message / CTA.
-6. Keep claims and figures exactly as approved; mark unconfirmed items as `[AAN TE VULLEN: …]`. For client-facing wording add a Humanizer pass; prepare the human approval summary.
+6. Keep claims and figures exactly as approved. Pre-fill what the agency already knows; mark only genuinely unknown items as `[AAN TE VULLEN: …]`. For client-facing wording add a Humanizer pass; prepare the human approval summary.
 
 ## Agents involved
 

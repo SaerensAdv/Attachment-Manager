@@ -1,6 +1,6 @@
 # Replit Data Apps — Building Dashboards with the Agent
 
-A "how to use it" reference for handing data-app (data-visualization) work to the Replit Agent. Saerens turns a reporting need into an interactive dashboard that the Replit Agent builds from a prompt. Pair this with `knowledge/replit-prompting.md` (general prompting), `knowledge/reporting-standards.md`, and `knowledge/analytics-standards.md`.
+A "how to use it" reference for handing data-app (data-visualization) work to the Replit Agent. Saerens turns a reporting need into an interactive dashboard that the Replit Agent builds from a prompt. Pair this with `knowledge/replit-prompting.md` (general prompting), `knowledge/reporting-standards.md`, `knowledge/analytics-standards.md`, and — because a dashboard is an agency reporting tool like the Saerens report — `knowledge/saerens-brand.md` (the Saerens house style to apply).
 
 ## What a Replit data app is
 
@@ -18,7 +18,7 @@ A "how to use it" reference for handing data-app (data-visualization) work to th
 - **Metrics / KPIs** — the specific numbers to surface, grounded in the team's reporting work and `knowledge/reporting-standards.md`.
 - **Chart types** — which visual for which metric (trend line, bar by campaign, table, single-stat tile).
 - **Filters & interactivity** — e.g. date-range filter, campaign/region selector, search, drill-downs.
-- **Layout & branding** — grouping and priority of tiles; colours/typography to match the client brand; light/dark.
+- **Layout & branding** — grouping and priority of tiles; colours/typography. A dashboard is an agency reporting tool (like the Saerens report), so apply the Saerens house style (`knowledge/saerens-brand.md`): the dashboard is Saerens-branded, not the client's brand. Light/dark per the house style.
 
 ## Good prompting habits for data apps
 

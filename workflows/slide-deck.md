@@ -4,7 +4,7 @@
 
 ## Goal
 
-Turn an approved narrative into a paste-ready Replit build prompt for a **slide deck** — a professional presentation the Replit Agent builds as a React deck that exports to PPTX, Google Slides, or PDF. A human reviews, exports, and presents; nothing goes live automatically. This workflow's deliverable is a Replit prompt; write it per `knowledge/replit-slide-decks.md` and `knowledge/replit-prompting.md`.
+Turn an approved narrative into a paste-ready Replit build prompt for a **slide deck** — a professional presentation the Replit Agent builds as a React deck that exports to PPTX, Google Slides, or PDF. A human reviews, exports, and presents; nothing goes live automatically. This workflow's deliverable is a Replit prompt; write it per `knowledge/replit-slide-decks.md` and `knowledge/replit-prompting.md`. A pitch/sales/results deck is agency-authored, so apply the Saerens house style from `knowledge/saerens-brand.md`.
 
 ## When to use
 
@@ -14,8 +14,8 @@ A client or prospect needs a presentation: a pitch/sales deck, a product overvie
 
 1. Identify the client/audience and the deck's goal (`clients/<client>.md`) — what it must achieve and for whom (the room).
 2. Confirm the narrative arc: the slides in order, one idea per slide.
-3. Write the per-slide content (headline + concrete bullets/numbers) from the team's work — never invent figures; mark unconfirmed items as `[AAN TE VULLEN: …]`.
-4. Set the visual direction per slide (chart types and the data behind them, icons, imagery) and the deck theme (colours, fonts, light/dark) grounded in the client brand and `knowledge/tone-of-voice.md`.
+3. Write the per-slide content (headline + concrete bullets/numbers) from the team's work — never invent figures. Pre-fill what the agency already knows (agency name, positioning, Google Partner status, working model, contact, today's date); mark only genuinely unknown client-specific items as `[AAN TE VULLEN: …]`.
+4. Set the visual direction per slide (chart types and the data behind them, icons, imagery) and the deck theme grounded in the Saerens house style (`knowledge/saerens-brand.md`) and `knowledge/tone-of-voice.md`.
 5. Fix an explicit slide count and confirm export needs (PPTX / Google Slides / PDF).
 6. Flag claims needing confirmation; for client-facing wording add a Humanizer pass; prepare the human approval summary.
 

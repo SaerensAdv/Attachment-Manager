@@ -1,0 +1,20 @@
+{
+  "before": 26,
+  "fired": [
+    {
+      "id": "3.1",
+      "text": "Schrijf 5 advertentievarianten (NL) voor een Google Search-campagne van een tandartspraktijk.",
+      "workflow": "workflows/ad-copy.md"
+    },
+    {
+      "id": "X.2",
+      "text": "Doe concurrentieonderzoek én controleer de tracking voor klant X.",
+      "workflow": "workflows/competitor-research.md"
+    },
+    {
+      "id": "4.2",
+      "text": "Maak een maandrapport voor klant X met de belangrijkste inzichten en aanbevelingen.",
+      "workflow": "workflows/monthly-reporting.md"
+    }
+  ]
+}

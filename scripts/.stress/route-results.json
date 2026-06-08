@@ -1,0 +1,914 @@
+[
+  {
+    "id": "0.1",
+    "group": "0 Direction",
+    "text": "We hebben een nieuwe klant: een lokale meubelwinkel met webshop. Maak een voorstel voor een volledige aanpak.",
+    "expect": {
+      "maxTeam": 4
+    },
+    "ms": 3606,
+    "needsClarification": false,
+    "clarification": null,
+    "taskType": "strategie",
+    "reasoning": "Een voorstel voor een volledige aanpak voor een nieuwe klant is een sales proposal; de Sales / Proposal Agent is hiervoor de juiste specialist met de bijhorende workflow.",
+    "workflow": "workflows/sales-proposal.md",
+    "primary": "agents/sales-proposal-agent.md",
+    "primaryDept": "4 Client & Growth",
+    "team": [
+      "agents/sales-proposal-agent.md"
+    ],
+    "teamSize": 1,
+    "stageShape": [
+      1
+    ],
+    "parallel": false,
+    "clientFacing": true,
+    "touchesLiveAccount": false
+  },
+  {
+    "id": "0.2",
+    "group": "0 Direction",
+    "text": "De zoekadvertenties van klant X presteren al weken slecht.",
+    "expect": {
+      "dept": "1 Paid Media",
+      "maxTeam": 2
+    },
+    "ms": 5120,
+    "needsClarification": false,
+    "clarification": null,
+    "taskType": "optimalisatie",
+    "reasoning": "Slecht presterende zoekadvertenties over meerdere weken wijzen op een reguliere account-optimalisatiecyclus, waarbij de Google Ads Optimization Specialist de aangewezen specialist is via de wekelijkse optimalisatieworkflow.",
+    "workflow": "workflows/account-optimization.md",
+    "primary": "agents/google-ads-optimization-specialist.md",
+    "primaryDept": "1 Paid Media",
+    "team": [
+      "agents/google-ads-optimization-specialist.md"
+    ],
+    "teamSize": 1,
+    "stageShape": [
+      1
+    ],
+    "parallel": false,
+    "clientFacing": false,
+    "touchesLiveAccount": true
+  },
+  {
+    "id": "0.3",
+    "group": "0 Direction",
+    "text": "Kun je onze laatste advertentieteksten controleren op naleving van het beleid?",
+    "expect": {
+      "dept": "5 Quality & Compliance",
+      "maxTeam": 2
+    },
+    "ms": 4621,
+    "needsClarification": false,
+    "clarification": null,
+    "taskType": "compliance-review",
+    "reasoning": "De opdracht betreft een beleidscontrole van bestaande advertentieteksten — dit is zuiver intern kwaliteitswerk waarbij de QA & Compliance Reviewer als vaste afsluitende stap automatisch loopt; de Copywriter is hier de primaire uitvoerende agent die de teksten beoordeelt en eventueel aanpast voordat de QA-stap volgt.",
+    "workflow": null,
+    "primary": "agents/copywriter.md",
+    "primaryDept": "3 Content & Creative",
+    "team": [
+      "agents/copywriter.md"
+    ],
+    "teamSize": 1,
+    "stageShape": [
+      1
+    ],
+    "parallel": false,
+    "clientFacing": false,
+    "touchesLiveAccount": false
+  },
+  {
+    "id": "0.4",
+    "group": "0 Direction",
+    "text": "Help klant Y groeien.",
+    "expect": {
+      "maxTeam": 3
+    },
+    "ms": 8107,
+    "needsClarification": true,
+    "clarification": "De opdracht 'Help klant Y groeien' is te vaag om te routeren. Kun je één of meer van de volgende vragen beantwoorden: (1) Wat is de concrete taak — gaat het om een strategie, een campagne-opzet, optimalisatie van een lopend account, een rapport, copy, SEO, of iets anders? (2) Welke klant bedoel je met 'klant Y'? (3) Is er een specifiek kanaal of probleem in het vizier (Google Ads, Meta, SEO, website, tracking, …)?",
+    "taskType": null,
+    "reasoning": "De aard van de opdracht is volledig onduidelijk — 'groeien' kan elk type werk omvatten; zonder minimale context kan ik geen specialist of workflow aanwijzen.",
+    "workflow": null,
+    "primary": null,
+    "primaryDept": null,
+    "team": [],
+    "teamSize": 0,
+    "stageShape": [],
+    "parallel": false,
+    "clientFacing": null,
+    "touchesLiveAccount": null
+  },
+  {
+    "id": "0.5",
+    "group": "0 Direction",
+    "text": "We willen zowel betere SEO als sterkere Meta-advertenties.",
+    "expect": {
+      "parallel": true,
+      "maxTeam": 4
+    },
+    "ms": 4103,
+    "needsClarification": false,
+    "clarification": null,
+    "taskType": "seo + meta ads strategie",
+    "reasoning": "De opdracht omvat twee duidelijke, onafhankelijke disciplines (SEO-audit en Meta Ads setup) die parallel kunnen worden opgestart; beide specialisten leveren intern/strategisch tussenwerk op.",
+    "workflow": null,
+    "primary": "agents/seo-specialist.md",
+    "primaryDept": "2 SEO & Web",
+    "team": [
+      "agents/seo-specialist.md",
+      "agents/meta-ads-strategist.md"
+    ],
+    "teamSize": 2,
+    "stageShape": [
+      2
+    ],
+    "parallel": true,
+    "clientFacing": false,
+    "touchesLiveAccount": false
+  },
+  {
+    "id": "0.6",
+    "group": "0 Direction",
+    "text": "Schrijf de interne databasecode voor onze tool.",
+    "expect": {
+      "graceful": true
+    },
+    "ms": 6845,
+    "needsClarification": true,
+    "clarification": "Deze opdracht valt buiten het domein van het Saerens Advertising AI-team (Google Ads, SEO, Meta, copy, rapportage, tracking, web builds voor klanten, etc.). Kun je verduidelijken wat je bedoelt? Gaat het om een interne Saerens-tool voor een specifiek marketingdoel (bv. een rapportagedashboard, een klantendatabase, een tracking-integratie), of is dit een opdracht die buiten onze scope valt?",
+    "taskType": null,
+    "reasoning": "De aard van de opdracht is onduidelijk: 'interne databasecode' past niet direct in een van de beschikbare workflows of agentspecialisaties, en het is onduidelijk of dit een marketinggerelateerde tool betreft of iets buiten onze scope.",
+    "workflow": null,
+    "primary": null,
+    "primaryDept": null,
+    "team": [],
+    "teamSize": 0,
+    "stageShape": [],
+    "parallel": false,
+    "clientFacing": null,
+    "touchesLiveAccount": null
+  },
+  {
+    "id": "1.1",
+    "group": "1 Paid Media",
+    "text": "Zet een nieuwe Google Search-campagne op voor een B2B-softwareklant die demo-aanvragen wil, budget €4.000/maand.",
+    "expect": {
+      "dept": "1 Paid Media",
+      "maxTeam": 3
+    },
+    "ms": 4304,
+    "needsClarification": false,
+    "clarification": null,
+    "taskType": "opzet",
+    "reasoning": "Een nieuwe Google Search-campagne opzetten vanuit een goedgekeurde doelstelling vereist eerst een strategist voor de accountstructuur en het campagneplan, daarna een setup specialist voor de uitvoering, en tot slot een copywriter voor de RSA-advertentieteksten.",
+    "workflow": "workflows/campaign-setup.md",
+    "primary": "agents/google-ads-strategist.md",
+    "primaryDept": "1 Paid Media",
+    "team": [
+      "agents/google-ads-strategist.md",
+      "agents/google-ads-setup-specialist.md",
+      "agents/copywriter.md"
+    ],
+    "teamSize": 3,
+    "stageShape": [
+      1,
+      1,
+      1
+    ],
+    "parallel": false,
+    "clientFacing": false,
+    "touchesLiveAccount": true
+  },
+  {
+    "id": "1.2",
+    "group": "1 Paid Media",
+    "text": "Onze Meta-campagnes zien een dalende ROAS de afgelopen maand — wat is je plan?",
+    "expect": {
+      "dept": "1 Paid Media",
+      "maxTeam": 2
+    },
+    "ms": 2994,
+    "needsClarification": false,
+    "clarification": null,
+    "taskType": "strategie",
+    "reasoning": "De opdracht betreft een strategische analyse van dalende ROAS in Meta-campagnes, wat het domein is van de Meta Ads Strategist.",
+    "workflow": "workflows/meta-ads-setup.md",
+    "primary": "agents/meta-ads-strategist.md",
+    "primaryDept": "1 Paid Media",
+    "team": [
+      "agents/meta-ads-strategist.md"
+    ],
+    "teamSize": 1,
+    "stageShape": [
+      1
+    ],
+    "parallel": false,
+    "clientFacing": false,
+    "touchesLiveAccount": true
+  },
+  {
+    "id": "1.3",
+    "group": "1 Paid Media",
+    "text": "Bouw een Shopping-feedstrategie voor een webshop met ~2.000 producten.",
+    "expect": {
+      "dept": "1 Paid Media",
+      "maxTeam": 2
+    },
+    "ms": 3564,
+    "needsClarification": false,
+    "clarification": null,
+    "taskType": "strategie",
+    "reasoning": "De opdracht betreft het opzetten van een Shopping-feedstrategie voor een e-commerce klant, wat direct past bij de Shopping & Feed Specialist en de bijhorende workflow.",
+    "workflow": "workflows/shopping-feed-setup.md",
+    "primary": "agents/shopping-feed-specialist.md",
+    "primaryDept": "1 Paid Media",
+    "team": [
+      "agents/shopping-feed-specialist.md"
+    ],
+    "teamSize": 1,
+    "stageShape": [
+      1
+    ],
+    "parallel": false,
+    "clientFacing": false,
+    "touchesLiveAccount": false
+  },
+  {
+    "id": "1.4",
+    "group": "1 Paid Media",
+    "text": "Maak een gecombineerd paid-mediaplan (Google + Meta) voor een productlancering, €10k/maand.",
+    "expect": {
+      "dept": "1 Paid Media",
+      "maxTeam": 3
+    },
+    "ms": 4774,
+    "needsClarification": false,
+    "clarification": null,
+    "taskType": "strategie",
+    "reasoning": "Een gecombineerd paid-mediaplan vraagt om zowel een Google Ads Strategist als een Meta Ads Strategist; beide werken onafhankelijk aan hun eigen platformstrategie op basis van dezelfde briefing, waarna het geheel samenkomt als één plan.",
+    "workflow": "workflows/campaign-setup.md",
+    "primary": "agents/google-ads-strategist.md",
+    "primaryDept": "1 Paid Media",
+    "team": [
+      "agents/google-ads-strategist.md",
+      "agents/meta-ads-strategist.md"
+    ],
+    "teamSize": 2,
+    "stageShape": [
+      2
+    ],
+    "parallel": true,
+    "clientFacing": false,
+    "touchesLiveAccount": false
+  },
+  {
+    "id": "1.5",
+    "group": "1 Paid Media",
+    "text": "De CPA in Performance Max ligt te hoog. Geef een concreet optimalisatieplan.",
+    "expect": {
+      "dept": "1 Paid Media",
+      "maxTeam": 2
+    },
+    "ms": 4485,
+    "needsClarification": false,
+    "clarification": null,
+    "taskType": "optimalisatie",
+    "reasoning": "Een concreet optimalisatieplan voor een live Performance Max campagne met te hoge CPA is een account-optimalisatietaak die thuishoort bij de Google Ads Optimization Specialist via de account-optimization workflow.",
+    "workflow": "workflows/account-optimization.md",
+    "primary": "agents/google-ads-optimization-specialist.md",
+    "primaryDept": "1 Paid Media",
+    "team": [
+      "agents/google-ads-optimization-specialist.md"
+    ],
+    "teamSize": 1,
+    "stageShape": [
+      1
+    ],
+    "parallel": false,
+    "clientFacing": false,
+    "touchesLiveAccount": true
+  },
+  {
+    "id": "1.6",
+    "group": "1 Paid Media",
+    "text": "Welke campagnestructuur raad je aan voor een klant met 3 productlijnen en aparte budgetten?",
+    "expect": {
+      "dept": "1 Paid Media",
+      "maxTeam": 2
+    },
+    "ms": 4933,
+    "needsClarification": false,
+    "clarification": null,
+    "taskType": "strategie",
+    "reasoning": "De vraag betreft campagnestructuur en budgetallocatie op strategisch niveau, wat rechtstreeks thuishoort bij de Google Ads Strategist via de campaign-setup workflow.",
+    "workflow": "workflows/campaign-setup.md",
+    "primary": "agents/google-ads-strategist.md",
+    "primaryDept": "1 Paid Media",
+    "team": [
+      "agents/google-ads-strategist.md"
+    ],
+    "teamSize": 1,
+    "stageShape": [
+      1
+    ],
+    "parallel": false,
+    "clientFacing": false,
+    "touchesLiveAccount": false
+  },
+  {
+    "id": "2.1",
+    "group": "2 SEO & Web",
+    "text": "Doe een SEO-audit voor de website van klant X en geef de top-5 prioriteiten.",
+    "expect": {
+      "dept": "2 SEO & Web",
+      "maxTeam": 2
+    },
+    "ms": 3192,
+    "needsClarification": false,
+    "clarification": null,
+    "taskType": "seo",
+    "reasoning": "De opdracht is een SEO-audit met geprioriteerde aanbevelingen — dit valt exact onder de SEO Specialist met de seo-audit workflow.",
+    "workflow": "workflows/seo-audit.md",
+    "primary": "agents/seo-specialist.md",
+    "primaryDept": "2 SEO & Web",
+    "team": [
+      "agents/seo-specialist.md"
+    ],
+    "teamSize": 1,
+    "stageShape": [
+      1
+    ],
+    "parallel": false,
+    "clientFacing": false,
+    "touchesLiveAccount": false
+  },
+  {
+    "id": "2.2",
+    "group": "2 SEO & Web",
+    "text": "Onze landingspagina converteert op 1,2%. Geef concrete verbeteringen.",
+    "expect": {
+      "dept": "2 SEO & Web",
+      "maxTeam": 2
+    },
+    "ms": 4023,
+    "needsClarification": false,
+    "clarification": null,
+    "taskType": "landing page review",
+    "reasoning": "De vraag betreft het verbeteren van een landingspagina op basis van een lage conversieratio — dit valt exact binnen de scope van de Landing Page / Web Design Specialist en de landing-page-review workflow.",
+    "workflow": "workflows/landing-page-review.md",
+    "primary": "agents/landing-page-specialist.md",
+    "primaryDept": "2 SEO & Web",
+    "team": [
+      "agents/landing-page-specialist.md"
+    ],
+    "teamSize": 1,
+    "stageShape": [
+      1
+    ],
+    "parallel": false,
+    "clientFacing": false,
+    "touchesLiveAccount": false
+  },
+  {
+    "id": "2.3",
+    "group": "2 SEO & Web",
+    "text": "Stel een organisch contentplan op rond 'duurzame verpakkingen'.",
+    "expect": {
+      "dept": "2 SEO & Web",
+      "maxTeam": 2
+    },
+    "ms": 3345,
+    "needsClarification": false,
+    "clarification": null,
+    "taskType": "content & social",
+    "reasoning": "Het gaat om een organisch contentplan (geen betaalde advertenties), wat valt onder de Copywriter met content & social specialty.",
+    "workflow": null,
+    "primary": "agents/copywriter.md",
+    "primaryDept": "3 Content & Creative",
+    "team": [
+      "agents/copywriter.md"
+    ],
+    "teamSize": 1,
+    "stageShape": [
+      1
+    ],
+    "parallel": false,
+    "clientFacing": false,
+    "touchesLiveAccount": false
+  },
+  {
+    "id": "2.4",
+    "group": "2 SEO & Web",
+    "text": "Controleer of de conversietracking (GA4 + server-side) correct is opgezet.",
+    "expect": {
+      "dept": "2 SEO & Web",
+      "maxTeam": 2
+    },
+    "ms": 4324,
+    "needsClarification": false,
+    "clarification": null,
+    "taskType": "measurement-audit",
+    "reasoning": "De opdracht vraagt een health check van een bestaande conversietracking-setup (GA4 + server-side), wat exact past bij de measurement-audit workflow met de Analytics & Tracking Specialist.",
+    "workflow": "workflows/measurement-audit.md",
+    "primary": "agents/analytics-tracking-specialist.md",
+    "primaryDept": "2 SEO & Web",
+    "team": [
+      "agents/analytics-tracking-specialist.md"
+    ],
+    "teamSize": 1,
+    "stageShape": [
+      1
+    ],
+    "parallel": false,
+    "clientFacing": false,
+    "touchesLiveAccount": true
+  },
+  {
+    "id": "2.5",
+    "group": "2 SEO & Web",
+    "text": "We willen een nieuwe productpagina bouwen — geef de technische én conversie-aanpak.",
+    "expect": {
+      "dept": "2 SEO & Web",
+      "maxTeam": 3
+    },
+    "ms": 4514,
+    "needsClarification": false,
+    "clarification": null,
+    "taskType": "opzet",
+    "reasoning": "De opdracht combineert conversie-optimalisatie (CRO/landingspagina-aanpak) met een technische bouwspecificatie, waarvoor eerst de Landing Page Specialist de structuur en conversie-aanpak bepaalt en daarna de Web Developer de technische implementatie uitwerkt.",
+    "workflow": "workflows/web-build.md",
+    "primary": "agents/landing-page-specialist.md",
+    "primaryDept": "2 SEO & Web",
+    "team": [
+      "agents/landing-page-specialist.md",
+      "agents/web-developer.md"
+    ],
+    "teamSize": 2,
+    "stageShape": [
+      1,
+      1
+    ],
+    "parallel": false,
+    "clientFacing": false,
+    "touchesLiveAccount": false
+  },
+  {
+    "id": "2.6",
+    "group": "2 SEO & Web",
+    "text": "Geef een plan om de Core Web Vitals van de site te verbeteren.",
+    "expect": {
+      "dept": "2 SEO & Web",
+      "maxTeam": 2
+    },
+    "ms": 5606,
+    "needsClarification": false,
+    "clarification": null,
+    "taskType": "seo",
+    "reasoning": "Core Web Vitals zijn technische on-page/SEO-metrieken; de SEO Specialist behandelt technische site-gezondheid en geeft een prioriteitenlijst van verbeteringen.",
+    "workflow": "workflows/seo-audit.md",
+    "primary": "agents/seo-specialist.md",
+    "primaryDept": "2 SEO & Web",
+    "team": [
+      "agents/seo-specialist.md"
+    ],
+    "teamSize": 1,
+    "stageShape": [
+      1
+    ],
+    "parallel": false,
+    "clientFacing": false,
+    "touchesLiveAccount": false
+  },
+  {
+    "id": "3.1",
+    "group": "3 Content & Creative",
+    "text": "Schrijf 5 advertentievarianten (NL) voor een Google Search-campagne van een tandartspraktijk.",
+    "expect": {
+      "dept": "3 Content & Creative",
+      "maxTeam": 2
+    },
+    "ms": 4090,
+    "needsClarification": false,
+    "clarification": null,
+    "taskType": "copy",
+    "reasoning": "De opdracht vraagt om Google Search advertentieteksten (RSA's) voor een tandartspraktijk; dit is ad copy werk zonder expliciete vraag naar een importklare CSV, dus de Copywriter is de primaire specialist.",
+    "workflow": "workflows/ad-copy.md",
+    "primary": "agents/copywriter.md",
+    "primaryDept": "3 Content & Creative",
+    "team": [
+      "agents/copywriter.md"
+    ],
+    "teamSize": 1,
+    "stageShape": [
+      1
+    ],
+    "parallel": false,
+    "clientFacing": true,
+    "touchesLiveAccount": false
+  },
+  {
+    "id": "3.2",
+    "group": "3 Content & Creative",
+    "text": "Ontwikkel een merkidentiteitsrichting voor een nieuw koffiemerk.",
+    "expect": {
+      "dept": "3 Content & Creative",
+      "maxTeam": 2
+    },
+    "ms": 3703,
+    "needsClarification": false,
+    "clarification": null,
+    "taskType": "merkidentiteit",
+    "reasoning": "De opdracht betreft het ontwikkelen van een merkidentiteitsrichting — positionering, visuele identiteit, naamgeving, kleurenpalet, typografie en merkrichtlijnen — wat exact het domein is van de Brand & Identity Designer.",
+    "workflow": null,
+    "primary": "agents/brand-identity-designer.md",
+    "primaryDept": "3 Content & Creative",
+    "team": [
+      "agents/brand-identity-designer.md"
+    ],
+    "teamSize": 1,
+    "stageShape": [
+      1
+    ],
+    "parallel": false,
+    "clientFacing": false,
+    "touchesLiveAccount": false
+  },
+  {
+    "id": "3.3",
+    "group": "3 Content & Creative",
+    "text": "Maak een e-mailflow voor verlaten winkelwagens (3 mails).",
+    "expect": {
+      "dept": "3 Content & Creative",
+      "maxTeam": 2
+    },
+    "ms": 3789,
+    "needsClarification": false,
+    "clarification": null,
+    "taskType": "e-mailmarketing / automatie",
+    "reasoning": "Een abandoned-cart e-mailflow valt volledig binnen het domein van de Email & Marketing Automation Specialist — geen Google Ads, SEO of andere kanalen betrokken.",
+    "workflow": null,
+    "primary": "agents/email-automation-specialist.md",
+    "primaryDept": "3 Content & Creative",
+    "team": [
+      "agents/email-automation-specialist.md"
+    ],
+    "teamSize": 1,
+    "stageShape": [
+      1
+    ],
+    "parallel": false,
+    "clientFacing": true,
+    "touchesLiveAccount": false
+  },
+  {
+    "id": "3.4",
+    "group": "3 Content & Creative",
+    "text": "Bedenk een creatief concept voor een zomercampagne op social.",
+    "expect": {
+      "dept": "3 Content & Creative",
+      "maxTeam": 2
+    },
+    "ms": 3167,
+    "needsClarification": false,
+    "clarification": null,
+    "taskType": "copy",
+    "reasoning": "Het gaat om een creatief concept voor een social-mediacampagne — dit is generiek copywriter/creatief werk zonder specifieke workflow of technische component.",
+    "workflow": null,
+    "primary": "agents/copywriter.md",
+    "primaryDept": "3 Content & Creative",
+    "team": [
+      "agents/copywriter.md"
+    ],
+    "teamSize": 1,
+    "stageShape": [
+      1
+    ],
+    "parallel": false,
+    "clientFacing": false,
+    "touchesLiveAccount": false
+  },
+  {
+    "id": "3.5",
+    "group": "3 Content & Creative",
+    "text": "Herschrijf deze tekst zodat ze natuurlijker en menselijker klinkt: 'Wij zijn marktleider in innovatieve oplossingen voor uw bedrijf.'",
+    "expect": {
+      "dept": "3 Content & Creative",
+      "maxTeam": 2
+    },
+    "ms": 3664,
+    "needsClarification": false,
+    "clarification": null,
+    "taskType": "copy",
+    "reasoning": "Het gaat om het herschrijven van bestaande tekst naar een natuurlijkere, menselijkere toon — dit is een taaltaak zonder specifieke CSV of kanaalvereiste, dus de Copywriter is de juiste specialist.",
+    "workflow": null,
+    "primary": "agents/copywriter.md",
+    "primaryDept": "3 Content & Creative",
+    "team": [
+      "agents/copywriter.md"
+    ],
+    "teamSize": 1,
+    "stageShape": [
+      1
+    ],
+    "parallel": false,
+    "clientFacing": true,
+    "touchesLiveAccount": false
+  },
+  {
+    "id": "3.6",
+    "group": "3 Content & Creative",
+    "text": "Stel een tone-of-voice gids op voor een B2B-klant.",
+    "expect": {
+      "dept": "3 Content & Creative",
+      "maxTeam": 2
+    },
+    "ms": 5171,
+    "needsClarification": false,
+    "clarification": null,
+    "taskType": "copy",
+    "reasoning": "Een tone-of-voice gids is een merkidentiteitsopdracht die onder de Brand & Identity Designer valt — geen advertentiecopy of campagneopzet.",
+    "workflow": null,
+    "primary": "agents/brand-identity-designer.md",
+    "primaryDept": "3 Content & Creative",
+    "team": [
+      "agents/brand-identity-designer.md"
+    ],
+    "teamSize": 1,
+    "stageShape": [
+      1
+    ],
+    "parallel": false,
+    "clientFacing": false,
+    "touchesLiveAccount": false
+  },
+  {
+    "id": "4.1",
+    "group": "4 Client & Growth",
+    "text": "Stel een onboardingplan op voor een nieuwe e-commerce klant.",
+    "expect": {
+      "dept": "4 Client & Growth",
+      "maxTeam": 2
+    },
+    "ms": 3138,
+    "needsClarification": false,
+    "clarification": null,
+    "taskType": "onboarding",
+    "reasoning": "De opdracht betreft het onboarden van een nieuwe klant, wat exact aansluit bij de Client Onboarding Agent en de bijbehorende workflow.",
+    "workflow": "workflows/client-onboarding.md",
+    "primary": "agents/client-onboarding-agent.md",
+    "primaryDept": "4 Client & Growth",
+    "team": [
+      "agents/client-onboarding-agent.md"
+    ],
+    "teamSize": 1,
+    "stageShape": [
+      1
+    ],
+    "parallel": false,
+    "clientFacing": false,
+    "touchesLiveAccount": false
+  },
+  {
+    "id": "4.2",
+    "group": "4 Client & Growth",
+    "text": "Maak een maandrapport voor klant X met de belangrijkste inzichten en aanbevelingen.",
+    "expect": {
+      "dept": "4 Client & Growth",
+      "maxTeam": 2
+    },
+    "ms": 4618,
+    "needsClarification": false,
+    "clarification": null,
+    "taskType": "rapportage",
+    "reasoning": "De opdracht vraagt om een maandelijks klantrapport met inzichten en aanbevelingen, wat exact past bij de Reporting Specialist en de monthly-reporting workflow.",
+    "workflow": "workflows/monthly-reporting.md",
+    "primary": "agents/reporting-specialist.md",
+    "primaryDept": "4 Client & Growth",
+    "team": [
+      "agents/reporting-specialist.md"
+    ],
+    "teamSize": 1,
+    "stageShape": [
+      1
+    ],
+    "parallel": false,
+    "clientFacing": true,
+    "touchesLiveAccount": false
+  },
+  {
+    "id": "4.3",
+    "group": "4 Client & Growth",
+    "text": "Schrijf een voorstel/offerte voor een prospect die full-service marketing wil.",
+    "expect": {
+      "dept": "4 Client & Growth",
+      "maxTeam": 2
+    },
+    "ms": 3031,
+    "needsClarification": false,
+    "clarification": null,
+    "taskType": "voorstel",
+    "reasoning": "De opdracht is een salesvoorstel/offerte voor een prospect, wat exact past bij de Sales / Proposal Agent en de sales-proposal workflow.",
+    "workflow": "workflows/sales-proposal.md",
+    "primary": "agents/sales-proposal-agent.md",
+    "primaryDept": "4 Client & Growth",
+    "team": [
+      "agents/sales-proposal-agent.md"
+    ],
+    "teamSize": 1,
+    "stageShape": [
+      1
+    ],
+    "parallel": false,
+    "clientFacing": true,
+    "touchesLiveAccount": false
+  },
+  {
+    "id": "4.4",
+    "group": "4 Client & Growth",
+    "text": "Doe concurrentieonderzoek voor een lokale fitnessketen.",
+    "expect": {
+      "dept": "4 Client & Growth",
+      "maxTeam": 2
+    },
+    "ms": 3320,
+    "needsClarification": false,
+    "clarification": null,
+    "taskType": "concurrentieonderzoek",
+    "reasoning": "De opdracht betreft een competitor research voor een specifieke klant, wat exact past bij de Competitive Research Analyst en de bijhorende workflow.",
+    "workflow": "workflows/competitor-research.md",
+    "primary": "agents/competitive-research-analyst.md",
+    "primaryDept": "4 Client & Growth",
+    "team": [
+      "agents/competitive-research-analyst.md"
+    ],
+    "teamSize": 1,
+    "stageShape": [
+      1
+    ],
+    "parallel": false,
+    "clientFacing": false,
+    "touchesLiveAccount": false
+  },
+  {
+    "id": "4.5",
+    "group": "4 Client & Growth",
+    "text": "Stel een dienstverleningsovereenkomst op met onze standaardvoorwaarden.",
+    "expect": {
+      "dept": "4 Client & Growth",
+      "maxTeam": 2
+    },
+    "ms": 4615,
+    "needsClarification": false,
+    "clarification": null,
+    "taskType": "juridisch / contracten",
+    "reasoning": "De opdracht betreft het opstellen van een dienstverleningsovereenkomst, wat een typische taak is voor de Legal & Contracts Specialist.",
+    "workflow": null,
+    "primary": "agents/legal-contracts-specialist.md",
+    "primaryDept": "4 Client & Growth",
+    "team": [
+      "agents/legal-contracts-specialist.md"
+    ],
+    "teamSize": 1,
+    "stageShape": [
+      1
+    ],
+    "parallel": false,
+    "clientFacing": false,
+    "touchesLiveAccount": false
+  },
+  {
+    "id": "4.6",
+    "group": "4 Client & Growth",
+    "text": "Plan de interne taakverdeling voor de lancering van klant Y volgende week.",
+    "expect": {
+      "dept": "4 Client & Growth",
+      "maxTeam": 2
+    },
+    "ms": 4701,
+    "needsClarification": false,
+    "clarification": null,
+    "taskType": "operationeel planning",
+    "reasoning": "Het gaat om interne taakverdeling en planning voor een klantlancering — dit is typisch coördinatie- en schedulingwerk voor de Operations & Schedule Coordinator.",
+    "workflow": null,
+    "primary": "agents/operations-coordinator.md",
+    "primaryDept": "4 Client & Growth",
+    "team": [
+      "agents/operations-coordinator.md"
+    ],
+    "teamSize": 1,
+    "stageShape": [
+      1
+    ],
+    "parallel": false,
+    "clientFacing": false,
+    "touchesLiveAccount": false
+  },
+  {
+    "id": "5.1",
+    "group": "5 Quality & Compliance",
+    "text": "Review deze advertentietekst op naleving van het Google Ads-beleid en onze merkrichtlijnen: 'Beste dakwerker van Antwerpen — gegarandeerd 100% waterdicht of geld terug!'",
+    "expect": {
+      "dept": "5 Quality & Compliance",
+      "maxTeam": 2
+    },
+    "ms": 4154,
+    "needsClarification": true,
+    "clarification": "Ik kon niet met zekerheid bepalen welke specialist dit moet doen. Kun je de opdracht iets concreter omschrijven?",
+    "taskType": null,
+    "reasoning": null,
+    "workflow": null,
+    "primary": null,
+    "primaryDept": null,
+    "team": [],
+    "teamSize": 0,
+    "stageShape": [],
+    "parallel": false,
+    "clientFacing": null,
+    "touchesLiveAccount": null
+  },
+  {
+    "id": "5.2",
+    "group": "5 Quality & Compliance",
+    "text": "Controleer dit maandrapport op fouten en claims die we niet kunnen onderbouwen: 'Onze campagnes leverden 300% meer omzet en de beste ROI in de sector.'",
+    "expect": {
+      "dept": "5 Quality & Compliance",
+      "maxTeam": 2
+    },
+    "ms": 7339,
+    "needsClarification": false,
+    "clarification": null,
+    "taskType": "rapportage",
+    "reasoning": "Het gaat om een QA-check op een klantgericht rapport met niet-onderbouwde claims — dit is precies de taak van de QA & Compliance Reviewer als afsluitende kwaliteitsstap, maar volgens de regels route ik niet expliciet naar die agent; de Reporting Specialist is de primaire eigenaar van maandrapporten en zal de problematische claims markeren en corrigeren.",
+    "workflow": "workflows/monthly-reporting.md",
+    "primary": "agents/reporting-specialist.md",
+    "primaryDept": "4 Client & Growth",
+    "team": [
+      "agents/reporting-specialist.md"
+    ],
+    "teamSize": 1,
+    "stageShape": [
+      1
+    ],
+    "parallel": false,
+    "clientFacing": true,
+    "touchesLiveAccount": false
+  },
+  {
+    "id": "X.1",
+    "group": "X Cross-cutting",
+    "text": "Maak deze headline korter: 'Professionele dakrenovatie in Antwerpen voor particulieren en bedrijven met jarenlange ervaring'.",
+    "expect": {
+      "dept": "3 Content & Creative",
+      "maxTeam": 1
+    },
+    "ms": 3779,
+    "needsClarification": false,
+    "clarification": null,
+    "taskType": "copy",
+    "reasoning": "Dit is een eenvoudige copywriting-opdracht (headline inkorten) zonder CSV-output of campagnestructuur, dus de Copywriter volstaat.",
+    "workflow": null,
+    "primary": "agents/copywriter.md",
+    "primaryDept": "3 Content & Creative",
+    "team": [
+      "agents/copywriter.md"
+    ],
+    "teamSize": 1,
+    "stageShape": [
+      1
+    ],
+    "parallel": false,
+    "clientFacing": false,
+    "touchesLiveAccount": false
+  },
+  {
+    "id": "X.2",
+    "group": "X Cross-cutting",
+    "text": "Doe concurrentieonderzoek én controleer de tracking voor klant X.",
+    "expect": {
+      "parallel": true,
+      "maxTeam": 3
+    },
+    "ms": 4398,
+    "needsClarification": false,
+    "clarification": null,
+    "taskType": "concurrentieonderzoek + tracking audit",
+    "reasoning": "De opdracht omvat twee duidelijk afgebakende deeltaken — concurrentieonderzoek en een tracking health check — die onafhankelijk van elkaar kunnen worden uitgevoerd en elk een eigen specialist en workflow hebben.",
+    "workflow": "workflows/competitor-research.md",
+    "primary": "agents/competitive-research-analyst.md",
+    "primaryDept": "4 Client & Growth",
+    "team": [
+      "agents/competitive-research-analyst.md",
+      "agents/analytics-tracking-specialist.md"
+    ],
+    "teamSize": 2,
+    "stageShape": [
+      2
+    ],
+    "parallel": true,
+    "clientFacing": false,
+    "touchesLiveAccount": true
+  }
+]

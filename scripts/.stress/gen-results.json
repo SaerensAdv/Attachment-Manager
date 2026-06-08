@@ -1,0 +1,187 @@
+[
+  {
+    "id": "3.1",
+    "workflow": "workflows/ad-copy.md",
+    "genId": 29,
+    "status": "completed",
+    "approvalStatus": null,
+    "pendingDelivery": null,
+    "leadAgentPath": "agents/copywriter.md",
+    "teamPaths": [
+      "agents/copywriter.md",
+      "agents/google-ads-setup-specialist.md"
+    ],
+    "triggerSource": "autonomous",
+    "durationMs": 303349,
+    "totalTokens": 126684,
+    "finalMarkdownLen": 43213,
+    "finalMarkdownHead": "## Copywriter\n\n## Advertentieteksten\n\n### Brief recap\n\n- **Klant:** Tandartspraktijk **[AAN TE VULLEN: naam praktijk]**\n- **Aanbod:** Tandheelkundige zorg — algemeen, preventief en cosmetisch **[AAN TE VULLEN: exacte diensten bevestigen]**\n- **Doelgroep:** Nederlandstalige volwassenen die actief zoeken naar een tandarts, voor een eerste afspraak of een dringende behandeling\n- **Primair voordeel:**",
+    "hasQAsection": true,
+    "hasLiveNote": false,
+    "steps": [
+      {
+        "order": 0,
+        "agent": "agents/copywriter.md",
+        "role": "lead",
+        "status": "completed",
+        "ms": 45916,
+        "inTok": 18391,
+        "outTok": 2598,
+        "chars": 6746
+      },
+      {
+        "order": 1,
+        "agent": "agents/google-ads-setup-specialist.md",
+        "role": "member",
+        "status": "completed",
+        "ms": 60417,
+        "inTok": 22050,
+        "outTok": 3676,
+        "chars": 9723
+      },
+      {
+        "order": 2,
+        "agent": "agents/humanizer.md",
+        "role": "quality",
+        "status": "completed",
+        "ms": 101768,
+        "inTok": 23288,
+        "outTok": 6289,
+        "chars": 16641
+      },
+      {
+        "order": 3,
+        "agent": "agents/qa-compliance-reviewer.md",
+        "role": "quality",
+        "status": "completed",
+        "ms": 73532,
+        "inTok": 32321,
+        "outTok": 3261,
+        "chars": 9997
+      },
+      {
+        "order": 4,
+        "agent": "workflows/ad-copy.md",
+        "role": "deliverable",
+        "status": "completed",
+        "ms": 21716,
+        "inTok": 13733,
+        "outTok": 1077,
+        "chars": 2922
+      }
+    ]
+  },
+  {
+    "id": "X.2",
+    "workflow": "workflows/competitor-research.md",
+    "genId": 28,
+    "status": "completed",
+    "approvalStatus": null,
+    "pendingDelivery": null,
+    "leadAgentPath": "agents/competitive-research-analyst.md",
+    "teamPaths": [
+      "agents/competitive-research-analyst.md",
+      "agents/analytics-tracking-specialist.md"
+    ],
+    "triggerSource": "autonomous",
+    "durationMs": 183758,
+    "totalTokens": 71151,
+    "finalMarkdownLen": 25949,
+    "finalMarkdownHead": "## Competitive Research Analyst\n\n## Concurrentieonderzoek\n\n**Klant & scope**\n- Client: Voorbeeld Dakdekker / Example Roofing Company (Antwerpen, NL-BE)\n- Markt/geografie: Antwerpen, Mechelen, Sint-Niklaas, Brussel-rand — Vlaamse markt, Dutch (NL-BE)\n- Datum onderzoek: **[AAN TE VULLEN: datum van uitvoering]**\n- Kanalen in scope: Google Ads (zoekresultaten), organisch (SEO), Meta Ad Library\n- Doel:",
+    "hasQAsection": true,
+    "hasLiveNote": true,
+    "steps": [
+      {
+        "order": 0,
+        "agent": "agents/competitive-research-analyst.md",
+        "role": "lead",
+        "status": "completed",
+        "ms": 66817,
+        "inTok": 19773,
+        "outTok": 3094,
+        "chars": 9172
+      },
+      {
+        "order": 1,
+        "agent": "agents/analytics-tracking-specialist.md",
+        "role": "member",
+        "status": "completed",
+        "ms": 52487,
+        "inTok": 17670,
+        "outTok": 2374,
+        "chars": 7361
+      },
+      {
+        "order": 2,
+        "agent": "agents/qa-compliance-reviewer.md",
+        "role": "quality",
+        "status": "completed",
+        "ms": 64454,
+        "inTok": 25275,
+        "outTok": 2965,
+        "chars": 9304
+      }
+    ]
+  },
+  {
+    "id": "4.2",
+    "workflow": "workflows/monthly-reporting.md",
+    "genId": 27,
+    "status": "partial",
+    "approvalStatus": null,
+    "pendingDelivery": null,
+    "leadAgentPath": "agents/reporting-specialist.md",
+    "teamPaths": [
+      "agents/reporting-specialist.md"
+    ],
+    "triggerSource": "autonomous",
+    "durationMs": 112928,
+    "totalTokens": 58304,
+    "finalMarkdownLen": 17491,
+    "finalMarkdownHead": "## Reporting Specialist\n\n## Maandrapport — Klant X\n\n**Client:** Klant X\n**Periode:** [AAN TE VULLEN: rapportmaand, bv. mei 2025]\n**Vergeleken met:** [AAN TE VULLEN: vorige maand] en [AAN TE VULLEN: zelfde maand vorig jaar]\n**Doel:** [AAN TE VULLEN: doelstelling, bv. streefdoel CPL of ROAS]\n\n---\n\n## 1. Headline\n\n[AAN TE VULLEN: zodra de cijfers beschikbaar zijn, vul hier in hoe de maand verlopen is",
+    "hasQAsection": true,
+    "hasLiveNote": false,
+    "steps": [
+      {
+        "order": 0,
+        "agent": "agents/reporting-specialist.md",
+        "role": "lead",
+        "status": "completed",
+        "ms": 35038,
+        "inTok": 16022,
+        "outTok": 1743,
+        "chars": 4844
+      },
+      {
+        "order": 1,
+        "agent": "agents/humanizer.md",
+        "role": "quality",
+        "status": "completed",
+        "ms": 32069,
+        "inTok": 15870,
+        "outTok": 2066,
+        "chars": 5864
+      },
+      {
+        "order": 2,
+        "agent": "agents/qa-compliance-reviewer.md",
+        "role": "quality",
+        "status": "completed",
+        "ms": 45821,
+        "inTok": 20494,
+        "outTok": 2109,
+        "chars": 6701
+      },
+      {
+        "order": 3,
+        "agent": "workflows/monthly-reporting.md",
+        "role": "deliverable",
+        "status": "failed",
+        "ms": 0,
+        "inTok": null,
+        "outTok": null,
+        "chars": null
+      }
+    ]
+  }
+]

@@ -31,6 +31,9 @@ export default function Home() {
   const [selectedNodePath, setSelectedNodePath] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [hiddenCategories, setHiddenCategories] = useState<Set<string>>(new Set());
+  // Service-line lens: when set, the map dims down to one service line's cluster.
+  // Opt-in and frontend-only; the default (null) is exactly today's full view.
+  const [selectedLine, setSelectedLine] = useState<string | null>(null);
   // Bumped whenever a node should be (re)focused, so re-selecting the same node
   // still pans/zooms to it.
   const [focusNonce, setFocusNonce] = useState(0);
@@ -118,6 +121,70 @@ export default function Home() {
     );
   }, [graphData, activeNodes]);
 
+  // The selectable service lines are the delivery + client departments of the
+  // agency org model (Direction & Quality are cross-cutting hubs, not lines).
+  const lines = useMemo(() => {
+    return (teamData?.departments ?? [])
+      .filter((d) => d.kind === "delivery" || d.kind === "client")
+      .slice()
+      .sort((a, b) => a.order - b.order)
+      .map((d) => ({ id: d.id, title: d.title }));
+  }, [teamData]);
+
+  // Resolve the chosen line to the set of nodes that should stay lit: its agents
+  // (seeds), the workflows/templates/knowledge those agents touch (1 hop over
+  // non-flow edges), the templates/knowledge those workflows pull in (a 2nd hop),
+  // and the always-on Orchestrator + Quality hubs. flow edges are skipped on
+  // purpose — they are the combinatorial layer mesh that makes the hairball.
+  const lensNodeIds = useMemo(() => {
+    if (!selectedLine || !graphData || !teamData) return null;
+    const employees = teamData.employees;
+    const seeds = new Set(
+      employees.filter((e) => e.department.id === selectedLine).map((e) => e.path),
+    );
+    if (seeds.size === 0) return null;
+    const hubs = employees
+      .filter(
+        (e) =>
+          e.department.kind === "direction" || e.department.kind === "quality",
+      )
+      .map((e) => e.path);
+    const catById = new Map(graphData.nodes.map((n) => [n.id, n.category]));
+    const adj = new Map<string, Set<string>>();
+    const link = (a: string, b: string) => {
+      if (!adj.has(a)) adj.set(a, new Set());
+      adj.get(a)!.add(b);
+    };
+    for (const e of graphData.edges) {
+      if (e.kind === "flow") continue;
+      link(e.source, e.target);
+      link(e.target, e.source);
+    }
+    const carriesContent = (cat?: string) =>
+      cat === "workflow" || cat === "template" || cat === "knowledge";
+    const members = new Set<string>(seeds);
+    const workflows: string[] = [];
+    for (const seed of seeds) {
+      for (const nb of adj.get(seed) ?? []) {
+        if (members.has(nb)) continue;
+        if (carriesContent(catById.get(nb))) {
+          members.add(nb);
+          if (catById.get(nb) === "workflow") workflows.push(nb);
+        }
+      }
+    }
+    for (const w of workflows) {
+      for (const nb of adj.get(w) ?? []) {
+        const c = catById.get(nb);
+        if ((c === "template" || c === "knowledge") && !members.has(nb)) {
+          members.add(nb);
+        }
+      }
+    }
+    for (const h of hubs) members.add(h);
+    return members;
+  }, [selectedLine, graphData, teamData]);
+
   const selectedNode = useMemo(() => {
     if (!graphData || !selectedNodePath) return null;
     return graphData.nodes.find(n => n.path === selectedNodePath) || null;
@@ -193,6 +260,7 @@ export default function Home() {
           spotlightNodeIds={spotlight.ids}
           spotlightNonce={spotlight.nonce}
           frameBottomInset={dockHeight}
+          lensNodeIds={lensNodeIds}
         />
       </div>
 
@@ -242,6 +310,9 @@ export default function Home() {
                 categories={graphData.categories} 
                 hiddenCategories={hiddenCategories}
                 onToggleCategory={toggleCategory}
+                lines={lines}
+                selectedLine={selectedLine}
+                onSelectLine={setSelectedLine}
               />
             </div>
           </div>

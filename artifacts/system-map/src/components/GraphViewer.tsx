@@ -51,6 +51,13 @@ interface GraphViewerProps {
   // involved team is brought into view without fighting manual pan/zoom.
   spotlightNodeIds?: string[];
   spotlightNonce?: number;
+  // Service-line lens (frontend-only): when a set is provided the nodes of the
+  // chosen service line — its agents plus the workflows/templates/knowledge they
+  // touch, and the always-on Orchestrator/Quality hubs — stay lit and their
+  // internal wiring is revealed; everything else recedes. Opt-in and purely
+  // visual: the underlying graph and layout are unchanged, so the default view
+  // (no lens) is exactly today's map.
+  lensNodeIds?: Set<string> | null;
   // Vertical space (px) occupied by the docked GenerationPanel + command bar at
   // the bottom of the viewport. The spotlight framing reserves this region so
   // the live-run rings/pulses/hand-off line are never hidden behind the panel.
@@ -72,6 +79,7 @@ export default function GraphViewer({
   spotlightNodeIds,
   spotlightNonce,
   frameBottomInset,
+  lensNodeIds,
 }: GraphViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const transformRef = useRef<ReactZoomPanPinchRef | null>(null);
@@ -481,12 +489,18 @@ export default function GraphViewer({
   };
 
   const runActive = (involvedNodeIds?.size ?? 0) > 0;
+  // The service-line lens dims the map down to one line's cluster. A live run
+  // takes precedence (its spotlight is the more urgent signal), so the lens only
+  // applies when no run is active.
+  const lensActive = !runActive && !!lensNodeIds && lensNodeIds.size > 0;
 
   const isNodeDimmed = (node: SimNode) => {
     if (hoverSet) return !hoverSet.has(node.id);
     // During a live run the involved team stays lit and everything else recedes,
     // so the map clearly shows who is working — unless the user is hovering.
     if (runActive) return !involvedNodeIds!.has(node.id);
+    // The lens lights up the chosen service line's cluster and recedes the rest.
+    if (lensActive) return !lensNodeIds!.has(node.id);
     if (selectedNodeId) return node.id !== selectedNodeId;
     if (lowerSearchQuery) return !node.title.toLowerCase().includes(lowerSearchQuery);
     return false;
@@ -648,7 +662,16 @@ export default function GraphViewer({
                   runActive &&
                   involvedNodeIds!.has(source.id) &&
                   involvedNodeIds!.has(target.id);
-                const lod = runEdge ? 1 : lodBase;
+                // In lens mode only wiring fully inside the lit cluster is drawn,
+                // so the chosen service line reads as a clean group; edges leaving
+                // the cluster are culled unless a hover/selection reveals them.
+                const lensEdge =
+                  lensActive &&
+                  lensNodeIds!.has(source.id) &&
+                  lensNodeIds!.has(target.id);
+                if (lensActive && !lensEdge && !isEdgeHighlighted && !isEdgeDimmed)
+                  return null;
+                const lod = runEdge || lensEdge ? 1 : lodBase;
                 // Cull edges that have faded out entirely (and aren't revealed by
                 // a hover) — keeps the overview clean and the DOM light.
                 if (!isEdgeHighlighted && !isEdgeDimmed && lod <= 0.01) return null;

@@ -8,12 +8,20 @@ interface GraphLegendProps {
   categories: DocCategory[];
   hiddenCategories: Set<string>;
   onToggleCategory: (categoryId: string) => void;
+  // The selectable service lines (delivery + client departments). Empty until
+  // the team roster has loaded; the lens section is hidden while empty.
+  lines: { id: string; title: string }[];
+  selectedLine: string | null;
+  onSelectLine: (lineId: string | null) => void;
 }
 
 export default function GraphLegend({
   categories,
   hiddenCategories,
   onToggleCategory,
+  lines,
+  selectedLine,
+  onSelectLine,
 }: GraphLegendProps) {
   const reduce = useReducedMotion();
   const [collapsed, setCollapsed] = useState(false);
@@ -78,6 +86,60 @@ export default function GraphLegend({
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Service-line lens — opt-in. Picking a line lights up that service line
+          (its team, workflows and knowledge) and dims the rest; "Overzicht"
+          restores the full map. Single-select; the Orchestrator and Quality
+          hubs stay visible in every line. */}
+      {lines.length > 0 && (
+        <div className="flex flex-col gap-3 pt-2 mt-1 border-t border-foreground/10">
+          <div className="flex items-center justify-between w-full font-['Space_Mono'] text-[10px] uppercase tracking-[0.3em] text-muted-foreground border-b border-foreground/20 pb-2 mb-1">
+            <span>Service-lijn</span>
+          </div>
+          <div className="space-y-1">
+            <button
+              type="button"
+              onClick={() => onSelectLine(null)}
+              aria-pressed={selectedLine === null}
+              data-testid="button-line-overview"
+              className={`flex items-center gap-3 w-full py-1 px-1 text-left transition-colors ${
+                selectedLine === null ? "bg-foreground/5" : "opacity-60 hover:opacity-100"
+              }`}
+            >
+              <span className="w-3 h-3 border border-foreground/40" />
+              <span className={`font-['Inter'] text-sm ${selectedLine === null ? "font-semibold" : "font-medium"}`}>
+                Overzicht
+              </span>
+            </button>
+            {lines.map((line) => {
+              const active = selectedLine === line.id;
+              return (
+                <button
+                  key={line.id}
+                  type="button"
+                  onClick={() => onSelectLine(active ? null : line.id)}
+                  aria-pressed={active}
+                  data-testid={`button-line-${line.id}`}
+                  className={`flex items-center gap-3 w-full py-1 px-1 text-left transition-colors ${
+                    active ? "bg-foreground/5" : "opacity-60 hover:opacity-100"
+                  }`}
+                >
+                  <span
+                    className="w-3 h-3"
+                    style={{ backgroundColor: `hsl(var(--dept-${line.id}))` }}
+                  />
+                  <span className={`font-['Inter'] text-sm flex-1 ${active ? "font-semibold" : "font-medium"}`}>
+                    {line.title}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          <p className="font-['Inter'] text-[11px] text-muted-foreground leading-snug">
+            Licht één service-lijn uit met haar team, workflows en kennis. Orchestrator en Quality blijven altijd zichtbaar.
+          </p>
+        </div>
+      )}
     </div>
   );
 }

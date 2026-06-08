@@ -203,3 +203,33 @@ id = "ucOnEbUgu8t3q6Rdb5ioB"
 uri = "file://.local/exports/schoonpannendak-negatives.csv"
 type = "table"
 title = "Schoonpannendak — negatieve zoekwoorden (controle 2)"
+
+[[outputs]]
+id = "jSAHeYANBIOfi3mU0B614"
+uri = "file://.local/exports/demo/3-monthly-report.report.pdf"
+type = "pdf"
+title = "Maandrapport — PDF (klaar voor klant, NIET verzonden)"
+
+[[outputs]]
+id = "XtdgINKWEtAGSqZqoCdN4"
+uri = "file://.local/exports/demo/3-monthly-report.client-report.md"
+type = "text"
+title = "Maandrapport — tekst (klantversie)"
+
+[[outputs]]
+id = "boWcIDBrCMesOkGERkHIg"
+uri = "file://.local/exports/demo/1-ad-copy.deliverable.csv"
+type = "table"
+title = "Google Ads zoekadvertenties (RSA) — import-CSV"
+
+[[outputs]]
+id = "E-ETAOaurvK5Fa-ND2Ysw"
+uri = "file://.local/exports/demo/2-negative-keywords.deliverable.csv"
+type = "table"
+title = "Negatieve zoekwoorden — import-CSV"
+
+[[outputs]]
+id = "c-jy7EIUP4HnwKX0gTTW9"
+uri = "file://.local/exports/demo/3-monthly-report.reviewer.md"
+type = "text"
+title = "Interne QC-review van het rapport"

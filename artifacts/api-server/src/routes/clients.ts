@@ -77,7 +77,38 @@ const MAX_NAME_LEN = 200;
 
 interface ClientInput {
   name: string;
+  groupId: number | null;
   values: Partial<Record<FieldKey, string | null>>;
+}
+
+/**
+ * Parse the optional `groupId` from a request body. Returns the numeric id, or
+ * `null` when absent / explicitly cleared, or an error string when malformed.
+ * (Referential integrity is enforced by the FK; an unknown id surfaces as a DB
+ * error rather than silently sticking.)
+ */
+function parseGroupId(raw: unknown): number | null | { error: string } {
+  if (raw === undefined || raw === null || raw === "") return null;
+  const id = Number(raw);
+  if (!Number.isInteger(id) || id <= 0) {
+    return { error: "Ongeldige klantgroep." };
+  }
+  return id;
+}
+
+/**
+ * Detect a Postgres foreign-key violation (SQLSTATE 23503). The only FK on the
+ * clients table is `group_id -> client_groups.id`, so this maps cleanly to an
+ * unknown-klantgroep domain error instead of leaking a generic 500. Drizzle
+ * wraps the driver error, so the SQLSTATE can sit on the error itself or on its
+ * `cause`.
+ */
+function isForeignKeyViolation(err: unknown): boolean {
+  const hasCode = (e: unknown): boolean =>
+    !!e && typeof e === "object" && (e as { code?: unknown }).code === "23503";
+  return (
+    hasCode(err) || hasCode((err as { cause?: unknown } | null)?.cause)
+  );
 }
 
 function asTrimmed(value: unknown): string | null {
@@ -93,6 +124,11 @@ function parseBody(body: unknown): ClientInput | { error: string } {
   if (!name) return { error: "Naam is verplicht." };
   if (name.length > MAX_NAME_LEN) {
     return { error: `Naam is te lang (max ${MAX_NAME_LEN} tekens).` };
+  }
+
+  const groupId = parseGroupId(obj.groupId);
+  if (groupId !== null && typeof groupId === "object") {
+    return { error: groupId.error };
   }
 
   const values: Partial<Record<FieldKey, string | null>> = {};
@@ -160,7 +196,7 @@ function parseBody(body: unknown): ClientInput | { error: string } {
     }
   }
 
-  return { name, values };
+  return { name, groupId, values };
 }
 
 /** Shape a DB row for the API response (timestamps as ISO strings). */
@@ -296,11 +332,19 @@ router.post("/clients", async (req, res) => {
     res.status(400).json({ error: parsed.error });
     return;
   }
-  const [row] = await db
-    .insert(clientsTable)
-    .values({ name: parsed.name, ...parsed.values })
-    .returning();
-  res.status(201).json(serialize(row));
+  try {
+    const [row] = await db
+      .insert(clientsTable)
+      .values({ name: parsed.name, groupId: parsed.groupId, ...parsed.values })
+      .returning();
+    res.status(201).json(serialize(row));
+  } catch (err) {
+    if (isForeignKeyViolation(err)) {
+      res.status(400).json({ error: "Onbekende klantgroep." });
+      return;
+    }
+    throw err;
+  }
 });
 
 router.put("/clients/:id", async (req, res) => {
@@ -329,11 +373,25 @@ router.put("/clients/:id", async (req, res) => {
     ? and(eq(clientsTable.id, id), eq(clientsTable.updatedAt, expectedDate))
     : eq(clientsTable.id, id);
 
-  const [row] = await db
-    .update(clientsTable)
-    .set({ name: parsed.name, ...parsed.values, updatedAt: new Date() })
-    .where(where)
-    .returning();
+  let row: Client | undefined;
+  try {
+    [row] = await db
+      .update(clientsTable)
+      .set({
+        name: parsed.name,
+        groupId: parsed.groupId,
+        ...parsed.values,
+        updatedAt: new Date(),
+      })
+      .where(where)
+      .returning();
+  } catch (err) {
+    if (isForeignKeyViolation(err)) {
+      res.status(400).json({ error: "Onbekende klantgroep." });
+      return;
+    }
+    throw err;
+  }
 
   if (row) {
     res.json(serialize(row));

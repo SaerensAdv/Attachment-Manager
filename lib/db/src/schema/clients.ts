@@ -1,4 +1,5 @@
-import { pgTable, serial, text, timestamp } from "drizzle-orm/pg-core";
+import { integer, pgTable, serial, text, timestamp } from "drizzle-orm/pg-core";
+import { clientGroupsTable } from "./client-groups";
 
 /**
  * Persisted client profiles. Structured fields mirror the sections in
@@ -10,6 +11,9 @@ import { pgTable, serial, text, timestamp } from "drizzle-orm/pg-core";
 export const clientsTable = pgTable("clients", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
+  groupId: integer("group_id").references(() => clientGroupsTable.id, {
+    onDelete: "set null",
+  }),
   business: text("business"),
   world: text("world"),
   services: text("services"),

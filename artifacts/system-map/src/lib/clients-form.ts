@@ -1,8 +1,10 @@
 import type { Client, ClientInput } from "@workspace/api-client-react";
 
-export type FieldKey = Exclude<keyof ClientInput, "name">;
+// `groupId` is numeric and lives outside the string-only form state (it is
+// managed separately in the editor, not as a text field).
+export type FieldKey = Exclude<keyof ClientInput, "name" | "groupId">;
 
-export type FormState = Record<keyof ClientInput, string>;
+export type FormState = Record<Exclude<keyof ClientInput, "groupId">, string>;
 
 export interface FieldDef {
   key: FieldKey;
@@ -167,7 +169,7 @@ export const EMPTY_FORM: FormState = {
 
 export function clientToForm(c: Client): FormState {
   const out = { ...EMPTY_FORM };
-  for (const k of Object.keys(EMPTY_FORM) as (keyof ClientInput)[]) {
+  for (const k of Object.keys(EMPTY_FORM) as (keyof FormState)[]) {
     const v = (c as unknown as Record<string, unknown>)[k];
     out[k] = typeof v === "string" ? v : "";
   }
@@ -176,7 +178,7 @@ export function clientToForm(c: Client): FormState {
 
 export function formToInput(f: FormState): ClientInput {
   const out: Record<string, string | null> = {};
-  for (const k of Object.keys(EMPTY_FORM) as (keyof ClientInput)[]) {
+  for (const k of Object.keys(EMPTY_FORM) as (keyof FormState)[]) {
     const v = f[k].trim();
     out[k] = k === "name" ? v : v === "" ? null : v;
   }

@@ -31,9 +31,14 @@ import type {
   ClientDiscovery,
   ClientDiscoveryApplyInput,
   ClientDiscoveryApplyResult,
+  ClientGroup,
+  ClientGroupDetail,
+  ClientGroupInput,
+  ClientGroupList,
   ClientInput,
   ClientList,
   ClientRefreshAllResult,
+  DeleteClientGroup200,
   DocContent,
   DocContentUpdate,
   DocGraph,
@@ -1156,6 +1161,373 @@ export const useUploadAgentPortrait = <TError = ErrorType<ErrorResponse>,
         TContext
       > => {
       return useMutation(getUploadAgentPortraitMutationOptions(options));
+    }
+
+export const getGetClientGroupsUrl = () => {
+
+
+
+
+  return `/api/client-groups`
+}
+
+/**
+ * @summary List all client groups with member counts
+ */
+export const getClientGroups = async ( options?: RequestInit): Promise<ClientGroupList> => {
+
+  return customFetch<ClientGroupList>(getGetClientGroupsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetClientGroupsQueryKey = () => {
+    return [
+    `/api/client-groups`
+    ] as const;
+    }
+
+
+export const getGetClientGroupsQueryOptions = <TData = Awaited<ReturnType<typeof getClientGroups>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getClientGroups>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetClientGroupsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getClientGroups>>> = ({ signal }) => getClientGroups({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getClientGroups>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetClientGroupsQueryResult = NonNullable<Awaited<ReturnType<typeof getClientGroups>>>
+export type GetClientGroupsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List all client groups with member counts
+ */
+
+export function useGetClientGroups<TData = Awaited<ReturnType<typeof getClientGroups>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getClientGroups>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetClientGroupsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateClientGroupUrl = () => {
+
+
+
+
+  return `/api/client-groups`
+}
+
+/**
+ * @summary Create a new client group
+ */
+export const createClientGroup = async (clientGroupInput: ClientGroupInput, options?: RequestInit): Promise<ClientGroup> => {
+
+  return customFetch<ClientGroup>(getCreateClientGroupUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      clientGroupInput,)
+  }
+);}
+
+
+
+
+export const getCreateClientGroupMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createClientGroup>>, TError,{data: BodyType<ClientGroupInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createClientGroup>>, TError,{data: BodyType<ClientGroupInput>}, TContext> => {
+
+const mutationKey = ['createClientGroup'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createClientGroup>>, {data: BodyType<ClientGroupInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createClientGroup(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateClientGroupMutationResult = NonNullable<Awaited<ReturnType<typeof createClientGroup>>>
+    export type CreateClientGroupMutationBody = BodyType<ClientGroupInput>
+    export type CreateClientGroupMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Create a new client group
+ */
+export const useCreateClientGroup = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createClientGroup>>, TError,{data: BodyType<ClientGroupInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createClientGroup>>,
+        TError,
+        {data: BodyType<ClientGroupInput>},
+        TContext
+      > => {
+      return useMutation(getCreateClientGroupMutationOptions(options));
+    }
+
+export const getGetClientGroupUrl = (id: number,) => {
+
+
+
+
+  return `/api/client-groups/${id}`
+}
+
+/**
+ * @summary Get a single client group with its member fiches
+ */
+export const getClientGroup = async (id: number, options?: RequestInit): Promise<ClientGroupDetail> => {
+
+  return customFetch<ClientGroupDetail>(getGetClientGroupUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetClientGroupQueryKey = (id: number,) => {
+    return [
+    `/api/client-groups/${id}`
+    ] as const;
+    }
+
+
+export const getGetClientGroupQueryOptions = <TData = Awaited<ReturnType<typeof getClientGroup>>, TError = ErrorType<ErrorResponse>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getClientGroup>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetClientGroupQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getClientGroup>>> = ({ signal }) => getClientGroup(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getClientGroup>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetClientGroupQueryResult = NonNullable<Awaited<ReturnType<typeof getClientGroup>>>
+export type GetClientGroupQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary Get a single client group with its member fiches
+ */
+
+export function useGetClientGroup<TData = Awaited<ReturnType<typeof getClientGroup>>, TError = ErrorType<ErrorResponse>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getClientGroup>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetClientGroupQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getUpdateClientGroupUrl = (id: number,) => {
+
+
+
+
+  return `/api/client-groups/${id}`
+}
+
+/**
+ * @summary Update an existing client group
+ */
+export const updateClientGroup = async (id: number,
+    clientGroupInput: ClientGroupInput, options?: RequestInit): Promise<ClientGroup> => {
+
+  return customFetch<ClientGroup>(getUpdateClientGroupUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      clientGroupInput,)
+  }
+);}
+
+
+
+
+export const getUpdateClientGroupMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateClientGroup>>, TError,{id: number;data: BodyType<ClientGroupInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateClientGroup>>, TError,{id: number;data: BodyType<ClientGroupInput>}, TContext> => {
+
+const mutationKey = ['updateClientGroup'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateClientGroup>>, {id: number;data: BodyType<ClientGroupInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateClientGroup(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateClientGroupMutationResult = NonNullable<Awaited<ReturnType<typeof updateClientGroup>>>
+    export type UpdateClientGroupMutationBody = BodyType<ClientGroupInput>
+    export type UpdateClientGroupMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Update an existing client group
+ */
+export const useUpdateClientGroup = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateClientGroup>>, TError,{id: number;data: BodyType<ClientGroupInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateClientGroup>>,
+        TError,
+        {id: number;data: BodyType<ClientGroupInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateClientGroupMutationOptions(options));
+    }
+
+export const getDeleteClientGroupUrl = (id: number,) => {
+
+
+
+
+  return `/api/client-groups/${id}`
+}
+
+/**
+ * @summary Delete a client group (members become ungrouped)
+ */
+export const deleteClientGroup = async (id: number, options?: RequestInit): Promise<DeleteClientGroup200> => {
+
+  return customFetch<DeleteClientGroup200>(getDeleteClientGroupUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteClientGroupMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteClientGroup>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteClientGroup>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteClientGroup'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteClientGroup>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteClientGroup(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteClientGroupMutationResult = NonNullable<Awaited<ReturnType<typeof deleteClientGroup>>>
+
+    export type DeleteClientGroupMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Delete a client group (members become ungrouped)
+ */
+export const useDeleteClientGroup = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteClientGroup>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteClientGroup>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteClientGroupMutationOptions(options));
     }
 
 export const getGetClientsUrl = () => {

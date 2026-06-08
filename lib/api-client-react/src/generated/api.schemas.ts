@@ -238,6 +238,8 @@ export interface Client {
   id: number;
   name: string;
   /** @nullable */
+  groupId?: number | null;
+  /** @nullable */
   business?: string | null;
   /** @nullable */
   world?: string | null;
@@ -330,6 +332,8 @@ export interface Client {
 export interface ClientInput {
   name: string;
   /** @nullable */
+  groupId?: number | null;
+  /** @nullable */
   business?: string | null;
   /** @nullable */
   world?: string | null;
@@ -387,6 +391,46 @@ export interface ClientInput {
 
 export interface ClientList {
   clients: Client[];
+}
+
+export interface ClientGroup {
+  id: number;
+  name: string;
+  /** @nullable */
+  notes?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ClientGroupInput {
+  name: string;
+  /** @nullable */
+  notes?: string | null;
+}
+
+/**
+ * A group plus the number of client fiches that belong to it.
+ */
+export type ClientGroupSummary = ClientGroup & {
+  memberCount: number;
+};
+
+export interface ClientGroupList {
+  groups: ClientGroupSummary[];
+}
+
+export interface ClientGroupMember {
+  id: number;
+  name: string;
+  /** @nullable */
+  business?: string | null;
+  /** @nullable */
+  website?: string | null;
+}
+
+export interface ClientGroupDetail {
+  group: ClientGroup;
+  members: ClientGroupMember[];
 }
 
 export interface IntegrationCoverage {
@@ -811,5 +855,9 @@ export type GetDocBacklinksParams = {
  * The target document path relative to the docs root.
  */
 path: string;
+};
+
+export type DeleteClientGroup200 = {
+  ok: boolean;
 };
 

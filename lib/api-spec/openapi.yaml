@@ -365,6 +365,127 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /client-groups:
+    get:
+      operationId: getClientGroups
+      tags: [clients]
+      summary: List all client groups with member counts
+      responses:
+        "200":
+          description: The list of client groups
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClientGroupList"
+    post:
+      operationId: createClientGroup
+      tags: [clients]
+      summary: Create a new client group
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClientGroupInput"
+      responses:
+        "201":
+          description: The created client group
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClientGroup"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /client-groups/{id}:
+    get:
+      operationId: getClientGroup
+      tags: [clients]
+      summary: Get a single client group with its member fiches
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: The client group and its members
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClientGroupDetail"
+        "404":
+          description: Client group not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    put:
+      operationId: updateClientGroup
+      tags: [clients]
+      summary: Update an existing client group
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClientGroupInput"
+      responses:
+        "200":
+          description: The updated client group
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClientGroup"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Client group not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteClientGroup
+      tags: [clients]
+      summary: Delete a client group (members become ungrouped)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok]
+                properties:
+                  ok:
+                    type: boolean
+        "404":
+          description: Client group not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /clients:
     get:
       operationId: getClients
@@ -1673,6 +1794,8 @@ components:
           type: integer
         name:
           type: string
+        groupId:
+          type: ["integer", "null"]
         business:
           type: ["string", "null"]
         world:
@@ -1779,6 +1902,8 @@ components:
       properties:
         name:
           type: string
+        groupId:
+          type: ["integer", "null"]
         business:
           type: ["string", "null"]
         world:
@@ -1841,6 +1966,69 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Client"
+    ClientGroup:
+      type: object
+      required: [id, name, createdAt, updatedAt]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        notes:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    ClientGroupInput:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        notes:
+          type: ["string", "null"]
+    ClientGroupSummary:
+      description: A group plus the number of client fiches that belong to it.
+      allOf:
+        - $ref: "#/components/schemas/ClientGroup"
+        - type: object
+          required: [memberCount]
+          properties:
+            memberCount:
+              type: integer
+    ClientGroupList:
+      type: object
+      required: [groups]
+      properties:
+        groups:
+          type: array
+          items:
+            $ref: "#/components/schemas/ClientGroupSummary"
+    ClientGroupMember:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        business:
+          type: ["string", "null"]
+        website:
+          type: ["string", "null"]
+    ClientGroupDetail:
+      type: object
+      required: [group, members]
+      properties:
+        group:
+          $ref: "#/components/schemas/ClientGroup"
+        members:
+          type: array
+          items:
+            $ref: "#/components/schemas/ClientGroupMember"
     IntegrationCoverage:
       type: object
       required: [configured]

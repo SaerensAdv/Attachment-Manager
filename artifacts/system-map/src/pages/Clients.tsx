@@ -14,7 +14,10 @@ import {
   useClientPagespeedRefresh,
   useClientBusinessProfileRefresh,
   useClientBriefingSuggest,
+  useGetClientGroups,
+  useCreateClientGroup,
   getGetClientsQueryKey,
+  getGetClientGroupsQueryKey,
   getGetDocGraphQueryKey,
   type Client,
   type ClientInput,
@@ -26,6 +29,7 @@ import {
   Building2,
   Gauge,
   Globe,
+  Layers,
   Loader2,
   MapPin,
   Plus,
@@ -70,6 +74,16 @@ export default function Clients() {
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [formError, setFormError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  // Klantgroep ("kapstok") of the open fiche — numeric and kept outside the
+  // string-only FormState. null = ungrouped.
+  const [groupId, setGroupId] = useState<number | null>(null);
+  // Inline "nieuwe klantgroep" composer in the editor selector.
+  const [newGroupName, setNewGroupName] = useState("");
+  const [creatingGroup, setCreatingGroup] = useState(false);
+  // Which group's overview panel is open in the register (null = none).
+  const [openGroupOverview, setOpenGroupOverview] = useState<number | null>(
+    null,
+  );
   // Website-intake (fase 2) is managed outside the editable form: it is set by
   // the read-website endpoint, not by the briefing fields.
   const [intake, setIntake] = useState<{
@@ -133,7 +147,53 @@ export default function Clients() {
     // The doc graph merges DB clients, so refresh it too — the new/updated
     // client must surface in the Kaart command bar and the Kaart graph.
     queryClient.invalidateQueries({ queryKey: getGetDocGraphQueryKey() });
+    // Member counts on the klantgroep "kapstok" shift whenever a fiche is
+    // (re)assigned, so refresh the group index too.
+    queryClient.invalidateQueries({ queryKey: getGetClientGroupsQueryKey() });
   };
+
+  const { data: groupsData } = useGetClientGroups();
+  const groups = useMemo(() => groupsData?.groups ?? [], [groupsData]);
+  const groupCreateMut = useCreateClientGroup();
+
+  // Build the register sections: one block per klantgroep (kapstok) that has
+  // members, sorted by name, followed by an "Zonder groep" block for ungrouped
+  // fiches. Groups with zero members are not shown as headers in the register
+  // (they remain selectable in the editor).
+  const sections = useMemo(() => {
+    const byGroup = new Map<number, Client[]>();
+    const ungrouped: Client[] = [];
+    for (const c of clients) {
+      if (c.groupId != null) {
+        const list = byGroup.get(c.groupId) ?? [];
+        list.push(c);
+        byGroup.set(c.groupId, list);
+      } else {
+        ungrouped.push(c);
+      }
+    }
+    const named = groups
+      .filter((g) => byGroup.has(g.id))
+      .map((g) => ({
+        id: g.id as number | null,
+        name: g.name,
+        members: byGroup.get(g.id) ?? [],
+      }));
+    // A fiche may reference a group that is missing from the list (e.g. a race);
+    // surface those under a neutral fallback so they never disappear.
+    for (const [gid, list] of byGroup) {
+      if (!groups.some((g) => g.id === gid)) {
+        named.push({ id: gid, name: "Onbekende groep", members: list });
+      }
+    }
+    const result: { id: number | null; name: string; members: Client[] }[] = [
+      ...named,
+    ];
+    if (ungrouped.length > 0) {
+      result.push({ id: null, name: "Zonder groep", members: ungrouped });
+    }
+    return result;
+  }, [clients, groups]);
 
   const createMut = useCreateClient();
   const updateMut = useUpdateClient();
@@ -168,6 +228,8 @@ export default function Clients() {
   const startCreate = () => {
     setEditing("new");
     setForm(EMPTY_FORM);
+    setGroupId(null);
+    setNewGroupName("");
     setFormError(null);
     setConfirmDelete(false);
     clearBriefingSuggestions();
@@ -185,6 +247,8 @@ export default function Clients() {
   const startEdit = (c: Client) => {
     setEditing(c.id);
     setForm(clientToForm(c));
+    setGroupId(c.groupId ?? null);
+    setNewGroupName("");
     setFormError(null);
     setConfirmDelete(false);
     setIntake({ text: c.websiteIntake ?? null, at: c.websiteIntakeAt ?? null });
@@ -223,6 +287,8 @@ export default function Clients() {
   const closeEditor = () => {
     setEditing(null);
     setForm(EMPTY_FORM);
+    setGroupId(null);
+    setNewGroupName("");
     setFormError(null);
     setConfirmDelete(false);
     clearBriefingSuggestions();
@@ -240,13 +306,40 @@ export default function Clients() {
   const setField = (key: keyof ClientInput, value: string) =>
     setForm((prev) => ({ ...prev, [key]: value }));
 
+  // Create a klantgroep inline from the editor selector and assign the open
+  // fiche to it immediately (without persisting the whole fiche yet).
+  const handleCreateGroup = () => {
+    const name = newGroupName.trim();
+    if (!name || creatingGroup) return;
+    setCreatingGroup(true);
+    groupCreateMut.mutate(
+      { data: { name } },
+      {
+        onSuccess: (created) => {
+          queryClient.invalidateQueries({
+            queryKey: getGetClientGroupsQueryKey(),
+          });
+          setGroupId(created.id);
+          setNewGroupName("");
+          setCreatingGroup(false);
+        },
+        onError: (err) => {
+          setFormError(
+            err instanceof Error ? err.message : "Klantgroep aanmaken mislukt",
+          );
+          setCreatingGroup(false);
+        },
+      },
+    );
+  };
+
   const handleSave = () => {
     if (!form.name.trim()) {
       setFormError("Geef de cliënt minstens een naam.");
       return;
     }
     setFormError(null);
-    const payload = formToInput(form);
+    const payload = { ...formToInput(form), groupId };
 
     const onError = (err: unknown) =>
       setFormError(err instanceof Error ? err.message : "Opslaan mislukt");
@@ -259,6 +352,7 @@ export default function Clients() {
             invalidate();
             setEditing(created.id);
             setForm(clientToForm(created));
+            setGroupId(created.groupId ?? null);
             setEditingUpdatedAt(created.updatedAt);
           },
           onError,
@@ -278,6 +372,7 @@ export default function Clients() {
           onSuccess: (updated) => {
             invalidate();
             setForm(clientToForm(updated));
+            setGroupId(updated.groupId ?? null);
             setEditingUpdatedAt(updated.updatedAt);
           },
           onError: (err) => {
@@ -287,6 +382,7 @@ export default function Clients() {
             if (conflict) {
               invalidate();
               setForm(clientToForm(conflict));
+              setGroupId(conflict.groupId ?? null);
               setEditingUpdatedAt(conflict.updatedAt);
               setFormError(
                 "Deze fiche is intussen elders aangepast. De nieuwste versie is geladen — voer je wijziging opnieuw door.",
@@ -501,7 +597,7 @@ export default function Clients() {
       const next = { ...prev };
       for (const [key, value] of Object.entries(briefingSuggestions)) {
         if (typeof value === "string" && value.trim()) {
-          next[key as keyof ClientInput] = value;
+          next[key as keyof FormState] = value;
         }
       }
       return next;
@@ -647,54 +743,117 @@ export default function Clients() {
                   </p>
                 </div>
               )}
-              {clients.map((c, i) => {
-                const active = editing === c.id;
+              {sections.map((section) => {
+                const overviewOpen =
+                  section.id != null && openGroupOverview === section.id;
                 return (
-                  <button
-                    key={c.id}
-                    onClick={() => startEdit(c)}
-                    data-testid={`client-row-${c.id}`}
-                    className={`group flex items-start gap-4 text-left px-4 py-4 border-b border-foreground/20 transition-colors ${
-                      active
-                        ? "bg-foreground text-background"
-                        : "hover:bg-foreground hover:text-background"
-                    }`}
-                  >
-                    <span
-                      className={`font-['Space_Mono'] text-xs pt-1.5 shrink-0 ${
-                        active
-                          ? "text-background/60"
-                          : "text-muted-foreground group-hover:text-background/60"
-                      }`}
-                    >
-                      {String(i + 1).padStart(2, "0")}
-                    </span>
-                    <span className="flex-1 min-w-0">
-                      <span className="block font-['Playfair_Display'] font-bold text-lg leading-tight truncate">
-                        {c.name}
-                      </span>
-                      {c.business && (
-                        <span
-                          className={`block text-xs mt-1 truncate font-['Inter'] ${
+                  <div key={section.id ?? "none"}>
+                    {/* Klantgroep (kapstok) header */}
+                    {section.id != null ? (
+                      <button
+                        onClick={() =>
+                          setOpenGroupOverview((cur) =>
+                            cur === section.id ? null : section.id,
+                          )
+                        }
+                        data-testid={`group-header-${section.id}`}
+                        className="w-full flex items-center gap-2 px-4 py-2.5 bg-foreground/5 border-b border-foreground/20 hover:bg-foreground/10 transition-colors text-left"
+                      >
+                        <Layers className="w-3.5 h-3.5 shrink-0 text-accent" />
+                        <span className="flex-1 min-w-0 font-['Space_Mono'] text-[10px] uppercase tracking-widest truncate">
+                          {section.name}
+                        </span>
+                        <span className="font-['Space_Mono'] text-[10px] text-muted-foreground shrink-0">
+                          {section.members.length}
+                        </span>
+                      </button>
+                    ) : (
+                      <div className="px-4 py-2.5 bg-foreground/5 border-b border-foreground/20 flex items-center gap-2">
+                        <span className="flex-1 font-['Space_Mono'] text-[10px] uppercase tracking-widest text-muted-foreground">
+                          {section.name}
+                        </span>
+                        <span className="font-['Space_Mono'] text-[10px] text-muted-foreground shrink-0">
+                          {section.members.length}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Lightweight group overview panel */}
+                    {overviewOpen && (
+                      <div
+                        data-testid={`group-overview-${section.id}`}
+                        className="px-4 py-3 border-b border-foreground/20 bg-accent/5"
+                      >
+                        <p className="font-['Space_Mono'] text-[10px] uppercase tracking-widest text-accent mb-2">
+                          Kapstok-overzicht · {section.members.length}{" "}
+                          {section.members.length === 1 ? "fiche" : "fiches"}
+                        </p>
+                        <ul className="flex flex-col gap-1">
+                          {section.members.map((m) => (
+                            <li key={m.id}>
+                              <button
+                                onClick={() => startEdit(m)}
+                                className="text-left w-full font-['Inter'] text-sm hover:text-accent transition-colors truncate"
+                              >
+                                {m.name}
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {section.members.map((c, i) => {
+                      const active = editing === c.id;
+                      return (
+                        <button
+                          key={c.id}
+                          onClick={() => startEdit(c)}
+                          data-testid={`client-row-${c.id}`}
+                          className={`group flex items-start gap-4 text-left px-4 py-4 border-b border-foreground/20 transition-colors w-full ${
                             active
-                              ? "text-background/70"
-                              : "text-muted-foreground group-hover:text-background/70"
+                              ? "bg-foreground text-background"
+                              : "hover:bg-foreground hover:text-background"
                           }`}
                         >
-                          {c.business}
-                        </span>
-                      )}
-                    </span>
-                    <span
-                      className={`font-['Space_Mono'] text-[10px] uppercase tracking-widest pt-1.5 shrink-0 transition-opacity ${
-                        active
-                          ? "opacity-100 text-background/60"
-                          : "opacity-0 group-hover:opacity-100 text-background/60"
-                      }`}
-                    >
-                      Open
-                    </span>
-                  </button>
+                          <span
+                            className={`font-['Space_Mono'] text-xs pt-1.5 shrink-0 ${
+                              active
+                                ? "text-background/60"
+                                : "text-muted-foreground group-hover:text-background/60"
+                            }`}
+                          >
+                            {String(i + 1).padStart(2, "0")}
+                          </span>
+                          <span className="flex-1 min-w-0">
+                            <span className="block font-['Playfair_Display'] font-bold text-lg leading-tight truncate">
+                              {c.name}
+                            </span>
+                            {c.business && (
+                              <span
+                                className={`block text-xs mt-1 truncate font-['Inter'] ${
+                                  active
+                                    ? "text-background/70"
+                                    : "text-muted-foreground group-hover:text-background/70"
+                                }`}
+                              >
+                                {c.business}
+                              </span>
+                            )}
+                          </span>
+                          <span
+                            className={`font-['Space_Mono'] text-[10px] uppercase tracking-widest pt-1.5 shrink-0 transition-opacity ${
+                              active
+                                ? "opacity-100 text-background/60"
+                                : "opacity-0 group-hover:opacity-100 text-background/60"
+                            }`}
+                          >
+                            Open
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 );
               })}
             </div>
@@ -738,6 +897,71 @@ export default function Clients() {
                 </div>
 
                 <div className="p-6 flex flex-col gap-8">
+                  {/* Klantgroep (kapstok) — overkoepelend dossier */}
+                  <div className="flex flex-col gap-2 border border-foreground/30 bg-foreground/5 p-4">
+                    <div className="flex items-center gap-2">
+                      <Layers className="w-4 h-4 text-accent" />
+                      <label
+                        htmlFor="client-group-select"
+                        className="font-['Space_Mono'] text-[10px] uppercase tracking-widest"
+                      >
+                        Klantgroep (kapstok)
+                      </label>
+                    </div>
+                    <p className="font-['Inter'] text-xs text-muted-foreground">
+                      Bundel meerdere website-fiches onder één overkoepelend
+                      dossier. Elke fiche houdt haar eigen gegevens.
+                    </p>
+                    <select
+                      id="client-group-select"
+                      data-testid="select-client-group"
+                      value={groupId ?? ""}
+                      onChange={(e) =>
+                        setGroupId(
+                          e.target.value === "" ? null : Number(e.target.value),
+                        )
+                      }
+                      className={`${INPUT_CLASS} w-full`}
+                    >
+                      <option value="">Zonder groep</option>
+                      {groups.map((g) => (
+                        <option key={g.id} value={g.id}>
+                          {g.name}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="flex items-center gap-2 mt-1">
+                      <input
+                        type="text"
+                        value={newGroupName}
+                        onChange={(e) => setNewGroupName(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            handleCreateGroup();
+                          }
+                        }}
+                        placeholder="Nieuwe klantgroep..."
+                        data-testid="input-new-group"
+                        className={`${INPUT_CLASS} flex-1`}
+                      />
+                      <button
+                        type="button"
+                        onClick={handleCreateGroup}
+                        disabled={!newGroupName.trim() || creatingGroup}
+                        data-testid="button-create-group"
+                        className="py-2 px-3 border border-foreground font-['Space_Mono'] text-[10px] uppercase tracking-widest flex items-center gap-1.5 hover:bg-foreground hover:text-background transition-colors disabled:opacity-50 disabled:pointer-events-none shrink-0"
+                      >
+                        {creatingGroup ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Plus className="w-3.5 h-3.5" />
+                        )}
+                        Maak
+                      </button>
+                    </div>
+                  </div>
+
                   {/* Section heading */}
                   <div className="flex items-baseline justify-between border-b-2 border-foreground pb-1">
                     <h3 className="font-['Playfair_Display'] font-bold text-lg uppercase tracking-wider">

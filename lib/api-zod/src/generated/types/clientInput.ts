@@ -9,6 +9,8 @@
 export interface ClientInput {
   name: string;
   /** @nullable */
+  groupId?: number | null;
+  /** @nullable */
   business?: string | null;
   /** @nullable */
   world?: string | null;

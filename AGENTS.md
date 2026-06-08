@@ -43,13 +43,13 @@ The AI team is organized as follows. Each layer lists the agent files that belon
 4. **Review / Optimization Specialists** — analyze and improve existing accounts.
    - Agents: `agents/google-ads-optimization-specialist.md`, `agents/cro-specialist.md`, `agents/qa-compliance-reviewer.md`
 5. **Communication Specialists** — translate work into client-facing output.
-   - Agents: `agents/reporting-specialist.md`, `agents/copywriter.md`
+   - Agents: `agents/reporting-specialist.md`, `agents/copywriter.md`, `agents/humanizer.md`
 6. **Build Specialists** — turn approved specs into working assets.
    - Agents: `agents/landing-page-specialist.md`, `agents/web-developer.md`, `agents/creative-designer.md`, `agents/brand-identity-designer.md`
 7. **Foundation Specialists** — keep shared data and measurement trustworthy for everyone.
    - Agents: `agents/analytics-tracking-specialist.md`, `agents/competitive-research-analyst.md`
-8. **Client-facing & Growth** — manage the client relationship and new business.
-   - Agents: `agents/client-success-agent.md`, `agents/sales-proposal-agent.md`, `agents/client-onboarding-agent.md`
+8. **Client-facing & Growth** — manage the client relationship, new business, contracts, and internal coordination.
+   - Agents: `agents/client-success-agent.md`, `agents/sales-proposal-agent.md`, `agents/client-onboarding-agent.md`, `agents/legal-contracts-specialist.md`, `agents/operations-coordinator.md`
 
 ## Leadership & reporting line (heads)
 
@@ -71,8 +71,8 @@ This is an **organizational layer only**. It defines reporting and grouping for 
    - Agents: `agents/seo-specialist.md`, `agents/web-developer.md`, `agents/landing-page-specialist.md`, `agents/cro-specialist.md`, `agents/analytics-tracking-specialist.md`
 3. **Head of Content & Creative** — owns brand identity, messaging, copy, produced visuals/video, the owned email & lifecycle channel, and a natural client-ready voice.
    - Agents: `agents/copywriter.md`, `agents/humanizer.md`, `agents/creative-designer.md`, `agents/brand-identity-designer.md`, `agents/email-automation-specialist.md`
-4. **Head of Client & Growth** — owns the client relationship, client-facing reporting, new business, and market insight.
-   - Agents: `agents/client-success-agent.md`, `agents/client-onboarding-agent.md`, `agents/reporting-specialist.md`, `agents/sales-proposal-agent.md`, `agents/competitive-research-analyst.md`
+4. **Head of Client & Growth** — owns the client relationship, client-facing reporting, new business, market insight, contracts, and internal coordination.
+   - Agents: `agents/client-success-agent.md`, `agents/client-onboarding-agent.md`, `agents/reporting-specialist.md`, `agents/sales-proposal-agent.md`, `agents/competitive-research-analyst.md`, `agents/legal-contracts-specialist.md`, `agents/operations-coordinator.md`
 5. **Overkoepelend — kwaliteit & compliance** — a cross-cutting quality gate that serves every head and reports straight to the Orchestrator, which is why it sits under no single domain head.
    - Agents: `agents/qa-compliance-reviewer.md`
 
@@ -107,6 +107,8 @@ Specified after the initial MVP, following the "new agent vs deeper specialty" r
 - Email & Marketing Automation Specialist — `agents/email-automation-specialist.md`
 - Creative Designer — `agents/creative-designer.md`
 - Brand & Identity Designer — `agents/brand-identity-designer.md`
+- Legal & Contracts Specialist — `agents/legal-contracts-specialist.md`
+- Operations & Schedule Coordinator — `agents/operations-coordinator.md`
 
 Content & social is **not** a separate agent: it is a deeper specialty of the Copywriter (`agents/copywriter.md`).
 

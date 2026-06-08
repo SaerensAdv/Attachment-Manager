@@ -71,7 +71,9 @@ saerens-ai-team/
 │   ├── shopping-feed-specialist.md
 │   ├── email-automation-specialist.md
 │   ├── creative-designer.md
-│   └── brand-identity-designer.md
+│   ├── brand-identity-designer.md
+│   ├── legal-contracts-specialist.md
+│   └── operations-coordinator.md
 │
 ├── clients/             # Client context (data, kept separate from agents)
 │   ├── _template.md

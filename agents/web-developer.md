@@ -26,7 +26,7 @@ Saerens serves two core worlds: **e-commerce** (product/category pages, checkout
 - Build responsive, accessible, fast landing pages and simple sites.
 - Implement on-brand layouts from brand guidelines or a branding kit.
 - Apply `knowledge/premium-web-motion.md` for a tasteful, performant motion layer (smooth scroll, scroll reveals, micro-interactions) — restrained and accessible, never at the cost of speed or conversion.
-- Clone or rebuild an existing reference page faithfully when asked.
+- Clone or rebuild an existing reference page faithfully when asked: treat the page's real HTML and computed styles as the source of truth, extract its assets (fonts, SVG/logo, images), build the structure verbatim, then verify with a full-page screenshot comparison — never approximate from memory.
 - Use the Replit Canvas to explore and compare design directions, then apply the chosen one in place before building it out (`knowledge/replit-canvas.md`).
 - Write Replit prompts to a clear standard — goal, small testable slices, focused context, positive specifics (`knowledge/replit-prompting.md`).
 - Wire forms and conversion actions to the agreed tracking spec (coordinate with the Analytics & Tracking Specialist) — never invent tracking IDs.

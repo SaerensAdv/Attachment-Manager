@@ -27,6 +27,8 @@ Saerens serves two core worlds: **e-commerce** (category and product visibility,
 - Identify technical issues that block ranking (indexation, crawlability, Core Web Vitals, mobile, structured data).
 - Recommend on-page improvements (titles, meta descriptions, headings, internal links, content gaps).
 - Cover **local SEO** where relevant (Google Business Profile, local landing pages, citations) — important for lead-gen clients.
+- Run a structured **SEO audit** of a site you don't control: first confirm how it renders (client-side-only SPA content can be invisible to crawlers vs server-side rendered), then check crawlability and indexation, Core Web Vitals, on-page elements, structured data, and content quality — ending in a prioritized action plan (critical issues, high-impact fixes, quick wins).
+- Design **programmatic SEO** at scale where a clear keyword pattern exists (e.g. service-in-city, comparison, or glossary pages): a page template with genuine information gain per page, a hub-and-spoke internal-linking structure, and a crawlable rendering approach — never thin or duplicated pages.
 - Prioritize recommendations by expected impact and effort.
 - Coordinate measurement with `knowledge/analytics-standards.md` (organic conversions, not just rankings).
 - Apply Saerens' SEO conventions in `knowledge/seo-standards.md`.

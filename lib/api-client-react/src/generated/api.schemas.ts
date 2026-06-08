@@ -389,6 +389,139 @@ export interface ClientList {
   clients: Client[];
 }
 
+export interface IntegrationCoverage {
+  configured: boolean;
+  /** ISO timestamp of the last successful refresh, or null */
+  liveAt?: string | null;
+}
+
+export type ClientCoverageIntegrations = {
+  googleAds: IntegrationCoverage;
+  competitorAds: IntegrationCoverage;
+  searchConsole: IntegrationCoverage;
+  ga4: IntegrationCoverage;
+  places: IntegrationCoverage;
+  pagespeed: IntegrationCoverage;
+  businessProfile: IntegrationCoverage;
+  websiteIntake: IntegrationCoverage;
+};
+
+export interface ClientCoverage {
+  id: number;
+  name: string;
+  integrations: ClientCoverageIntegrations;
+}
+
+export interface ClientCoverageList {
+  clients: ClientCoverage[];
+}
+
+export type DiscoveryEnrichmentField = typeof DiscoveryEnrichmentField[keyof typeof DiscoveryEnrichmentField];
+
+
+export const DiscoveryEnrichmentField = {
+  googleAdsCustomerId: 'googleAdsCustomerId',
+  searchConsoleSiteUrl: 'searchConsoleSiteUrl',
+} as const;
+
+export interface DiscoveryEnrichment {
+  clientId: number;
+  clientName: string;
+  field: DiscoveryEnrichmentField;
+  value: string;
+  reason: string;
+}
+
+export type DiscoveryNewClientSource = typeof DiscoveryNewClientSource[keyof typeof DiscoveryNewClientSource];
+
+
+export const DiscoveryNewClientSource = {
+  'google-ads': 'google-ads',
+  'search-console': 'search-console',
+} as const;
+
+export interface DiscoveryNewClient {
+  key: string;
+  suggestedName: string;
+  source: DiscoveryNewClientSource;
+  googleAdsCustomerId?: string | null;
+  searchConsoleSiteUrl?: string | null;
+  website?: string | null;
+  reason: string;
+}
+
+export interface ClientDiscovery {
+  adsAvailable: boolean;
+  scAvailable: boolean;
+  adsAccountCount: number;
+  scSiteCount: number;
+  enrichments: DiscoveryEnrichment[];
+  newClients: DiscoveryNewClient[];
+  warnings: string[];
+}
+
+export type ClientDiscoveryApplyInputEnrichmentsItemField = typeof ClientDiscoveryApplyInputEnrichmentsItemField[keyof typeof ClientDiscoveryApplyInputEnrichmentsItemField];
+
+
+export const ClientDiscoveryApplyInputEnrichmentsItemField = {
+  googleAdsCustomerId: 'googleAdsCustomerId',
+  searchConsoleSiteUrl: 'searchConsoleSiteUrl',
+} as const;
+
+export type ClientDiscoveryApplyInputEnrichmentsItem = {
+  clientId: number;
+  field: ClientDiscoveryApplyInputEnrichmentsItemField;
+  value: string;
+};
+
+export type ClientDiscoveryApplyInputNewClientsItem = {
+  name: string;
+  googleAdsCustomerId?: string | null;
+  searchConsoleSiteUrl?: string | null;
+  website?: string | null;
+};
+
+export interface ClientDiscoveryApplyInput {
+  enrichments?: ClientDiscoveryApplyInputEnrichmentsItem[];
+  newClients?: ClientDiscoveryApplyInputNewClientsItem[];
+}
+
+export type ClientDiscoveryApplyResultEnrichedItem = {
+  clientId: number;
+  field: string;
+};
+
+export type ClientDiscoveryApplyResultCreatedItem = {
+  id: number;
+  name: string;
+};
+
+export interface ClientDiscoveryApplyResult {
+  enriched: ClientDiscoveryApplyResultEnrichedItem[];
+  created: ClientDiscoveryApplyResultCreatedItem[];
+  errors: string[];
+}
+
+export type RefreshOutcomeStatus = typeof RefreshOutcomeStatus[keyof typeof RefreshOutcomeStatus];
+
+
+export const RefreshOutcomeStatus = {
+  refreshed: 'refreshed',
+  skipped: 'skipped',
+  error: 'error',
+} as const;
+
+export interface RefreshOutcome {
+  integration: string;
+  status: RefreshOutcomeStatus;
+  detail?: string;
+}
+
+export interface ClientRefreshAllResult {
+  client: Client;
+  outcomes: RefreshOutcome[];
+}
+
 export interface GenerationSummary {
   id: number;
   clientName: string;

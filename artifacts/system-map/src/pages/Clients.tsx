@@ -36,6 +36,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import Reveal from "@/components/Reveal";
+import ClientToolbox from "@/components/ClientToolbox";
 import {
   FIELDS,
   STATE_FIELDS,
@@ -544,6 +545,8 @@ export default function Clients() {
           </p>
         </header>
         </Reveal>
+
+        <ClientToolbox clients={clients} onChanged={invalidate} />
 
         <div className="grid grid-cols-1 lg:grid-cols-[24rem_1fr] gap-10">
           {/* Register / index */}

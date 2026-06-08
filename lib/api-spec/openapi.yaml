@@ -766,6 +766,84 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /clients/coverage:
+    get:
+      operationId: getClientsCoverage
+      tags: [clients]
+      summary: Per-client integration coverage (which keys set + last live)
+      responses:
+        "200":
+          description: Coverage overview for all clients
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClientCoverageList"
+  /clients/discovery:
+    get:
+      operationId: getClientsDiscovery
+      tags: [clients]
+      summary: Discover unlinked accounts + fillable keys (review payload, read-only)
+      responses:
+        "200":
+          description: Discovery proposal (enrichments + new-client candidates)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClientDiscovery"
+        "502":
+          description: Discovery could not be run
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /clients/discovery/apply:
+    post:
+      operationId: applyClientsDiscovery
+      tags: [clients]
+      summary: Apply confirmed discovery results (fill keys + create clients)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClientDiscoveryApplyInput"
+      responses:
+        "200":
+          description: What was enriched and created, plus any per-item errors
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClientDiscoveryApplyResult"
+  /clients/{id}/refresh-all:
+    post:
+      operationId: clientRefreshAll
+      tags: [clients]
+      summary: Refresh every configured integration for one client (best-effort)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: The updated client and a per-integration outcome list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClientRefreshAllResult"
+        "400":
+          description: Invalid id
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Client not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /generations:
     get:
       operationId: getGenerations
@@ -1722,6 +1800,210 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Client"
+    IntegrationCoverage:
+      type: object
+      required: [configured]
+      properties:
+        configured:
+          type: boolean
+        liveAt:
+          type: string
+          nullable: true
+          description: ISO timestamp of the last successful refresh, or null
+    ClientCoverage:
+      type: object
+      required: [id, name, integrations]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        integrations:
+          type: object
+          required:
+            - googleAds
+            - competitorAds
+            - searchConsole
+            - ga4
+            - places
+            - pagespeed
+            - businessProfile
+            - websiteIntake
+          properties:
+            googleAds:
+              $ref: "#/components/schemas/IntegrationCoverage"
+            competitorAds:
+              $ref: "#/components/schemas/IntegrationCoverage"
+            searchConsole:
+              $ref: "#/components/schemas/IntegrationCoverage"
+            ga4:
+              $ref: "#/components/schemas/IntegrationCoverage"
+            places:
+              $ref: "#/components/schemas/IntegrationCoverage"
+            pagespeed:
+              $ref: "#/components/schemas/IntegrationCoverage"
+            businessProfile:
+              $ref: "#/components/schemas/IntegrationCoverage"
+            websiteIntake:
+              $ref: "#/components/schemas/IntegrationCoverage"
+    ClientCoverageList:
+      type: object
+      required: [clients]
+      properties:
+        clients:
+          type: array
+          items:
+            $ref: "#/components/schemas/ClientCoverage"
+    DiscoveryEnrichment:
+      type: object
+      required: [clientId, clientName, field, value, reason]
+      properties:
+        clientId:
+          type: integer
+        clientName:
+          type: string
+        field:
+          type: string
+          enum: [googleAdsCustomerId, searchConsoleSiteUrl]
+        value:
+          type: string
+        reason:
+          type: string
+    DiscoveryNewClient:
+      type: object
+      required: [key, suggestedName, source, reason]
+      properties:
+        key:
+          type: string
+        suggestedName:
+          type: string
+        source:
+          type: string
+          enum: [google-ads, search-console]
+        googleAdsCustomerId:
+          type: string
+          nullable: true
+        searchConsoleSiteUrl:
+          type: string
+          nullable: true
+        website:
+          type: string
+          nullable: true
+        reason:
+          type: string
+    ClientDiscovery:
+      type: object
+      required:
+        - adsAvailable
+        - scAvailable
+        - adsAccountCount
+        - scSiteCount
+        - enrichments
+        - newClients
+        - warnings
+      properties:
+        adsAvailable:
+          type: boolean
+        scAvailable:
+          type: boolean
+        adsAccountCount:
+          type: integer
+        scSiteCount:
+          type: integer
+        enrichments:
+          type: array
+          items:
+            $ref: "#/components/schemas/DiscoveryEnrichment"
+        newClients:
+          type: array
+          items:
+            $ref: "#/components/schemas/DiscoveryNewClient"
+        warnings:
+          type: array
+          items:
+            type: string
+    ClientDiscoveryApplyInput:
+      type: object
+      properties:
+        enrichments:
+          type: array
+          items:
+            type: object
+            required: [clientId, field, value]
+            properties:
+              clientId:
+                type: integer
+              field:
+                type: string
+                enum: [googleAdsCustomerId, searchConsoleSiteUrl]
+              value:
+                type: string
+        newClients:
+          type: array
+          items:
+            type: object
+            required: [name]
+            properties:
+              name:
+                type: string
+              googleAdsCustomerId:
+                type: string
+                nullable: true
+              searchConsoleSiteUrl:
+                type: string
+                nullable: true
+              website:
+                type: string
+                nullable: true
+    ClientDiscoveryApplyResult:
+      type: object
+      required: [enriched, created, errors]
+      properties:
+        enriched:
+          type: array
+          items:
+            type: object
+            required: [clientId, field]
+            properties:
+              clientId:
+                type: integer
+              field:
+                type: string
+        created:
+          type: array
+          items:
+            type: object
+            required: [id, name]
+            properties:
+              id:
+                type: integer
+              name:
+                type: string
+        errors:
+          type: array
+          items:
+            type: string
+    RefreshOutcome:
+      type: object
+      required: [integration, status]
+      properties:
+        integration:
+          type: string
+        status:
+          type: string
+          enum: [refreshed, skipped, error]
+        detail:
+          type: string
+    ClientRefreshAllResult:
+      type: object
+      required: [client, outcomes]
+      properties:
+        client:
+          $ref: "#/components/schemas/Client"
+        outcomes:
+          type: array
+          items:
+            $ref: "#/components/schemas/RefreshOutcome"
     GenerationSummary:
       type: object
       required:

@@ -26,8 +26,13 @@ import type {
   AutonomousGenerateResult,
   BacklinkList,
   Client,
+  ClientCoverageList,
+  ClientDiscovery,
+  ClientDiscoveryApplyInput,
+  ClientDiscoveryApplyResult,
   ClientInput,
   ClientList,
+  ClientRefreshAllResult,
   DocContent,
   DocContentUpdate,
   DocGraph,
@@ -2077,6 +2082,301 @@ export const useClientCompetitorAdsRefresh = <TError = ErrorType<ErrorResponse>,
         TContext
       > => {
       return useMutation(getClientCompetitorAdsRefreshMutationOptions(options));
+    }
+
+export const getGetClientsCoverageUrl = () => {
+
+
+
+
+  return `/api/clients/coverage`
+}
+
+/**
+ * @summary Per-client integration coverage (which keys set + last live)
+ */
+export const getClientsCoverage = async ( options?: RequestInit): Promise<ClientCoverageList> => {
+
+  return customFetch<ClientCoverageList>(getGetClientsCoverageUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetClientsCoverageQueryKey = () => {
+    return [
+    `/api/clients/coverage`
+    ] as const;
+    }
+
+
+export const getGetClientsCoverageQueryOptions = <TData = Awaited<ReturnType<typeof getClientsCoverage>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getClientsCoverage>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetClientsCoverageQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getClientsCoverage>>> = ({ signal }) => getClientsCoverage({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getClientsCoverage>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetClientsCoverageQueryResult = NonNullable<Awaited<ReturnType<typeof getClientsCoverage>>>
+export type GetClientsCoverageQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Per-client integration coverage (which keys set + last live)
+ */
+
+export function useGetClientsCoverage<TData = Awaited<ReturnType<typeof getClientsCoverage>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getClientsCoverage>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetClientsCoverageQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetClientsDiscoveryUrl = () => {
+
+
+
+
+  return `/api/clients/discovery`
+}
+
+/**
+ * @summary Discover unlinked accounts + fillable keys (review payload, read-only)
+ */
+export const getClientsDiscovery = async ( options?: RequestInit): Promise<ClientDiscovery> => {
+
+  return customFetch<ClientDiscovery>(getGetClientsDiscoveryUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetClientsDiscoveryQueryKey = () => {
+    return [
+    `/api/clients/discovery`
+    ] as const;
+    }
+
+
+export const getGetClientsDiscoveryQueryOptions = <TData = Awaited<ReturnType<typeof getClientsDiscovery>>, TError = ErrorType<ErrorResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getClientsDiscovery>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetClientsDiscoveryQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getClientsDiscovery>>> = ({ signal }) => getClientsDiscovery({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getClientsDiscovery>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetClientsDiscoveryQueryResult = NonNullable<Awaited<ReturnType<typeof getClientsDiscovery>>>
+export type GetClientsDiscoveryQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary Discover unlinked accounts + fillable keys (review payload, read-only)
+ */
+
+export function useGetClientsDiscovery<TData = Awaited<ReturnType<typeof getClientsDiscovery>>, TError = ErrorType<ErrorResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getClientsDiscovery>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetClientsDiscoveryQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getApplyClientsDiscoveryUrl = () => {
+
+
+
+
+  return `/api/clients/discovery/apply`
+}
+
+/**
+ * @summary Apply confirmed discovery results (fill keys + create clients)
+ */
+export const applyClientsDiscovery = async (clientDiscoveryApplyInput: ClientDiscoveryApplyInput, options?: RequestInit): Promise<ClientDiscoveryApplyResult> => {
+
+  return customFetch<ClientDiscoveryApplyResult>(getApplyClientsDiscoveryUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      clientDiscoveryApplyInput,)
+  }
+);}
+
+
+
+
+export const getApplyClientsDiscoveryMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof applyClientsDiscovery>>, TError,{data: BodyType<ClientDiscoveryApplyInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof applyClientsDiscovery>>, TError,{data: BodyType<ClientDiscoveryApplyInput>}, TContext> => {
+
+const mutationKey = ['applyClientsDiscovery'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof applyClientsDiscovery>>, {data: BodyType<ClientDiscoveryApplyInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  applyClientsDiscovery(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ApplyClientsDiscoveryMutationResult = NonNullable<Awaited<ReturnType<typeof applyClientsDiscovery>>>
+    export type ApplyClientsDiscoveryMutationBody = BodyType<ClientDiscoveryApplyInput>
+    export type ApplyClientsDiscoveryMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Apply confirmed discovery results (fill keys + create clients)
+ */
+export const useApplyClientsDiscovery = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof applyClientsDiscovery>>, TError,{data: BodyType<ClientDiscoveryApplyInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof applyClientsDiscovery>>,
+        TError,
+        {data: BodyType<ClientDiscoveryApplyInput>},
+        TContext
+      > => {
+      return useMutation(getApplyClientsDiscoveryMutationOptions(options));
+    }
+
+export const getClientRefreshAllUrl = (id: number,) => {
+
+
+
+
+  return `/api/clients/${id}/refresh-all`
+}
+
+/**
+ * @summary Refresh every configured integration for one client (best-effort)
+ */
+export const clientRefreshAll = async (id: number, options?: RequestInit): Promise<ClientRefreshAllResult> => {
+
+  return customFetch<ClientRefreshAllResult>(getClientRefreshAllUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getClientRefreshAllMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof clientRefreshAll>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof clientRefreshAll>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['clientRefreshAll'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof clientRefreshAll>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  clientRefreshAll(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ClientRefreshAllMutationResult = NonNullable<Awaited<ReturnType<typeof clientRefreshAll>>>
+
+    export type ClientRefreshAllMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Refresh every configured integration for one client (best-effort)
+ */
+export const useClientRefreshAll = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof clientRefreshAll>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof clientRefreshAll>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getClientRefreshAllMutationOptions(options));
     }
 
 export const getGetGenerationsUrl = () => {

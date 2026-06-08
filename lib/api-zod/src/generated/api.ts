@@ -1083,6 +1083,174 @@ export const ClientCompetitorAdsRefreshResponse = zod.object({
 
 
 /**
+ * @summary Per-client integration coverage (which keys set + last live)
+ */
+export const GetClientsCoverageResponse = zod.object({
+  "clients": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "integrations": zod.object({
+  "googleAds": zod.object({
+  "configured": zod.boolean(),
+  "liveAt": zod.string().nullish().describe('ISO timestamp of the last successful refresh, or null')
+}),
+  "competitorAds": zod.object({
+  "configured": zod.boolean(),
+  "liveAt": zod.string().nullish().describe('ISO timestamp of the last successful refresh, or null')
+}),
+  "searchConsole": zod.object({
+  "configured": zod.boolean(),
+  "liveAt": zod.string().nullish().describe('ISO timestamp of the last successful refresh, or null')
+}),
+  "ga4": zod.object({
+  "configured": zod.boolean(),
+  "liveAt": zod.string().nullish().describe('ISO timestamp of the last successful refresh, or null')
+}),
+  "places": zod.object({
+  "configured": zod.boolean(),
+  "liveAt": zod.string().nullish().describe('ISO timestamp of the last successful refresh, or null')
+}),
+  "pagespeed": zod.object({
+  "configured": zod.boolean(),
+  "liveAt": zod.string().nullish().describe('ISO timestamp of the last successful refresh, or null')
+}),
+  "businessProfile": zod.object({
+  "configured": zod.boolean(),
+  "liveAt": zod.string().nullish().describe('ISO timestamp of the last successful refresh, or null')
+}),
+  "websiteIntake": zod.object({
+  "configured": zod.boolean(),
+  "liveAt": zod.string().nullish().describe('ISO timestamp of the last successful refresh, or null')
+})
+})
+}))
+})
+
+
+/**
+ * @summary Discover unlinked accounts + fillable keys (review payload, read-only)
+ */
+export const GetClientsDiscoveryResponse = zod.object({
+  "adsAvailable": zod.boolean(),
+  "scAvailable": zod.boolean(),
+  "adsAccountCount": zod.number(),
+  "scSiteCount": zod.number(),
+  "enrichments": zod.array(zod.object({
+  "clientId": zod.number(),
+  "clientName": zod.string(),
+  "field": zod.enum(['googleAdsCustomerId', 'searchConsoleSiteUrl']),
+  "value": zod.string(),
+  "reason": zod.string()
+})),
+  "newClients": zod.array(zod.object({
+  "key": zod.string(),
+  "suggestedName": zod.string(),
+  "source": zod.enum(['google-ads', 'search-console']),
+  "googleAdsCustomerId": zod.string().nullish(),
+  "searchConsoleSiteUrl": zod.string().nullish(),
+  "website": zod.string().nullish(),
+  "reason": zod.string()
+})),
+  "warnings": zod.array(zod.string())
+})
+
+
+/**
+ * @summary Apply confirmed discovery results (fill keys + create clients)
+ */
+export const ApplyClientsDiscoveryBody = zod.object({
+  "enrichments": zod.array(zod.object({
+  "clientId": zod.number(),
+  "field": zod.enum(['googleAdsCustomerId', 'searchConsoleSiteUrl']),
+  "value": zod.string()
+})).optional(),
+  "newClients": zod.array(zod.object({
+  "name": zod.string(),
+  "googleAdsCustomerId": zod.string().nullish(),
+  "searchConsoleSiteUrl": zod.string().nullish(),
+  "website": zod.string().nullish()
+})).optional()
+})
+
+export const ApplyClientsDiscoveryResponse = zod.object({
+  "enriched": zod.array(zod.object({
+  "clientId": zod.number(),
+  "field": zod.string()
+})),
+  "created": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string()
+})),
+  "errors": zod.array(zod.string())
+})
+
+
+/**
+ * @summary Refresh every configured integration for one client (best-effort)
+ */
+export const ClientRefreshAllParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ClientRefreshAllResponse = zod.object({
+  "client": zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "business": zod.string().nullish(),
+  "world": zod.string().nullish(),
+  "services": zod.string().nullish(),
+  "audience": zod.string().nullish(),
+  "locations": zod.string().nullish(),
+  "languages": zod.string().nullish(),
+  "mainGoal": zod.string().nullish(),
+  "conversionAction": zod.string().nullish(),
+  "kpis": zod.string().nullish(),
+  "budget": zod.string().nullish(),
+  "toneOfVoice": zod.string().nullish(),
+  "channels": zod.string().nullish(),
+  "restrictions": zod.string().nullish(),
+  "website": zod.string().nullish(),
+  "landingPages": zod.string().nullish(),
+  "currentState": zod.string().nullish(),
+  "googleAdsData": zod.string().nullish(),
+  "searchConsoleData": zod.string().nullish(),
+  "reportEmail": zod.string().nullish(),
+  "websiteIntake": zod.string().nullish(),
+  "websiteIntakeAt": zod.coerce.date().nullish(),
+  "googleAdsCustomerId": zod.string().nullish(),
+  "googleAdsLive": zod.string().nullish(),
+  "googleAdsLiveAt": zod.coerce.date().nullish(),
+  "competitorAdvertisers": zod.string().nullish(),
+  "competitorAdsLive": zod.string().nullish(),
+  "competitorAdsLiveAt": zod.coerce.date().nullish(),
+  "searchConsoleSiteUrl": zod.string().nullish(),
+  "searchConsoleLive": zod.string().nullish(),
+  "searchConsoleLiveAt": zod.coerce.date().nullish(),
+  "ga4PropertyId": zod.string().nullish(),
+  "ga4Live": zod.string().nullish(),
+  "ga4LiveAt": zod.coerce.date().nullish(),
+  "placesQuery": zod.string().nullish(),
+  "placesCompetitors": zod.string().nullish(),
+  "placesLive": zod.string().nullish(),
+  "placesLiveAt": zod.coerce.date().nullish(),
+  "pagespeedUrls": zod.string().nullish(),
+  "pagespeedLive": zod.string().nullish(),
+  "pagespeedLiveAt": zod.coerce.date().nullish(),
+  "businessProfileLocationId": zod.string().nullish(),
+  "businessProfileLive": zod.string().nullish(),
+  "businessProfileLiveAt": zod.coerce.date().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+}),
+  "outcomes": zod.array(zod.object({
+  "integration": zod.string(),
+  "status": zod.enum(['refreshed', 'skipped', 'error']),
+  "detail": zod.string().optional()
+}))
+})
+
+
+/**
  * @summary List all saved generations (newest first)
  */
 export const GetGenerationsResponse = zod.object({

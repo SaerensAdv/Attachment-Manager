@@ -1367,3 +1367,53 @@ export async function fetchGoogleAdsNegativesContext(
     text = `${text.slice(0, MAX_REPORT_LEN)}\n…(truncated)`;
   return { text, fetchedAt: new Date() };
 }
+
+/** One child account discovered under the agency MCC. */
+export interface AdsAccount {
+  /** Plain digits, no dashes (the canonical googleAdsCustomerId value). */
+  customerId: string;
+  name: string;
+  currency: string;
+  status: string;
+  /** Manager (MCC) accounts are containers, not advertisers — caller skips them. */
+  isManager: boolean;
+  /** Tree depth: 0 is the MCC itself, 1 a direct child, etc. */
+  level: number;
+}
+
+/**
+ * List the advertiser accounts that live under the agency MCC — READ ONLY.
+ *
+ * Uses the `customer_client` resource queried against the login-customer-id
+ * (the MCC), which returns the whole account tree in one call. Manager accounts
+ * and the MCC itself are returned too (with `isManager`/`level`); the caller
+ * decides what to keep. Powers client discovery, never writes anything.
+ */
+export async function listAdsAccounts(): Promise<AdsAccount[]> {
+  const cfg = readConfig();
+  const accessToken = await getAccessToken(cfg);
+  const rows = await runGaql(
+    cfg,
+    accessToken,
+    cfg.loginCustomerId,
+    `SELECT customer_client.id, customer_client.descriptive_name,
+            customer_client.currency_code, customer_client.manager,
+            customer_client.status, customer_client.level
+     FROM customer_client
+     WHERE customer_client.status = 'ENABLED'`,
+  );
+  const accounts: AdsAccount[] = [];
+  for (const row of rows) {
+    const id = digitsOnly(String(pick(row, "customerClient.id") ?? ""));
+    if (!id) continue;
+    accounts.push({
+      customerId: id,
+      name: String(pick(row, "customerClient.descriptiveName") ?? "").trim(),
+      currency: String(pick(row, "customerClient.currencyCode") ?? "").trim(),
+      status: String(pick(row, "customerClient.status") ?? "").trim(),
+      isManager: pick(row, "customerClient.manager") === true,
+      level: num(pick(row, "customerClient.level")),
+    });
+  }
+  return accounts;
+}

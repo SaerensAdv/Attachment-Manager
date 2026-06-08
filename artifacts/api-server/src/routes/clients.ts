@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull, or } from "drizzle-orm";
 import { db, clientsTable, type Client } from "@workspace/db";
 import {
   collectClientUrls,
@@ -19,6 +19,7 @@ import {
   BusinessProfileConfigError,
 } from "../lib/business-profile";
 import { GoogleOAuthConfigError } from "../lib/google-oauth";
+import { discoverClients } from "../lib/client-discovery";
 
 const router: IRouter = Router();
 
@@ -198,6 +199,69 @@ router.get("/clients", async (_req, res) => {
     .from(clientsTable)
     .orderBy(clientsTable.name);
   res.json({ clients: rows.map(serialize) });
+});
+
+/**
+ * Cheap coverage / gap overview: for every client, which integrations have a
+ * config key set and when each was last refreshed. Pure read of the rows we
+ * already hold — no external API calls — so the UI can render an at-a-glance
+ * matrix and decide what still needs filling or refreshing.
+ */
+router.get("/clients/coverage", async (_req, res) => {
+  const rows = await db
+    .select()
+    .from(clientsTable)
+    .orderBy(clientsTable.name);
+
+  const iso = (d: Date | null): string | null => (d ? d.toISOString() : null);
+  const has = (v: string | null): boolean => !!v && v.trim().length > 0;
+
+  const clients = rows.map((c) => ({
+    id: c.id,
+    name: c.name,
+    integrations: {
+      googleAds: { configured: has(c.googleAdsCustomerId), liveAt: iso(c.googleAdsLiveAt) },
+      competitorAds: {
+        configured: has(c.competitorAdvertisers),
+        liveAt: iso(c.competitorAdsLiveAt),
+      },
+      searchConsole: {
+        configured: has(c.searchConsoleSiteUrl),
+        liveAt: iso(c.searchConsoleLiveAt),
+      },
+      ga4: { configured: has(c.ga4PropertyId), liveAt: iso(c.ga4LiveAt) },
+      places: { configured: has(c.placesQuery), liveAt: iso(c.placesLiveAt) },
+      pagespeed: { configured: has(c.pagespeedUrls), liveAt: iso(c.pagespeedLiveAt) },
+      businessProfile: {
+        configured: has(c.businessProfileLocationId),
+        liveAt: iso(c.businessProfileLiveAt),
+      },
+      websiteIntake: {
+        configured: has(c.website) || has(c.landingPages),
+        liveAt: iso(c.websiteIntakeAt),
+      },
+    },
+  }));
+
+  res.json({ clients });
+});
+
+/**
+ * Discovery (read-only): find accounts the agency manages that aren't yet a
+ * client, plus missing integration keys we can confidently fill on existing
+ * clients. Returns a review payload — nothing is created or changed here; the
+ * user confirms via POST /clients/discovery/apply.
+ */
+router.get("/clients/discovery", async (_req, res) => {
+  try {
+    const result = await discoverClients();
+    res.json(result);
+  } catch (err) {
+    res.status(502).json({
+      error: "Kon klantontdekking niet uitvoeren.",
+      detail: err instanceof Error ? err.message : String(err),
+    });
+  }
 });
 
 router.get("/clients/:id", async (req, res) => {
@@ -678,6 +742,370 @@ router.post("/clients/:id/business-profile-refresh", async (req, res) => {
       detail: err instanceof Error ? err.message : String(err),
     });
   }
+});
+
+/** Per-integration outcome of a bulk refresh, for the UI summary. */
+type RefreshStatus = "refreshed" | "skipped" | "error";
+interface RefreshOutcome {
+  integration: string;
+  status: RefreshStatus;
+  detail?: string;
+}
+
+/**
+ * Refresh every integration that the client has a config key for, best-effort.
+ * A failing integration becomes an "error" outcome and never blocks the others.
+ * Returns the column updates to persist plus a per-integration outcome list.
+ */
+async function refreshConfiguredIntegrations(
+  row: Client,
+): Promise<{ updates: Partial<Client>; outcomes: RefreshOutcome[] }> {
+  const updates: Record<string, unknown> = {};
+  const outcomes: RefreshOutcome[] = [];
+
+  const run = async (
+    integration: string,
+    configured: boolean,
+    fn: () => Promise<void>,
+  ): Promise<void> => {
+    if (!configured) {
+      outcomes.push({ integration, status: "skipped", detail: "geen koppeling ingesteld" });
+      return;
+    }
+    try {
+      await fn();
+      outcomes.push({ integration, status: "refreshed" });
+    } catch (err) {
+      outcomes.push({
+        integration,
+        status: "error",
+        detail: err instanceof Error ? err.message : String(err),
+      });
+    }
+  };
+
+  await run(
+    "googleAds",
+    !!(row.googleAdsCustomerId ?? "").replace(/\D/g, ""),
+    async () => {
+      const report = await fetchGoogleAdsReport(row.googleAdsCustomerId ?? "");
+      updates.googleAdsLive = report.text;
+      updates.googleAdsLiveAt = report.fetchedAt;
+    },
+  );
+
+  await run(
+    "competitorAds",
+    (row.competitorAdvertisers ?? "").trim().length > 0,
+    async () => {
+      const targets = (row.competitorAdvertisers ?? "")
+        .split(/\r?\n/)
+        .map((s) => s.trim())
+        .filter(Boolean);
+      const result = await fetchCompetitorAds(targets);
+      updates.competitorAdsLive = result.text;
+      updates.competitorAdsLiveAt = result.fetchedAt;
+    },
+  );
+
+  await run(
+    "searchConsole",
+    (row.searchConsoleSiteUrl ?? "").trim().length > 0,
+    async () => {
+      const report = await fetchSearchConsoleReport(
+        (row.searchConsoleSiteUrl ?? "").trim(),
+      );
+      updates.searchConsoleLive = report.text;
+      updates.searchConsoleLiveAt = report.fetchedAt;
+    },
+  );
+
+  await run(
+    "ga4",
+    (row.ga4PropertyId ?? "").trim().length > 0,
+    async () => {
+      const report = await fetchGa4Report((row.ga4PropertyId ?? "").trim());
+      updates.ga4Live = report.text;
+      updates.ga4LiveAt = report.fetchedAt;
+    },
+  );
+
+  await run(
+    "places",
+    (row.placesQuery ?? "").trim().length > 0,
+    async () => {
+      const competitors = (row.placesCompetitors ?? "")
+        .split(/\r?\n/)
+        .map((s) => s.trim())
+        .filter(Boolean);
+      const report = await fetchPlacesReport(
+        (row.placesQuery ?? "").trim(),
+        competitors,
+      );
+      updates.placesLive = report.text;
+      updates.placesLiveAt = report.fetchedAt;
+    },
+  );
+
+  await run(
+    "pagespeed",
+    (row.pagespeedUrls ?? "").trim().length > 0,
+    async () => {
+      const urls = (row.pagespeedUrls ?? "")
+        .split(/\r?\n/)
+        .map((s) => s.trim())
+        .filter(Boolean);
+      const report = await fetchPageSpeedReport(urls);
+      updates.pagespeedLive = report.text;
+      updates.pagespeedLiveAt = report.fetchedAt;
+    },
+  );
+
+  await run(
+    "businessProfile",
+    (row.businessProfileLocationId ?? "").trim().length > 0,
+    async () => {
+      const report = await fetchBusinessProfileReport(
+        (row.businessProfileLocationId ?? "").trim(),
+      );
+      updates.businessProfileLive = report.text;
+      updates.businessProfileLiveAt = report.fetchedAt;
+    },
+  );
+
+  await run(
+    "websiteIntake",
+    collectClientUrls(row.website, row.landingPages).length > 0,
+    async () => {
+      const urls = collectClientUrls(row.website, row.landingPages);
+      const result = await fetchWebsiteIntake(urls);
+      if (!result.text) {
+        throw new Error(result.errors.join(" | ") || "Geen tekst gelezen.");
+      }
+      updates.websiteIntake = result.text;
+      updates.websiteIntakeAt = new Date();
+    },
+  );
+
+  return { updates: updates as Partial<Client>, outcomes };
+}
+
+/**
+ * Refresh all configured integrations for ONE client. The UI loops this over
+ * every client (sequentially) so each HTTP request stays short and the upstream
+ * rate limiters are respected — a single server-side "refresh everything" call
+ * would run for minutes and risk being torn down by the proxy.
+ */
+router.post("/clients/:id/refresh-all", async (req, res) => {
+  const id = parseId(req.params.id);
+  if (id === null) {
+    res.status(400).json({ error: "Ongeldige id." });
+    return;
+  }
+  const [row] = await db
+    .select()
+    .from(clientsTable)
+    .where(eq(clientsTable.id, id));
+  if (!row) {
+    res.status(404).json({ error: "Klant niet gevonden." });
+    return;
+  }
+
+  const { updates, outcomes } = await refreshConfiguredIntegrations(row);
+
+  let updated = row;
+  if (Object.keys(updates).length > 0) {
+    const [u] = await db
+      .update(clientsTable)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(clientsTable.id, id))
+      .returning();
+    if (u) updated = u;
+  }
+
+  res.json({ client: serialize(updated), outcomes });
+});
+
+/** Validate a Google Ads customer id value (digits, optionally dash-grouped). */
+function validateAdsId(raw: string): string | { error: string } {
+  if (!/^[\d\s-]+$/.test(raw)) {
+    return { error: "Google Ads customer ID mag enkel cijfers en streepjes bevatten." };
+  }
+  const digits = raw.replace(/\D/g, "");
+  if (digits.length < 8 || digits.length > 12) {
+    return { error: "Google Ads customer ID moet 8 tot 12 cijfers bevatten." };
+  }
+  return raw;
+}
+
+/** Validate a Search Console property value (sc-domain: or url-prefix). */
+function validateScUrl(raw: string): string | { error: string } {
+  const ok =
+    /^sc-domain:[a-z0-9.-]+$/i.test(raw) || /^https?:\/\/[^\s]+$/i.test(raw);
+  if (!ok) {
+    return {
+      error:
+        'Search Console-property moet "sc-domain:voorbeeld.be" of "https://voorbeeld.be/" zijn.',
+    };
+  }
+  return raw;
+}
+
+/**
+ * Apply confirmed discovery results: fill missing keys on existing clients and
+ * create the new clients the user ticked. Everything is validated again here
+ * (the review payload is user-editable) and enrichments only ever fill a key
+ * that is still empty — we never overwrite an existing value.
+ */
+router.post("/clients/discovery/apply", async (req, res) => {
+  const body = (req.body ?? {}) as {
+    enrichments?: unknown;
+    newClients?: unknown;
+  };
+  const enrichments = Array.isArray(body.enrichments) ? body.enrichments : [];
+  const newClients = Array.isArray(body.newClients) ? body.newClients : [];
+
+  const enriched: { clientId: number; field: string }[] = [];
+  const created: { id: number; name: string }[] = [];
+  const errors: string[] = [];
+
+  // --- Enrichments: fill a single empty key on an existing client. ----------
+  for (const raw of enrichments) {
+    const e = (raw ?? {}) as Record<string, unknown>;
+    const clientId = Number(e.clientId);
+    const field = String(e.field ?? "");
+    const value = asTrimmed(e.value);
+    if (!Number.isInteger(clientId) || clientId <= 0 || !value) {
+      errors.push("Ongeldige aanvulling overgeslagen.");
+      continue;
+    }
+    if (field !== "googleAdsCustomerId" && field !== "searchConsoleSiteUrl") {
+      errors.push(`Onbekend veld "${field}" overgeslagen.`);
+      continue;
+    }
+    const checked =
+      field === "googleAdsCustomerId"
+        ? validateAdsId(value)
+        : validateScUrl(value);
+    if (typeof checked !== "string") {
+      errors.push(`${field}: ${checked.error}`);
+      continue;
+    }
+    // Never clobber an existing value — only fill when still empty. Done as a
+    // single conditional UPDATE so a concurrent writer can't slip a value in
+    // between a read and the write (atomic compare-and-fill).
+    const fieldCol =
+      field === "googleAdsCustomerId"
+        ? clientsTable.googleAdsCustomerId
+        : clientsTable.searchConsoleSiteUrl;
+    const [updated] = await db
+      .update(clientsTable)
+      .set({ [field]: checked, updatedAt: new Date() })
+      .where(
+        and(
+          eq(clientsTable.id, clientId),
+          or(isNull(fieldCol), eq(fieldCol, "")),
+        ),
+      )
+      .returning();
+    if (updated) {
+      enriched.push({ clientId, field });
+      continue;
+    }
+    // Nothing updated: either the client is gone or the key is already set.
+    const [current] = await db
+      .select()
+      .from(clientsTable)
+      .where(eq(clientsTable.id, clientId));
+    if (!current) {
+      errors.push(`Klant ${clientId} niet gevonden.`);
+    } else {
+      errors.push(`${current.name}: ${field} is al ingevuld, overgeslagen.`);
+    }
+  }
+
+  // --- New clients: validate + insert. --------------------------------------
+  // Guard against duplicates (stale review payloads, manual edits, double
+  // submits): skip a candidate whose name / Ads-ID / SC-property already exists
+  // on a client, and track within-batch so the same key can't be inserted twice.
+  const existingForDupe = newClients.length
+    ? await db.select().from(clientsTable)
+    : [];
+  const digitsOf = (v: string | null | undefined) =>
+    (v ?? "").replace(/\D/g, "");
+  const takenNames = new Set(
+    existingForDupe.map((c) => c.name.trim().toLowerCase()),
+  );
+  const takenAds = new Set(
+    existingForDupe.map((c) => digitsOf(c.googleAdsCustomerId)).filter(Boolean),
+  );
+  const takenSc = new Set(
+    existingForDupe
+      .map((c) => (c.searchConsoleSiteUrl ?? "").trim().toLowerCase())
+      .filter(Boolean),
+  );
+  for (const raw of newClients) {
+    const n = (raw ?? {}) as Record<string, unknown>;
+    const name = asTrimmed(n.name);
+    if (!name) {
+      errors.push("Nieuwe klant zonder naam overgeslagen.");
+      continue;
+    }
+    const values: Record<string, string> = {};
+    const adsRaw = asTrimmed(n.googleAdsCustomerId);
+    if (adsRaw) {
+      const checked = validateAdsId(adsRaw);
+      if (typeof checked !== "string") {
+        errors.push(`${name}: ${checked.error}`);
+        continue;
+      }
+      values.googleAdsCustomerId = checked;
+    }
+    const scRaw = asTrimmed(n.searchConsoleSiteUrl);
+    if (scRaw) {
+      const checked = validateScUrl(scRaw);
+      if (typeof checked !== "string") {
+        errors.push(`${name}: ${checked.error}`);
+        continue;
+      }
+      values.searchConsoleSiteUrl = checked;
+    }
+    const website = asTrimmed(n.website);
+    if (website) values.website = website;
+
+    const nameKey = name.toLowerCase();
+    const adsKey = values.googleAdsCustomerId
+      ? digitsOf(values.googleAdsCustomerId)
+      : "";
+    const scKey = values.searchConsoleSiteUrl
+      ? values.searchConsoleSiteUrl.toLowerCase()
+      : "";
+    if (takenNames.has(nameKey)) {
+      errors.push(`${name}: bestaat al als klant, overgeslagen.`);
+      continue;
+    }
+    if (adsKey && takenAds.has(adsKey)) {
+      errors.push(`${name}: Google Ads-ID is al in gebruik, overgeslagen.`);
+      continue;
+    }
+    if (scKey && takenSc.has(scKey)) {
+      errors.push(
+        `${name}: Search Console-property is al in gebruik, overgeslagen.`,
+      );
+      continue;
+    }
+
+    const [inserted] = await db
+      .insert(clientsTable)
+      .values({ name, ...values })
+      .returning();
+    created.push({ id: inserted.id, name: inserted.name });
+    takenNames.add(nameKey);
+    if (adsKey) takenAds.add(adsKey);
+    if (scKey) takenSc.add(scKey);
+  }
+
+  res.json({ enriched, created, errors });
 });
 
 router.delete("/clients/:id", async (req, res) => {

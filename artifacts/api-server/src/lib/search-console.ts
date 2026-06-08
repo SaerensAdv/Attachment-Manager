@@ -388,3 +388,63 @@ export async function fetchSearchConsoleReport(
     report: { siteUrl, startDate, endDate, totals, topQueries, topPages },
   };
 }
+
+/** One verified property the OAuth user can access in Search Console. */
+export interface SearchConsoleSite {
+  /** e.g. "sc-domain:voorbeeld.be" or "https://voorbeeld.be/". */
+  siteUrl: string;
+  /** "siteOwner" | "siteFullUser" | "siteRestrictedUser" | "siteUnverifiedUser". */
+  permissionLevel: string;
+}
+
+/**
+ * List the verified Search Console properties the read-only user can access —
+ * READ ONLY. Unverified properties are dropped (no useful data behind them).
+ * Powers client discovery; never writes anything.
+ */
+export async function listSearchConsoleSites(): Promise<SearchConsoleSite[]> {
+  const accessToken = await getReadonlyAccessToken();
+  let res: Response;
+  try {
+    res = await fetch(`${SC_BASE}/sites`, {
+      headers: { authorization: `Bearer ${accessToken}` },
+    });
+  } catch (err) {
+    throw new SearchConsoleError(
+      `Kon geen verbinding maken met de Search Console API: ${(err as Error).message}`,
+      "NETWORK_ERROR",
+    );
+  }
+  const text = await res.text();
+  if (!res.ok) {
+    let detail = `HTTP ${res.status}`;
+    try {
+      const parsed = JSON.parse(text);
+      detail = parsed?.error?.message || JSON.stringify(parsed).slice(0, 500);
+    } catch {
+      detail = text.slice(0, 500) || detail;
+    }
+    throw new SearchConsoleError(
+      `Search Console API-fout: ${detail}`,
+      classifyError(res.status),
+    );
+  }
+  let parsed: { siteEntry?: SearchConsoleSite[] };
+  try {
+    parsed = JSON.parse(text) as { siteEntry?: SearchConsoleSite[] };
+  } catch {
+    throw new SearchConsoleError(
+      "Onverwacht antwoord van de Search Console API (geen geldige JSON).",
+      "API_ERROR",
+    );
+  }
+  return (parsed.siteEntry ?? [])
+    .filter(
+      (e): e is SearchConsoleSite =>
+        !!e?.siteUrl && e.permissionLevel !== "siteUnverifiedUser",
+    )
+    .map((e) => ({
+      siteUrl: e.siteUrl,
+      permissionLevel: e.permissionLevel ?? "",
+    }));
+}

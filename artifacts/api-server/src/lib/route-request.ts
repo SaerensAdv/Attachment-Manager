@@ -13,7 +13,10 @@ export const ROUTING_SCHEMA_HINT = `{
   "reasoning": string,
   "workflowPath": string | null,
   "agentPath": string | null,
-  "additionalAgentPaths": string[]
+  "additionalAgentPaths": string[],
+  "parallelGroups": string[][],
+  "clientFacing": boolean,
+  "touchesLiveAccount": boolean
 }`;
 
 /**
@@ -50,7 +53,12 @@ export function buildRoutingPrompt(params: {
     "",
     "## Regels",
     "- Kies de meest geschikte primaire agent en, indien van toepassing, een passende workflow.",
-    "- 'additionalAgentPaths': andere agents die mogelijk ook betrokken zijn bij deze opdracht, in logische volgorde (paden uit de agent-lijst). Leeg laten indien geen.",
+    "- Stel het team zo KLEIN mogelijk samen: voeg enkel specialisten toe die de opdracht echt nodig heeft. Een eenvoudige vraag krijgt één agent; een opdracht die meerdere disciplines raakt krijgt het juiste, beperkte team in logische volgorde. Voeg nooit agents toe 'voor de zekerheid'.",
+    "- 'additionalAgentPaths': andere agents die ook betrokken zijn, in logische uitvoeringsvolgorde (paden uit de agent-lijst). Leeg laten indien geen.",
+    "- 'parallelGroups': de uitvoeringsvolgorde gegroepeerd in fasen. Elke fase is een lijst van agent-paden die TEGELIJK kunnen werken omdat ze onafhankelijk zijn (ze bouwen op hetzelfde voorgaande werk, niet op elkaar). Zet agents die op elkaars output voortbouwen in APARTE, opeenvolgende fasen. Elke gekozen agent (de primaire + alle additionalAgentPaths) komt exact één keer voor, samen precies het volledige team. Bij twijfel of bij een echte keten: gebruik losse fasen van één agent (volledig sequentieel). Voorbeeld zuiver sequentieel: [[\"agents/a.md\"],[\"agents/b.md\"]]. Voorbeeld met een parallelle fase: [[\"agents/strategist.md\"],[\"agents/copy.md\",\"agents/seo.md\"]].",
+    "- 'clientFacing': true als de tekst die het team oplevert RECHTSTREEKS naar de klant gaat (advertentietekst, een rapport, een klant-e-mail, een voorstel, social posts). false als het team intern of technisch tussenwerk levert (bv. een CSV, een setup-checklist, een technische spec). Bij client-facing tekst volgt er een finale taalpas.",
+    "- 'touchesLiveAccount': true als de opdracht live uitgaven, biedingen, tracking of een live account raakt (opzet, optimalisatie, budgetwijzigingen, tracking). false voor zuiver creatief/strategisch/advieswerk.",
+    "- Route NOOIT naar de QA & Compliance Reviewer of de Humanizer: dat zijn vaste afsluitende kwaliteitsstappen die automatisch lopen — zet ze niet in agentPath, additionalAgentPaths of parallelGroups.",
     "- BELANGRIJK over verduidelijking: 'needsClarification' mag ENKEL true zijn wanneer je niet kunt bepalen welk soort werk dit is of welke specialist/workflow erbij hoort (de AARD van de opdracht is onduidelijk).",
     "- Ontbrekende inhoudelijke gegevens (cijfers, namen, USP's, landingspagina, datums, budgetten) zijn GEEN reden voor verduidelijking. De gekozen specialist schrijft sowieso een volledige eerste versie en markeert ontbrekende data zelf met [AAN TE VULLEN: …]. Zet in dat geval 'needsClarification' op false en kies gewoon de juiste agent en workflow.",
     "- Vraag dus nooit om data of context als je het type werk wél herkent — route gewoon door.",

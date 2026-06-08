@@ -65,6 +65,7 @@ export default function GenerationPanel({
     titleFor,
     removeMember,
     segments,
+    runPlan,
     isStreaming,
     streamError,
     canGenerate,
@@ -499,6 +500,55 @@ export default function GenerationPanel({
                 </div>
               )}
 
+              {runPlan && (
+                <div
+                  className="mb-6 flex flex-wrap items-center gap-x-4 gap-y-1.5 border-l-2 border-accent bg-background/50 px-3 py-2 font-['Space_Mono'] text-[10px] uppercase tracking-widest text-muted-foreground"
+                  data-testid="plan-summary"
+                >
+                  {(() => {
+                    const stageCount = runPlan.members.reduce(
+                      (max, m) => Math.max(max, m.stage + 1),
+                      0,
+                    );
+                    const hasParallel = Object.values(
+                      runPlan.members.reduce<Record<number, number>>(
+                        (acc, m) => {
+                          acc[m.stage] = (acc[m.stage] ?? 0) + 1;
+                          return acc;
+                        },
+                        {},
+                      ),
+                    ).some((n) => n > 1);
+                    return (
+                      <>
+                        <span className="text-foreground">Plan</span>
+                        <span>
+                          {runPlan.members.length}{" "}
+                          {runPlan.members.length === 1
+                            ? "redacteur"
+                            : "redacteurs"}
+                        </span>
+                        <span>
+                          {stageCount} {stageCount === 1 ? "fase" : "fasen"}
+                          {hasParallel ? " · parallel" : ""}
+                        </span>
+                        {runPlan.qc.length > 0 && (
+                          <span className="text-accent">
+                            Kwaliteitspoort:{" "}
+                            {runPlan.qc.map((q) => q.title).join(" + ")}
+                          </span>
+                        )}
+                        {runPlan.touchesLiveAccount && (
+                          <span className="text-amber-700">
+                            Raakt live account
+                          </span>
+                        )}
+                      </>
+                    );
+                  })()}
+                </div>
+              )}
+
               <div className="flex flex-col gap-8">
                 {segments.map((seg, i) => {
                   const prevTitle = i > 0 ? segments[i - 1].title : "de redactie";
@@ -541,6 +591,11 @@ export default function GenerationPanel({
                         {seg.role === "lead" && (
                           <span className="font-['Space_Mono'] text-[10px] uppercase tracking-widest text-muted-foreground">
                             Hoofd
+                          </span>
+                        )}
+                        {seg.role === "quality" && (
+                          <span className="font-['Space_Mono'] text-[10px] uppercase tracking-widest text-accent">
+                            Kwaliteit
                           </span>
                         )}
                         <span

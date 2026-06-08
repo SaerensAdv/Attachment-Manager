@@ -4,13 +4,43 @@ export interface GeneratePayload {
   clientPath: string;
   workflowPath: string;
   request: string;
+  /** Optional parallel-execution plan: groups of agent paths that may run together. */
+  stages?: string[][];
+  /** Whether the team's output is client-facing (drives the humanizer QC pass). */
+  clientFacing?: boolean;
+  /** Whether the request touches a live account (surfaced as a run note). */
+  touchesLiveAccount?: boolean;
 }
 
 export interface AgentStartInfo {
   index: number;
   total: number;
   agent: { path: string; title: string };
+  role: "lead" | "member" | "quality";
+}
+
+export interface PlanMember {
+  index: number;
+  path: string;
+  title: string;
   role: "lead" | "member";
+  stage: number;
+}
+
+export interface PlanQcStep {
+  index: number;
+  path: string;
+  title: string;
+  mode: "humanizer" | "reviewer";
+}
+
+/** The full run plan announced once up front, before any agent starts. */
+export interface PlanInfo {
+  total: number;
+  clientFacing: boolean;
+  touchesLiveAccount: boolean;
+  members: PlanMember[];
+  qc: PlanQcStep[];
 }
 
 export interface DeliverableMeta {
@@ -23,6 +53,8 @@ export interface DeliverableMeta {
 }
 
 export interface TeamStreamHandlers {
+  /** Fired once before any agent runs, with the full plan (stages + QC steps). */
+  onPlan?: (plan: PlanInfo) => void;
   onAgentStart: (info: AgentStartInfo) => void;
   onDelta: (index: number, text: string) => void;
   onAgentDone: (index: number, truncated: boolean) => void;
@@ -39,6 +71,7 @@ export interface TeamStreamHandlers {
 
 interface StreamEvent {
   type?:
+    | "plan"
     | "agent_start"
     | "agent_done"
     | "deliverable_start"
@@ -49,7 +82,7 @@ interface StreamEvent {
   index?: number;
   total?: number;
   agent?: { path: string; title: string };
-  role?: "lead" | "member";
+  role?: "lead" | "member" | "quality";
   deliverable?: DeliverableMeta;
   content?: string;
   message?: string;
@@ -57,6 +90,10 @@ interface StreamEvent {
   done?: boolean;
   archived?: boolean;
   error?: string;
+  clientFacing?: boolean;
+  touchesLiveAccount?: boolean;
+  members?: PlanMember[];
+  qc?: PlanQcStep[];
 }
 
 /**
@@ -70,6 +107,7 @@ export async function streamGenerateTeam(
   handlers: TeamStreamHandlers,
 ): Promise<void> {
   const {
+    onPlan,
     onAgentStart,
     onDelta,
     onAgentDone,
@@ -142,6 +180,16 @@ export async function streamGenerateTeam(
             seenDone = true;
             onDone(parsed.archived === true);
             return;
+          }
+          if (parsed.type === "plan") {
+            onPlan?.({
+              total: parsed.total ?? 0,
+              clientFacing: parsed.clientFacing === true,
+              touchesLiveAccount: parsed.touchesLiveAccount === true,
+              members: Array.isArray(parsed.members) ? parsed.members : [],
+              qc: Array.isArray(parsed.qc) ? parsed.qc : [],
+            });
+            continue;
           }
           if (parsed.type === "agent_start" && parsed.agent) {
             currentIndex = parsed.index ?? currentIndex;

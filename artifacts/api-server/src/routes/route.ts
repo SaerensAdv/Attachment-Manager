@@ -94,14 +94,75 @@ router.post("/route", async (req, res) => {
 
   const needsClarification = parsed.needsClarification === true;
   const workflow = resolve(parsed.workflowPath, "workflow");
-  const agent = resolve(parsed.agentPath, "agent");
+
+  // QC agents are never team executors — strip them if the model named one,
+  // including as the primary agent.
+  const QC_PATHS = new Set([
+    "agents/qa-compliance-reviewer.md",
+    "agents/humanizer.md",
+  ]);
+  const primaryAgent = resolve(parsed.agentPath, "agent");
+  const agent =
+    primaryAgent && QC_PATHS.has(primaryAgent.path) ? null : primaryAgent;
 
   const additionalAgents = Array.isArray(parsed.additionalAgentPaths)
     ? (parsed.additionalAgentPaths
         .map((p) => resolve(p, "agent"))
         .filter((x): x is RoutingChoice => x !== null)
-        .filter((x) => x.path !== agent?.path))
+        .filter((x) => x.path !== agent?.path)
+        .filter((x) => !QC_PATHS.has(x.path)))
     : [];
+
+  // Build the ordered, deduped team and turn the model's parallel plan into
+  // validated stages (groups of {path,title}). The plan is only honoured when
+  // it covers exactly the team once; otherwise we fall back to fully sequential
+  // so the run never silently drops or double-runs an agent.
+  const teamPaths: string[] = [];
+  const teamSeen = new Set<string>();
+  for (const p of [agent?.path, ...additionalAgents.map((a) => a.path)]) {
+    if (!p || teamSeen.has(p) || QC_PATHS.has(p)) continue;
+    teamSeen.add(p);
+    teamPaths.push(p);
+  }
+  const titleOf = (p: string): string =>
+    agent?.path === p
+      ? agent.title
+      : additionalAgents.find((a) => a.path === p)?.title ?? p;
+
+  let stagePaths: string[][] = teamPaths.map((p) => [p]);
+  if (Array.isArray(parsed.parallelGroups)) {
+    const used = new Set<string>();
+    const groups: string[][] = [];
+    let valid = true;
+    for (const g of parsed.parallelGroups) {
+      if (!Array.isArray(g)) {
+        valid = false;
+        break;
+      }
+      const grp: string[] = [];
+      for (const p of g) {
+        if (typeof p !== "string" || !teamSeen.has(p) || used.has(p)) {
+          valid = false;
+          break;
+        }
+        used.add(p);
+        grp.push(p);
+      }
+      if (!valid) break;
+      if (grp.length > 0) groups.push(grp);
+    }
+    if (valid && used.size === teamPaths.length && groups.length > 0) {
+      stagePaths = groups;
+    }
+  }
+  const plan = {
+    stages: stagePaths.map((g) =>
+      g.map((p) => ({ path: p, title: titleOf(p) })),
+    ),
+    clientFacing:
+      typeof parsed.clientFacing === "boolean" ? parsed.clientFacing : null,
+    touchesLiveAccount: parsed.touchesLiveAccount === true,
+  };
 
   // If the model didn't ask for clarification but also failed to name a valid
   // agent, fall back to asking the user rather than guessing.
@@ -115,6 +176,7 @@ router.post("/route", async (req, res) => {
       workflow: null,
       agent: null,
       additionalAgents: [],
+      plan: null,
     });
     return;
   }
@@ -130,6 +192,7 @@ router.post("/route", async (req, res) => {
     workflow,
     agent,
     additionalAgents,
+    plan: needsClarification ? null : plan,
   });
 });
 

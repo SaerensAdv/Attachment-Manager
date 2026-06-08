@@ -5,7 +5,11 @@ import {
   type DocNode,
   type DocEdge,
 } from "@workspace/api-client-react";
-import { streamGenerateTeam, type DeliverableMeta } from "@/lib/generate";
+import {
+  streamGenerateTeam,
+  type DeliverableMeta,
+  type PlanInfo,
+} from "@/lib/generate";
 import { routeRequest, type RoutingResult } from "@/lib/route";
 import { fetchIntake, type IntakeField } from "@/lib/intake";
 
@@ -17,11 +21,13 @@ export interface Option {
 export interface AgentSegment {
   path: string;
   title: string;
-  role: "lead" | "member";
+  role: "lead" | "member" | "quality";
   content: string;
   status: "queued" | "working" | "done";
   /** True when this agent hit the model's token limit and may be cut off. */
   truncated: boolean;
+  /** Parallel-stage index (members in the same stage run together). */
+  stage?: number;
 }
 
 export type DeliverableStatus = "idle" | "working" | "done" | "error";
@@ -64,6 +70,8 @@ export function useGeneration(
 
   // Generation — one segment per agent in the team.
   const [segments, setSegments] = useState<AgentSegment[]>([]);
+  // The full run plan announced up front (stages + closing QC steps + flags).
+  const [runPlan, setRunPlan] = useState<PlanInfo | null>(null);
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamError, setStreamError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -142,6 +150,7 @@ export function useGeneration(
     setAgentPath("");
     setMemberPaths([]);
     setSegments([]);
+    setRunPlan(null);
     setStreamError(null);
     setDeliverable(null);
     setDeliverableContent("");
@@ -180,6 +189,7 @@ export function useGeneration(
     setAgentPath("");
     setMemberPaths([]);
     setSegments([]);
+    setRunPlan(null);
     setStreamError(null);
     setRunCompleted(false);
     setJustSaved(false);
@@ -307,6 +317,7 @@ export function useGeneration(
         truncated: false,
       })),
     );
+    setRunPlan(null);
     setStreamError(null);
     setJustSaved(false);
     setRunCompleted(false);
@@ -322,6 +333,12 @@ export function useGeneration(
     const controller = new AbortController();
     abortRef.current = controller;
 
+    // Carry the Orchestrator's parallel plan into the run when it still matches
+    // the (possibly user-edited) team; the engine validates and falls back to
+    // sequential if it doesn't, so this never drops or double-runs an agent.
+    const planStages = result?.plan?.stages?.map((g) => g.map((s) => s.path));
+    const clientFacing = result?.plan?.clientFacing;
+
     await streamGenerateTeam(
       {
         agentPath,
@@ -329,8 +346,37 @@ export function useGeneration(
         clientPath,
         workflowPath,
         request: composeRequest(),
+        ...(planStages && planStages.length > 0
+          ? { stages: planStages }
+          : {}),
+        ...(typeof clientFacing === "boolean" ? { clientFacing } : {}),
+        ...(result?.plan?.touchesLiveAccount
+          ? { touchesLiveAccount: true }
+          : {}),
       },
       {
+        onPlan: (plan) => {
+          setRunPlan(plan);
+          // Append the closing QC steps as queued segments after the team so
+          // the timeline shows the full run (team stages + QC gate) up front.
+          setSegments((prev) => {
+            const next = [...prev];
+            for (const m of plan.members) {
+              if (next[m.index]) next[m.index] = { ...next[m.index], stage: m.stage };
+            }
+            for (const q of plan.qc) {
+              next[q.index] = {
+                path: q.path,
+                title: q.title,
+                role: "quality",
+                content: "",
+                status: "queued",
+                truncated: false,
+              };
+            }
+            return next;
+          });
+        },
         onAgentStart: (info) =>
           setSegments((prev) => {
             const next = [...prev];
@@ -566,6 +612,7 @@ export function useGeneration(
     intakeLoading,
     // generation
     segments,
+    runPlan,
     isStreaming,
     streamError,
     canGenerate,

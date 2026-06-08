@@ -350,6 +350,12 @@ function isValidDoc(
 /** A sink for streamed events. SSE writes them to the client; autonomous no-ops. */
 export type GenerationSink = (payload: unknown) => void;
 
+/** The two cross-cutting QC agents. They are never executors on the team; they
+ * form the final quality gate that runs after the team finishes. */
+export const QC_REVIEWER_PATH = "agents/qa-compliance-reviewer.md";
+export const QC_HUMANIZER_PATH = "agents/humanizer.md";
+const QC_PATHS = new Set<string>([QC_REVIEWER_PATH, QC_HUMANIZER_PATH]);
+
 /** Everything needed to run a generation, after validation. */
 export interface GenerationContext {
   teamPaths: string[];
@@ -363,6 +369,23 @@ export interface GenerationContext {
   deliverableKind: ReturnType<typeof getDeliverableKind>;
   request: string;
   clientDocs: DocFile[];
+  /**
+   * Execution plan as groups of indices into `teamPaths`. Each group runs in
+   * order; agents WITHIN a group run in parallel (independent branches that all
+   * build on the same prior work). Defaults to one agent per stage (fully
+   * sequential). Every teamPath index appears exactly once.
+   */
+  stages: number[][];
+  /**
+   * Whether the team's output is itself the client-facing text (so the
+   * Humanizer language pass applies). False for structured artifacts (CSV,
+   * Replit prompt, e-mailed report) where the team work is intermediate.
+   */
+  clientFacing: boolean;
+  /** Run the final QC gate (QA & Compliance always; Humanizer if clientFacing). */
+  qcEnabled: boolean;
+  /** The work touches live spend, tracking or accounts (human-approval note). */
+  touchesLiveAccount: boolean;
 }
 
 export type ResolveResult =
@@ -414,6 +437,8 @@ export async function resolveGenerationContext(
     if (seen.has(p)) continue;
     seen.add(p);
     if (p === "agents/orchestrator.md") continue;
+    // The QC agents are never executors — they run as the final quality gate.
+    if (QC_PATHS.has(p)) continue;
     if (isValidDoc(p, "agent")) teamPaths.push(p);
   }
   if (teamPaths.length === 0) {
@@ -439,6 +464,18 @@ export async function resolveGenerationContext(
   );
   const deliverableKind = getDeliverableKind(workflowDoc);
 
+  const stages = parseStages(b.stages, teamPaths);
+  // A "markdown" deliverable (or none) means the team's text IS the output, so
+  // it is client-facing and the Humanizer language pass applies. Structured
+  // deliverables (CSV, Replit prompt, e-mailed report) treat team work as
+  // intermediate. An explicit clientFacing flag from routing overrides.
+  const clientFacing =
+    typeof b.clientFacing === "boolean"
+      ? b.clientFacing
+      : deliverableKind === null || deliverableKind === "markdown";
+  const qcEnabled = b.qcEnabled === false ? false : true;
+  const touchesLiveAccount = b.touchesLiveAccount === true;
+
   return {
     ok: true,
     ctx: {
@@ -453,8 +490,45 @@ export async function resolveGenerationContext(
       deliverableKind,
       request,
       clientDocs,
+      stages,
+      clientFacing,
+      qcEnabled,
+      touchesLiveAccount,
     },
   };
+}
+
+/**
+ * Turn an optional routing-provided parallel plan (groups of agent paths) into
+ * groups of indices into `teamPaths`. The plan is only honoured when every
+ * teamPath appears exactly once across all groups; any mismatch (unknown path,
+ * duplicate, or missing member) falls back to fully sequential execution so we
+ * never silently drop or double-run an agent.
+ */
+export function parseStages(raw: unknown, teamPaths: string[]): number[][] {
+  const sequential = teamPaths.map((_, i) => [i]);
+  if (!Array.isArray(raw) || raw.length === 0) return sequential;
+
+  const indexByPath = new Map<string, number>();
+  teamPaths.forEach((p, i) => indexByPath.set(p, i));
+
+  const used = new Set<number>();
+  const groups: number[][] = [];
+  for (const group of raw) {
+    if (!Array.isArray(group) || group.length === 0) return sequential;
+    const indices: number[] = [];
+    for (const path of group) {
+      if (typeof path !== "string") return sequential;
+      const idx = indexByPath.get(path);
+      if (idx === undefined || used.has(idx)) return sequential;
+      used.add(idx);
+      indices.push(idx);
+    }
+    groups.push(indices);
+  }
+  // Every team member must be placed exactly once.
+  if (used.size !== teamPaths.length) return sequential;
+  return groups;
 }
 
 interface StepRecord {
@@ -493,9 +567,56 @@ export async function runGeneration(
     deliverableKind,
     request,
     clientDocs,
+    stages,
+    clientFacing,
+    qcEnabled,
+    touchesLiveAccount,
   } = ctx;
 
   const isGone = () => signal.aborted;
+
+  // ---- Final QC gate plan ---------------------------------------------------
+  // The QC agents are not team executors; they run as the closing quality gate.
+  // The QA & Compliance Reviewer always runs when QC is on; the Humanizer runs
+  // only for client-facing text. Both are best-effort and never discard the
+  // team's work. We resolve them up front so the plan event lists every step.
+  const qcReviewerDoc = getDocFile(QC_REVIEWER_PATH);
+  const qcHumanizerDoc = getDocFile(QC_HUMANIZER_PATH);
+  const reviewerWillRun = qcEnabled && !!qcReviewerDoc;
+  const humanizerWillRun = qcEnabled && clientFacing && !!qcHumanizerDoc;
+  const humanizerTitle = qcHumanizerDoc?.title ?? "Humanizer";
+  const reviewerTitle = qcReviewerDoc?.title ?? "QA & Compliance Reviewer";
+
+  // Index of each team member's stage group, so the UI can show parallel steps.
+  const stageOfIndex = new Map<number, number>();
+  stages.forEach((group, s) => group.forEach((i) => stageOfIndex.set(i, s)));
+
+  const qcStepsPlan: {
+    index: number;
+    path: string;
+    title: string;
+    mode: "humanizer" | "reviewer";
+  }[] = [];
+  let qcCursor = teamPaths.length;
+  if (humanizerWillRun) {
+    qcStepsPlan.push({
+      index: qcCursor++,
+      path: QC_HUMANIZER_PATH,
+      title: humanizerTitle,
+      mode: "humanizer",
+    });
+  }
+  if (reviewerWillRun) {
+    qcStepsPlan.push({
+      index: qcCursor++,
+      path: QC_REVIEWER_PATH,
+      title: reviewerTitle,
+      mode: "reviewer",
+    });
+  }
+  const grandTotal = teamPaths.length + qcStepsPlan.length;
+  const humanizerIndex = qcStepsPlan.find((q) => q.mode === "humanizer")?.index;
+  const reviewerIndex = qcStepsPlan.find((q) => q.mode === "reviewer")?.index;
 
   let priorWork = "";
   let persisted = false;
@@ -573,6 +694,47 @@ export async function runGeneration(
   });
 
   try {
+    // Announce the full plan first so the run timeline shows every step up
+    // front: each team stage (members in the same stage run in parallel) plus
+    // the closing QC gate. The frontend pre-creates a segment per step.
+    send({
+      type: "plan",
+      total: grandTotal,
+      clientFacing,
+      touchesLiveAccount,
+      stages: stages.map((group) =>
+        group.map((i) => ({
+          index: i,
+          path: teamPaths[i],
+          title: memberTitles[i],
+          role: i === 0 ? "lead" : "member",
+        })),
+      ),
+      members: teamPaths.map((p, i) => ({
+        index: i,
+        path: p,
+        title: memberTitles[i],
+        role: i === 0 ? "lead" : "member",
+        stage: stageOfIndex.get(i) ?? i,
+      })),
+      qc: qcStepsPlan.map((q) => ({
+        index: q.index,
+        path: q.path,
+        title: q.title,
+        mode: q.mode,
+      })),
+    });
+
+    // When the work touches live spend, tracking or accounts, surface it once
+    // up front — the team still proposes only; nothing goes live automatically.
+    if (touchesLiveAccount) {
+      send({
+        type: "deliverable_note",
+        message:
+          "Deze opdracht raakt live uitgaven, tracking of accounts. Het team levert enkel voorstellen; een mens zet niets automatisch live.",
+      });
+    }
+
     // Monthly report: before the team writes, pull the client's live Google Ads
     // data for THREE periods — the report month, the previous month (MoM) and the
     // same month last year (YoY) — and inject each as a clearly labelled block so
@@ -813,11 +975,31 @@ export async function runGeneration(
       }
     }
 
-    for (let i = 0; i < teamPaths.length; i++) {
-      if (isGone()) break;
+    // Run one team member against a fixed snapshot of the prior work. Returns a
+    // structured result instead of throwing so that callers can run a whole
+    // stage in parallel and reconcile the outcomes deterministically afterward.
+    interface MemberOutcome {
+      index: number;
+      text: string;
+      status: "completed" | "truncated" | "aborted" | "failed";
+      truncated: boolean;
+      durationMs: number;
+      inputTokens: number | null;
+      outputTokens: number | null;
+      errorMessage: string | null;
+      /** Context build failed before any model call — fatal for the run. */
+      contextFailed: boolean;
+      /** A real mid-stream failure (not an abort) — fatal for the run. */
+      streamFailed: boolean;
+    }
 
+    const runMember = async (
+      i: number,
+      stagePrior: string,
+    ): Promise<MemberOutcome> => {
       const path = teamPaths[i];
       const isFinal = i === teamPaths.length - 1;
+      const startedAt = Date.now();
 
       let systemPrompt: string;
       try {
@@ -826,42 +1008,34 @@ export async function runGeneration(
           clientPath,
           workflowPath,
           extraDocs: clientDocs,
-          team: { members: memberTitles, position: i, priorWork, isFinal },
+          team: { members: memberTitles, position: i, priorWork: stagePrior, isFinal },
+          // When the QA & Compliance Reviewer will run, it owns the single
+          // human-approval section, so no executor writes its own.
+          suppressApproval: reviewerWillRun,
         }));
       } catch (err) {
-        steps.push({
-          agentPath: path,
-          agentTitle: memberTitles[i],
-          stepOrder: i,
-          role: i === 0 ? "lead" : "member",
+        return {
+          index: i,
+          text: "",
           status: "failed",
-          durationMs: null,
+          truncated: false,
+          durationMs: Date.now() - startedAt,
           inputTokens: null,
           outputTokens: null,
-          charCount: null,
-          errorMessage: (err instanceof Error
-            ? err.message
-            : String(err)
-          ).slice(0, 500),
-        });
-        runStatus = "partial";
-        await persistRun();
-        const message =
-          "Kon de context niet samenstellen: " +
-          (err instanceof Error ? err.message : String(err));
-        send({ error: message });
-        return result({ error: message });
+          errorMessage: (err instanceof Error ? err.message : String(err)).slice(0, 500),
+          contextFailed: true,
+          streamFailed: false,
+        };
       }
 
       send({
         type: "agent_start",
         index: i,
-        total: teamPaths.length,
+        total: grandTotal,
         agent: { path, title: memberTitles[i] },
         role: i === 0 ? "lead" : "member",
       });
 
-      const startedAt = Date.now();
       let agentText = "";
       let truncated = false;
       let inputTokens: number | null = null;
@@ -899,55 +1073,96 @@ export async function runGeneration(
         const isAbort =
           streamErr instanceof Error && streamErr.name === "AbortError";
         if (!isAbort && !isGone()) {
-          // Real mid-step failure: record where it broke (keeping partial
-          // output), then rethrow so the outer catch archives + reports it.
-          steps.push({
-            agentPath: path,
-            agentTitle: memberTitles[i],
-            stepOrder: i,
-            role: i === 0 ? "lead" : "member",
+          // Real mid-step failure: keep partial output, mark fatal so the
+          // caller archives + reports it after reconciling the stage.
+          return {
+            index: i,
+            text: agentText,
             status: "failed",
+            truncated: false,
             durationMs: Date.now() - startedAt,
             inputTokens,
             outputTokens,
-            charCount: agentText.length || null,
             errorMessage: (streamErr instanceof Error
               ? streamErr.message
               : String(streamErr)
             ).slice(0, 500),
-          });
-          runStatus = "partial";
-          if (agentText.trim()) {
-            priorWork += `\n\n## ${memberTitles[i]}\n\n${agentText.trim()}`;
-          }
-          throw streamErr;
+            contextFailed: false,
+            streamFailed: true,
+          };
         }
-        // Abort: fall through to the aborted-step path below.
+        // Abort: fall through to the aborted outcome below.
       }
 
-      steps.push({
-        agentPath: path,
-        agentTitle: memberTitles[i],
-        stepOrder: i,
-        role: i === 0 ? "lead" : "member",
-        status: isGone() ? "aborted" : truncated ? "truncated" : "completed",
+      const aborted = isGone();
+      if (!aborted) send({ type: "agent_done", index: i, truncated });
+      return {
+        index: i,
+        text: agentText,
+        status: aborted ? "aborted" : truncated ? "truncated" : "completed",
+        truncated,
         durationMs: Date.now() - startedAt,
         inputTokens,
         outputTokens,
-        charCount: agentText.length,
         errorMessage: null,
-      });
+        contextFailed: false,
+        streamFailed: false,
+      };
+    };
+
+    // Execute the plan stage by stage. Members within a stage are genuinely
+    // independent, so they run in parallel against the SAME prior-work snapshot
+    // and their outputs are appended in stage order for a stable transcript.
+    // Sequential chains (one member per stage) pass each hand-off forward.
+    stageLoop: for (const group of stages) {
+      if (isGone()) break;
+      const stagePrior = priorWork;
+      const outcomes =
+        group.length === 1
+          ? [await runMember(group[0], stagePrior)]
+          : await Promise.all(group.map((i) => runMember(i, stagePrior)));
+
+      // Reconcile in the group's declared order so parallelism never changes
+      // the resulting transcript.
+      for (const outcome of outcomes) {
+        const i = outcome.index;
+        steps.push({
+          agentPath: teamPaths[i],
+          agentTitle: memberTitles[i],
+          stepOrder: i,
+          role: i === 0 ? "lead" : "member",
+          status: outcome.status,
+          durationMs: outcome.durationMs,
+          inputTokens: outcome.inputTokens,
+          outputTokens: outcome.outputTokens,
+          charCount: outcome.text.length || null,
+          errorMessage: outcome.errorMessage,
+        });
+        // Keep every non-empty contribution except an aborted one (its partial
+        // text is discarded, mirroring the original sequential behaviour).
+        if (outcome.text.trim() && outcome.status !== "aborted") {
+          priorWork += `\n\n## ${memberTitles[i]}\n\n${outcome.text.trim()}`;
+        }
+        if (outcome.status !== "completed") runStatus = "partial";
+      }
+
+      // A fatal failure (context build or real mid-stream error) ends the run
+      // after the stage is recorded, matching the original fail-fast contract.
+      const fatal = outcomes.find((o) => o.contextFailed || o.streamFailed);
+      if (fatal) {
+        runStatus = "partial";
+        await persistRun();
+        const message = fatal.contextFailed
+          ? "Kon de context niet samenstellen: " + (fatal.errorMessage ?? "onbekende fout")
+          : (fatal.errorMessage ?? "Onbekende fout tijdens generatie");
+        send({ error: message });
+        return result({ error: message });
+      }
 
       if (isGone()) {
         runStatus = "partial";
-        break;
+        break stageLoop;
       }
-
-      // Keep run-level status consistent with a token-cutoff step.
-      if (truncated) runStatus = "partial";
-
-      send({ type: "agent_done", index: i, truncated });
-      priorWork += `\n\n## ${memberTitles[i]}\n\n${agentText.trim()}`;
     }
 
     // Capture this run's monitor list from the team output and persist it, so
@@ -983,6 +1198,163 @@ export async function runGeneration(
       }
     }
 
+    // ---- Final QC gate ------------------------------------------------------
+    // After the team finishes, run the closing quality gate over their combined
+    // draft. The Humanizer (client-facing text only) rewrites the whole draft
+    // into a natural-voice version; the QA & Compliance Reviewer always issues a
+    // verdict. Both are their OWN best-effort steps: a failure marks the run
+    // partial and records a failed step but NEVER discards the team's markdown.
+    //
+    // Steps after the team are numbered with a running counter so the audit
+    // trail stays ordered as QC inserts steps ahead of the deliverable.
+    let nextStepOrder = teamPaths.length;
+    let reviewerText = "";
+
+    // Run one QC agent over a fixed draft. Best-effort: returns text (empty on
+    // failure/abort) and records its own step; it never throws.
+    const runQcStep = async (
+      mode: "humanizer" | "reviewer",
+      index: number,
+      title: string,
+      draft: string,
+    ): Promise<string> => {
+      const startedAt = Date.now();
+      let systemPrompt: string;
+      try {
+        ({ systemPrompt } = await buildGenerationContext({
+          agentPath: mode === "humanizer" ? QC_HUMANIZER_PATH : QC_REVIEWER_PATH,
+          clientPath,
+          workflowPath,
+          extraDocs: clientDocs,
+          qc: { mode, draft },
+        }));
+      } catch (err) {
+        steps.push({
+          agentPath: mode === "humanizer" ? QC_HUMANIZER_PATH : QC_REVIEWER_PATH,
+          agentTitle: title,
+          stepOrder: nextStepOrder++,
+          role: "quality",
+          status: "failed",
+          durationMs: Date.now() - startedAt,
+          inputTokens: null,
+          outputTokens: null,
+          charCount: null,
+          errorMessage: (err instanceof Error ? err.message : String(err)).slice(0, 500),
+        });
+        runStatus = "partial";
+        return "";
+      }
+
+      send({
+        type: "agent_start",
+        index,
+        total: grandTotal,
+        agent: {
+          path: mode === "humanizer" ? QC_HUMANIZER_PATH : QC_REVIEWER_PATH,
+          title,
+        },
+        role: "quality",
+      });
+
+      let text = "";
+      let truncated = false;
+      let inTok: number | null = null;
+      let outTok: number | null = null;
+      let status = "completed";
+      try {
+        const stream = anthropic.messages.stream(
+          {
+            model: "claude-sonnet-4-6",
+            max_tokens: mode === "humanizer" ? 16000 : 8192,
+            system: systemPrompt,
+            messages: [{ role: "user", content: request }],
+          },
+          { signal },
+        );
+        for await (const event of stream) {
+          if (isGone()) break;
+          if (
+            event.type === "content_block_delta" &&
+            event.delta.type === "text_delta"
+          ) {
+            text += event.delta.text;
+            send({ content: event.delta.text, index });
+          }
+        }
+        if (!isGone()) {
+          const finalMsg = await stream.finalMessage();
+          truncated = finalMsg.stop_reason === "max_tokens";
+          inTok = finalMsg.usage?.input_tokens ?? null;
+          outTok = finalMsg.usage?.output_tokens ?? null;
+        }
+        status = isGone() ? "aborted" : truncated ? "truncated" : "completed";
+        if (!isGone()) send({ type: "agent_done", index, truncated });
+      } catch (qcErr) {
+        if (isGone() || (qcErr instanceof Error && qcErr.name === "AbortError")) {
+          status = "aborted";
+        } else {
+          // Best-effort: report, mark partial, keep the team's markdown intact.
+          status = "failed";
+          send({ type: "agent_done", index, truncated: false });
+        }
+      }
+      steps.push({
+        agentPath: mode === "humanizer" ? QC_HUMANIZER_PATH : QC_REVIEWER_PATH,
+        agentTitle: title,
+        stepOrder: nextStepOrder++,
+        role: "quality",
+        status,
+        durationMs: Date.now() - startedAt,
+        inputTokens: inTok,
+        outputTokens: outTok,
+        charCount: text.length || null,
+        errorMessage: null,
+      });
+      if (status !== "completed") runStatus = "partial";
+      // An aborted pass contributes nothing; the team's work stands.
+      return status === "aborted" ? "" : text;
+    };
+
+    let humanizerRan = false;
+    if (qcEnabled) {
+      if (
+        humanizerWillRun &&
+        humanizerIndex !== undefined &&
+        !isGone() &&
+        priorWork.trim()
+      ) {
+        const humanized = await runQcStep(
+          "humanizer",
+          humanizerIndex,
+          humanizerTitle,
+          priorWork,
+        );
+        if (humanized.trim()) {
+          priorWork += `\n\n## ${humanizerTitle}\n\n${humanized.trim()}`;
+          humanizerRan = true;
+        }
+      }
+      if (
+        reviewerWillRun &&
+        reviewerIndex !== undefined &&
+        !isGone() &&
+        priorWork.trim()
+      ) {
+        // Reviewer text is held back and appended AFTER the deliverable so its
+        // internal verdict never feeds the deliverable/report generation.
+        reviewerText = await runQcStep(
+          "reviewer",
+          reviewerIndex,
+          reviewerTitle,
+          priorWork,
+        );
+      }
+    }
+
+    // The deliverable + e-mailed report build on the team work plus any
+    // humanized pass, but NOT the reviewer's internal verdict.
+    const deliverableSource = priorWork;
+
     // Deliverable layer: turn the combined team work into the concrete end
     // product the workflow declares. Best-effort — a failure here never loses
     // the run; it's reported and the run still finishes with the markdown.
@@ -992,7 +1364,7 @@ export async function runGeneration(
           clientName,
           clientContent,
           request,
-          teamWork: priorWork,
+          teamWork: deliverableSource,
           liveData: adCopyLiveData ?? negativesLiveData ?? undefined,
         })
       : null;
@@ -1051,7 +1423,7 @@ export async function runGeneration(
       steps.push({
         agentPath: workflowPath,
         agentTitle: meta.title ?? "Eindproduct",
-        stepOrder: teamPaths.length,
+        stepOrder: nextStepOrder++,
         role: "deliverable",
         status: delStatus,
         durationMs: Date.now() - delStartedAt,
@@ -1073,7 +1445,7 @@ export async function runGeneration(
       let actionIn: number | null = null;
       let actionOut: number | null = null;
       const recipient = reportClient?.reportEmail?.trim() ?? null;
-      const teamWork = priorWork.trim();
+      const teamWork = deliverableSource.trim();
       try {
         send({ type: "deliverable_start", deliverable: { title: "Maandrapport e-mailen" } });
         if (!recipient) {
@@ -1090,8 +1462,16 @@ export async function runGeneration(
         // The archived run keeps the full text (incl. approval checklist). No
         // fallback to the raw body — if sanitizing leaves nothing, we refuse to
         // send rather than risk leaking internal content to the client.
+        // When the Humanizer rewrote the draft (untruncated), prefer its
+        // section as the report body over the raw specialist sections.
+        const reportTitles =
+          humanizerRan && !steps.some(
+            (s) => s.role === "quality" && s.agentTitle === humanizerTitle && s.status === "truncated",
+          )
+            ? [...memberTitles, humanizerTitle]
+            : memberTitles;
         const clientReport = toClientFacingReport(
-          extractFinalReport(teamWork, memberTitles),
+          extractFinalReport(teamWork, reportTitles),
         );
         if (!clientReport) {
           throw new Error(
@@ -1188,7 +1568,7 @@ export async function runGeneration(
       steps.push({
         agentPath: workflowPath,
         agentTitle: "Maandrapport e-mailen",
-        stepOrder: teamPaths.length + 1,
+        stepOrder: nextStepOrder++,
         role: "deliverable",
         status: actionStatus,
         durationMs: Date.now() - actionStartedAt,
@@ -1198,6 +1578,12 @@ export async function runGeneration(
         errorMessage: actionError,
       });
       if (actionStatus !== "completed") runStatus = "partial";
+    }
+
+    // The reviewer's verdict is internal QA: append it to the archived markdown
+    // AFTER the deliverable/report so it never fed those, but is kept for audit.
+    if (reviewerText.trim()) {
+      priorWork += `\n\n## QA & Compliance — interne controle\n\n${reviewerText.trim()}`;
     }
 
     if (!isGone()) {

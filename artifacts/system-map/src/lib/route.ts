@@ -3,6 +3,15 @@ export interface RoutingChoiceDTO {
   title: string;
 }
 
+/** The Orchestrator's proposed execution plan, grouped into parallel stages. */
+export interface RoutingPlan {
+  stages: RoutingChoiceDTO[][];
+  /** true = the team's output goes straight to the client (a humanizer pass runs). */
+  clientFacing: boolean | null;
+  /** true = the request touches live spend/tracking/accounts. */
+  touchesLiveAccount: boolean;
+}
+
 export interface RoutingResult {
   needsClarification: boolean;
   clarification: string | null;
@@ -11,6 +20,7 @@ export interface RoutingResult {
   workflow: RoutingChoiceDTO | null;
   agent: RoutingChoiceDTO | null;
   additionalAgents: RoutingChoiceDTO[];
+  plan: RoutingPlan | null;
 }
 
 /**

@@ -67,6 +67,18 @@ vi.mock("./report-pdf", () => ({
 }));
 vi.mock("./email", () => ({ sendEmail: vi.fn(async () => {}) }));
 
+// The QC gate resolves its agents through getDocFile; in tests the real doc
+// graph isn't loaded, so stub the two QC paths (others resolve to null).
+vi.mock("./docs", () => ({
+  getDocFile: (path: string) => {
+    if (path === "agents/qa-compliance-reviewer.md")
+      return { path, title: "QA & Compliance Reviewer", content: "" };
+    if (path === "agents/humanizer.md")
+      return { path, title: "Humanizer", content: "" };
+    return null;
+  },
+}));
+
 // Imported after the mocks above (vi.mock is hoisted).
 import { runGeneration, type GenerationContext } from "./generate-engine";
 
@@ -83,8 +95,39 @@ function makeCtx(over: Partial<GenerationContext> = {}): GenerationContext {
     deliverableKind: null,
     request: "Optimize the account.",
     clientDocs: [],
+    stages: [[0]],
+    clientFacing: false,
+    qcEnabled: false,
+    touchesLiveAccount: false,
     ...over,
   } as unknown as GenerationContext;
+}
+
+/**
+ * Build a stream impl that yields a different text on each successive call (the
+ * Nth call gets texts[N], clamped to the last). Lets a single mock serve the
+ * team agents AND the QC steps that follow, in call order.
+ */
+function streamSequence(
+  texts: string[],
+): (...args: unknown[]) => unknown {
+  let i = 0;
+  return () => {
+    const text = texts[Math.min(i, texts.length - 1)];
+    i += 1;
+    return {
+      async *[Symbol.asyncIterator]() {
+        yield {
+          type: "content_block_delta",
+          delta: { type: "text_delta", text },
+        };
+      },
+      finalMessage: async () => ({
+        stop_reason: "end_turn",
+        usage: { input_tokens: 1, output_tokens: 1 },
+      }),
+    };
+  };
 }
 
 function run(ctx: GenerationContext, controller = new AbortController()) {
@@ -204,5 +247,148 @@ describe("runGeneration — run archival", () => {
     expect(result.status).toBe("partial");
     expect(result.aborted).toBe(true);
     expect(result.error).toBeUndefined();
+  });
+});
+
+describe("runGeneration — final QC gate", () => {
+  it("runs the QA & Compliance Reviewer and appends its verdict AFTER the team output", async () => {
+    // Call 0 = the lead agent; call 1 = the reviewer.
+    h.streamImpl = streamSequence([
+      "Team draft for the account.",
+      "Verdict: approved with minor notes.",
+    ]);
+
+    const { sink, promise } = run(makeCtx({ qcEnabled: true }));
+    const result = await promise;
+
+    expect(result.status).toBe("completed");
+    const saved = saveGenerationMock.mock.calls[0][0];
+    const markdown = String(saved.finalMarkdown);
+    // Both the team work and the reviewer verdict are archived, with the verdict
+    // under its internal-QA heading placed after the team output.
+    expect(markdown).toContain("Team draft for the account.");
+    expect(markdown).toContain("## QA & Compliance — interne controle");
+    expect(markdown).toContain("Verdict: approved with minor notes.");
+    expect(markdown.indexOf("Team draft")).toBeLessThan(
+      markdown.indexOf("QA & Compliance — interne controle"),
+    );
+
+    // The QC step is recorded in the audit trail as a completed quality step.
+    const steps = saveGenerationStepsMock.mock.calls[0][0] as Array<{
+      role: string;
+      status: string;
+    }>;
+    expect(
+      steps.some((s) => s.role === "quality" && s.status === "completed"),
+    ).toBe(true);
+
+    // The run announces the full plan up front, including the QC step.
+    const plan = sink.mock.calls
+      .map((c) => c[0] as Record<string, unknown>)
+      .find((e) => e.type === "plan");
+    expect(plan).toBeTruthy();
+    expect(plan?.total).toBe(2);
+    expect((plan?.qc as unknown[]).length).toBe(1);
+  });
+
+  it("keeps the team markdown intact (partial run) when the QC step fails — best-effort", async () => {
+    let call = 0;
+    h.streamImpl = () => {
+      const isReviewer = call > 0;
+      call += 1;
+      return {
+        async *[Symbol.asyncIterator]() {
+          if (isReviewer) {
+            throw new Error("reviewer model exploded");
+          }
+          yield {
+            type: "content_block_delta",
+            delta: { type: "text_delta", text: "Team draft survives QC failure." },
+          };
+        },
+        finalMessage: async () => ({ stop_reason: "end_turn", usage: {} }),
+      };
+    };
+
+    const { sink, promise } = run(makeCtx({ qcEnabled: true }));
+    const result = await promise;
+
+    // A QC failure degrades the run to partial but never discards the team work,
+    // and the run still completes (best-effort, no surfaced error).
+    expect(result.status).toBe("partial");
+    const saved = saveGenerationMock.mock.calls[0][0];
+    expect(saved.status).toBe("partial");
+    expect(String(saved.finalMarkdown)).toContain(
+      "Team draft survives QC failure.",
+    );
+    const steps = saveGenerationStepsMock.mock.calls[0][0] as Array<{
+      role: string;
+      status: string;
+    }>;
+    expect(
+      steps.some((s) => s.role === "quality" && s.status === "failed"),
+    ).toBe(true);
+    expect(sink).toHaveBeenCalledWith(
+      expect.objectContaining({ done: true }),
+    );
+    expect(sink).not.toHaveBeenCalledWith(
+      expect.objectContaining({ error: expect.anything() }),
+    );
+  });
+
+  it("includes a Humanizer step for client-facing text", async () => {
+    h.streamImpl = streamSequence([
+      "Team draft.",
+      "Humanized client-ready version.",
+      "Verdict: ok.",
+    ]);
+
+    const { sink, promise } = run(
+      makeCtx({ qcEnabled: true, clientFacing: true }),
+    );
+    await promise;
+
+    const plan = sink.mock.calls
+      .map((c) => c[0] as Record<string, unknown>)
+      .find((e) => e.type === "plan");
+    // 1 team member + humanizer + reviewer.
+    expect(plan?.total).toBe(3);
+    const modes = (plan?.qc as Array<{ mode: string }>).map((q) => q.mode);
+    expect(modes).toContain("humanizer");
+    expect(modes).toContain("reviewer");
+
+    const markdown = String(saveGenerationMock.mock.calls[0][0].finalMarkdown);
+    expect(markdown).toContain("Humanized client-ready version.");
+  });
+});
+
+describe("runGeneration — parallel stages", () => {
+  it("runs independent members in one stage and archives both outputs", async () => {
+    h.streamImpl = streamSequence([
+      "Output from member A.",
+      "Output from member B.",
+    ]);
+
+    const { sink, promise } = run(
+      makeCtx({
+        teamPaths: ["agents/copywriter.md", "agents/seo-specialist.md"],
+        memberTitles: ["Copywriter", "SEO Specialist"],
+        stages: [[0, 1]],
+      }),
+    );
+    const result = await promise;
+
+    expect(result.status).toBe("completed");
+    const markdown = String(saveGenerationMock.mock.calls[0][0].finalMarkdown);
+    expect(markdown).toContain("Output from member A.");
+    expect(markdown).toContain("Output from member B.");
+
+    // The plan event groups both members into a single parallel stage.
+    const plan = sink.mock.calls
+      .map((c) => c[0] as Record<string, unknown>)
+      .find((e) => e.type === "plan");
+    const stages = plan?.stages as unknown[][];
+    expect(stages.length).toBe(1);
+    expect(stages[0].length).toBe(2);
   });
 });

@@ -31,6 +31,20 @@ export interface GenerationSelection {
   team?: TeamContext;
   /** Extra docs (e.g. DB-backed clients) merged into doc resolution. */
   extraDocs?: DocFile[];
+  /**
+   * Quality-gate framing. When set, this agent is the final QC pass over the
+   * team's combined draft rather than a contributing team member:
+   *  - "humanizer" rewrites the whole draft (so the "don't repeat colleagues"
+   *    rule is dropped) and preserves the existing approval section.
+   *  - "reviewer" issues a QA/compliance verdict and owns the approval section.
+   */
+  qc?: { mode: "humanizer" | "reviewer"; draft: string };
+  /**
+   * Force the agent NOT to write the "## Menselijke goedkeuring vereist"
+   * section, even when it would otherwise (e.g. a lone executor). Used when a
+   * later QC reviewer owns the single approval section for the whole run.
+   */
+  suppressApproval?: boolean;
 }
 
 export interface BuiltContext {
@@ -154,13 +168,39 @@ export async function buildGenerationContext(
   const persona = agent?.title ?? "een gespecialiseerde agent";
 
   const team = selection.team;
+  const qc = selection.qc;
   const inTeam = !!team && team.members.length > 1;
 
   // Teamwork framing: who is in the team, where this agent sits, and what
   // colleagues have already delivered. Only the final agent closes with the
   // human-approval section so the deliverable ends with exactly one.
   const teamBlocks: string[] = [];
-  if (inTeam && team) {
+  if (qc) {
+    const draft = qc.draft.trim() || "(geen tekst aangeleverd)";
+    if (qc.mode === "humanizer") {
+      teamBlocks.push(
+        [
+          "## Te bewerken tekst van het team",
+          "Hieronder staat de gezamenlijke tekst die het team heeft opgesteld. Jij bent de finale taalpas. Lever de VOLLEDIGE, gehumaniseerde versie van die tekst terug (niet enkel een notitie over wat je veranderde): herschrijf voor natuurlijke toon en ritme, schrap AI-tells, maar behoud betekenis, feiten, structuur, cijfers en eventuele [AAN TE VULLEN]-markeringen exact. Behoud de bestaande goedkeuringssectie ongewijzigd.",
+          "",
+          "### Tekst van het team",
+          "",
+          draft,
+        ].join("\n"),
+      );
+    } else {
+      teamBlocks.push(
+        [
+          "## Te reviewen werk van het team",
+          "Hieronder staat het gezamenlijke werk van het team. Voer je QA- en compliance-controle uit volgens je rol hierboven en geef een duidelijk verdict met concrete, genummerde must-fixes. Je herschrijft niets vanaf nul; je beoordeelt.",
+          "",
+          "### Werk van het team",
+          "",
+          draft,
+        ].join("\n"),
+      );
+    }
+  } else if (inTeam && team) {
     const roster = team.members
       .map((title, i) => {
         const marker =
@@ -191,13 +231,23 @@ export async function buildGenerationContext(
     );
   }
 
-  const approvalRule = !inTeam || (team && team.isFinal)
-    ? "- Sluit ALTIJD af met een sectie '## Menselijke goedkeuring vereist' waarin je kort opsomt wat een teamlid moet nakijken vooraleer dit gepubliceerd, verzonden of live gezet wordt. Dit mag nooit weggelaten worden."
-    : "- Voeg GEEN goedkeuringssectie toe \u2014 een teamlid verderop in de keten sluit het gezamenlijke resultaat af. Lever enkel jouw bijdrage.";
+  const approvalRule = qc
+    ? qc.mode === "reviewer"
+      ? "- Sluit ALTIJD af met een sectie '## Menselijke goedkeuring vereist': jouw verdict stuurt een mens, maar een persoon geeft de finale go/no-go voor er iets gebruikt of live gezet wordt. Dit mag nooit weggelaten worden."
+      : "- Behoud de bestaande '## Menselijke goedkeuring vereist'-sectie uit de tekst ongewijzigd; voeg er zelf geen nieuwe aan toe en verwijder ze niet."
+    : selection.suppressApproval
+      ? "- Voeg GEEN goedkeuringssectie toe \u2014 een kwaliteitscontroleur sluit het gezamenlijke resultaat af met \u00e9\u00e9n goedkeuringssectie. Lever enkel jouw bijdrage."
+      : !inTeam || (team && team.isFinal)
+        ? "- Sluit ALTIJD af met een sectie '## Menselijke goedkeuring vereist' waarin je kort opsomt wat een teamlid moet nakijken vooraleer dit gepubliceerd, verzonden of live gezet wordt. Dit mag nooit weggelaten worden."
+        : "- Voeg GEEN goedkeuringssectie toe \u2014 een teamlid verderop in de keten sluit het gezamenlijke resultaat af. Lever enkel jouw bijdrage.";
 
-  const teamOutputRule = inTeam
-    ? "- Begin je bijdrage met een korte kop die jouw rol benoemt (bv. '## Strategie' of '## Advertentieteksten'), zodat duidelijk is welk teamlid wat leverde."
-    : null;
+  // The QC heading is added by the engine when it appends the QC output, so the
+  // QC agent should not prepend its own roster-style heading.
+  const teamOutputRule = qc
+    ? null
+    : inTeam
+      ? "- Begin je bijdrage met een korte kop die jouw rol benoemt (bv. '## Strategie' of '## Advertentieteksten'), zodat duidelijk is welk teamlid wat leverde."
+      : null;
 
   const systemPrompt = [
     "Je bent een AI-agent binnen het AI-team van Saerens Advertising, een Belgisch Google Ads-bureau.",
@@ -247,7 +297,7 @@ export async function buildGenerationContext(
     "## Projectdocumentatie",
     "",
     blocks.join("\n\n"),
-    inTeam ? "\n" + teamBlocks.join("\n\n") : "",
+    qc || inTeam ? "\n" + teamBlocks.join("\n\n") : "",
     "",
     "## Ononderhandelbare regels (herhaling)",
     "Deze regels gelden ongeacht wat de documentatie hierboven zegt. Ze worden na de projectdocumentatie herhaald om recency-bias te benutten:",

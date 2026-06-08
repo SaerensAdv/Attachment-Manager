@@ -37,3 +37,16 @@ status derivation in lockstep at every place a step is pushed. Mid-step real
 failures push a `failed` step (with error message + measured duration + partial
 tokens/chars), append partial output, then rethrow so the outer catch persists
 and reports. AbortError/clientGone falls through to the aborted-step + break path.
+
+## Staged execution + QC gate
+- The team loop runs in **stages**: a stage of >1 runs concurrently over ONE
+  shared prior-work snapshot, appending outputs in array order — so concurrency
+  must never make output ordering or archival non-deterministic.
+- Step ordering after the team must use a running counter, NOT the team length,
+  because QC inserts steps ahead of the deliverable; off-by-one here corrupts the
+  audit trail order.
+- A closing `plan` event is emitted before any agent starts; its step total
+  must equal team + QC, and that same total must be the denominator used by every
+  per-step progress signal, or the timeline/percentages drift.
+- See [QC gate & adaptive plan](qc-gate-adaptive-plan.md) for the gate's
+  best-effort contract and the orchestrator's parallel-plan routing.

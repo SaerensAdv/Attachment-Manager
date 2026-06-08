@@ -7,7 +7,12 @@ import {
   UploadAgentPortraitBody,
 } from "@workspace/api-zod";
 import { getDocFile } from "../lib/docs";
-import { getTeamRoster, updateAgentPersona, type PersonaEdits } from "../lib/team";
+import {
+  getTeamDepartments,
+  getTeamRoster,
+  updateAgentPersona,
+  type PersonaEdits,
+} from "../lib/team";
 import { savePortrait } from "../lib/portraits";
 import {
   getAgentStats,
@@ -55,7 +60,8 @@ function serializeAgentRun(g: Generation, agentPath: string) {
 
 router.get("/team", async (req, res): Promise<void> => {
   const employees = await getTeamRoster();
-  res.json(GetTeamResponse.parse({ employees }));
+  const departments = getTeamDepartments();
+  res.json(GetTeamResponse.parse({ employees, departments }));
 });
 
 router.get("/team/stats", async (req, res): Promise<void> => {

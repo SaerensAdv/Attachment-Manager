@@ -8,7 +8,12 @@ import {
   type ReactZoomPanPinchRef,
 } from "react-zoom-pan-pinch";
 import { Maximize2, Plus, Minus, Download, Image as ImageIcon, Network, Workflow } from "lucide-react";
-import type { DocNode, DocEdge, DocCategory } from "@workspace/api-client-react";
+import type {
+  DocNode,
+  DocEdge,
+  DocCategory,
+  TeamDepartment,
+} from "@workspace/api-client-react";
 import {
   layerRank,
   safeId,
@@ -19,6 +24,11 @@ import {
   EDGE_LOD,
   LABEL_LOD,
   lodFactor,
+  departmentHullPath,
+  departmentHandoffPath,
+  centroidOf,
+  topMostPoint,
+  type HullMember,
   type LayoutMode,
   type SimNode,
   type SimEdge,
@@ -51,6 +61,13 @@ interface GraphViewerProps {
   // the bottom of the viewport. The spotlight framing reserves this region so
   // the live-run rings/pulses/hand-off line are never hidden behind the panel.
   frameBottomInset?: number;
+  // Agency department overlay (the single org model). When `showDepartments` is
+  // on (and no run is live) the map draws each department as a soft blob around
+  // its member plates with handoff arrows between departments. `nodeDepartmentId`
+  // maps a node id (e.g. agents/copywriter.md) to its department id.
+  departments?: TeamDepartment[];
+  nodeDepartmentId?: Record<string, string>;
+  showDepartments?: boolean;
 }
 export default function GraphViewer({
   nodes,
@@ -68,6 +85,9 @@ export default function GraphViewer({
   spotlightNodeIds,
   spotlightNonce,
   frameBottomInset,
+  departments,
+  nodeDepartmentId,
+  showDepartments,
 }: GraphViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const transformRef = useRef<ReactZoomPanPinchRef | null>(null);
@@ -567,6 +587,55 @@ export default function GraphViewer({
     return `M${x1},${y1} Q${cx},${cy} ${x2},${y2}`;
   }, [handoff, simNodes]);
 
+  // The department overlay (single agency org model): a soft blob around each
+  // department's member plates, the department label above it, and handoff
+  // arrows between department centroids. Hidden while a run is live so the
+  // live-run spotlight stays uncluttered.
+  const departmentOverlay = useMemo(() => {
+    if (!showDepartments || runActive) return null;
+    if (!departments || departments.length === 0 || !nodeDepartmentId)
+      return null;
+
+    const membersByDept = new Map<string, HullMember[]>();
+    for (const n of simNodes) {
+      if (n.x === undefined || n.y === undefined) continue;
+      const deptId = nodeDepartmentId[n.id];
+      if (!deptId) continue;
+      let list = membersByDept.get(deptId);
+      if (!list) {
+        list = [];
+        membersByDept.set(deptId, list);
+      }
+      list.push({ x: n.x, y: n.y, title: n.title });
+    }
+
+    const blobs = departments
+      .map((dept) => {
+        const members = membersByDept.get(dept.id);
+        if (!members || members.length === 0) return null;
+        const centroid = centroidOf(members);
+        const path = departmentHullPath(members);
+        const top = topMostPoint(members);
+        return { dept, centroid, path, labelX: centroid.x, labelY: top.y - 34 };
+      })
+      .filter((b): b is NonNullable<typeof b> => b !== null);
+
+    const centroidById = new Map(blobs.map((b) => [b.dept.id, b.centroid]));
+    const handoffs: { id: string; deptId: string; path: string }[] = [];
+    for (const b of blobs) {
+      for (const targetId of b.dept.handsTo) {
+        const to = centroidById.get(targetId);
+        if (!to) continue;
+        handoffs.push({
+          id: `${b.dept.id}->${targetId}`,
+          deptId: b.dept.id,
+          path: departmentHandoffPath(b.centroid, to),
+        });
+      }
+    }
+    return { blobs, handoffs };
+  }, [showDepartments, runActive, departments, nodeDepartmentId, simNodes]);
+
   return (
     <div ref={containerRef} className="w-full h-full bg-background relative overflow-hidden">
       {/* Grid Pattern Background — faint ink dots on cream paper */}
@@ -603,6 +672,10 @@ export default function GraphViewer({
               <marker id="arrow-mention" viewBox="0 -5 10 10" refX="8" refY="0" markerWidth="6" markerHeight="6" orient="auto">
                 <path d="M0,-4L8,0L0,4" fill="hsl(var(--foreground))" opacity={0.3} />
               </marker>
+              {/* Department handoff arrowhead — inherits its line's stroke. */}
+              <marker id="arrow-dept" viewBox="0 -5 10 10" refX="8" refY="0" markerWidth="8" markerHeight="8" orient="auto">
+                <path d="M0,-4L8,0L0,4" fill="context-stroke" />
+              </marker>
               {/* Soft lift for the node "seals" */}
               <filter id="node-shadow" x="-60%" y="-60%" width="220%" height="220%">
                 <feDropShadow dx="0" dy="2.5" stdDeviation="3" floodColor="#1A1A1A" floodOpacity="0.20" />
@@ -619,7 +692,48 @@ export default function GraphViewer({
               </filter>
             </defs>
 
-            {/* Edges Layer */}
+            {/* Department overlay — soft blobs + handoff arrows, drawn behind
+                the edges and nodes so it reads as a backdrop, never clutter. */}
+            {departmentOverlay && (
+              <g className="departments" pointerEvents="none">
+                {departmentOverlay.blobs.map(({ dept, path, labelX, labelY }) => (
+                  <g key={`dept-${dept.id}`}>
+                    <path
+                      d={path}
+                      fill={`hsl(var(--dept-${dept.id}) / 0.07)`}
+                      stroke={`hsl(var(--dept-${dept.id}) / 0.45)`}
+                      strokeWidth={1.5}
+                      strokeDasharray="6,5"
+                    />
+                    <text
+                      x={labelX}
+                      y={labelY}
+                      textAnchor="middle"
+                      className="font-['Space_Mono'] uppercase"
+                      style={{
+                        fontSize: 11,
+                        letterSpacing: "0.18em",
+                        fill: `hsl(var(--dept-${dept.id}))`,
+                        fontWeight: 700,
+                      }}
+                    >
+                      {dept.title}
+                    </text>
+                  </g>
+                ))}
+                {departmentOverlay.handoffs.map(({ id, deptId, path }) => (
+                  <path
+                    key={`dept-handoff-${id}`}
+                    d={path}
+                    fill="none"
+                    stroke={`hsl(var(--dept-${deptId}) / 0.4)`}
+                    strokeWidth={1.75}
+                    markerEnd="url(#arrow-dept)"
+                  />
+                ))}
+              </g>
+            )}
+
             <g className="edges" fill="none">
               {simEdges.map((edge, i) => {
                 const source = edge.source as SimNode;

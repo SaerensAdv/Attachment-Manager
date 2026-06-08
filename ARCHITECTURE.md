@@ -28,6 +28,19 @@ This separation is deliberate:
 
 If client data lived inside agent files, every new client would mean editing every agent. By keeping client context in `clients/`, agent files stay stable and reusable. The same logic applies to workflows, templates, and standards — each concept changes in exactly one place.
 
+## Agency organisation
+
+The team is organised exactly like the agency itself: a small number of **departments**, each with one named **owner** (the department head) and a fixed set of **agents**. This is the single org model — there is no separate "hierarchy" and "leadership" view. AGENTS.md (`## Agency organisation`) is the source of truth; every agent belongs to exactly one department, and every department names one owner.
+
+Departments are ordered (0–5) and describe *who works together and where work flows*, not the prompt-assembly order above:
+
+- **Directie** — the Orchestrator routes every request and owns priorities.
+- **Paid Media**, **SEO & Web**, **Content & Creative** — the execution departments that produce the work.
+- **Client & Growth** — onboarding, client success, and new business.
+- **Quality** — the review gate that checks work before it reaches the client.
+
+Each department declares which departments it **hands off to**; the reverse (*receives from*) is derived automatically, so a handoff is described in only one place. This organisation is **structure and presentation only** — it shapes the docs, the team page, and the system map, but it does **not** change how a run is executed. The Orchestrator still decides routing per request via its own routing table; department heads are not yet activated at runtime.
+
 ## The deliverable layer
 
 The five layers produce structured **markdown** — the team's combined work. On top of that, a workflow can declare a **deliverable**: the concrete end product the team's work should be turned into (e.g. a ready-to-paste website build prompt, a Google Ads bulk CSV, a Meta ad image). After the team finishes, the deliverable layer converts the combined markdown into that artifact.
@@ -45,7 +58,7 @@ Workflows without a marker keep markdown as their result, exactly as before. The
 ```
 saerens-ai-team/
 ├── README.md            # What the system is, how it's organized
-├── AGENTS.md            # Global rules + agent hierarchy (the constitution)
+├── AGENTS.md            # Global rules + agency organisation (the constitution)
 ├── ROADMAP.md           # Phased plan
 ├── ARCHITECTURE.md      # This file
 │

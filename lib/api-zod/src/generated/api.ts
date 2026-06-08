@@ -158,19 +158,28 @@ export const GetTeamResponse = zod.object({
   "roleSummary": zod.string().nullable().describe('First paragraph of the agent\'s Role section, if present.'),
   "portraitUrl": zod.string().nullable().describe('Public URL of the chosen full-size portrait, or null when none exists yet.'),
   "portraitThumbUrl": zod.string().nullable().describe('Public URL of a small resized WebP thumbnail of the portrait for roster avatars and graph nodes, or null when none exists yet.'),
-  "layer": zod.object({
-  "id": zod.string().describe('Stable layer identifier from the agent hierarchy (e.g. strategy).'),
-  "order": zod.number().describe('Fixed top-to-bottom position of the layer (1 = Orchestrator).'),
-  "title": zod.string().describe('Editorial Dutch title for the hierarchy layer.'),
-  "description": zod.string().describe('Short editorial description of what this layer does.')
-}).describe('The hierarchy layer this member belongs to (group + order).'),
-  "head": zod.object({
-  "id": zod.string().describe('Stable layer identifier from the agent hierarchy (e.g. strategy).'),
-  "order": zod.number().describe('Fixed top-to-bottom position of the layer (1 = Orchestrator).'),
-  "title": zod.string().describe('Editorial Dutch title for the hierarchy layer.'),
-  "description": zod.string().describe('Short editorial description of what this layer does.')
-}).describe('The leadership head this member reports to (organizational reporting line only; reuses the layer shape: id, order, title, description).')
-}))
+  "department": zod.object({
+  "id": zod.string().describe('Stable department identifier from the agency org model (e.g. paid-media).'),
+  "order": zod.number().describe('Fixed position of the department (0 = Direction & Orchestration).'),
+  "title": zod.string().describe('Editorial Dutch title for the department.'),
+  "kind": zod.enum(['direction', 'delivery', 'client', 'quality']).describe('Which kind of agency layer this department is.'),
+  "description": zod.string().describe('Short editorial Dutch description of what this department does.'),
+  "ownerSlug": zod.string().nullable().describe('Slug of the department\'s owner (head), or null when none is named.'),
+  "handsTo": zod.array(zod.string()).describe('Department ids this department hands briefs \/ finished work to.'),
+  "receivesFrom": zod.array(zod.string()).describe('Department ids this department receives work from (inverse of handsTo).')
+}).describe('The single department this member belongs to (the one org model).'),
+  "isOwner": zod.boolean().describe('True when this member is their department\'s owner (head).')
+})),
+  "departments": zod.array(zod.object({
+  "id": zod.string().describe('Stable department identifier from the agency org model (e.g. paid-media).'),
+  "order": zod.number().describe('Fixed position of the department (0 = Direction & Orchestration).'),
+  "title": zod.string().describe('Editorial Dutch title for the department.'),
+  "kind": zod.enum(['direction', 'delivery', 'client', 'quality']).describe('Which kind of agency layer this department is.'),
+  "description": zod.string().describe('Short editorial Dutch description of what this department does.'),
+  "ownerSlug": zod.string().nullable().describe('Slug of the department\'s owner (head), or null when none is named.'),
+  "handsTo": zod.array(zod.string()).describe('Department ids this department hands briefs \/ finished work to.'),
+  "receivesFrom": zod.array(zod.string()).describe('Department ids this department receives work from (inverse of handsTo).')
+})).describe('The agency departments (display + handoff topology).')
 })
 
 
@@ -308,18 +317,17 @@ export const UpdateAgentPersonaResponse = zod.object({
   "roleSummary": zod.string().nullable().describe('First paragraph of the agent\'s Role section, if present.'),
   "portraitUrl": zod.string().nullable().describe('Public URL of the chosen full-size portrait, or null when none exists yet.'),
   "portraitThumbUrl": zod.string().nullable().describe('Public URL of a small resized WebP thumbnail of the portrait for roster avatars and graph nodes, or null when none exists yet.'),
-  "layer": zod.object({
-  "id": zod.string().describe('Stable layer identifier from the agent hierarchy (e.g. strategy).'),
-  "order": zod.number().describe('Fixed top-to-bottom position of the layer (1 = Orchestrator).'),
-  "title": zod.string().describe('Editorial Dutch title for the hierarchy layer.'),
-  "description": zod.string().describe('Short editorial description of what this layer does.')
-}).describe('The hierarchy layer this member belongs to (group + order).'),
-  "head": zod.object({
-  "id": zod.string().describe('Stable layer identifier from the agent hierarchy (e.g. strategy).'),
-  "order": zod.number().describe('Fixed top-to-bottom position of the layer (1 = Orchestrator).'),
-  "title": zod.string().describe('Editorial Dutch title for the hierarchy layer.'),
-  "description": zod.string().describe('Short editorial description of what this layer does.')
-}).describe('The leadership head this member reports to (organizational reporting line only; reuses the layer shape: id, order, title, description).')
+  "department": zod.object({
+  "id": zod.string().describe('Stable department identifier from the agency org model (e.g. paid-media).'),
+  "order": zod.number().describe('Fixed position of the department (0 = Direction & Orchestration).'),
+  "title": zod.string().describe('Editorial Dutch title for the department.'),
+  "kind": zod.enum(['direction', 'delivery', 'client', 'quality']).describe('Which kind of agency layer this department is.'),
+  "description": zod.string().describe('Short editorial Dutch description of what this department does.'),
+  "ownerSlug": zod.string().nullable().describe('Slug of the department\'s owner (head), or null when none is named.'),
+  "handsTo": zod.array(zod.string()).describe('Department ids this department hands briefs \/ finished work to.'),
+  "receivesFrom": zod.array(zod.string()).describe('Department ids this department receives work from (inverse of handsTo).')
+}).describe('The single department this member belongs to (the one org model).'),
+  "isOwner": zod.boolean().describe('True when this member is their department\'s owner (head).')
 })
 
 
@@ -350,18 +358,17 @@ export const UploadAgentPortraitResponse = zod.object({
   "roleSummary": zod.string().nullable().describe('First paragraph of the agent\'s Role section, if present.'),
   "portraitUrl": zod.string().nullable().describe('Public URL of the chosen full-size portrait, or null when none exists yet.'),
   "portraitThumbUrl": zod.string().nullable().describe('Public URL of a small resized WebP thumbnail of the portrait for roster avatars and graph nodes, or null when none exists yet.'),
-  "layer": zod.object({
-  "id": zod.string().describe('Stable layer identifier from the agent hierarchy (e.g. strategy).'),
-  "order": zod.number().describe('Fixed top-to-bottom position of the layer (1 = Orchestrator).'),
-  "title": zod.string().describe('Editorial Dutch title for the hierarchy layer.'),
-  "description": zod.string().describe('Short editorial description of what this layer does.')
-}).describe('The hierarchy layer this member belongs to (group + order).'),
-  "head": zod.object({
-  "id": zod.string().describe('Stable layer identifier from the agent hierarchy (e.g. strategy).'),
-  "order": zod.number().describe('Fixed top-to-bottom position of the layer (1 = Orchestrator).'),
-  "title": zod.string().describe('Editorial Dutch title for the hierarchy layer.'),
-  "description": zod.string().describe('Short editorial description of what this layer does.')
-}).describe('The leadership head this member reports to (organizational reporting line only; reuses the layer shape: id, order, title, description).')
+  "department": zod.object({
+  "id": zod.string().describe('Stable department identifier from the agency org model (e.g. paid-media).'),
+  "order": zod.number().describe('Fixed position of the department (0 = Direction & Orchestration).'),
+  "title": zod.string().describe('Editorial Dutch title for the department.'),
+  "kind": zod.enum(['direction', 'delivery', 'client', 'quality']).describe('Which kind of agency layer this department is.'),
+  "description": zod.string().describe('Short editorial Dutch description of what this department does.'),
+  "ownerSlug": zod.string().nullable().describe('Slug of the department\'s owner (head), or null when none is named.'),
+  "handsTo": zod.array(zod.string()).describe('Department ids this department hands briefs \/ finished work to.'),
+  "receivesFrom": zod.array(zod.string()).describe('Department ids this department receives work from (inverse of handsTo).')
+}).describe('The single department this member belongs to (the one org model).'),
+  "isOwner": zod.boolean().describe('True when this member is their department\'s owner (head).')
 })
 
 

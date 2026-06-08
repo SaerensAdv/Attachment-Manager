@@ -118,15 +118,39 @@ export interface BacklinkList {
   backlinks: Backlink[];
 }
 
-export interface TeamLayer {
-  /** Stable layer identifier from the agent hierarchy (e.g. strategy). */
+/**
+ * Which kind of agency layer this department is.
+ */
+export type TeamDepartmentKind = typeof TeamDepartmentKind[keyof typeof TeamDepartmentKind];
+
+
+export const TeamDepartmentKind = {
+  direction: 'direction',
+  delivery: 'delivery',
+  client: 'client',
+  quality: 'quality',
+} as const;
+
+export interface TeamDepartment {
+  /** Stable department identifier from the agency org model (e.g. paid-media). */
   id: string;
-  /** Fixed top-to-bottom position of the layer (1 = Orchestrator). */
+  /** Fixed position of the department (0 = Direction & Orchestration). */
   order: number;
-  /** Editorial Dutch title for the hierarchy layer. */
+  /** Editorial Dutch title for the department. */
   title: string;
-  /** Short editorial description of what this layer does. */
+  /** Which kind of agency layer this department is. */
+  kind: TeamDepartmentKind;
+  /** Short editorial Dutch description of what this department does. */
   description: string;
+  /**
+     * Slug of the department's owner (head), or null when none is named.
+     * @nullable
+     */
+  ownerSlug: string | null;
+  /** Department ids this department hands briefs / finished work to. */
+  handsTo: string[];
+  /** Department ids this department receives work from (inverse of handsTo). */
+  receivesFrom: string[];
 }
 
 export interface TeamMember {
@@ -174,14 +198,16 @@ export interface TeamMember {
      * @nullable
      */
   portraitThumbUrl: string | null;
-  /** The hierarchy layer this member belongs to (group + order). */
-  layer: TeamLayer;
-  /** The leadership head this member reports to (organizational reporting line only; reuses the layer shape: id, order, title, description). */
-  head: TeamLayer;
+  /** The single department this member belongs to (the one org model). */
+  department: TeamDepartment;
+  /** True when this member is their department's owner (head). */
+  isOwner: boolean;
 }
 
 export interface TeamRoster {
   employees: TeamMember[];
+  /** The agency departments (display + handoff topology). */
+  departments: TeamDepartment[];
 }
 
 /**

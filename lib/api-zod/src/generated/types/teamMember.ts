@@ -5,7 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-import type { TeamLayer } from './teamLayer';
+import type { TeamDepartment } from './teamDepartment';
 
 export interface TeamMember {
   /** The agent filename without extension (e.g. copywriter). */
@@ -52,8 +52,8 @@ export interface TeamMember {
      * @nullable
      */
   portraitThumbUrl: string | null;
-  /** The hierarchy layer this member belongs to (group + order). */
-  layer: TeamLayer;
-  /** The leadership head this member reports to (organizational reporting line only; reuses the layer shape: id, order, title, description). */
-  head: TeamLayer;
+  /** The single department this member belongs to (the one org model). */
+  department: TeamDepartment;
+  /** True when this member is their department's owner (head). */
+  isOwner: boolean;
 }

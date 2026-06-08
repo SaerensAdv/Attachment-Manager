@@ -30,53 +30,51 @@ All agents must:
 
 Saerens Advertising's voice is **confident, transparent, data-driven, and honest — no jargon for its own sake, no overpromising, no surprises**. Agents reflect this: clear recommendations, honest about uncertainty, focused on measurable outcomes. Full guidance lives in `knowledge/tone-of-voice.md`.
 
-## Agent Hierarchy
+## Agency organisation
 
-The AI team is organized as follows. Each layer lists the agent files that belong to it; this is the single source of truth for how the team page groups people, so moving an agent between layers here moves it on the page.
+The AI team is run as **one agency, not a toolbox**. Everyone belongs to exactly one **department**, every department has a single named **owner** (its head), and work moves between departments along explicit **handoff lines**. This is the single source of truth for how the team page and the system map group people: each numbered department below lists its agents as `agents/<slug>.md` references and names its owner, so moving an agent between departments here moves it everywhere.
 
-1. **Orchestrator Agent** — understands the request, routes it, prepares the brief.
-   - Agents: `agents/orchestrator.md`
-2. **Channel / Strategy Specialists** — define strategy for a channel.
-   - Agents: `agents/google-ads-strategist.md`, `agents/meta-ads-strategist.md`, `agents/seo-specialist.md`, `agents/email-automation-specialist.md`
-3. **Execution Specialists** — turn approved strategy into concrete, ready-to-implement work.
-   - Agents: `agents/google-ads-setup-specialist.md`, `agents/shopping-feed-specialist.md`
-4. **Review / Optimization Specialists** — analyze and improve existing accounts.
-   - Agents: `agents/google-ads-optimization-specialist.md`, `agents/cro-specialist.md`, `agents/qa-compliance-reviewer.md`
-5. **Communication Specialists** — translate work into client-facing output.
-   - Agents: `agents/reporting-specialist.md`, `agents/copywriter.md`, `agents/humanizer.md`
-6. **Build Specialists** — turn approved specs into working assets.
-   - Agents: `agents/landing-page-specialist.md`, `agents/web-developer.md`, `agents/creative-designer.md`, `agents/brand-identity-designer.md`
-7. **Foundation Specialists** — keep shared data and measurement trustworthy for everyone.
-   - Agents: `agents/analytics-tracking-specialist.md`, `agents/competitive-research-analyst.md`
-8. **Client-facing & Growth** — manage the client relationship, new business, contracts, and internal coordination.
-   - Agents: `agents/client-success-agent.md`, `agents/sales-proposal-agent.md`, `agents/client-onboarding-agent.md`, `agents/legal-contracts-specialist.md`, `agents/operations-coordinator.md`
+The agency has four kinds of department:
 
-## Leadership & reporting line (heads)
+- a **direction** layer that reads every request, routes it, and owns the brief;
+- three **delivery** teams that do the channel work (Paid Media, SEO & Web, Content & Creative);
+- a **client** team that owns the relationship and packages work for the client;
+- a cross-cutting **quality** gate that reviews delivery before it reaches the client.
 
-The hierarchy above groups agents by **what kind of work** they do. This section adds the **reporting line**: who answers to whom. The line is:
+The reporting line is:
 
 ```
-specialists → head → Orchestrator → CEO (human owner)
+specialists → department owner (head) → Orchestrator → CEO (human owner)
 ```
 
-A **head** is a domain lead that a few specialists report to, mirroring how a real agency has functional leads under management. Heads roll up to the Orchestrator, who is the CEO's right hand; the Orchestrator rolls up to the human CEO.
+Departments are an **organizational and presentational** layer only — they group, own and hand off work. They do **not** change how generation runs today: routing still goes Orchestrator → specialist directly (no runtime, routing, or generation change). Activating owners and the inter-department handoff/QC gate as real runtime steps is a separate, future change tracked in `ROADMAP.md` and intentionally out of scope here.
 
-This is an **organizational layer only**. It defines reporting and grouping for the team page — it does **not** change how agents run. Heads are **not yet invoked at runtime**: today routing still goes Orchestrator → specialist directly (no runtime, routing, or generation change). Each numbered item lists the agents that report to that head; this is the single source of truth the team page uses to group people under heads.
+Each department lists its **Owner** (the head, who is also a member), its **Agents** (every member, including the owner), and its **Handoff** lines (who it receives work from and hands work to). The leading number of each item is its stable order; titles below are in English while the team page renders them in Dutch.
 
-0. **Directie & orchestratie** — the CEO's right hand. Reads every request, routes it, and prepares the brief. Sits above the heads.
+0. **Direction & Orchestration** *(direction)* — the CEO's right hand. Reads every request, routes it, prepares the brief, and sits above all departments.
+   - Owner: `agents/orchestrator.md`
    - Agents: `agents/orchestrator.md`
-1. **Head of Paid Media** — owns paid acquisition across Google and Meta.
+   - Handoff: receives the request from the CEO; hands briefs to Client & Growth and the three delivery teams.
+1. **Paid Media** *(delivery)* — owns paid acquisition across Google and Meta.
+   - Owner: `agents/google-ads-strategist.md`
    - Agents: `agents/google-ads-strategist.md`, `agents/google-ads-setup-specialist.md`, `agents/google-ads-optimization-specialist.md`, `agents/meta-ads-strategist.md`, `agents/shopping-feed-specialist.md`
-2. **Head of SEO & Web** — owns organic visibility, the website, conversion, and measurement.
+   - Handoff: receives briefs from Direction & Orchestration and Client & Growth; hands finished work to Quality & Compliance and Client & Growth.
+2. **SEO & Web** *(delivery)* — owns organic visibility, the website, conversion, and measurement.
+   - Owner: `agents/seo-specialist.md`
    - Agents: `agents/seo-specialist.md`, `agents/web-developer.md`, `agents/landing-page-specialist.md`, `agents/cro-specialist.md`, `agents/analytics-tracking-specialist.md`
-3. **Head of Content & Creative** — owns brand identity, messaging, copy, produced visuals/video, the owned email & lifecycle channel, and a natural client-ready voice.
+   - Handoff: receives briefs from Direction & Orchestration and Client & Growth; hands finished work to Quality & Compliance and Client & Growth.
+3. **Content & Creative** *(delivery)* — owns brand identity, messaging, copy, produced visuals/video, the owned email & lifecycle channel, and a natural client-ready voice.
+   - Owner: `agents/copywriter.md`
    - Agents: `agents/copywriter.md`, `agents/humanizer.md`, `agents/creative-designer.md`, `agents/brand-identity-designer.md`, `agents/email-automation-specialist.md`
-4. **Head of Client & Growth** — owns the client relationship, client-facing reporting, new business, market insight, contracts, and internal coordination.
+   - Handoff: receives briefs from Direction & Orchestration and Client & Growth; hands finished work to Quality & Compliance and Client & Growth.
+4. **Client & Growth** *(client)* — owns the client relationship, client-facing reporting, new business, market insight, contracts, and internal coordination.
+   - Owner: `agents/client-success-agent.md`
    - Agents: `agents/client-success-agent.md`, `agents/client-onboarding-agent.md`, `agents/reporting-specialist.md`, `agents/sales-proposal-agent.md`, `agents/competitive-research-analyst.md`, `agents/legal-contracts-specialist.md`, `agents/operations-coordinator.md`
-5. **Overkoepelend — kwaliteit & compliance** — a cross-cutting quality gate that serves every head and reports straight to the Orchestrator, which is why it sits under no single domain head.
+   - Handoff: receives the brief from Direction & Orchestration and finished work from every delivery team; hands client-ready briefs to the delivery teams (and approved work back to the client).
+5. **Quality & Compliance** *(quality)* — a cross-cutting quality gate that serves every department and reports straight to the Orchestrator, which is why it sits under no single delivery head.
+   - Owner: `agents/qa-compliance-reviewer.md`
    - Agents: `agents/qa-compliance-reviewer.md`
-
-When heads eventually become *active* roles (a real review/composition step in a workflow), that is a separate, future change tracked in `ROADMAP.md` — it is intentionally out of scope here.
+   - Handoff: receives finished work from every delivery and client department; hands reviewed work to Direction & Orchestration for human approval.
 
 ## Current MVP Agents
 

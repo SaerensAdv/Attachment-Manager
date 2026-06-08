@@ -1302,22 +1302,39 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Backlink"
-    TeamLayer:
+    TeamDepartment:
       type: object
-      required: [id, order, title, description]
+      required: [id, order, title, kind, description, ownerSlug, handsTo, receivesFrom]
       properties:
         id:
           type: string
-          description: Stable layer identifier from the agent hierarchy (e.g. strategy).
+          description: Stable department identifier from the agency org model (e.g. paid-media).
         order:
           type: integer
-          description: Fixed top-to-bottom position of the layer (1 = Orchestrator).
+          description: Fixed position of the department (0 = Direction & Orchestration).
         title:
           type: string
-          description: Editorial Dutch title for the hierarchy layer.
+          description: Editorial Dutch title for the department.
+        kind:
+          type: string
+          enum: [direction, delivery, client, quality]
+          description: Which kind of agency layer this department is.
         description:
           type: string
-          description: Short editorial description of what this layer does.
+          description: Short editorial Dutch description of what this department does.
+        ownerSlug:
+          type: ["string", "null"]
+          description: Slug of the department's owner (head), or null when none is named.
+        handsTo:
+          type: array
+          items:
+            type: string
+          description: Department ids this department hands briefs / finished work to.
+        receivesFrom:
+          type: array
+          items:
+            type: string
+          description: Department ids this department receives work from (inverse of handsTo).
     TeamMember:
       type: object
       required:
@@ -1334,8 +1351,8 @@ components:
         - roleSummary
         - portraitUrl
         - portraitThumbUrl
-        - layer
-        - head
+        - department
+        - isOwner
       properties:
         slug:
           type: string
@@ -1374,22 +1391,25 @@ components:
           description: >-
             Public URL of a small resized WebP thumbnail of the portrait for
             roster avatars and graph nodes, or null when none exists yet.
-        layer:
-          $ref: "#/components/schemas/TeamLayer"
-          description: The hierarchy layer this member belongs to (group + order).
-        head:
-          $ref: "#/components/schemas/TeamLayer"
-          description: >-
-            The leadership head this member reports to (organizational reporting
-            line only; reuses the layer shape: id, order, title, description).
+        department:
+          $ref: "#/components/schemas/TeamDepartment"
+          description: The single department this member belongs to (the one org model).
+        isOwner:
+          type: boolean
+          description: True when this member is their department's owner (head).
     TeamRoster:
       type: object
-      required: [employees]
+      required: [employees, departments]
       properties:
         employees:
           type: array
           items:
             $ref: "#/components/schemas/TeamMember"
+        departments:
+          type: array
+          items:
+            $ref: "#/components/schemas/TeamDepartment"
+          description: The agency departments (display + handoff topology).
     UpdatePersonaRequest:
       type: object
       description: >

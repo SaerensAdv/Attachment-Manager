@@ -4,7 +4,7 @@
 - [Account signals (read-only Ads diagnostics)](account-signals.md) — pure tracking-health + waste signals over already-pulled metrics, injected into report text; never invent a target; gate on campaign-fetch success.
 - [Monorepo composite project refs](monorepo-composite-refs.md) — new workspace libs need built dist declarations (tsc -b) or api-server typecheck fails TS6305; after a merge run api-spec codegen to refresh stale generated/built libs.
 - [System Map legend categories](system-map-categories.md) — "core"=Fundament holds only AGENTS+ARCHITECTURE; labels Dutch, ids stay stable (colors/filtering key off id); README/ROADMAP excluded from graph.
-- [Team layer membership source](team-layer-membership.md) — team.ts owns Dutch layer display only; agent→layer membership parsed from AGENTS.md hierarchy list (joined by order); unlisted→Overig.
+- [Team department membership](team-department-membership.md) — single agency org model; team.ts owns Dutch dept display + handsTo (receivesFrom derived); membership+owner parsed from AGENTS.md `## Agency organisation` (joined by order); no opt-out, validate enforces undepartmented/ownerless.
 - [Egress quirk + Saerens brand](replit-egress-and-saerens-brand.md) — container curl is blocked (http 000) but sandbox fetch() works; Saerens real domain is .com + its brand tokens/logo.
 - [Adding an agent](adding-agents.md) — agent .md read at runtime (no api restart); routing edge needs exact H1 title in orchestrator table; update AGENTS.md + ARCHITECTURE.md.
 - [System Map branding direction](branding-direction.md) — editorial "Newsroom" light theme (cream/ink/indigo, Playfair+Inter+Space Mono); theme in index.css :root, no dark toggle.
@@ -15,7 +15,6 @@
 - [Responsive breakpoints](responsive-breakpoints.md) — TabNav labels reveal at lg (not sm) for 7 tabs; page px-4 sm:px-6; cap floating panels to viewport.
 - [App motion layer](app-motion-layer.md) — Lenis smooth scroll must be OFF on the full-screen Kaart route ("/"); all motion must honour prefers-reduced-motion.
 - [Replit-docs knowledge nodes](replit-docs-thread.md) — Replit nodes are how-to usage docs in knowledge/, English; wire multi-flow tools (e.g. Canvas) into every agent/workflow they touch via exact knowledge/<file>.md path.
-- [Team heads / reporting line](team-heads-reporting-line.md) — 2nd grouping (CEO→Orchestrator→head→specialist) parsed from AGENTS.md; organizational only, every agent MUST have a head (headless-agent check, no opt-out).
 - [Team page & portraits](team-portrait-foundation.md) — object-storage layout (portraits/<slug>.png, portrait-styles/<slug>-<style>.png), best-effort index loads at request time, upload via node+GCS sidecar (no tsx).
 - [DocPanel reader features](doc-panel-features.md) — ToC must read rendered rehype-slug ids (not recompute); local Transformers.js search w/ Orama fallback; edit guards on clients/db/* both sides.
 - [System architecture direction](system-architecture-direction.md) — app = brain + source of truth (agents/knowledge/client state + decision endpoint); n8n = stateless executor that triggers, acts, and writes results back.

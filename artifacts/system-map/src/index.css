@@ -87,6 +87,15 @@
   --cat-template: 42 95% 42%;   /* Amber */
   --cat-knowledge: 142 65% 36%; /* Green */
 
+  /* Agency departments (the single org model). Stable per department id. */
+  --dept-direction: 243 75% 60%;       /* Indigo — direction */
+  --dept-paid-media: 24 90% 48%;       /* Orange — paid media */
+  --dept-seo-web: 188 90% 38%;         /* Teal — SEO & web */
+  --dept-content-creative: 330 75% 50%; /* Magenta — content & creative */
+  --dept-client-growth: 142 65% 36%;   /* Green — client & growth */
+  --dept-quality: 42 95% 42%;          /* Amber — quality & compliance */
+  --dept-other: 0 0% 45%;              /* Grey — catch-all */
+
   --app-font-sans: 'Inter', sans-serif;
   --app-font-serif: 'Playfair Display', Georgia, serif;
   --app-font-mono: 'Space Mono', monospace;

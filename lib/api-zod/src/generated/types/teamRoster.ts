@@ -5,8 +5,11 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { TeamDepartment } from './teamDepartment';
 import type { TeamMember } from './teamMember';
 
 export interface TeamRoster {
   employees: TeamMember[];
+  /** The agency departments (display + handoff topology). */
+  departments: TeamDepartment[];
 }

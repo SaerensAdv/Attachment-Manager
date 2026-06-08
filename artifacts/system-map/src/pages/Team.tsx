@@ -667,25 +667,55 @@ export default function Team() {
     };
   }, [selected]);
 
-  // The team grouped by leadership head (the reporting line from AGENTS.md), in
-  // fixed top-to-bottom order. Members keep their alphabetical order within a
-  // head; empty heads are simply absent. Each card still shows its function layer
-  // as a caption, so both the reporting line and the kind of work stay visible.
-  const heads = useMemo(() => {
+  // The team grouped by department (the single agency org model from AGENTS.md),
+  // in fixed order. Members keep their alphabetical order within a department;
+  // the department's owner (head) is floated to the front and badged. Empty
+  // departments are simply absent.
+  const departments = useMemo(() => {
     const byId = new Map<
       string,
-      { head: TeamMember["head"]; members: TeamMember[] }
+      { department: TeamMember["department"]; members: TeamMember[] }
     >();
     for (const member of employees) {
-      const group = byId.get(member.head.id);
+      const group = byId.get(member.department.id);
       if (group) {
         group.members.push(member);
       } else {
-        byId.set(member.head.id, { head: member.head, members: [member] });
+        byId.set(member.department.id, {
+          department: member.department,
+          members: [member],
+        });
       }
     }
-    return [...byId.values()].sort((a, b) => a.head.order - b.head.order);
+    for (const group of byId.values()) {
+      group.members.sort((a, b) => {
+        if (a.isOwner !== b.isOwner) return a.isOwner ? -1 : 1;
+        return a.title.localeCompare(b.title);
+      });
+    }
+    return [...byId.values()].sort(
+      (a, b) => a.department.order - b.department.order,
+    );
   }, [employees]);
+
+  // Spell the department count in Dutch for the reporting-line note, so the
+  // copy always matches however many departments AGENTS.md actually declares.
+  const departmentCountLabel = useMemo(() => {
+    const words = [
+      "nul",
+      "één",
+      "twee",
+      "drie",
+      "vier",
+      "vijf",
+      "zes",
+      "zeven",
+      "acht",
+      "negen",
+      "tien",
+    ];
+    return words[departments.length] ?? String(departments.length);
+  }, [departments]);
 
   if (isLoading) {
     return (
@@ -753,25 +783,29 @@ export default function Team() {
         {/* Reporting-line note */}
         <Reveal>
           <p className="font-['Space_Mono'] text-[10px] uppercase tracking-[0.2em] text-muted-foreground mb-8">
-            Rapportagelijn: specialisten → head → Orchestrator → CEO
+            Eén bureau, {departmentCountLabel} afdelingen: specialisten →
+            eigenaar (head) → Orchestrator → CEO
           </p>
         </Reveal>
 
-        {/* Roster grouped per leadership head, top to bottom */}
+        {/* Roster grouped per department, in fixed order */}
         <div className="flex flex-col gap-14">
-          {heads.map(({ head, members }) => (
-            <section key={head.id}>
+          {departments.map(({ department, members }) => (
+            <section key={department.id}>
               <Reveal>
                 <div className="flex items-baseline gap-4 border-b-2 border-foreground pb-3 mb-7">
-                  <span className="font-['Playfair_Display'] font-black text-3xl italic leading-none text-foreground/30 shrink-0">
-                    {String(head.order).padStart(2, "0")}
+                  <span
+                    className="font-['Playfair_Display'] font-black text-3xl italic leading-none shrink-0"
+                    style={{ color: `hsl(var(--dept-${department.id}))` }}
+                  >
+                    {String(department.order).padStart(2, "0")}
                   </span>
                   <div className="min-w-0">
                     <h2 className="font-['Playfair_Display'] font-black text-2xl md:text-3xl uppercase tracking-tight leading-none">
-                      {head.title}
+                      {department.title}
                     </h2>
                     <p className="font-['Inter'] text-sm text-muted-foreground mt-2 max-w-2xl">
-                      {head.description}
+                      {department.description}
                     </p>
                   </div>
                 </div>
@@ -805,9 +839,22 @@ export default function Team() {
                               {member.oneLiner}
                             </p>
                           )}
-                          <span className="inline-block mt-3 font-['Space_Mono'] text-[9px] uppercase tracking-widest text-muted-foreground/80 border border-foreground/20 px-1.5 py-0.5">
-                            {member.layer.title}
-                          </span>
+                          <div className="mt-3 flex flex-wrap items-center gap-2">
+                            <span
+                              className="inline-block font-['Space_Mono'] text-[9px] uppercase tracking-widest px-1.5 py-0.5 border"
+                              style={{
+                                color: `hsl(var(--dept-${member.department.id}))`,
+                                borderColor: `hsl(var(--dept-${member.department.id}) / 0.5)`,
+                              }}
+                            >
+                              {member.department.title}
+                            </span>
+                            {member.isOwner && (
+                              <span className="inline-block font-['Space_Mono'] text-[9px] uppercase tracking-widest px-1.5 py-0.5 bg-foreground text-background">
+                                Head
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </button>
                     </Reveal>

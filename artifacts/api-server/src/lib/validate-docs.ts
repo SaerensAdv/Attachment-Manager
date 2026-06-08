@@ -5,13 +5,7 @@ import {
   type DocFile,
 } from "./docs";
 import { ALWAYS_KNOWLEDGE } from "./generate-context";
-import { hierarchySlugs, headSlugs } from "./team";
-
-// An agent can opt out of the hierarchy check by declaring itself deliberately
-// layer-less with an HTML comment, e.g. `<!-- unlisted: cross-cutting -->`.
-// This matches the existing comment-marker convention (see deliverable markers)
-// and keeps the intent next to the agent it describes.
-const UNLISTED_MARKER_RE = /<!--\s*unlisted\b/i;
+import { departmentSlugs, getDepartments } from "./team";
 
 export type IssueSeverity = "error" | "warning" | "info";
 
@@ -113,44 +107,38 @@ export function validateDocs(extra: DocFile[] = []): ValidationReport {
     }
   }
 
-  // 4. Agents not placed in the AGENTS.md "Agent Hierarchy" (and not opting out
-  //    via an `<!-- unlisted -->` marker). These would silently land in the
-  //    "Overig" catch-all on the team page, which usually means someone forgot
-  //    to assign the agent a layer rather than that it is genuinely layer-less.
+  // 4. Agents not placed under a department in the AGENTS.md "Agency
+  //    organisation" section. Departments are the single org model, so every
+  //    agent must belong to exactly one — there is no opt-out. A missing agent
+  //    silently lands in the "Overig" catch-all on the team page and map.
   const agentsDoc = files.find((f) => f.id === "AGENTS.md");
   if (agentsDoc) {
-    const listed = hierarchySlugs(agentsDoc.content);
+    const placed = departmentSlugs(agentsDoc.content);
     for (const file of files) {
       if (file.category !== "agent") continue;
       const slug = file.id.replace(/^agents\//, "").replace(/\.md$/, "");
-      if (listed.has(slug)) continue;
-      if (UNLISTED_MARKER_RE.test(file.content)) continue;
+      if (placed.has(slug)) continue;
       issues.push({
         severity: "warning",
-        kind: "unlayered-agent",
+        kind: "undepartmented-agent",
         source: agentsDoc.id,
         target: file.id,
-        message: `Agent '${file.title}' (${slug}) staat niet in de "Agent Hierarchy" van AGENTS.md en valt daardoor in 'Overig'. Voeg de agent toe aan een laag, of markeer 'm bewust laagloos met '<!-- unlisted: ... -->' in ${file.id}.`,
+        message: `Agent '${file.title}' (${slug}) staat onder geen enkele afdeling in de "Agency organisation" van AGENTS.md en valt daardoor in 'Overig'. Voeg de agent toe aan een afdeling in ${agentsDoc.id}.`,
       });
     }
   }
 
-  // 4b. Agents not placed under a head in the AGENTS.md "Leadership & reporting
-  //     line" section. Unlike the function layer, every agent must have a
-  //     reporting line, so there is no opt-out marker here — a missing head means
-  //     the agent silently lands in the "Nog geen rapportagelijn" catch-all.
+  // 4b. Departments without a named owner (head). Every department must name an
+  //     owner on its "Owner:" line; a missing owner means the team page and map
+  //     cannot mark a lead for that department.
   if (agentsDoc) {
-    const withHead = headSlugs(agentsDoc.content);
-    for (const file of files) {
-      if (file.category !== "agent") continue;
-      const slug = file.id.replace(/^agents\//, "").replace(/\.md$/, "");
-      if (withHead.has(slug)) continue;
+    for (const dept of getDepartments(agentsDoc.content)) {
+      if (dept.ownerSlug) continue;
       issues.push({
         severity: "warning",
-        kind: "headless-agent",
+        kind: "ownerless-department",
         source: agentsDoc.id,
-        target: file.id,
-        message: `Agent '${file.title}' (${slug}) staat niet onder een head in de "Leadership & reporting line" van AGENTS.md en valt daardoor buiten de rapportagelijn. Voeg de agent toe aan een head in ${agentsDoc.id}.`,
+        message: `Afdeling '${dept.title}' heeft geen eigenaar (head). Voeg een "Owner: \`agents/<slug>.md\`"-regel toe aan de afdeling in ${agentsDoc.id}.`,
       });
     }
   }

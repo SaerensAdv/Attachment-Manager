@@ -12,12 +12,33 @@ import {
   PORTRAIT_THUMB_WIDTH,
 } from "./portraits";
 
-/** The hierarchy layer a team member belongs to, from the AGENTS.md ladder. */
-export interface TeamLayer {
+/** The kind of agency layer a department belongs to. */
+export type DepartmentKind = "direction" | "delivery" | "client" | "quality";
+
+/**
+ * A department in the agency org model, parsed from the "Agency organisation"
+ * section of AGENTS.md. This is the single grouping model for the team — it
+ * replaces the old, overlapping function-layer + reporting-head taxonomies.
+ *
+ * The {@link TEAM_DEPARTMENTS} array below owns only the *display + structural*
+ * metadata (Dutch title/description, the agency `kind`, and the handoff
+ * topology). Which agents belong to a department, and who owns it, is derived
+ * from AGENTS.md (see {@link parseAgencyOrg}), keyed by the department's `order`
+ * matching the numbered item. Moving an agent in AGENTS.md therefore re-groups
+ * the team page and the system map automatically, with no edit to this file.
+ */
+export interface TeamDepartment {
   id: string;
   order: number;
   title: string;
+  kind: DepartmentKind;
   description: string;
+  /** Slug of the department's owner (head), or null when none is named. */
+  ownerSlug: string | null;
+  /** Department ids this department hands briefs / finished work to. */
+  handsTo: string[];
+  /** Department ids this department receives work from (inverse of handsTo). */
+  receivesFrom: string[];
 }
 
 export interface TeamMember {
@@ -34,276 +55,207 @@ export interface TeamMember {
   roleSummary: string | null;
   portraitUrl: string | null;
   portraitThumbUrl: string | null;
-  layer: TeamLayer;
-  head: TeamLayer;
+  /** The single department this member belongs to (the one org model). */
+  department: TeamDepartment;
+  /** True when this member is their department's owner (head). */
+  isOwner: boolean;
 }
 
 /**
- * The fixed team hierarchy, top to bottom. This array owns only the *display*
- * metadata for each layer — its stable id, order, and Dutch title/description.
- * Which agents belong to each layer is NOT hardcoded here: it is derived from
- * the "Agent Hierarchy" section of AGENTS.md (see {@link layerSlugsFromAgents}),
- * keyed by the layer's `order` matching the numbered hierarchy item. Adding or
- * moving an agent in AGENTS.md therefore re-groups the team page automatically,
- * with no edit to this file.
+ * Display + structural metadata per department. The `handsTo` lists encode the
+ * inter-department handoff topology the system map draws; `receivesFrom` is
+ * derived as its inverse so the two can never drift. Membership and owner are
+ * NOT hardcoded here — they come from AGENTS.md.
  */
-const TEAM_LAYERS: TeamLayer[] = [
-  {
-    id: "orchestrator",
-    order: 1,
-    title: "Orchestrator",
-    description:
-      "Het instappunt. Leest de aanvraag, kiest de juiste specialist en stelt de briefing op.",
-  },
-  {
-    id: "strategy",
-    order: 2,
-    title: "Strategie & Kanaal",
-    description:
-      "Bepalen de strategie per kanaal: waar de kansen liggen en hoe we ze pakken.",
-  },
-  {
-    id: "execution",
-    order: 3,
-    title: "Uitvoering",
-    description:
-      "Zetten goedgekeurde strategie om in concreet, klaar-voor-implementatie werk.",
-  },
-  {
-    id: "review",
-    order: 4,
-    title: "Review & Optimalisatie",
-    description:
-      "Analyseren bestaande accounts en sturen bij voor meer rendement.",
-  },
-  {
-    id: "communication",
-    order: 5,
-    title: "Communicatie",
-    description:
-      "Vertalen het werk naar heldere, klantgerichte taal en rapportage.",
-  },
-  {
-    id: "build",
-    order: 6,
-    title: "Build",
-    description: "Bouwen goedgekeurde specs om tot werkende assets en pagina's.",
-  },
-  {
-    id: "foundation",
-    order: 7,
-    title: "Fundament",
-    description: "Houden de gedeelde data en meting voor iedereen betrouwbaar.",
-  },
-  {
-    id: "growth",
-    order: 8,
-    title: "Klant & Groei",
-    description:
-      "Onderhouden de klantrelatie en winnen nieuwe opdrachten binnen.",
-  },
-];
+interface DepartmentMeta {
+  id: string;
+  order: number;
+  kind: DepartmentKind;
+  title: string;
+  description: string;
+  handsTo: string[];
+}
 
-/** Final catch-all layer for slugs not listed in any defined layer. */
-const FALLBACK_LAYER: TeamLayer = {
-  id: "other",
-  order: 99,
-  title: "Overig",
-  description: "Nog niet ingedeeld in een vaste laag van de hiërarchie.",
-};
-
-/**
- * The leadership "heads" — the *reporting line* layer (who answers to whom),
- * separate from the function-based {@link TEAM_LAYERS}. Like the layers, this
- * array owns only the Dutch display metadata; which agent reports to which head
- * is derived from the "Leadership & reporting line" section of AGENTS.md (see
- * {@link headSlugsFromAgents}), keyed by the numbered item matching `order`.
- */
-const TEAM_HEADS: TeamLayer[] = [
+const TEAM_DEPARTMENTS: DepartmentMeta[] = [
   {
     id: "direction",
     order: 0,
+    kind: "direction",
     title: "Directie & orchestratie",
     description:
-      "De rechterhand van de CEO. Leest elke aanvraag, routeert ze en stelt de briefing op — boven de heads.",
+      "De rechterhand van de CEO. Leest elke aanvraag, routeert ze en stelt de briefing op — boven alle afdelingen.",
+    handsTo: ["client-growth", "paid-media", "seo-web", "content-creative"],
   },
   {
     id: "paid-media",
     order: 1,
+    kind: "delivery",
     title: "Paid Media",
     description:
       "Betaalde acquisitie over Google en Meta, onder leiding van de Head of Paid Media.",
+    handsTo: ["quality", "client-growth"],
   },
   {
     id: "seo-web",
     order: 2,
+    kind: "delivery",
     title: "SEO & Web",
     description:
       "Organische zichtbaarheid, de website, conversie en meting, onder leiding van de Head of SEO & Web.",
+    handsTo: ["quality", "client-growth"],
   },
   {
     id: "content-creative",
     order: 3,
+    kind: "delivery",
     title: "Content & Creatie",
     description:
-      "Boodschap, copy en een natuurlijke klantklare stem, onder leiding van de Head of Content & Creative.",
+      "Merk, boodschap, copy en een natuurlijke klantklare stem, onder leiding van de Head of Content & Creative.",
+    handsTo: ["quality", "client-growth"],
   },
   {
     id: "client-growth",
     order: 4,
+    kind: "client",
     title: "Klant & Groei",
     description:
-      "De klantrelatie, nieuwe opdrachten en marktinzicht, onder leiding van de Head of Client & Growth.",
+      "De klantrelatie, klantrapportage, nieuwe opdrachten en marktinzicht, onder leiding van de Head of Client & Growth.",
+    handsTo: ["paid-media", "seo-web", "content-creative"],
   },
   {
     id: "quality",
     order: 5,
+    kind: "quality",
     title: "Kwaliteit & Compliance",
     description:
-      "Overkoepelende kwaliteitspoort die elke head bedient en rechtstreeks aan de Orchestrator rapporteert.",
+      "Overkoepelende kwaliteitspoort die elke afdeling bedient en rechtstreeks aan de Orchestrator rapporteert.",
+    handsTo: ["direction"],
   },
 ];
 
-/** Catch-all head for slugs not assigned to any head in AGENTS.md. */
-const FALLBACK_HEAD: TeamLayer = {
-  id: "head-other",
-  order: 98,
-  title: "Nog geen rapportagelijn",
-  description: "Nog niet toegewezen aan een head in de rapportagelijn.",
+/** Catch-all department for slugs not placed under any department in AGENTS.md. */
+const FALLBACK_DEPARTMENT: TeamDepartment = {
+  id: "other",
+  order: 99,
+  kind: "delivery",
+  title: "Overig",
+  description: "Nog niet ingedeeld in een afdeling van de organisatie.",
+  ownerSlug: null,
+  handsTo: [],
+  receivesFrom: [],
 };
 
+const AGENCY_SECTION_RE = /Agency organisation/i;
+
 /**
- * Parse the "Agent Hierarchy" section of AGENTS.md into a map of hierarchy
- * order (the leading number of each list item) → the agent slugs listed under
- * it. Each numbered item runs until the next numbered item; every
- * `agents/<slug>.md` reference found within it is assigned to that order. This
- * makes AGENTS.md the single source of truth for layer membership.
+ * Parse the "Agency organisation" section of AGENTS.md into membership (which
+ * agent slugs are listed under each numbered department) and ownership (the
+ * slug named on each department's "Owner:" line). Each numbered item runs until
+ * the next numbered item; every `agents/<slug>.md` reference found within it is
+ * a member of that department. This makes AGENTS.md the single source of truth
+ * for both grouping and ownership.
  */
-function layerSlugsFromAgents(agentsContent: string): Map<number, Set<string>> {
-  const result = new Map<number, Set<string>>();
-  const section = extractSection(agentsContent, /Agent Hierarchy/i);
-  if (!section) return result;
+function parseAgencyOrg(agentsContent: string): {
+  membersByOrder: Map<number, Set<string>>;
+  ownerByOrder: Map<number, string>;
+} {
+  const membersByOrder = new Map<number, Set<string>>();
+  const ownerByOrder = new Map<number, string>();
+  const section = extractSection(agentsContent, AGENCY_SECTION_RE);
+  if (!section) return { membersByOrder, ownerByOrder };
 
   let currentOrder: number | null = null;
   for (const line of section.split(/\r?\n/)) {
     const itemMatch = line.match(/^\s*(\d+)\.\s/);
-    if (itemMatch) {
-      currentOrder = Number.parseInt(itemMatch[1], 10);
-    }
+    if (itemMatch) currentOrder = Number.parseInt(itemMatch[1], 10);
     if (currentOrder === null) continue;
-    for (const ref of line.matchAll(/agents\/([a-z0-9-]+)\.md/gi)) {
-      const slug = ref[1];
-      let set = result.get(currentOrder);
+
+    const refs = [...line.matchAll(/agents\/([a-z0-9-]+)\.md/gi)].map(
+      (m) => m[1],
+    );
+    if (refs.length === 0) continue;
+
+    // The "Owner:" bullet names the department's head (first ref wins).
+    if (/^\s*[-*]\s*owner\s*:/i.test(line) && !ownerByOrder.has(currentOrder)) {
+      ownerByOrder.set(currentOrder, refs[0]);
+    }
+
+    let set = membersByOrder.get(currentOrder);
+    if (!set) {
+      set = new Set<string>();
+      membersByOrder.set(currentOrder, set);
+    }
+    for (const slug of refs) set.add(slug);
+  }
+  return { membersByOrder, ownerByOrder };
+}
+
+/** id -> fixed order, for sorting derived department-id lists deterministically. */
+const ORDER_BY_ID = new Map(TEAM_DEPARTMENTS.map((d) => [d.id, d.order]));
+const orderOfId = (id: string) => ORDER_BY_ID.get(id) ?? 99;
+
+/**
+ * The full set of departments, joining the Dutch display + structural metadata
+ * in {@link TEAM_DEPARTMENTS} with the owner parsed from AGENTS.md, and with
+ * `receivesFrom` derived as the inverse of every department's `handsTo`.
+ */
+export function getDepartments(agentsContent: string): TeamDepartment[] {
+  const { ownerByOrder } = parseAgencyOrg(agentsContent);
+
+  const receives = new Map<string, Set<string>>();
+  for (const d of TEAM_DEPARTMENTS) {
+    for (const target of d.handsTo) {
+      let set = receives.get(target);
       if (!set) {
         set = new Set<string>();
-        result.set(currentOrder, set);
+        receives.set(target, set);
       }
-      set.add(slug);
+      set.add(d.id);
     }
   }
-  return result;
+
+  return TEAM_DEPARTMENTS.map((d) => ({
+    id: d.id,
+    order: d.order,
+    kind: d.kind,
+    title: d.title,
+    description: d.description,
+    ownerSlug: ownerByOrder.get(d.order) ?? null,
+    handsTo: d.handsTo,
+    receivesFrom: [...(receives.get(d.id) ?? [])].sort(
+      (a, b) => orderOfId(a) - orderOfId(b),
+    ),
+  }));
 }
 
 /**
- * Every agent slug explicitly placed under a numbered item in the AGENTS.md
- * "Agent Hierarchy" section, flattened across all layers. Doc validation uses
- * this to spot agents that were never assigned a layer (and would silently fall
- * into the "Overig" catch-all).
+ * Every agent slug placed under a numbered item in the "Agency organisation"
+ * section, flattened across all departments. Doc validation uses this to spot
+ * agents that were never assigned a department (and would silently fall into
+ * the "Overig" catch-all).
  */
-export function hierarchySlugs(agentsContent: string): Set<string> {
+export function departmentSlugs(agentsContent: string): Set<string> {
   const all = new Set<string>();
-  for (const set of layerSlugsFromAgents(agentsContent).values()) {
+  for (const set of parseAgencyOrg(agentsContent).membersByOrder.values()) {
     for (const slug of set) all.add(slug);
   }
   return all;
 }
 
-/**
- * Resolve every agent slug to its layer by joining the Dutch layer metadata in
- * {@link TEAM_LAYERS} (by `order`) with the membership parsed from AGENTS.md.
- * Slugs not listed under any hierarchy item fall back to the "Overig" layer so
- * the page never silently hides an agent.
- */
-function buildLayerBySlug(agentsContent: string): Map<string, TeamLayer> {
-  const slugsByOrder = layerSlugsFromAgents(agentsContent);
-  const bySlug = new Map<string, TeamLayer>();
-  for (const layer of TEAM_LAYERS) {
-    for (const slug of slugsByOrder.get(layer.order) ?? []) {
-      bySlug.set(slug, layer);
-    }
+/** Resolve every agent slug to its department by joining metadata with AGENTS.md. */
+function buildDepartmentBySlug(
+  agentsContent: string,
+  departments: TeamDepartment[],
+): Map<string, TeamDepartment> {
+  const { membersByOrder } = parseAgencyOrg(agentsContent);
+  const byOrder = new Map(departments.map((d) => [d.order, d]));
+  const bySlug = new Map<string, TeamDepartment>();
+  for (const [order, slugs] of membersByOrder) {
+    const dept = byOrder.get(order);
+    if (!dept) continue;
+    for (const slug of slugs) bySlug.set(slug, dept);
   }
   return bySlug;
-}
-
-function layerForSlug(
-  slug: string,
-  layerBySlug: Map<string, TeamLayer>,
-): TeamLayer {
-  return layerBySlug.get(slug) ?? FALLBACK_LAYER;
-}
-
-/**
- * Parse the "Leadership & reporting line" section of AGENTS.md the same way as
- * the hierarchy: each numbered item (its leading number = a head's `order`)
- * lists the `agents/<slug>.md` that report to that head. This makes AGENTS.md
- * the single source of truth for the reporting line too.
- */
-function headSlugsFromAgents(agentsContent: string): Map<number, Set<string>> {
-  const result = new Map<number, Set<string>>();
-  const section = extractSection(agentsContent, /Leadership & reporting line/i);
-  if (!section) return result;
-
-  let currentOrder: number | null = null;
-  for (const line of section.split(/\r?\n/)) {
-    const itemMatch = line.match(/^\s*(\d+)\.\s/);
-    if (itemMatch) {
-      currentOrder = Number.parseInt(itemMatch[1], 10);
-    }
-    if (currentOrder === null) continue;
-    for (const ref of line.matchAll(/agents\/([a-z0-9-]+)\.md/gi)) {
-      const slug = ref[1];
-      let set = result.get(currentOrder);
-      if (!set) {
-        set = new Set<string>();
-        result.set(currentOrder, set);
-      }
-      set.add(slug);
-    }
-  }
-  return result;
-}
-
-/**
- * Every agent slug placed under a numbered item in the AGENTS.md "Leadership &
- * reporting line" section, flattened across all heads. Doc validation uses this
- * to spot agents that were never given a head (and would silently fall into the
- * "Nog geen rapportagelijn" catch-all).
- */
-export function headSlugs(agentsContent: string): Set<string> {
-  const all = new Set<string>();
-  for (const set of headSlugsFromAgents(agentsContent).values()) {
-    for (const slug of set) all.add(slug);
-  }
-  return all;
-}
-
-/** Resolve every agent slug to the head it reports to (display + reporting line). */
-function buildHeadBySlug(agentsContent: string): Map<string, TeamLayer> {
-  const slugsByOrder = headSlugsFromAgents(agentsContent);
-  const bySlug = new Map<string, TeamLayer>();
-  for (const head of TEAM_HEADS) {
-    for (const slug of slugsByOrder.get(head.order) ?? []) {
-      bySlug.set(slug, head);
-    }
-  }
-  return bySlug;
-}
-
-function headForSlug(
-  slug: string,
-  headBySlug: Map<string, TeamLayer>,
-): TeamLayer {
-  return headBySlug.get(slug) ?? FALLBACK_HEAD;
 }
 
 /** The bullet labels used inside each agent's "Character & personality" list. */
@@ -364,6 +316,12 @@ function slugFromPath(path: string): string {
   return (path.split("/").pop() ?? path).replace(/\.md$/, "");
 }
 
+/** The agency departments, resolved from AGENTS.md (display + handoff topology). */
+export function getTeamDepartments(): TeamDepartment[] {
+  const agentsDoc = getDocFile("AGENTS.md");
+  return getDepartments(agentsDoc?.content ?? "");
+}
+
 /**
  * Build the full team roster from the agent docs, enriched with portrait URLs
  * and generated style examples from object storage.
@@ -373,8 +331,11 @@ export async function getTeamRoster(): Promise<TeamMember[]> {
     (doc) => doc.category === "agent",
   );
   const agentsDoc = getDocFile("AGENTS.md");
-  const layerBySlug = buildLayerBySlug(agentsDoc?.content ?? "");
-  const headBySlug = buildHeadBySlug(agentsDoc?.content ?? "");
+  const departments = getDepartments(agentsDoc?.content ?? "");
+  const departmentBySlug = buildDepartmentBySlug(
+    agentsDoc?.content ?? "",
+    departments,
+  );
   const index = await loadPortraitIndex();
 
   const members = agents.map((doc): TeamMember => {
@@ -382,6 +343,7 @@ export async function getTeamRoster(): Promise<TeamMember[]> {
     const persona = parsePersona(doc.content);
     const hasPortrait = index.portraits.has(slug);
     const version = index.portraits.get(slug) || undefined;
+    const department = departmentBySlug.get(slug) ?? FALLBACK_DEPARTMENT;
     return {
       slug,
       path: doc.path,
@@ -405,8 +367,8 @@ export async function getTeamRoster(): Promise<TeamMember[]> {
             version,
           })
         : null,
-      layer: layerForSlug(slug, layerBySlug),
-      head: headForSlug(slug, headBySlug),
+      department,
+      isOwner: department.ownerSlug === slug,
     };
   });
 

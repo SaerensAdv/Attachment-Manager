@@ -21,6 +21,7 @@ import {
 } from "@workspace/api-client-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import ApprovalPanel from "@/components/ApprovalPanel";
 import {
   Loader2,
   Trash2,
@@ -609,6 +610,26 @@ export default function History() {
                     </article>
                   )}
                 </div>
+
+                {/* Human approval checkpoint — held client-facing report */}
+                {detail.data && detail.data.approvalStatus && (
+                  <div
+                    className="border-t-2 border-foreground px-6 lg:px-10 py-8"
+                    data-testid="approval-panel"
+                  >
+                    <ApprovalPanel
+                      generationId={detail.data.id}
+                      status={detail.data.approvalStatus}
+                      approvalNote={detail.data.approvalNote}
+                      recipient={detail.data.clientName}
+                      onResolved={() => {
+                        queryClient.invalidateQueries({
+                          queryKey: getGetGenerationQueryKey(detail.data!.id),
+                        });
+                      }}
+                    />
+                  </div>
+                )}
 
                 {/* Quality control + learning loop */}
                 {detail.data && (

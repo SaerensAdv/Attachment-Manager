@@ -20,8 +20,7 @@ import {
   fetchGoogleAdsNegativesContext,
   type GoogleAdsMetrics,
 } from "./google-ads";
-import { renderReportPdf } from "./report-pdf";
-import { sendEmail } from "./email";
+import type { ReportDeliveryPayload } from "./monthly-report-email";
 
 /** Remove the internal "## <AgentTitle>" section headers from team output. */
 function stripAgentHeadings(text: string, titles: string[]): string {
@@ -203,126 +202,6 @@ function buildMonthlyPeriods(base: Date): {
   };
 }
 
-function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-}
-
-/** Build a Saerens-branded, email-client-safe HTML body (inline styles only). */
-function buildBrandedEmail(args: {
-  clientName: string;
-  periodLabel: string;
-  dateLabel: string;
-  bodyText: string;
-  metrics: GoogleAdsMetrics | null;
-}): string {
-  const { clientName, periodLabel, dateLabel, bodyText, metrics } = args;
-  const NEARBLACK = "#0A0A0B";
-  const INDIGO = "#29274E";
-  const PURPLE = "#716BEB";
-  const AMBER = "#F4A425";
-  const INK = "#1A1A22";
-  const MUTED = "#6B6B72";
-  const HAIR = "#E4E2EE";
-
-  const paragraphs = bodyText
-    .split(/\n{2,}/)
-    .map((p) => p.trim())
-    .filter(Boolean)
-    .map(
-      (p) =>
-        `<p style="margin:0 0 14px;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.6;color:${INK};">${escapeHtml(
-          p,
-        ).replace(/\n/g, "<br>")}</p>`,
-    )
-    .join("");
-
-  let kpiBlock = "";
-  if (metrics) {
-    const cur = metrics.currency || "EUR";
-    const eur = (n: number, d = 0): string => {
-      try {
-        return new Intl.NumberFormat("nl-BE", {
-          style: "currency",
-          currency: cur,
-          minimumFractionDigits: d,
-          maximumFractionDigits: d,
-        }).format(n);
-      } catch {
-        return `${n.toFixed(d)} ${cur}`;
-      }
-    };
-    const intf = (n: number): string =>
-      new Intl.NumberFormat("nl-BE").format(Math.round(n));
-    const kpis: { label: string; value: string }[] = [
-      { label: "Adspend", value: eur(metrics.totals.cost) },
-      { label: "Leads", value: intf(metrics.totals.conversions) },
-      {
-        label: "Cost / lead",
-        value: metrics.totals.cpa !== null ? eur(metrics.totals.cpa, 2) : "n.v.t.",
-      },
-      {
-        label: "ROAS",
-        value:
-          metrics.totals.roas !== null
-            ? `${new Intl.NumberFormat("nl-BE", {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              }).format(metrics.totals.roas)}×`
-            : "n.v.t.",
-      },
-    ];
-    const cells = kpis
-      .map(
-        (k) =>
-          `<td style="padding:12px 10px;text-align:center;border:1px solid ${HAIR};">` +
-          `<div style="font-family:Arial,Helvetica,sans-serif;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:${MUTED};">${escapeHtml(
-            k.label,
-          )}</div>` +
-          `<div style="font-family:Arial,Helvetica,sans-serif;font-size:18px;font-weight:bold;color:${INDIGO};margin-top:4px;">${escapeHtml(
-            k.value,
-          )}</div>` +
-          `</td>`,
-      )
-      .join("");
-    kpiBlock =
-      `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" ` +
-      `style="border-collapse:collapse;margin:4px 0 22px;"><tr>${cells}</tr></table>`;
-  }
-
-  return (
-    `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#F5F5F8;">` +
-    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F5F5F8;padding:24px 0;">` +
-    `<tr><td align="center">` +
-    `<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:600px;max-width:600px;background:#FFFFFF;border-radius:10px;overflow:hidden;border:1px solid ${HAIR};">` +
-    // header band
-    `<tr><td style="background:${NEARBLACK};padding:26px 32px;border-bottom:3px solid ${PURPLE};">` +
-    `<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:bold;letter-spacing:2px;color:#FFFFFF;">SAERENS ADVERTISING</div>` +
-    `<div style="font-family:Arial,Helvetica,sans-serif;font-size:10px;letter-spacing:2px;color:${AMBER};margin-top:3px;">VAN CLICKS NAAR KLANTEN</div>` +
-    `</td></tr>` +
-    // title
-    `<tr><td style="padding:28px 32px 6px;">` +
-    `<div style="font-family:Arial,Helvetica,sans-serif;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:${PURPLE};font-weight:bold;">Maandrapport Google Ads</div>` +
-    `<div style="font-family:Arial,Helvetica,sans-serif;font-size:24px;font-weight:bold;color:${INK};margin-top:6px;">${escapeHtml(
-      clientName,
-    )}</div>` +
-    `<div style="font-family:Arial,Helvetica,sans-serif;font-size:13px;color:${MUTED};margin-top:4px;">${escapeHtml(
-      periodLabel,
-    )} · ${escapeHtml(dateLabel)}</div>` +
-    `</td></tr>` +
-    // body
-    `<tr><td style="padding:18px 32px 4px;">${kpiBlock}${paragraphs}</td></tr>` +
-    // footer
-    `<tr><td style="padding:18px 32px 26px;border-top:1px solid ${HAIR};">` +
-    `<div style="font-family:Arial,Helvetica,sans-serif;font-size:11px;line-height:1.5;color:${MUTED};">` +
-    `Het volledige rapport vind je in de bijgevoegde PDF.<br>Saerens Advertising · Google Ads` +
-    `</div></td></tr>` +
-    `</table></td></tr></table></body></html>`
-  );
-}
-
 /**
  * The generation engine: the single source of truth for running a team of
  * agents over a client + workflow, producing the deliverable, and archiving the
@@ -399,6 +278,9 @@ export interface GenerationResult {
   generationId: number | null;
   finalMarkdown: string;
   aborted: boolean;
+  // Set to "pending" when a client-facing deliverable was drafted but is held
+  // for human approval before it reaches the client (otherwise null).
+  approvalStatus: string | null;
   error?: string;
 }
 
@@ -622,6 +504,11 @@ export async function runGeneration(
   let persisted = false;
   let savedId: number | null = null;
   let runStatus = "completed";
+  // Human approval checkpoint state for a client-facing outbound deliverable.
+  // When set to "pending", `pendingApproval` holds the JSON snapshot of the
+  // drafted-but-unsent delivery so it can be released after a human approves.
+  let approvalStatus: string | null = null;
+  let pendingApproval: string | null = null;
   const steps: StepRecord[] = [];
   // For the monthly-report-email deliverable: the client row (for reportEmail)
   // is loaded once at run start and reused by the post-loop email action.
@@ -660,6 +547,8 @@ export async function runGeneration(
         status: runStatus,
         durationMs: durationMs || null,
         totalTokens: totalTokens || null,
+        approvalStatus,
+        pendingDelivery: pendingApproval,
       });
       savedId = row.id;
       // Best-effort: a failure to write the step trail must never lose the run.
@@ -690,6 +579,7 @@ export async function runGeneration(
     generationId: savedId,
     finalMarkdown: priorWork.trim(),
     aborted: isGone(),
+    approvalStatus,
     ...extra,
   });
 
@@ -1447,7 +1337,7 @@ export async function runGeneration(
       const recipient = reportClient?.reportEmail?.trim() ?? null;
       const teamWork = deliverableSource.trim();
       try {
-        send({ type: "deliverable_start", deliverable: { title: "Maandrapport e-mailen" } });
+        send({ type: "deliverable_start", deliverable: { title: "Maandrapport opstellen" } });
         if (!recipient) {
           throw new Error(
             "Geen rapport-ontvanger ingesteld voor deze klant (veld 'Rapport-ontvanger').",
@@ -1520,39 +1410,36 @@ export async function runGeneration(
           month: "long",
           year: "numeric",
         });
-        const pdf = await renderReportPdf(clientReport, {
-          clientName,
-          subtitle: `Maandrapport — ${periodLabel}`,
-          dateLabel,
-          metrics: reportMetrics,
-        });
-
         const subject = `Maandrapport ${clientName} — ${periodLabel}`;
-        const html = buildBrandedEmail({
+
+        if (isGone()) throw new Error("Afgebroken voor opslag.");
+
+        // Human approval checkpoint: do NOT send. Snapshot everything needed to
+        // render + send later, and HOLD it. A human reviews the draft + the
+        // reviewer's verdict and approves (release) or requests changes. The PDF
+        // is rendered at approval time from this payload, so nothing reaches the
+        // client unattended.
+        const payload: ReportDeliveryPayload = {
+          recipient,
+          subject,
           clientName,
           periodLabel,
           dateLabel,
-          bodyText: emailBody,
+          emailBody,
+          clientReport,
           metrics: reportMetrics,
-        });
-
-        if (isGone()) throw new Error("Afgebroken voor verzending.");
-        await sendEmail({
-          to: recipient,
-          subject,
-          html,
-          attachments: [
-            {
-              filename: `maandrapport-${clientName
-                .toLowerCase()
-                .replace(/[^a-z0-9]+/g, "-")
-                .replace(/(^-|-$)/g, "")}.pdf`,
-              mimeType: "application/pdf",
-              content: pdf,
-            },
-          ],
-        });
+        };
+        pendingApproval = JSON.stringify(payload);
+        approvalStatus = "pending";
         send({ type: "deliverable_done", truncated: false });
+        // Surface the held draft + the internal reviewer verdict so a human can
+        // decide before it goes out. The reviewer text is the QC gate's output.
+        send({
+          type: "approval_required",
+          recipient,
+          clientReport,
+          reviewerVerdict: reviewerText.trim() || null,
+        });
       } catch (err) {
         if (isGone() || (err instanceof Error && err.name === "AbortError")) {
           actionStatus = "aborted";
@@ -1567,7 +1454,10 @@ export async function runGeneration(
       }
       steps.push({
         agentPath: workflowPath,
-        agentTitle: "Maandrapport e-mailen",
+        agentTitle:
+          actionStatus === "completed"
+            ? "Maandrapport opgesteld — wacht op goedkeuring"
+            : "Maandrapport opstellen",
         stepOrder: nextStepOrder++,
         role: "deliverable",
         status: actionStatus,
@@ -1577,6 +1467,9 @@ export async function runGeneration(
         charCount: null,
         errorMessage: actionError,
       });
+      // Drafting the report succeeded even though it is held for approval, so the
+      // run itself stays "completed"; only a real drafting failure marks it
+      // partial. The held send is tracked by approvalStatus, not run status.
       if (actionStatus !== "completed") runStatus = "partial";
     }
 
@@ -1588,7 +1481,12 @@ export async function runGeneration(
 
     if (!isGone()) {
       const archived = await persistRun();
-      send({ done: true, archived });
+      send({
+        done: true,
+        archived,
+        generationId: savedId,
+        approvalRequired: approvalStatus === "pending",
+      });
       return result({ archived });
     }
     // Aborted: still archive the partial trail so it's reviewable afterward.

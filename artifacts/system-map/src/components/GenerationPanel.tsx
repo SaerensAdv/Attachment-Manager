@@ -27,6 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { GenerationController } from "@/hooks/useGeneration";
+import ApprovalPanel from "@/components/ApprovalPanel";
 
 const selectTriggerClass =
   "h-10 rounded-none border-foreground bg-card font-['Inter'] text-sm focus:ring-0 focus:ring-offset-0 focus:border-accent shadow-none";
@@ -92,6 +93,9 @@ export default function GenerationPanel({
     deliverableCopied,
     handleDeliverableCopy,
     handleDeliverableDownload,
+    pendingGenerationId,
+    approvalDraft,
+    regenerateWithNotes,
     resetFlow,
   } = gen;
 
@@ -746,6 +750,19 @@ export default function GenerationPanel({
                   )}
                 </div>
               )}
+
+              {/* Human approval checkpoint — held client-facing report */}
+              {pendingGenerationId != null && approvalDraft && (
+                <div className="mt-8" data-testid="approval-panel">
+                  <ApprovalPanel
+                    generationId={pendingGenerationId}
+                    status="pending"
+                    recipient={approvalDraft.recipient}
+                    reviewerVerdict={approvalDraft.reviewerVerdict}
+                    onRequestedChanges={(note) => regenerateWithNotes(note)}
+                  />
+                </div>
+              )}
             </section>
           )}
         </div>
@@ -766,7 +783,7 @@ export default function GenerationPanel({
             ) : (
               <button
                 type="button"
-                onClick={handleGenerate}
+                onClick={() => handleGenerate()}
                 disabled={!canGenerate}
                 data-testid="button-generate"
                 className="flex w-full items-center justify-center gap-2.5 border-2 border-foreground bg-foreground py-3 font-['Space_Mono'] text-sm font-bold uppercase tracking-widest text-background shadow-[4px_4px_0px_hsl(var(--foreground))] transition-all hover:border-accent hover:bg-accent hover:text-accent-foreground active:translate-x-1 active:translate-y-1 active:shadow-none disabled:pointer-events-none disabled:opacity-40"

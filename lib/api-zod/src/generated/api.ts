@@ -1126,7 +1126,11 @@ export const GetGenerationResponse = zod.object({
   "totalTokens": zod.number().nullable(),
   "feedbackVerdict": zod.string().nullable(),
   "feedbackNote": zod.string().nullable(),
-  "feedbackAt": zod.coerce.date().nullable()
+  "feedbackAt": zod.coerce.date().nullable(),
+  "approvalStatus": zod.string().nullable(),
+  "approvalNote": zod.string().nullable(),
+  "approvalAt": zod.coerce.date().nullable(),
+  "hasPendingDelivery": zod.boolean()
 })
 
 
@@ -1169,7 +1173,83 @@ export const SetGenerationFeedbackResponse = zod.object({
   "totalTokens": zod.number().nullable(),
   "feedbackVerdict": zod.string().nullable(),
   "feedbackNote": zod.string().nullable(),
-  "feedbackAt": zod.coerce.date().nullable()
+  "feedbackAt": zod.coerce.date().nullable(),
+  "approvalStatus": zod.string().nullable(),
+  "approvalNote": zod.string().nullable(),
+  "approvalAt": zod.coerce.date().nullable(),
+  "hasPendingDelivery": zod.boolean()
+})
+
+
+/**
+ * @summary Approve a held client-facing report and send it to the client
+ */
+export const ApproveGenerationParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ApproveGenerationResponse = zod.object({
+  "id": zod.number(),
+  "clientName": zod.string(),
+  "workflowTitle": zod.string(),
+  "leadAgentTitle": zod.string(),
+  "teamTitles": zod.array(zod.string()),
+  "requestText": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "clientPath": zod.string(),
+  "workflowPath": zod.string(),
+  "leadAgentPath": zod.string(),
+  "teamPaths": zod.array(zod.string()),
+  "finalMarkdown": zod.string(),
+  "status": zod.string(),
+  "triggerSource": zod.string(),
+  "durationMs": zod.number().nullable(),
+  "totalTokens": zod.number().nullable(),
+  "feedbackVerdict": zod.string().nullable(),
+  "feedbackNote": zod.string().nullable(),
+  "feedbackAt": zod.coerce.date().nullable(),
+  "approvalStatus": zod.string().nullable(),
+  "approvalNote": zod.string().nullable(),
+  "approvalAt": zod.coerce.date().nullable(),
+  "hasPendingDelivery": zod.boolean()
+})
+
+
+/**
+ * @summary Hold a report back for rework with reviewer notes
+ */
+export const RequestGenerationChangesParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const RequestGenerationChangesBody = zod.object({
+  "note": zod.string().nullish()
+})
+
+export const RequestGenerationChangesResponse = zod.object({
+  "id": zod.number(),
+  "clientName": zod.string(),
+  "workflowTitle": zod.string(),
+  "leadAgentTitle": zod.string(),
+  "teamTitles": zod.array(zod.string()),
+  "requestText": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "clientPath": zod.string(),
+  "workflowPath": zod.string(),
+  "leadAgentPath": zod.string(),
+  "teamPaths": zod.array(zod.string()),
+  "finalMarkdown": zod.string(),
+  "status": zod.string(),
+  "triggerSource": zod.string(),
+  "durationMs": zod.number().nullable(),
+  "totalTokens": zod.number().nullable(),
+  "feedbackVerdict": zod.string().nullable(),
+  "feedbackNote": zod.string().nullable(),
+  "feedbackAt": zod.coerce.date().nullable(),
+  "approvalStatus": zod.string().nullable(),
+  "approvalNote": zod.string().nullable(),
+  "approvalAt": zod.coerce.date().nullable(),
+  "hasPendingDelivery": zod.boolean()
 })
 
 

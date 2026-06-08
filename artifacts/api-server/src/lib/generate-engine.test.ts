@@ -48,10 +48,14 @@ vi.mock("./generations-store", () => ({
 // The remaining collaborators are never exercised for a deliverable-less run,
 // but generate-engine imports them at module load — stub them so the import is
 // hermetic (no Gmail client, no pdfkit, no Google Ads).
+const clientStoreMocks = vi.hoisted(() => ({
+  getClientRow: vi.fn(async (): Promise<unknown> => null),
+  dbClientIdFromPath: vi.fn((): number | null => null),
+}));
 vi.mock("./clients-store", () => ({
   loadClientDocs: vi.fn(async () => []),
-  getClientRow: vi.fn(async () => null),
-  dbClientIdFromPath: vi.fn(() => null),
+  getClientRow: clientStoreMocks.getClientRow,
+  dbClientIdFromPath: clientStoreMocks.dbClientIdFromPath,
 }));
 vi.mock("./monitored-terms-store", () => ({
   listMonitoredTerms: vi.fn(async () => []),
@@ -65,7 +69,8 @@ vi.mock("./google-ads", () => ({
 vi.mock("./report-pdf", () => ({
   renderReportPdf: vi.fn(async () => Buffer.from("")),
 }));
-vi.mock("./email", () => ({ sendEmail: vi.fn(async () => {}) }));
+const sendEmailMock = vi.hoisted(() => vi.fn(async () => {}));
+vi.mock("./email", () => ({ sendEmail: sendEmailMock }));
 
 // The QC gate resolves its agents through getDocFile; in tests the real doc
 // graph isn't loaded, so stub the two QC paths (others resolve to null).
@@ -146,6 +151,11 @@ function run(ctx: GenerationContext, controller = new AbortController()) {
 beforeEach(() => {
   saveGenerationMock.mockClear();
   saveGenerationStepsMock.mockClear();
+  clientStoreMocks.getClientRow.mockReset();
+  clientStoreMocks.getClientRow.mockResolvedValue(null);
+  clientStoreMocks.dbClientIdFromPath.mockReset();
+  clientStoreMocks.dbClientIdFromPath.mockReturnValue(null);
+  sendEmailMock.mockClear();
 });
 
 describe("runGeneration — run archival", () => {
@@ -359,6 +369,79 @@ describe("runGeneration — final QC gate", () => {
 
     const markdown = String(saveGenerationMock.mock.calls[0][0].finalMarkdown);
     expect(markdown).toContain("Humanized client-ready version.");
+  });
+});
+
+describe("runGeneration — monthly-report-email approval hold", () => {
+  it("holds the send: marks pending, snapshots delivery, emits approval_required, never sends", async () => {
+    // The team produces a clean, client-facing report body (>200 chars so the
+    // section is taken as the report, not stripped).
+    const reportBody =
+      "Dit is het maandrapport voor de klant. " +
+      "De campagnes presteerden sterk met een stijgende CTR en dalende kost per conversie. " +
+      "We stellen voor om het budget op de best presterende advertentiegroepen te verhogen " +
+      "en enkele onderpresterende zoekwoorden uit te sluiten in de volgende periode.";
+    h.streamImpl = streamSequence([reportBody]);
+
+    // A client with a report recipient but no Google Ads customer id (so no live
+    // pull runs); the held draft is still produced and snapshotted.
+    clientStoreMocks.dbClientIdFromPath.mockReturnValue(7);
+    clientStoreMocks.getClientRow.mockResolvedValue({
+      id: 7,
+      reportEmail: "klant@example.com",
+      googleAdsCustomerId: null,
+    });
+
+    const { sink, promise } = run(
+      makeCtx({
+        deliverableKind: "monthly-report-email",
+        clientFacing: false,
+      }),
+    );
+    const result = await promise;
+
+    // The run itself completes — the report drafted fine; only the send is held.
+    expect(result.status).toBe("completed");
+
+    // The hold is persisted in the audit trail: status pending + a snapshot of
+    // everything needed to send later.
+    const saved = saveGenerationMock.mock.calls[0][0];
+    expect(saved.approvalStatus).toBe("pending");
+    expect(typeof saved.pendingDelivery).toBe("string");
+    const payload = JSON.parse(String(saved.pendingDelivery));
+    expect(payload.recipient).toBe("klant@example.com");
+    expect(String(payload.clientReport)).toContain("maandrapport voor de klant");
+
+    // A human-facing approval request is surfaced with the recipient + draft.
+    const approval = sink.mock.calls
+      .map((c) => c[0] as Record<string, unknown>)
+      .find((e) => e.type === "approval_required");
+    expect(approval).toBeTruthy();
+    expect(approval?.recipient).toBe("klant@example.com");
+
+    // The done event flags that approval is required.
+    expect(sink).toHaveBeenCalledWith(
+      expect.objectContaining({ done: true, approvalRequired: true }),
+    );
+
+    // Nothing was sent: the cover-email model call may run, but no e-mail goes out
+    // from the engine (delivery only happens on explicit approval).
+    expect(sendEmailMock).not.toHaveBeenCalled();
+
+    // The held step is recorded with its waiting-for-approval title.
+    const steps = saveGenerationStepsMock.mock.calls[0][0] as Array<{
+      role: string;
+      status: string;
+      agentTitle: string;
+    }>;
+    expect(
+      steps.some(
+        (s) =>
+          s.role === "deliverable" &&
+          s.status === "completed" &&
+          /wacht op goedkeuring/i.test(s.agentTitle),
+      ),
+    ).toBe(true);
   });
 });
 

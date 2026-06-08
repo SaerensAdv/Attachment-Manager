@@ -39,6 +39,7 @@ export * from './healthStatus';
 export * from './improvementProposal';
 export * from './leaderboardEntry';
 export * from './proposalList';
+export * from './requestChangesInput';
 export * from './schedule';
 export * from './scheduleInput';
 export * from './scheduleList';

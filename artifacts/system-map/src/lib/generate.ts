@@ -64,9 +64,28 @@ export interface TeamStreamHandlers {
   onDeliverableError?: (message: string) => void;
   /** Non-blocking notes (e.g. live data unavailable, so the file used fallbacks). */
   onDeliverableNote?: (message: string) => void;
-  onDone: (archived: boolean) => void;
+  /**
+   * A client-facing deliverable was drafted but is HELD for human approval
+   * before it reaches the client. Carries the held draft + the internal reviewer
+   * verdict so the UI can present an approve / request-changes decision.
+   */
+  onApprovalRequired?: (info: ApprovalRequiredInfo) => void;
+  onDone: (archived: boolean, info: DoneInfo) => void;
   onError: (message: string) => void;
   signal?: AbortSignal;
+}
+
+/** The held draft surfaced when a client-facing run needs human approval. */
+export interface ApprovalRequiredInfo {
+  recipient: string;
+  clientReport: string;
+  reviewerVerdict: string | null;
+}
+
+/** Extra context carried by the terminal `done` event. */
+export interface DoneInfo {
+  generationId: number | null;
+  approvalRequired: boolean;
 }
 
 interface StreamEvent {
@@ -78,7 +97,8 @@ interface StreamEvent {
     | "deliverable_delta"
     | "deliverable_done"
     | "deliverable_error"
-    | "deliverable_note";
+    | "deliverable_note"
+    | "approval_required";
   index?: number;
   total?: number;
   agent?: { path: string; title: string };
@@ -94,6 +114,11 @@ interface StreamEvent {
   touchesLiveAccount?: boolean;
   members?: PlanMember[];
   qc?: PlanQcStep[];
+  generationId?: number | null;
+  approvalRequired?: boolean;
+  recipient?: string;
+  clientReport?: string;
+  reviewerVerdict?: string | null;
 }
 
 /**
@@ -116,6 +141,7 @@ export async function streamGenerateTeam(
     onDeliverableDone,
     onDeliverableError,
     onDeliverableNote,
+    onApprovalRequired,
     onDone,
     onError,
     signal,
@@ -178,7 +204,13 @@ export async function streamGenerateTeam(
           }
           if (parsed.done) {
             seenDone = true;
-            onDone(parsed.archived === true);
+            onDone(parsed.archived === true, {
+              generationId:
+                typeof parsed.generationId === "number"
+                  ? parsed.generationId
+                  : null,
+              approvalRequired: parsed.approvalRequired === true,
+            });
             return;
           }
           if (parsed.type === "plan") {
@@ -229,6 +261,21 @@ export async function streamGenerateTeam(
             }
             continue;
           }
+          if (parsed.type === "approval_required") {
+            onApprovalRequired?.({
+              recipient:
+                typeof parsed.recipient === "string" ? parsed.recipient : "",
+              clientReport:
+                typeof parsed.clientReport === "string"
+                  ? parsed.clientReport
+                  : "",
+              reviewerVerdict:
+                typeof parsed.reviewerVerdict === "string"
+                  ? parsed.reviewerVerdict
+                  : null,
+            });
+            continue;
+          }
           if (typeof parsed.content === "string") {
             onDelta(parsed.index ?? currentIndex, parsed.content);
           }
@@ -238,7 +285,7 @@ export async function streamGenerateTeam(
       }
     }
     if (seenDone) {
-      onDone(false);
+      onDone(false, { generationId: null, approvalRequired: false });
     } else {
       onError("Stream onverwacht beëindigd");
     }

@@ -426,6 +426,13 @@ export interface Generation {
   feedbackNote: string | null;
   /** @nullable */
   feedbackAt: string | null;
+  /** @nullable */
+  approvalStatus: string | null;
+  /** @nullable */
+  approvalNote: string | null;
+  /** @nullable */
+  approvalAt: string | null;
+  hasPendingDelivery: boolean;
 }
 
 export interface GenerationList {
@@ -548,6 +555,11 @@ export const FeedbackInputVerdict = {
 
 export interface FeedbackInput {
   verdict: FeedbackInputVerdict;
+  /** @nullable */
+  note?: string | null;
+}
+
+export interface RequestChangesInput {
   /** @nullable */
   note?: string | null;
 }

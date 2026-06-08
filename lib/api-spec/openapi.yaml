@@ -857,6 +857,96 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /generations/{id}/approve:
+    post:
+      operationId: approveGeneration
+      tags: [generations]
+      summary: Approve a held client-facing report and send it to the client
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: The updated generation (report sent)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Generation"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Generation not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: No report is awaiting approval
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: The held report payload is unreadable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "502":
+          description: Sending the report failed (draft stays pending)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /generations/{id}/request-changes:
+    post:
+      operationId: requestGenerationChanges
+      tags: [generations]
+      summary: Hold a report back for rework with reviewer notes
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RequestChangesInput"
+      responses:
+        "200":
+          description: The updated generation (held back)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Generation"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Generation not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: No report is awaiting approval
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /generations/{id}/steps:
     get:
       operationId: getGenerationSteps
@@ -1688,6 +1778,10 @@ components:
         - feedbackVerdict
         - feedbackNote
         - feedbackAt
+        - approvalStatus
+        - approvalNote
+        - approvalAt
+        - hasPendingDelivery
       properties:
         id:
           type: integer
@@ -1733,6 +1827,15 @@ components:
         feedbackAt:
           type: ["string", "null"]
           format: date-time
+        approvalStatus:
+          type: ["string", "null"]
+        approvalNote:
+          type: ["string", "null"]
+        approvalAt:
+          type: ["string", "null"]
+          format: date-time
+        hasPendingDelivery:
+          type: boolean
     GenerationList:
       type: object
       required: [generations]
@@ -1985,6 +2088,11 @@ components:
         verdict:
           type: string
           enum: [approved, rejected]
+        note:
+          type: ["string", "null"]
+    RequestChangesInput:
+      type: object
+      properties:
         note:
           type: ["string", "null"]
     ImprovementProposal:

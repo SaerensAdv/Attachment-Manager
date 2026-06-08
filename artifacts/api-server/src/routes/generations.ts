@@ -10,7 +10,13 @@ import {
   deleteGeneration,
   updateGenerationFeedback,
   listGenerationSteps,
+  setGenerationApproval,
+  appendGenerationStep,
 } from "../lib/generations-store";
+import {
+  deliverMonthlyReport,
+  parseReportDeliveryPayload,
+} from "../lib/monthly-report-email";
 import {
   createProposals,
   listProposalsForGeneration,
@@ -81,6 +87,12 @@ function serializeDetail(g: Generation) {
     feedbackVerdict: g.feedbackVerdict ?? null,
     feedbackNote: g.feedbackNote ?? null,
     feedbackAt: g.feedbackAt ? g.feedbackAt.toISOString() : null,
+    approvalStatus: g.approvalStatus ?? null,
+    approvalNote: g.approvalNote ?? null,
+    approvalAt: g.approvalAt ? g.approvalAt.toISOString() : null,
+    // Whether a drafted-but-unsent delivery is held on this run. The raw JSON
+    // snapshot itself is never exposed — only that something is awaiting release.
+    hasPendingDelivery: Boolean(g.pendingDelivery),
   };
 }
 
@@ -153,6 +165,118 @@ router.put("/generations/:id/feedback", async (req, res) => {
     return;
   }
   res.json(serializeDetail(row));
+});
+
+/**
+ * Approve a held client-facing report: render the PDF + cover e-mail from the
+ * snapshot taken at run time and send it to the client. The send only happens
+ * here, after a human signs off — nothing reaches the client unattended. If the
+ * send fails the draft stays pending so it can be retried.
+ */
+router.post("/generations/:id/approve", async (req, res) => {
+  const id = parseId(req.params.id);
+  if (id === null) {
+    res.status(400).json({ error: "Ongeldige id." });
+    return;
+  }
+  const row = await getGeneration(id);
+  if (!row) {
+    res.status(404).json({ error: "Generatie niet gevonden." });
+    return;
+  }
+  if (row.approvalStatus !== "pending" || !row.pendingDelivery) {
+    res
+      .status(409)
+      .json({ error: "Er staat geen rapport klaar voor goedkeuring." });
+    return;
+  }
+  let payload;
+  try {
+    payload = parseReportDeliveryPayload(JSON.parse(row.pendingDelivery));
+  } catch {
+    payload = null;
+  }
+  if (!payload) {
+    res
+      .status(422)
+      .json({ error: "Het bewaarde rapport is onleesbaar; genereer opnieuw." });
+    return;
+  }
+
+  // Send first; only mark approved + clear the held snapshot once it is out, so
+  // a delivery failure leaves the draft pending for a retry rather than lost.
+  try {
+    await deliverMonthlyReport(payload);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    res
+      .status(502)
+      .json({ error: `Versturen mislukt: ${message}. Rapport blijft in afwachting.` });
+    return;
+  }
+
+  const updated = await setGenerationApproval(id, {
+    status: "approved",
+    clearPending: true,
+  });
+  await appendGenerationStep(id, {
+    agentPath: row.workflowPath,
+    agentTitle: "Maandrapport goedgekeurd & verzonden",
+    role: "deliverable",
+    status: "completed",
+    durationMs: null,
+    inputTokens: null,
+    outputTokens: null,
+    charCount: null,
+    errorMessage: null,
+  });
+  res.json(serializeDetail(updated ?? row));
+});
+
+/**
+ * Request changes on a held report: keep it back (never sent) and record the
+ * reviewer's note as rework context for a regeneration. The held snapshot is
+ * cleared so the stale draft can never be released afterward.
+ */
+router.post("/generations/:id/request-changes", async (req, res) => {
+  const id = parseId(req.params.id);
+  if (id === null) {
+    res.status(400).json({ error: "Ongeldige id." });
+    return;
+  }
+  const row = await getGeneration(id);
+  if (!row) {
+    res.status(404).json({ error: "Generatie niet gevonden." });
+    return;
+  }
+  if (row.approvalStatus !== "pending") {
+    res
+      .status(409)
+      .json({ error: "Er staat geen rapport klaar voor beoordeling." });
+    return;
+  }
+  const body = (req.body ?? {}) as { note?: unknown };
+  const note =
+    typeof body.note === "string" && body.note.trim().length > 0
+      ? body.note.trim()
+      : null;
+  const updated = await setGenerationApproval(id, {
+    status: "changes_requested",
+    note,
+    clearPending: true,
+  });
+  await appendGenerationStep(id, {
+    agentPath: row.workflowPath,
+    agentTitle: "Wijzigingen gevraagd — rapport niet verzonden",
+    role: "deliverable",
+    status: "completed",
+    durationMs: null,
+    inputTokens: null,
+    outputTokens: null,
+    charCount: null,
+    errorMessage: note,
+  });
+  res.json(serializeDetail(updated ?? row));
 });
 
 router.get("/generations/:id/proposals", async (req, res) => {

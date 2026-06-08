@@ -9,6 +9,7 @@ import {
   streamGenerateTeam,
   type DeliverableMeta,
   type PlanInfo,
+  type ApprovalRequiredInfo,
 } from "@/lib/generate";
 import { routeRequest, type RoutingResult } from "@/lib/route";
 import { fetchIntake, type IntakeField } from "@/lib/intake";
@@ -80,6 +81,15 @@ export function useGeneration(
   // True once a run has finished (done or stopped) so the map can settle back to
   // its normal state while the result panel stays on screen.
   const [runCompleted, setRunCompleted] = useState(false);
+
+  // Human approval checkpoint: when a client-facing run drafts an outbound report
+  // it is HELD, not sent. We keep the archived run's id (to call approve /
+  // request-changes) and the held draft + reviewer verdict to show the reviewer.
+  const [pendingGenerationId, setPendingGenerationId] = useState<number | null>(
+    null,
+  );
+  const [approvalDraft, setApprovalDraft] =
+    useState<ApprovalRequiredInfo | null>(null);
 
   // Deliverable layer — the concrete end product streamed in like an agent.
   const [deliverable, setDeliverable] = useState<DeliverableMeta | null>(null);
@@ -293,7 +303,7 @@ export function useGeneration(
     teamPaths.length > 0 &&
     request.trim().length > 0;
 
-  const composeRequest = () => {
+  const composeRequest = (extraContext?: string) => {
     const base = request.trim();
     const lines = intakeFields
       .map((f) => {
@@ -301,11 +311,17 @@ export function useGeneration(
         return v ? `- ${f.label}: ${v}` : "";
       })
       .filter(Boolean);
-    if (lines.length === 0) return base;
-    return `${base}\n\n## Aanvullende gegevens (door gebruiker aangeleverd)\n${lines.join("\n")}`;
+    let composed = base;
+    if (lines.length > 0) {
+      composed += `\n\n## Aanvullende gegevens (door gebruiker aangeleverd)\n${lines.join("\n")}`;
+    }
+    if (extraContext && extraContext.trim()) {
+      composed += `\n\n${extraContext.trim()}`;
+    }
+    return composed;
   };
 
-  const handleGenerate = async () => {
+  const handleGenerate = async (extraContext?: string) => {
     if (!canGenerate || isStreaming) return;
     setSegments(
       teamPaths.map((path, i) => ({
@@ -321,6 +337,8 @@ export function useGeneration(
     setStreamError(null);
     setJustSaved(false);
     setRunCompleted(false);
+    setPendingGenerationId(null);
+    setApprovalDraft(null);
     setDeliverable(null);
     setDeliverableContent("");
     setDeliverableStatus("idle");
@@ -345,7 +363,7 @@ export function useGeneration(
         additionalAgentPaths: memberPaths,
         clientPath,
         workflowPath,
-        request: composeRequest(),
+        request: composeRequest(extraContext),
         ...(planStages && planStages.length > 0
           ? { stages: planStages }
           : {}),
@@ -427,11 +445,18 @@ export function useGeneration(
           setDeliverableNotes((prev) =>
             prev.includes(message) ? prev : [...prev, message],
           ),
-        onDone: (archived) => {
+        onApprovalRequired: (info) => setApprovalDraft(info),
+        onDone: (archived, info) => {
           setIsStreaming(false);
           abortRef.current = null;
           setRunCompleted(true);
           setJustSaved(archived);
+          // Hold the archived run id so the approval panel can release or reject
+          // the drafted-but-unsent report. Only when the run actually asked for
+          // approval; otherwise leave it unset (no checkpoint to act on).
+          if (info.approvalRequired) {
+            setPendingGenerationId(info.generationId);
+          }
           if (archived) {
             queryClient.invalidateQueries({
               queryKey: getGetGenerationsQueryKey(),
@@ -478,6 +503,32 @@ export function useGeneration(
     abortRef.current = null;
     setIsStreaming(false);
     setRunCompleted(true);
+  };
+
+  /**
+   * Re-run the same team after a held report was rejected, feeding the reviewer's
+   * verdict + the human's change note back in as context so the new draft acts on
+   * them. The team selection + briefing are still in state, so this just re-runs
+   * handleGenerate with an appended "requested changes" block.
+   */
+  const regenerateWithNotes = async (note: string) => {
+    if (isStreaming) return;
+    const parts: string[] = [];
+    if (approvalDraft?.reviewerVerdict) {
+      parts.push(
+        `### Interne reviewer-bevindingen (vorige versie)\n${approvalDraft.reviewerVerdict}`,
+      );
+    }
+    if (note.trim()) {
+      parts.push(`### Gevraagde aanpassingen (mens)\n${note.trim()}`);
+    }
+    const extra =
+      parts.length > 0
+        ? `## Aanpassingen t.o.v. de vorige versie\nDe vorige versie werd afgekeurd. Verwerk onderstaande punten in deze nieuwe versie.\n\n${parts.join(
+            "\n\n",
+          )}`
+        : "";
+    await handleGenerate(extra);
   };
 
   // Abort any in-flight work when the consumer unmounts.
@@ -638,6 +689,10 @@ export function useGeneration(
     deliverableCopied,
     handleDeliverableCopy,
     handleDeliverableDownload,
+    // approval checkpoint
+    pendingGenerationId,
+    approvalDraft,
+    regenerateWithNotes,
     // lifecycle
     resetFlow,
     hasActiveFlow,

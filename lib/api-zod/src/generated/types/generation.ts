@@ -31,4 +31,11 @@ export interface Generation {
   feedbackNote: string | null;
   /** @nullable */
   feedbackAt: Date | null;
+  /** @nullable */
+  approvalStatus: string | null;
+  /** @nullable */
+  approvalNote: string | null;
+  /** @nullable */
+  approvalAt: Date | null;
+  hasPendingDelivery: boolean;
 }

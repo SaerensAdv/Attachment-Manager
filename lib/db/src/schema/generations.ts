@@ -43,6 +43,21 @@ export const generationsTable = pgTable("generations", {
   feedbackVerdict: text("feedback_verdict"),
   feedbackNote: text("feedback_note"),
   feedbackAt: timestamp("feedback_at"),
+  // Human approval checkpoint for client-facing outbound deliverables (the
+  // monthly report e-mail). The run drafts the report + cover mail but HOLDS the
+  // send until a human approves it here — nothing reaches the client unattended.
+  // "pending" = a draft is held awaiting review; "approved" = released/sent;
+  // "changes_requested" = held back for rework; null = no outbound step (the run
+  // produced nothing that goes to the client, so no approval applies).
+  approvalStatus: text("approval_status"),
+  // The reviewer's note when changes are requested — the context a regeneration
+  // uses to improve the next draft.
+  approvalNote: text("approval_note"),
+  approvalAt: timestamp("approval_at"),
+  // JSON snapshot of the held delivery (recipient, subject, cover e-mail, the
+  // client-facing report markdown + metrics) so the PDF can be re-rendered and
+  // sent at approval time without re-running the team. Cleared once resolved.
+  pendingDelivery: text("pending_delivery"),
 });
 
 export type Generation = typeof generationsTable.$inferSelect;

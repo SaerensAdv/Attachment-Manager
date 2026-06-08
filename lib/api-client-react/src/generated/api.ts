@@ -43,6 +43,7 @@ import type {
   HealthStatus,
   ImprovementProposal,
   ProposalList,
+  RequestChangesInput,
   Schedule,
   ScheduleInput,
   ScheduleList,
@@ -2372,6 +2373,148 @@ export const useSetGenerationFeedback = <TError = ErrorType<ErrorResponse>,
         TContext
       > => {
       return useMutation(getSetGenerationFeedbackMutationOptions(options));
+    }
+
+export const getApproveGenerationUrl = (id: number,) => {
+
+
+
+
+  return `/api/generations/${id}/approve`
+}
+
+/**
+ * @summary Approve a held client-facing report and send it to the client
+ */
+export const approveGeneration = async (id: number, options?: RequestInit): Promise<Generation> => {
+
+  return customFetch<Generation>(getApproveGenerationUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getApproveGenerationMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof approveGeneration>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof approveGeneration>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['approveGeneration'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof approveGeneration>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  approveGeneration(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ApproveGenerationMutationResult = NonNullable<Awaited<ReturnType<typeof approveGeneration>>>
+
+    export type ApproveGenerationMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Approve a held client-facing report and send it to the client
+ */
+export const useApproveGeneration = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof approveGeneration>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof approveGeneration>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getApproveGenerationMutationOptions(options));
+    }
+
+export const getRequestGenerationChangesUrl = (id: number,) => {
+
+
+
+
+  return `/api/generations/${id}/request-changes`
+}
+
+/**
+ * @summary Hold a report back for rework with reviewer notes
+ */
+export const requestGenerationChanges = async (id: number,
+    requestChangesInput?: RequestChangesInput, options?: RequestInit): Promise<Generation> => {
+
+  return customFetch<Generation>(getRequestGenerationChangesUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      requestChangesInput,)
+  }
+);}
+
+
+
+
+export const getRequestGenerationChangesMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestGenerationChanges>>, TError,{id: number;data?: BodyType<RequestChangesInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof requestGenerationChanges>>, TError,{id: number;data?: BodyType<RequestChangesInput>}, TContext> => {
+
+const mutationKey = ['requestGenerationChanges'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof requestGenerationChanges>>, {id: number;data?: BodyType<RequestChangesInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  requestGenerationChanges(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RequestGenerationChangesMutationResult = NonNullable<Awaited<ReturnType<typeof requestGenerationChanges>>>
+    export type RequestGenerationChangesMutationBody = BodyType<RequestChangesInput> | undefined
+    export type RequestGenerationChangesMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Hold a report back for rework with reviewer notes
+ */
+export const useRequestGenerationChanges = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestGenerationChanges>>, TError,{id: number;data?: BodyType<RequestChangesInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof requestGenerationChanges>>,
+        TError,
+        {id: number;data?: BodyType<RequestChangesInput>},
+        TContext
+      > => {
+      return useMutation(getRequestGenerationChangesMutationOptions(options));
     }
 
 export const getGetGenerationStepsUrl = (id: number,) => {

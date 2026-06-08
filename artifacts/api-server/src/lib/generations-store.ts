@@ -295,6 +295,46 @@ export async function updateGenerationFeedback(
   return row ?? null;
 }
 
+/**
+ * Resolve the human approval checkpoint on a held client-facing deliverable.
+ * "approved" releases it (the caller sends after this succeeds); the optional
+ * `clearPending` wipes the held snapshot so it can never be sent twice.
+ * "changes_requested" holds it back; `note` is the reviewer's rework context.
+ */
+export async function setGenerationApproval(
+  id: number,
+  fields: { status: string; note?: string | null; clearPending?: boolean },
+): Promise<Generation | null> {
+  const set: Partial<InsertGeneration> = {
+    approvalStatus: fields.status,
+    approvalAt: new Date(),
+  };
+  if (fields.note !== undefined) set.approvalNote = fields.note;
+  if (fields.clearPending) set.pendingDelivery = null;
+  const [row] = await db
+    .update(generationsTable)
+    .set(set)
+    .where(eq(generationsTable.id, id))
+    .returning();
+  return row ?? null;
+}
+
+/**
+ * Append a single step to a generation's audit trail at the next free order,
+ * used to record approval actions (sent / changes requested) after the run.
+ */
+export async function appendGenerationStep(
+  generationId: number,
+  step: Omit<InsertGenerationStep, "generationId" | "stepOrder">,
+): Promise<void> {
+  const existing = await listGenerationSteps(generationId);
+  const nextOrder =
+    existing.reduce((m, s) => Math.max(m, s.stepOrder), -1) + 1;
+  await db
+    .insert(generationStepsTable)
+    .values({ ...step, generationId, stepOrder: nextOrder });
+}
+
 /** Delete a generation. Returns true when a row was removed. */
 export async function deleteGeneration(id: number): Promise<boolean> {
   const [row] = await db

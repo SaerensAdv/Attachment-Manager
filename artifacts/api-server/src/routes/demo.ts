@@ -1,5 +1,6 @@
 import { Router, type IRouter } from "express";
 import { runDemo } from "../lib/demo-deliverables";
+import { runReplitPromptDemo } from "../lib/demo-replit-prompts";
 
 /**
  * TEMPORARY dev-only route to run the deliverables demonstration in-process.
@@ -14,6 +15,15 @@ router.post("/demo/run", (_req, res): void => {
     return;
   }
   void runDemo();
+  res.status(202).json({ started: true });
+});
+
+router.post("/demo/replit-prompts", (_req, res): void => {
+  if (process.env.NODE_ENV === "production") {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
+  void runReplitPromptDemo();
   res.status(202).json({ started: true });
 });
 

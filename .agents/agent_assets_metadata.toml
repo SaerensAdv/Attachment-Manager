@@ -233,3 +233,33 @@ id = "c-jy7EIUP4HnwKX0gTTW9"
 uri = "file://.local/exports/demo/3-monthly-report.reviewer.md"
 type = "text"
 title = "Interne QC-review van het rapport"
+
+[[outputs]]
+id = "xTH1Z5nFp8bRDkpUgN5q5"
+uri = "file://.local/exports/demo-prompts/1-website-scratch.replit-prompt.md"
+type = "text"
+title = "1. Nieuwe website van scratch (6 pagina's)"
+
+[[outputs]]
+id = "6DohO4bmfKMSqqSYV3L4P"
+uri = "file://.local/exports/demo-prompts/2-redesign.replit-prompt.md"
+type = "text"
+title = "2. Redesign bestaande landingspagina"
+
+[[outputs]]
+id = "F1JSh8PRNpeWq6VdS-slw"
+uri = "file://.local/exports/demo-prompts/3-animation.replit-prompt.md"
+type = "text"
+title = "3. Geanimeerde hero / explainer"
+
+[[outputs]]
+id = "CIsthoiCZB1rc0V0LMKoc"
+uri = "file://.local/exports/demo-prompts/4-slide-deck.replit-prompt.md"
+type = "text"
+title = "4. Verkoop-/pitch slide deck"
+
+[[outputs]]
+id = "fvwsvMosBe2sy6LiAp_Rx"
+uri = "file://.local/exports/demo-prompts/5-ad-creatives.replit-prompt.md"
+type = "text"
+title = "5. Visuele advertentiecreatives (preview-set)"

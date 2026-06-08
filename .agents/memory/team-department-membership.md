@@ -38,7 +38,12 @@ the page + map correct as the team grows.
   marker is gone.
 - Listing agents adds NO new doc-graph edges: AGENTS.md already references every
   agent in its inventory lists.
-- This whole layer is **structure/presentation only** — it shapes docs, the team
-  page, and the system-map department overlay (hulls + handoff arrows in
-  `GraphViewer`, gated off while a run is live). It does NOT change generation
-  runtime; the Orchestrator still routes Orchestrator→specialist directly.
+- This whole layer is **structure/presentation only** — it shapes docs and the
+  team page. It does NOT change generation runtime; the Orchestrator still routes
+  Orchestrator→specialist directly.
+- **Departments are no longer drawn on the Kaart** (user decision): the blob/hull
+  + handoff overlay, its legend "Afdelingen" toggle, and the dept geometry helpers
+  were removed because they washed colour over the dense map centre for no runtime
+  value. Departments now live ONLY on the Team page. The `--dept-*` CSS vars stay
+  (Team page uses them). If asked to re-add a map grouping, rebuild from team data,
+  don't expect the old GraphViewer overlay to still exist.

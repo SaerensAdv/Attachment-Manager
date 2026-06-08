@@ -28,27 +28,9 @@ export default function Home() {
     return map;
   }, [teamData]);
 
-  // Map every agent node to its department, so the Kaart can group plates into
-  // department blobs (the single agency org model).
-  const nodeDepartmentId = useMemo(() => {
-    const map: Record<string, string> = {};
-    for (const member of teamData?.employees ?? []) {
-      map[member.path] = member.department.id;
-    }
-    return map;
-  }, [teamData]);
-
-  const departments = useMemo(
-    () => teamData?.departments ?? [],
-    [teamData],
-  );
-
   const [selectedNodePath, setSelectedNodePath] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [hiddenCategories, setHiddenCategories] = useState<Set<string>>(new Set());
-  // Whether the department overlay is shown on the map. On by default so the
-  // Kaart reads as an agency out of the box; toggled from the legend.
-  const [showDepartments, setShowDepartments] = useState(true);
   // Bumped whenever a node should be (re)focused, so re-selecting the same node
   // still pans/zooms to it.
   const [focusNonce, setFocusNonce] = useState(0);
@@ -211,9 +193,6 @@ export default function Home() {
           spotlightNodeIds={spotlight.ids}
           spotlightNonce={spotlight.nonce}
           frameBottomInset={dockHeight}
-          departments={departments}
-          nodeDepartmentId={nodeDepartmentId}
-          showDepartments={showDepartments}
         />
       </div>
 
@@ -263,9 +242,6 @@ export default function Home() {
                 categories={graphData.categories} 
                 hiddenCategories={hiddenCategories}
                 onToggleCategory={toggleCategory}
-                departments={departments}
-                showDepartments={showDepartments}
-                onToggleDepartments={() => setShowDepartments((v) => !v)}
               />
             </div>
           </div>

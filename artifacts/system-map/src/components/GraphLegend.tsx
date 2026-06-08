@@ -1,25 +1,19 @@
 import { useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ChevronDown, ChevronUp } from "lucide-react";
-import type { DocCategory, TeamDepartment } from "@workspace/api-client-react";
+import type { DocCategory } from "@workspace/api-client-react";
 import { Checkbox } from "@/components/ui/checkbox";
 
 interface GraphLegendProps {
   categories: DocCategory[];
   hiddenCategories: Set<string>;
   onToggleCategory: (categoryId: string) => void;
-  departments?: TeamDepartment[];
-  showDepartments?: boolean;
-  onToggleDepartments?: () => void;
 }
 
 export default function GraphLegend({
   categories,
   hiddenCategories,
   onToggleCategory,
-  departments,
-  showDepartments,
-  onToggleDepartments,
 }: GraphLegendProps) {
   const reduce = useReducedMotion();
   const [collapsed, setCollapsed] = useState(false);
@@ -81,43 +75,6 @@ export default function GraphLegend({
                 );
               })}
             </div>
-
-            {departments && departments.length > 0 && onToggleDepartments && (
-              <div className="mt-4 pt-3 border-t border-foreground/20">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-['Space_Mono'] text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
-                    Afdelingen
-                  </span>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <span className="font-['Space_Mono'] text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-                      Toon
-                    </span>
-                    <Checkbox
-                      checked={!!showDepartments}
-                      onCheckedChange={() => onToggleDepartments()}
-                      className="w-4 h-4 rounded-none border-foreground/40 data-[state=checked]:bg-foreground data-[state=checked]:border-foreground"
-                      data-testid="checkbox-toggle-departments"
-                    />
-                  </label>
-                </div>
-                <div className={`space-y-1 transition-opacity ${showDepartments ? "opacity-100" : "opacity-40"}`}>
-                  {departments.map((dept) => (
-                    <div key={dept.id} className="flex items-center gap-3 py-1">
-                      <span
-                        className="w-4 h-4 rounded-none border"
-                        style={{
-                          backgroundColor: `hsl(var(--dept-${dept.id}) / 0.18)`,
-                          borderColor: `hsl(var(--dept-${dept.id}))`,
-                        }}
-                      />
-                      <span className="flex-1 font-['Inter'] text-sm font-medium">
-                        {dept.title}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </motion.div>
         )}
       </AnimatePresence>

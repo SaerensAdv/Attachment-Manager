@@ -14,7 +14,7 @@ After the Landing Page / Web Design Specialist has approved a page spec or struc
 
 1. Identify the client, business type, and the page's goal and traffic source (`clients/<client>.md`).
 2. Confirm the approved page spec / structure (from the Landing Page / Web Design Specialist) or a clear brief. If the direction still needs exploring or a redesign is requested, use the Replit Canvas to generate and compare options first (`knowledge/replit-canvas.md`).
-3. Gather brand assets (logo, colours, fonts) and final or draft copy (from the Copywriter).
+3. Gather brand assets (logo, colours, fonts) and final or draft copy (from the Copywriter) — page copy must be genuinely helpful and people-first per `knowledge/helpful-content-standards.md`, not thin or keyword-stuffed filler.
 4. Confirm platform / stack constraints and the tracking spec (from the Analytics & Tracking Specialist), if applicable.
 5. Build the page mobile-first: responsive, accessible, and fast.
 6. Implement the on-brand layout faithfully to the spec — no invented scope.

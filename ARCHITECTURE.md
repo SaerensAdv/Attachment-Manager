@@ -137,6 +137,7 @@ saerens-ai-team/
     ├── ad-creative-standards.md
     ├── seo-standards.md
     ├── landing-page-standards.md
+    ├── helpful-content-standards.md
     ├── analytics-standards.md
     ├── reporting-standards.md
     └── naming-conventions.md

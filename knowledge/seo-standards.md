@@ -21,7 +21,7 @@ Baseline standards for how Saerens approaches organic search. Agents apply these
 - One clear **primary intent and target topic per page**; don't dilute across unrelated queries.
 - Optimize **titles and meta descriptions** to be accurate, compelling, and within sensible length.
 - Use a logical **heading structure** (one H1, meaningful H2s) and strong **internal linking** between related pages.
-- Fill **content gaps** the client's audience is searching for; depth and clarity over keyword stuffing.
+- Fill **content gaps** the client's audience is searching for; depth and clarity over keyword stuffing. Content must be genuinely helpful and people-first (`knowledge/helpful-content-standards.md`).
 
 ### Off-page / authority
 - Build authority through **genuinely earned links and mentions**, not bought or spammy links.

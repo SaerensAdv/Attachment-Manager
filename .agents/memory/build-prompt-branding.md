@@ -37,9 +37,10 @@ Keep a placeholder ONLY for genuinely unknown task/client specifics (exact month
 phone number, the client's own logo file, final production URL). Never invent a missing
 fact. House-style fonts override any generic team font choice (e.g. team said "Inter").
 
-**How to apply:** real agency facts are baked in code (name, "Van clicks naar klanten",
-Official Google Partner, 100% remote BE+NL, no yearly contract, reply 24h, Axel Saerens /
-axel@saerensadvertising.com). The site phone number is a dummy — never bake it.
+**How to apply:** real agency facts are baked in code (agency name, "Van clicks naar klanten",
+Official Google Partner, 100% remote BE+NL, no yearly contract, reply 24h, plus the owner
+name/contact email — see the signature consts in the api-server code, not duplicated here).
+The site phone number is a dummy — never bake it.
 Verify renders cheaply by streaming the editor over saved `*.team.md` and writing each
 delta to disk synchronously (bg processes get torn down between tool calls; piped stdout
 is lost on timeout-kill, so incremental file writes are the only reliable capture).

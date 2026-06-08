@@ -7,6 +7,7 @@ Baseline standards for how Saerens reviews and recommends landing pages so paid 
 - **The page must match the traffic.** Message match between the ad/keyword/query and the page is the first thing to check — broken message match wastes spend.
 - **One page, one job.** Each landing page should have a single primary goal and a single primary call to action.
 - **Reduce friction, build trust.** Every unnecessary field, distraction, or unanswered objection costs conversions.
+- **Helpful, people-first content.** The page must genuinely answer the visitor's question, not just push a CTA — see `knowledge/helpful-content-standards.md`. Helpful content converts better and protects organic visibility.
 - **Recommend, don't deploy.** Agents produce specs, structure, and test hypotheses; a human/dev implements changes.
 
 ## Conversion essentials (review every page against these)

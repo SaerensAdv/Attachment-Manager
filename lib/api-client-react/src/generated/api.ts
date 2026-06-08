@@ -25,6 +25,7 @@ import type {
   AutonomousGenerateRequest,
   AutonomousGenerateResult,
   BacklinkList,
+  BriefingSuggestResult,
   Client,
   ClientCoverageList,
   ClientDiscovery,
@@ -2377,6 +2378,77 @@ export const useClientRefreshAll = <TError = ErrorType<ErrorResponse>,
         TContext
       > => {
       return useMutation(getClientRefreshAllMutationOptions(options));
+    }
+
+export const getClientBriefingSuggestUrl = (id: number,) => {
+
+
+
+
+  return `/api/clients/${id}/briefing-suggest`
+}
+
+/**
+ * Reads the client's own website (caching the intake if not read yet) and any already-pulled live data, then asks the model to PROPOSE values for the briefing fields. This never writes the briefing — the response is a proposal for a human to review, edit and save.
+ * @summary Propose briefing-field values from the client's website (+ live data)
+ */
+export const clientBriefingSuggest = async (id: number, options?: RequestInit): Promise<BriefingSuggestResult> => {
+
+  return customFetch<BriefingSuggestResult>(getClientBriefingSuggestUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getClientBriefingSuggestMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof clientBriefingSuggest>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof clientBriefingSuggest>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['clientBriefingSuggest'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof clientBriefingSuggest>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  clientBriefingSuggest(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ClientBriefingSuggestMutationResult = NonNullable<Awaited<ReturnType<typeof clientBriefingSuggest>>>
+
+    export type ClientBriefingSuggestMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Propose briefing-field values from the client's website (+ live data)
+ */
+export const useClientBriefingSuggest = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof clientBriefingSuggest>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof clientBriefingSuggest>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getClientBriefingSuggestMutationOptions(options));
     }
 
 export const getGetGenerationsUrl = () => {

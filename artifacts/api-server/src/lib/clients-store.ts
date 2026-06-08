@@ -80,7 +80,6 @@ export function clientToMarkdown(client: Client): string {
     paragraph("Brand restrictions & important notes", client.restrictions),
     links.length > 0 ? `## Links\n\n${links.join("\n")}` : null,
     paragraph("Current state", client.currentState),
-    codeBlock("Google Ads data (current)", client.googleAdsData),
     client.googleAdsLive?.trim()
       ? paragraph(
           "Google Ads data (live)",
@@ -103,7 +102,6 @@ export function clientToMarkdown(client: Client): string {
         )
       : null,
     codeBlock("Competitor advertising (live)", client.competitorAdsLive),
-    codeBlock("Search Console / SEO data (current)", client.searchConsoleData),
     client.searchConsoleLive?.trim()
       ? paragraph(
           "Search Console (live)",

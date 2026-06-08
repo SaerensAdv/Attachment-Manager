@@ -522,6 +522,31 @@ export interface ClientRefreshAllResult {
   outcomes: RefreshOutcome[];
 }
 
+/**
+ * Proposed briefing-field values. Every field is optional and only present when the model could infer something. List fields (services, audience, locations, channels) are newline-joined strings, matching the textareas.
+ */
+export interface BriefingSuggestions {
+  business?: string;
+  world?: string;
+  services?: string;
+  audience?: string;
+  locations?: string;
+  languages?: string;
+  mainGoal?: string;
+  conversionAction?: string;
+  kpis?: string;
+  budget?: string;
+  toneOfVoice?: string;
+  channels?: string;
+  restrictions?: string;
+}
+
+export interface BriefingSuggestResult {
+  client: Client;
+  suggestions: BriefingSuggestions;
+  notes: string;
+}
+
 export interface GenerationSummary {
   id: number;
   clientName: string;

@@ -13,6 +13,8 @@ export * from './autonomousGenerateRequest';
 export * from './autonomousGenerateResult';
 export * from './backlink';
 export * from './backlinkList';
+export * from './briefingSuggestions';
+export * from './briefingSuggestResult';
 export * from './client';
 export * from './clientCoverage';
 export * from './clientCoverageIntegrations';

@@ -119,9 +119,10 @@ export const FIELDS: FieldDef[] = [
   },
 ];
 
-// "Huidige stand" — de echte stand van zaken per klant. Vrije notities + geplakte
-// exports/cijfers uit Google Ads en Search Console. Deze velden voeden de agents
-// zodat audits met echte data werken in plaats van "missing data" te rapporteren.
+// "Huidige stand" — vrije notities over de echte stand van zaken per klant.
+// De vroegere plak-velden voor Google Ads- en Search Console-data zijn verwijderd:
+// die data wordt nu live opgehaald (zie de live-integraties) en hoeft niet meer
+// manueel geplakt te worden.
 export const STATE_FIELDS: FieldDef[] = [
   {
     key: "currentState",
@@ -130,22 +131,6 @@ export const STATE_FIELDS: FieldDef[] = [
     placeholder:
       "Korte stand van zaken: wat loopt er nu, wat is recent gewijzigd, aandachtspunten...",
     help: "Vrije notities",
-  },
-  {
-    key: "googleAdsData",
-    label: "Google Ads-data",
-    kind: "textarea",
-    placeholder:
-      "Plak hier een export of de kerncijfers: campagnes, spend, conversies, CPA/ROAS, zoektermen...",
-    help: "Plak export of cijfers",
-  },
-  {
-    key: "searchConsoleData",
-    label: "Search Console / SEO-data",
-    kind: "textarea",
-    placeholder:
-      "Plak hier een Search Console-export of kerncijfers: queries, posities, klikken, impressies...",
-    help: "Plak export of cijfers",
   },
 ];
 

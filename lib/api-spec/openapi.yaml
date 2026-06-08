@@ -844,6 +844,47 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /clients/{id}/briefing-suggest:
+    post:
+      operationId: clientBriefingSuggest
+      tags: [clients]
+      summary: Propose briefing-field values from the client's website (+ live data)
+      description: >-
+        Reads the client's own website (caching the intake if not read yet) and
+        any already-pulled live data, then asks the model to PROPOSE values for
+        the briefing fields. This never writes the briefing — the response is a
+        proposal for a human to review, edit and save.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Proposed briefing-field values plus a short note
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BriefingSuggestResult"
+        "400":
+          description: Invalid id or insufficient source material
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Client not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "502":
+          description: The briefing analysis failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /generations:
     get:
       operationId: getGenerations
@@ -2004,6 +2045,49 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/RefreshOutcome"
+    BriefingSuggestions:
+      type: object
+      description: >-
+        Proposed briefing-field values. Every field is optional and only present
+        when the model could infer something. List fields (services, audience,
+        locations, channels) are newline-joined strings, matching the textareas.
+      properties:
+        business:
+          type: string
+        world:
+          type: string
+        services:
+          type: string
+        audience:
+          type: string
+        locations:
+          type: string
+        languages:
+          type: string
+        mainGoal:
+          type: string
+        conversionAction:
+          type: string
+        kpis:
+          type: string
+        budget:
+          type: string
+        toneOfVoice:
+          type: string
+        channels:
+          type: string
+        restrictions:
+          type: string
+    BriefingSuggestResult:
+      type: object
+      required: [client, suggestions, notes]
+      properties:
+        client:
+          $ref: "#/components/schemas/Client"
+        suggestions:
+          $ref: "#/components/schemas/BriefingSuggestions"
+        notes:
+          type: string
     GenerationSummary:
       type: object
       required:

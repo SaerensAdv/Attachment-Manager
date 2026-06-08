@@ -1251,6 +1251,83 @@ export const ClientRefreshAllResponse = zod.object({
 
 
 /**
+ * Reads the client's own website (caching the intake if not read yet) and any already-pulled live data, then asks the model to PROPOSE values for the briefing fields. This never writes the briefing — the response is a proposal for a human to review, edit and save.
+ * @summary Propose briefing-field values from the client's website (+ live data)
+ */
+export const ClientBriefingSuggestParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ClientBriefingSuggestResponse = zod.object({
+  "client": zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "business": zod.string().nullish(),
+  "world": zod.string().nullish(),
+  "services": zod.string().nullish(),
+  "audience": zod.string().nullish(),
+  "locations": zod.string().nullish(),
+  "languages": zod.string().nullish(),
+  "mainGoal": zod.string().nullish(),
+  "conversionAction": zod.string().nullish(),
+  "kpis": zod.string().nullish(),
+  "budget": zod.string().nullish(),
+  "toneOfVoice": zod.string().nullish(),
+  "channels": zod.string().nullish(),
+  "restrictions": zod.string().nullish(),
+  "website": zod.string().nullish(),
+  "landingPages": zod.string().nullish(),
+  "currentState": zod.string().nullish(),
+  "googleAdsData": zod.string().nullish(),
+  "searchConsoleData": zod.string().nullish(),
+  "reportEmail": zod.string().nullish(),
+  "websiteIntake": zod.string().nullish(),
+  "websiteIntakeAt": zod.coerce.date().nullish(),
+  "googleAdsCustomerId": zod.string().nullish(),
+  "googleAdsLive": zod.string().nullish(),
+  "googleAdsLiveAt": zod.coerce.date().nullish(),
+  "competitorAdvertisers": zod.string().nullish(),
+  "competitorAdsLive": zod.string().nullish(),
+  "competitorAdsLiveAt": zod.coerce.date().nullish(),
+  "searchConsoleSiteUrl": zod.string().nullish(),
+  "searchConsoleLive": zod.string().nullish(),
+  "searchConsoleLiveAt": zod.coerce.date().nullish(),
+  "ga4PropertyId": zod.string().nullish(),
+  "ga4Live": zod.string().nullish(),
+  "ga4LiveAt": zod.coerce.date().nullish(),
+  "placesQuery": zod.string().nullish(),
+  "placesCompetitors": zod.string().nullish(),
+  "placesLive": zod.string().nullish(),
+  "placesLiveAt": zod.coerce.date().nullish(),
+  "pagespeedUrls": zod.string().nullish(),
+  "pagespeedLive": zod.string().nullish(),
+  "pagespeedLiveAt": zod.coerce.date().nullish(),
+  "businessProfileLocationId": zod.string().nullish(),
+  "businessProfileLive": zod.string().nullish(),
+  "businessProfileLiveAt": zod.coerce.date().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+}),
+  "suggestions": zod.object({
+  "business": zod.string().optional(),
+  "world": zod.string().optional(),
+  "services": zod.string().optional(),
+  "audience": zod.string().optional(),
+  "locations": zod.string().optional(),
+  "languages": zod.string().optional(),
+  "mainGoal": zod.string().optional(),
+  "conversionAction": zod.string().optional(),
+  "kpis": zod.string().optional(),
+  "budget": zod.string().optional(),
+  "toneOfVoice": zod.string().optional(),
+  "channels": zod.string().optional(),
+  "restrictions": zod.string().optional()
+}).describe('Proposed briefing-field values. Every field is optional and only present when the model could infer something. List fields (services, audience, locations, channels) are newline-joined strings, matching the textareas.'),
+  "notes": zod.string()
+})
+
+
+/**
  * @summary List all saved generations (newest first)
  */
 export const GetGenerationsResponse = zod.object({

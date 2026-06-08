@@ -13,10 +13,12 @@ import {
   useClientPlacesRefresh,
   useClientPagespeedRefresh,
   useClientBusinessProfileRefresh,
+  useClientBriefingSuggest,
   getGetClientsQueryKey,
   getGetDocGraphQueryKey,
   type Client,
   type ClientInput,
+  type BriefingSuggestions,
 } from "@workspace/api-client-react";
 import {
   Activity,
@@ -29,6 +31,7 @@ import {
   Plus,
   Save,
   Search,
+  Sparkles,
   Trash2,
   Users,
   X,
@@ -119,6 +122,11 @@ export default function Clients() {
   // editor. We echo it back on save so the server can reject (409) if someone
   // else changed the fiche in the meantime, instead of silently overwriting.
   const [editingUpdatedAt, setEditingUpdatedAt] = useState<string | null>(null);
+  // AI briefing suggestions (proposal only — never auto-saved). The user reviews
+  // each value and applies it into the form before saving.
+  const [briefingSuggestions, setBriefingSuggestions] =
+    useState<BriefingSuggestions | null>(null);
+  const [briefingNotes, setBriefingNotes] = useState<string>("");
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: getGetClientsQueryKey() });
@@ -138,6 +146,7 @@ export default function Clients() {
   const placesMut = useClientPlacesRefresh();
   const pagespeedMut = useClientPagespeedRefresh();
   const businessProfileMut = useClientBusinessProfileRefresh();
+  const briefingMut = useClientBriefingSuggest();
 
   const saving = createMut.isPending || updateMut.isPending;
   const deleting = deleteMut.isPending;
@@ -149,12 +158,19 @@ export default function Clients() {
   const refreshingPlaces = placesMut.isPending;
   const refreshingPagespeed = pagespeedMut.isPending;
   const refreshingBusinessProfile = businessProfileMut.isPending;
+  const suggestingBriefing = briefingMut.isPending;
+
+  const clearBriefingSuggestions = () => {
+    setBriefingSuggestions(null);
+    setBriefingNotes("");
+  };
 
   const startCreate = () => {
     setEditing("new");
     setForm(EMPTY_FORM);
     setFormError(null);
     setConfirmDelete(false);
+    clearBriefingSuggestions();
     setIntake({ text: null, at: null });
     setLiveAds({ text: null, at: null });
     setLiveCompetitors({ text: null, at: null });
@@ -201,6 +217,7 @@ export default function Clients() {
       at: c.businessProfileLiveAt ?? null,
     });
     setEditingUpdatedAt(c.updatedAt);
+    clearBriefingSuggestions();
   };
 
   const closeEditor = () => {
@@ -208,6 +225,7 @@ export default function Clients() {
     setForm(EMPTY_FORM);
     setFormError(null);
     setConfirmDelete(false);
+    clearBriefingSuggestions();
     setIntake({ text: null, at: null });
     setLiveAds({ text: null, at: null });
     setLiveCompetitors({ text: null, at: null });
@@ -440,6 +458,54 @@ export default function Clients() {
           ),
       },
     );
+  };
+
+  const handleBriefingSuggest = () => {
+    if (typeof editing !== "number") return;
+    setFormError(null);
+    clearBriefingSuggestions();
+    briefingMut.mutate(
+      { id: editing },
+      {
+        onSuccess: (result) => {
+          invalidate();
+          // The endpoint may have cached the website-intake; reflect it.
+          setIntake({
+            text: result.client.websiteIntake ?? null,
+            at: result.client.websiteIntakeAt ?? null,
+          });
+          setBriefingSuggestions(result.suggestions);
+          setBriefingNotes(result.notes ?? "");
+        },
+        onError: (err) =>
+          setFormError(
+            err instanceof Error
+              ? err.message
+              : "Briefing voorstellen mislukt",
+          ),
+      },
+    );
+  };
+
+  // Apply a single proposed value into the form (user still saves manually).
+  const applySuggestion = (key: keyof BriefingSuggestions) => {
+    const value = briefingSuggestions?.[key];
+    if (typeof value !== "string") return;
+    setField(key as keyof ClientInput, value);
+  };
+
+  // Apply every proposed value into the form at once.
+  const applyAllSuggestions = () => {
+    if (!briefingSuggestions) return;
+    setForm((prev) => {
+      const next = { ...prev };
+      for (const [key, value] of Object.entries(briefingSuggestions)) {
+        if (typeof value === "string" && value.trim()) {
+          next[key as keyof ClientInput] = value;
+        }
+      }
+      return next;
+    });
   };
 
   const handleBusinessProfile = () => {
@@ -682,6 +748,112 @@ export default function Clients() {
                     </span>
                   </div>
 
+                  {/* AI briefing-suggest — proposal only, existing clients */}
+                  {typeof editing === "number" && (
+                    <div className="-mt-4 flex flex-col gap-3">
+                      <div className="flex flex-wrap items-center gap-3">
+                        <button
+                          onClick={handleBriefingSuggest}
+                          disabled={suggestingBriefing || !form.website.trim()}
+                          data-testid="button-briefing-suggest"
+                          className="py-2.5 px-4 border-2 border-accent text-accent font-['Space_Mono'] text-[11px] uppercase tracking-widest flex items-center gap-2 hover:bg-accent hover:text-background transition-colors disabled:opacity-50 disabled:pointer-events-none"
+                        >
+                          {suggestingBriefing ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Sparkles className="w-4 h-4" />
+                          )}
+                          {suggestingBriefing
+                            ? "AI leest de website..."
+                            : "Briefing automatisch voorstellen"}
+                        </button>
+                        {!form.website.trim() && (
+                          <span className="font-['Space_Mono'] text-[10px] uppercase tracking-wider text-muted-foreground/70">
+                            Vul eerst het veld Website in (en bewaar)
+                          </span>
+                        )}
+                      </div>
+
+                      {briefingSuggestions &&
+                        (() => {
+                          const entries = (
+                            Object.entries(briefingSuggestions) as [
+                              keyof BriefingSuggestions,
+                              string,
+                            ][]
+                          ).filter(([, v]) => typeof v === "string" && v.trim());
+                          const labelOf = (k: string) =>
+                            FIELDS.find((f) => f.key === k)?.label ?? k;
+                          return (
+                            <div className="border-2 border-accent bg-accent/5 p-4 flex flex-col gap-3">
+                              <div className="flex items-baseline justify-between gap-3">
+                                <span className="font-['Space_Mono'] text-[10px] uppercase tracking-widest text-accent">
+                                  AI-voorstel · controleer & bevestig
+                                </span>
+                                <div className="flex items-center gap-2">
+                                  {entries.length > 0 && (
+                                    <button
+                                      onClick={applyAllSuggestions}
+                                      data-testid="button-apply-all-suggestions"
+                                      className="py-1 px-2 border border-accent text-accent font-['Space_Mono'] text-[9px] uppercase tracking-widest hover:bg-accent hover:text-background transition-colors"
+                                    >
+                                      Alles overnemen
+                                    </button>
+                                  )}
+                                  <button
+                                    onClick={clearBriefingSuggestions}
+                                    data-testid="button-dismiss-suggestions"
+                                    className="p-1 border border-foreground/30 text-muted-foreground hover:bg-foreground hover:text-background transition-colors"
+                                    aria-label="Voorstel sluiten"
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              </div>
+
+                              {briefingNotes.trim() && (
+                                <p className="font-['Inter'] text-xs text-muted-foreground italic">
+                                  {briefingNotes.trim()}
+                                </p>
+                              )}
+
+                              {entries.length === 0 ? (
+                                <p className="font-['Inter'] text-sm text-muted-foreground">
+                                  Geen voorstellen — er was te weinig bruikbare
+                                  info op de website.
+                                </p>
+                              ) : (
+                                <div className="flex flex-col gap-2">
+                                  {entries.map(([key, value]) => (
+                                    <div
+                                      key={key}
+                                      className="flex flex-col gap-1 border-b border-foreground/15 pb-2 last:border-b-0"
+                                    >
+                                      <div className="flex items-center justify-between gap-3">
+                                        <span className="font-['Space_Mono'] text-[10px] uppercase tracking-widest text-foreground">
+                                          {labelOf(key)}
+                                        </span>
+                                        <button
+                                          onClick={() => applySuggestion(key)}
+                                          data-testid={`button-apply-suggestion-${key}`}
+                                          className="shrink-0 py-1 px-2 border border-foreground/40 text-foreground font-['Space_Mono'] text-[9px] uppercase tracking-widest hover:bg-foreground hover:text-background transition-colors"
+                                        >
+                                          Overnemen
+                                        </button>
+                                      </div>
+                                      <p className="font-['Inter'] text-sm text-muted-foreground whitespace-pre-wrap">
+                                        {value}
+                                      </p>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
+                    </div>
+                  )}
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Name — 01 */}
                     <div className="md:col-span-2 flex flex-col gap-2">
@@ -757,9 +929,10 @@ export default function Clients() {
                   </div>
 
                   <p className="font-['Inter'] text-sm text-muted-foreground -mt-4">
-                    De echte stand van zaken voor deze cliënt. Plak hier exports of
-                    kerncijfers — de agents gebruiken dit als bron in plaats van
-                    "ontbrekende data" te rapporteren.
+                    Korte vrije notities over de echte stand van zaken voor deze
+                    cliënt. Google Ads- en Search Console-cijfers hoef je hier niet
+                    meer te plakken — die worden nu live opgehaald (zie de
+                    live-integraties hieronder).
                   </p>
 
                   <div className="grid grid-cols-1 gap-6">
@@ -1409,7 +1582,9 @@ export default function Clients() {
                           className={INPUT_CLASS}
                         />
                         <span className="font-['Space_Mono'] text-[9px] tracking-wider text-muted-foreground/60">
-                          Bewaar eerst met "Wijzigingen opslaan" voor je ophaalt.
+                          {form.pagespeedUrls.trim()
+                            ? 'Bewaar eerst met "Wijzigingen opslaan" voor je ophaalt.'
+                            : "Leeg = automatisch het Website-veld gebruiken. Bewaar eerst."}
                         </span>
                       </div>
 
@@ -1417,7 +1592,8 @@ export default function Clients() {
                         <button
                           onClick={handlePagespeed}
                           disabled={
-                            refreshingPagespeed || !form.pagespeedUrls.trim()
+                            refreshingPagespeed ||
+                            (!form.pagespeedUrls.trim() && !form.website.trim())
                           }
                           data-testid="button-pagespeed-refresh"
                           className="py-2.5 px-4 border-2 border-foreground text-foreground font-['Space_Mono'] text-[11px] uppercase tracking-widest flex items-center gap-2 hover:bg-foreground hover:text-background transition-colors disabled:opacity-50 disabled:pointer-events-none"
@@ -1431,9 +1607,9 @@ export default function Clients() {
                             ? "Opnieuw meten"
                             : "PageSpeed meten"}
                         </button>
-                        {!form.pagespeedUrls.trim() ? (
+                        {!form.pagespeedUrls.trim() && !form.website.trim() ? (
                           <span className="font-['Space_Mono'] text-[10px] uppercase tracking-wider text-muted-foreground/70">
-                            Vul eerst een landingspagina in
+                            Vul eerst een landingspagina of het Website-veld in
                           </span>
                         ) : livePagespeed.at ? (
                           <span className="font-['Space_Mono'] text-[10px] uppercase tracking-wider text-muted-foreground">

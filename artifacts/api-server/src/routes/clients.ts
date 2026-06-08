@@ -20,6 +20,12 @@ import {
 } from "../lib/business-profile";
 import { GoogleOAuthConfigError } from "../lib/google-oauth";
 import { discoverClients } from "../lib/client-discovery";
+import { anthropic } from "@workspace/integrations-anthropic-ai";
+import {
+  buildBriefingContext,
+  buildBriefingPrompt,
+  parseBriefingJson,
+} from "../lib/briefing-suggest";
 
 const router: IRouter = Router();
 
@@ -231,7 +237,10 @@ router.get("/clients/coverage", async (_req, res) => {
       },
       ga4: { configured: has(c.ga4PropertyId), liveAt: iso(c.ga4LiveAt) },
       places: { configured: has(c.placesQuery), liveAt: iso(c.placesLiveAt) },
-      pagespeed: { configured: has(c.pagespeedUrls), liveAt: iso(c.pagespeedLiveAt) },
+      pagespeed: {
+        configured: resolvePagespeedUrls(c).length > 0,
+        liveAt: iso(c.pagespeedLiveAt),
+      },
       businessProfile: {
         configured: has(c.businessProfileLocationId),
         liveAt: iso(c.businessProfileLiveAt),
@@ -642,6 +651,21 @@ router.post("/clients/:id/places-refresh", async (req, res) => {
   }
 });
 
+/**
+ * Resolve which URLs PageSpeed should measure. Explicit `pagespeedUrls` win; if
+ * none are set we fall back to the client's own Website (+ landing pages) so a
+ * client never has to type the URL twice and PageSpeed runs automatically in the
+ * bulk "Alles verversen" loop.
+ */
+function resolvePagespeedUrls(row: Client): string[] {
+  const explicit = (row.pagespeedUrls ?? "")
+    .split(/\r?\n/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (explicit.length > 0) return explicit;
+  return collectClientUrls(row.website, row.landingPages);
+}
+
 router.post("/clients/:id/pagespeed-refresh", async (req, res) => {
   const id = parseId(req.params.id);
   if (id === null) {
@@ -657,14 +681,11 @@ router.post("/clients/:id/pagespeed-refresh", async (req, res) => {
     return;
   }
 
-  const urls = (row.pagespeedUrls ?? "")
-    .split(/\r?\n/)
-    .map((s) => s.trim())
-    .filter(Boolean);
+  const urls = resolvePagespeedUrls(row);
   if (urls.length === 0) {
     res.status(400).json({
       error:
-        "Deze klant heeft nog geen landingspagina's. Vul één of meer URL's in (één per regel) en bewaar eerst.",
+        "Deze klant heeft nog geen landingspagina's of website. Vul het veld Website in (of één of meer URL's, één per regel) en bewaar eerst.",
     });
     return;
   }
@@ -849,13 +870,9 @@ async function refreshConfiguredIntegrations(
 
   await run(
     "pagespeed",
-    (row.pagespeedUrls ?? "").trim().length > 0,
+    resolvePagespeedUrls(row).length > 0,
     async () => {
-      const urls = (row.pagespeedUrls ?? "")
-        .split(/\r?\n/)
-        .map((s) => s.trim())
-        .filter(Boolean);
-      const report = await fetchPageSpeedReport(urls);
+      const report = await fetchPageSpeedReport(resolvePagespeedUrls(row));
       updates.pagespeedLive = report.text;
       updates.pagespeedLiveAt = report.fetchedAt;
     },
@@ -924,6 +941,97 @@ router.post("/clients/:id/refresh-all", async (req, res) => {
   }
 
   res.json({ client: serialize(updated), outcomes });
+});
+
+/**
+ * Propose briefing-field values for a client by reading its own website (+ any
+ * already-pulled live data) and asking the model to fill the fiche. This is a
+ * PROPOSAL only: it never writes the briefing fields — the UI shows the
+ * suggestions so a human reviews, edits and saves them. The only write side
+ * effect is best-effort caching of the website-intake if it wasn't read yet.
+ */
+router.post("/clients/:id/briefing-suggest", async (req, res) => {
+  const id = parseId(req.params.id);
+  if (id === null) {
+    res.status(400).json({ error: "Ongeldige id." });
+    return;
+  }
+  let [row] = await db
+    .select()
+    .from(clientsTable)
+    .where(eq(clientsTable.id, id));
+  if (!row) {
+    res.status(404).json({ error: "Klant niet gevonden." });
+    return;
+  }
+
+  // Make sure there is website material to reason over. If the intake hasn't
+  // been read yet but a website is configured, read it now and persist it.
+  if (!(row.websiteIntake ?? "").trim()) {
+    const urls = collectClientUrls(row.website, row.landingPages);
+    if (urls.length > 0) {
+      try {
+        const result = await fetchWebsiteIntake(urls);
+        if (result.text) {
+          const [u] = await db
+            .update(clientsTable)
+            .set({
+              websiteIntake: result.text,
+              websiteIntakeAt: new Date(),
+              updatedAt: new Date(),
+            })
+            .where(eq(clientsTable.id, id))
+            .returning();
+          if (u) row = u;
+        }
+      } catch {
+        // Fall through and suggest with whatever material we already have.
+      }
+    }
+  }
+
+  if (!(row.websiteIntake ?? "").trim()) {
+    res.status(400).json({
+      error:
+        "Onvoldoende bronmateriaal. Vul eerst het veld Website in (en bewaar) zodat ik de website kan inlezen en de briefing kan voorstellen.",
+    });
+    return;
+  }
+
+  let raw: string;
+  try {
+    const message = await anthropic.messages.create({
+      model: "claude-sonnet-4-6",
+      max_tokens: 2048,
+      system: buildBriefingPrompt(),
+      messages: [{ role: "user", content: buildBriefingContext(row) }],
+    });
+    raw = message.content
+      .map((blk) => (blk.type === "text" ? blk.text : ""))
+      .join("");
+  } catch (err) {
+    res.status(502).json({
+      error: "De briefing-analyse is mislukt. Probeer het opnieuw.",
+      detail: err instanceof Error ? err.message : String(err),
+    });
+    return;
+  }
+
+  let parsed;
+  try {
+    parsed = parseBriefingJson(raw);
+  } catch {
+    res
+      .status(502)
+      .json({ error: "Kon het briefing-antwoord niet interpreteren." });
+    return;
+  }
+
+  res.json({
+    client: serialize(row),
+    suggestions: parsed.suggestions,
+    notes: parsed.notes,
+  });
 });
 
 /** Validate a Google Ads customer id value (digits, optionally dash-grouped). */

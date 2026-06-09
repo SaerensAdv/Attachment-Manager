@@ -10,4 +10,10 @@ export interface ClientGroupInput {
   name: string;
   /** @nullable */
   notes?: string | null;
+  /**
+     * Optional monthly fee (whole euros) billed at group level. Blank or null = "nog niet ingevuld".
+
+     * @nullable
+     */
+  monthlyFee?: number | null;
 }

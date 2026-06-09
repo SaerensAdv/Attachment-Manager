@@ -6,6 +6,7 @@ import {
   clientsTable,
   type ClientGroup,
 } from "@workspace/db";
+import { parseMonthlyFee } from "../lib/money";
 
 const router: IRouter = Router();
 
@@ -24,7 +25,11 @@ function parseId(raw: string): number | null {
 }
 
 /** Validate + normalize a group request body, or return an error. */
-function parseBody(body: unknown): { name: string; notes: string | null } | { error: string } {
+function parseBody(
+  body: unknown,
+):
+  | { name: string; notes: string | null; monthlyFee: number | null }
+  | { error: string } {
   const obj = (body ?? {}) as Record<string, unknown>;
   const name = asTrimmed(obj.name);
   if (!name) return { error: "Naam is verplicht." };
@@ -35,7 +40,11 @@ function parseBody(body: unknown): { name: string; notes: string | null } | { er
   if (notes && notes.length > MAX_NOTES_LEN) {
     return { error: `Notities zijn te lang (max ${MAX_NOTES_LEN} tekens).` };
   }
-  return { name, notes };
+  const monthlyFee = parseMonthlyFee(obj.monthlyFee);
+  if (monthlyFee && typeof monthlyFee === "object") {
+    return { error: monthlyFee.error };
+  }
+  return { name, notes, monthlyFee };
 }
 
 function serialize(group: ClientGroup) {
@@ -109,7 +118,11 @@ router.post("/client-groups", async (req, res) => {
   }
   const [row] = await db
     .insert(clientGroupsTable)
-    .values({ name: parsed.name, notes: parsed.notes })
+    .values({
+      name: parsed.name,
+      notes: parsed.notes,
+      monthlyFee: parsed.monthlyFee,
+    })
     .returning();
   res.status(201).json(serialize(row));
 });
@@ -127,7 +140,12 @@ router.put("/client-groups/:id", async (req, res) => {
   }
   const [row] = await db
     .update(clientGroupsTable)
-    .set({ name: parsed.name, notes: parsed.notes, updatedAt: new Date() })
+    .set({
+      name: parsed.name,
+      notes: parsed.notes,
+      monthlyFee: parsed.monthlyFee,
+      updatedAt: new Date(),
+    })
     .where(eq(clientGroupsTable.id, id))
     .returning();
   if (!row) {

@@ -1868,6 +1868,17 @@ components:
           type: string
         monthlyFeeEur:
           type: ["integer", "null"]
+    RevenueGroup:
+      type: object
+      description: A klantgroep (kapstok) that carries its own monthly fee.
+      required: [id, name, monthlyFeeEur]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        monthlyFeeEur:
+          type: integer
     RevenueSummary:
       type: object
       required:
@@ -1876,11 +1887,13 @@ components:
         - clientCount
         - withFeeCount
         - clients
+        - groups
       properties:
         goalEur:
           type: number
         totalMonthlyFeeEur:
           type: number
+          description: Combined client fees + group fees (whole euros).
         clientCount:
           type: integer
         withFeeCount:
@@ -1889,6 +1902,11 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/RevenueClient"
+        groups:
+          type: array
+          description: Fee-bearing klantgroepen only.
+          items:
+            $ref: "#/components/schemas/RevenueGroup"
     Client:
       type: object
       required: [id, name, createdAt, updatedAt]
@@ -2088,6 +2106,12 @@ components:
           type: string
         notes:
           type: ["string", "null"]
+        monthlyFee:
+          type: ["integer", "null"]
+          description: >
+            Optional monthly fee (whole euros) when the relationship is billed at
+            group level instead of per fiche (e.g. LCS). Null = "nog niet
+            ingevuld".
         createdAt:
           type: string
           format: date-time
@@ -2181,6 +2205,11 @@ components:
           type: string
         notes:
           type: ["string", "null"]
+        monthlyFee:
+          type: ["integer", "null"]
+          description: >
+            Optional monthly fee (whole euros) billed at group level. Blank or
+            null = "nog niet ingevuld".
     ClientGroupSummary:
       description: A group plus the number of client fiches that belong to it.
       allOf:

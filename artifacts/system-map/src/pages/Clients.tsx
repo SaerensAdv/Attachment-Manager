@@ -45,6 +45,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import Reveal from "@/components/Reveal";
 import ClientToolbox from "@/components/ClientToolbox";
+import GroupFeeEditor from "@/components/GroupFeeEditor";
 import {
   FIELDS,
   STATE_FIELDS,
@@ -798,6 +799,14 @@ export default function Clients() {
                           Kapstok-overzicht · {section.members.length}{" "}
                           {section.members.length === 1 ? "fiche" : "fiches"}
                         </p>
+                        {(() => {
+                          const group = groups.find(
+                            (g) => g.id === section.id,
+                          );
+                          return group ? (
+                            <GroupFeeEditor key={group.id} group={group} />
+                          ) : null;
+                        })()}
                         <ul className="flex flex-col gap-1">
                           {section.members.map((m) => (
                             <li key={m.id}>

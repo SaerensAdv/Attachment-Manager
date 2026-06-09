@@ -11,6 +11,12 @@ export interface ClientGroup {
   name: string;
   /** @nullable */
   notes?: string | null;
+  /**
+     * Optional monthly fee (whole euros) when the relationship is billed at group level instead of per fiche (e.g. LCS). Null = "nog niet ingevuld".
+
+     * @nullable
+     */
+  monthlyFee?: number | null;
   createdAt: Date;
   updatedAt: Date;
 }

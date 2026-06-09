@@ -380,6 +380,7 @@ export const GetClientGroupsResponse = zod.object({
   "id": zod.number(),
   "name": zod.string(),
   "notes": zod.string().nullish(),
+  "monthlyFee": zod.number().nullish().describe('Optional monthly fee (whole euros) when the relationship is billed at group level instead of per fiche (e.g. LCS). Null = \"nog niet ingevuld\".\n'),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 }).and(zod.object({
@@ -393,7 +394,8 @@ export const GetClientGroupsResponse = zod.object({
  */
 export const CreateClientGroupBody = zod.object({
   "name": zod.string(),
-  "notes": zod.string().nullish()
+  "notes": zod.string().nullish(),
+  "monthlyFee": zod.number().nullish().describe('Optional monthly fee (whole euros) billed at group level. Blank or null = \"nog niet ingevuld\".\n')
 })
 
 
@@ -409,6 +411,7 @@ export const GetClientGroupResponse = zod.object({
   "id": zod.number(),
   "name": zod.string(),
   "notes": zod.string().nullish(),
+  "monthlyFee": zod.number().nullish().describe('Optional monthly fee (whole euros) when the relationship is billed at group level instead of per fiche (e.g. LCS). Null = \"nog niet ingevuld\".\n'),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 }),
@@ -430,13 +433,15 @@ export const UpdateClientGroupParams = zod.object({
 
 export const UpdateClientGroupBody = zod.object({
   "name": zod.string(),
-  "notes": zod.string().nullish()
+  "notes": zod.string().nullish(),
+  "monthlyFee": zod.number().nullish().describe('Optional monthly fee (whole euros) billed at group level. Blank or null = \"nog niet ingevuld\".\n')
 })
 
 export const UpdateClientGroupResponse = zod.object({
   "id": zod.number(),
   "name": zod.string(),
   "notes": zod.string().nullish(),
+  "monthlyFee": zod.number().nullish().describe('Optional monthly fee (whole euros) when the relationship is billed at group level instead of per fiche (e.g. LCS). Null = \"nog niet ingevuld\".\n'),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -1365,14 +1370,19 @@ export const GetClientsCoverageResponse = zod.object({
  */
 export const GetClientsRevenueResponse = zod.object({
   "goalEur": zod.number(),
-  "totalMonthlyFeeEur": zod.number(),
+  "totalMonthlyFeeEur": zod.number().describe('Combined client fees + group fees (whole euros).'),
   "clientCount": zod.number(),
   "withFeeCount": zod.number(),
   "clients": zod.array(zod.object({
   "id": zod.number(),
   "name": zod.string(),
   "monthlyFeeEur": zod.number().nullable()
-}))
+})),
+  "groups": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "monthlyFeeEur": zod.number()
+}).describe('A klantgroep (kapstok) that carries its own monthly fee.')).describe('Fee-bearing klantgroepen only.')
 })
 
 

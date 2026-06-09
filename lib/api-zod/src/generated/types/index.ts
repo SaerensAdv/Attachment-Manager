@@ -73,6 +73,7 @@ export * from './refreshOutcome';
 export * from './refreshOutcomeStatus';
 export * from './requestChangesInput';
 export * from './revenueClient';
+export * from './revenueGroup';
 export * from './revenueSummary';
 export * from './schedule';
 export * from './scheduleInput';

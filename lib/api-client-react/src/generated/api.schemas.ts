@@ -241,12 +241,24 @@ export interface RevenueClient {
   monthlyFeeEur: number | null;
 }
 
+/**
+ * A klantgroep (kapstok) that carries its own monthly fee.
+ */
+export interface RevenueGroup {
+  id: number;
+  name: string;
+  monthlyFeeEur: number;
+}
+
 export interface RevenueSummary {
   goalEur: number;
+  /** Combined client fees + group fees (whole euros). */
   totalMonthlyFeeEur: number;
   clientCount: number;
   withFeeCount: number;
   clients: RevenueClient[];
+  /** Fee-bearing klantgroepen only. */
+  groups: RevenueGroup[];
 }
 
 export interface Client {
@@ -421,6 +433,12 @@ export interface ClientGroup {
   name: string;
   /** @nullable */
   notes?: string | null;
+  /**
+     * Optional monthly fee (whole euros) when the relationship is billed at group level instead of per fiche (e.g. LCS). Null = "nog niet ingevuld".
+
+     * @nullable
+     */
+  monthlyFee?: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -467,6 +485,12 @@ export interface ClientGroupInput {
   name: string;
   /** @nullable */
   notes?: string | null;
+  /**
+     * Optional monthly fee (whole euros) billed at group level. Blank or null = "nog niet ingevuld".
+
+     * @nullable
+     */
+  monthlyFee?: number | null;
 }
 
 /**

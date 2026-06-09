@@ -6,11 +6,15 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { RevenueClient } from './revenueClient';
+import type { RevenueGroup } from './revenueGroup';
 
 export interface RevenueSummary {
   goalEur: number;
+  /** Combined client fees + group fees (whole euros). */
   totalMonthlyFeeEur: number;
   clientCount: number;
   withFeeCount: number;
   clients: RevenueClient[];
+  /** Fee-bearing klantgroepen only. */
+  groups: RevenueGroup[];
 }

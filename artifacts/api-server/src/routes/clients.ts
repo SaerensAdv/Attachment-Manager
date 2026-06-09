@@ -1,6 +1,15 @@
 import { Router, type IRouter } from "express";
 import { and, eq, isNull, or } from "drizzle-orm";
-import { db, clientsTable, type Client } from "@workspace/db";
+import {
+  db,
+  clientsTable,
+  clientGroupsTable,
+  type Client,
+} from "@workspace/db";
+import {
+  MONTHLY_REVENUE_GOAL_EUR,
+  parseMonthlyFee,
+} from "../lib/money";
 import {
   collectClientUrls,
   fetchWebsiteIntake,
@@ -84,12 +93,6 @@ interface ClientInput {
   values: Partial<Record<FieldKey, string | null>>;
 }
 
-/** The agency's monthly gross-revenue target (whole euros) the dashboard tracks
- * progress towards. Single source of truth — change here to move the goal. */
-const MONTHLY_REVENUE_GOAL_EUR = 10_000;
-/** Upper sanity bound for a single client's monthly fee (whole euros). */
-const MAX_MONTHLY_FEE_EUR = 1_000_000;
-
 /**
  * Parse the optional `groupId` from a request body. Returns the numeric id, or
  * `null` when absent / explicitly cleared, or an error string when malformed.
@@ -103,26 +106,6 @@ function parseGroupId(raw: unknown): number | null | { error: string } {
     return { error: "Ongeldige klantgroep." };
   }
   return id;
-}
-
-/**
- * Parse the optional monthly fee (whole euros) from a request body. Returns the
- * amount, `null` when absent / cleared, or an error string when malformed.
- */
-function parseMonthlyFee(raw: unknown): number | null | { error: string } {
-  if (raw === undefined || raw === null) return null;
-  // A blank (or whitespace-only) string means "nog niet ingevuld" → null, not 0.
-  if (typeof raw === "string" && raw.trim() === "") return null;
-  const n = typeof raw === "string" ? Number(raw.trim()) : Number(raw);
-  if (!Number.isFinite(n) || !Number.isInteger(n) || n < 0) {
-    return {
-      error: "Maandelijkse fee moet een geheel bedrag in euro zijn (0 of meer).",
-    };
-  }
-  if (n > MAX_MONTHLY_FEE_EUR) {
-    return { error: "Maandelijkse fee is onrealistisch hoog." };
-  }
-  return n;
 }
 
 /**
@@ -351,7 +334,7 @@ router.get("/clients/revenue", async (_req, res) => {
     name: c.name,
     monthlyFeeEur: c.monthlyFee ?? null,
   }));
-  const totalMonthlyFeeEur = clients.reduce(
+  const clientFeeEur = clients.reduce(
     (sum, c) => sum + (c.monthlyFeeEur ?? 0),
     0,
   );
@@ -359,12 +342,35 @@ router.get("/clients/revenue", async (_req, res) => {
     (c) => (c.monthlyFeeEur ?? 0) > 0,
   ).length;
 
+  // Klantgroepen (kapstok) can carry their own fee — e.g. LCS, billed at group
+  // level instead of per fiche. Only fee-bearing groups are surfaced; the total
+  // is client fees + group fees. (Don't set both a group fee and member-fiche
+  // fees for the same relationship, or it double-counts.)
+  const groupRows = await db
+    .select({
+      id: clientGroupsTable.id,
+      name: clientGroupsTable.name,
+      monthlyFee: clientGroupsTable.monthlyFee,
+    })
+    .from(clientGroupsTable)
+    .orderBy(clientGroupsTable.name);
+
+  const groups = groupRows
+    .filter((g) => (g.monthlyFee ?? 0) > 0)
+    .map((g) => ({
+      id: g.id,
+      name: g.name,
+      monthlyFeeEur: g.monthlyFee as number,
+    }));
+  const groupFeeEur = groups.reduce((sum, g) => sum + g.monthlyFeeEur, 0);
+
   res.json({
     goalEur: MONTHLY_REVENUE_GOAL_EUR,
-    totalMonthlyFeeEur,
+    totalMonthlyFeeEur: clientFeeEur + groupFeeEur,
     clientCount: clients.length,
     withFeeCount,
     clients,
+    groups,
   });
 });
 

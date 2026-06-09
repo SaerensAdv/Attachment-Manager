@@ -48,6 +48,10 @@ A documentation foundation that defines specialized AI agents for Saerens Advert
 - Communicate in Dutch (Vlaams).
 - No emojis anywhere — not in generated output (reports, copy), not in the app UI, not in any deliverable (e.g. website builds). Keep the tone professional and businesslike.
 - North star: "AI medewerkers" that handle nearly all agency work end-to-end, with the user as the single human quality-control gate. Output quality is a top priority — prefer higher-quality results over more features.
+- Ideaal dagritme (doel: minder mentale last, consistenter werken):
+  - Voormiddag 09:00–13:00 = deep work — geplande taken uitvoeren.
+  - Namiddag 13:00–17:00 = meetings; geen meetings → vrije tijd. Mails/berichten die 's namiddags binnenkomen worden door AI behandeld (bv. antwoord-draft opstellen) zodat de user ze de volgende ochtend reviewt en doorstuurt.
+  - De user slaapt moeilijk in en staat vaak later op — wees flexibel met harde kloktijden (denk eerder in "ochtendblok / namiddagblok" dan in exacte uren).
 
 ## Gotchas
 

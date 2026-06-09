@@ -815,6 +815,42 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /clients/{id}/crawl-upload:
+    post:
+      operationId: clientCrawlUpload
+      tags: [clients]
+      summary: Upload a Screaming Frog crawl export (CSV) for the client and store it
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CrawlUploadInput"
+      responses:
+        "200":
+          description: The updated client with the stored crawl summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Client"
+        "400":
+          description: Invalid request (e.g. empty or unusable export)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Client not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /clients/{id}/business-profile-refresh:
     post:
       operationId: clientBusinessProfileRefresh
@@ -1987,6 +2023,17 @@ components:
         updatedAt:
           type: string
           format: date-time
+    CrawlUploadInput:
+      type: object
+      required: [csv]
+      properties:
+        csv:
+          type: string
+          description: 'Raw Screaming Frog "Internal: All" CSV export.'
+        crawledAt:
+          type: string
+          format: date-time
+          description: When the crawl actually ran (optional; defaults to now).
     ClientGroupInput:
       type: object
       required: [name]

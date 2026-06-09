@@ -36,6 +36,7 @@ export * from './clientGroupSummary';
 export * from './clientInput';
 export * from './clientList';
 export * from './clientRefreshAllResult';
+export * from './crawlUploadInput';
 export * from './deleteClientGroup200';
 export * from './discoveryEnrichment';
 export * from './discoveryEnrichmentField';

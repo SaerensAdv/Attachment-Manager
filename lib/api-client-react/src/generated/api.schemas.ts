@@ -406,6 +406,13 @@ export interface ClientGroup {
   updatedAt: string;
 }
 
+export interface CrawlUploadInput {
+  /** Raw Screaming Frog "Internal: All" CSV export. */
+  csv: string;
+  /** When the crawl actually ran (optional; defaults to now). */
+  crawledAt?: string;
+}
+
 export interface ClientGroupInput {
   name: string;
   /** @nullable */

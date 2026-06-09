@@ -8,6 +8,7 @@ import Home from "@/pages/Home";
 import Dashboard from "@/pages/Dashboard";
 import Team from "@/pages/Team";
 import Clients from "@/pages/Clients";
+import CrawlUpload from "@/pages/CrawlUpload";
 import History from "@/pages/History";
 import Controle from "@/pages/Controle";
 import Planning from "@/pages/Planning";
@@ -29,6 +30,7 @@ function Router() {
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/team" component={Team} />
       <Route path="/clients" component={Clients} />
+      <Route path="/crawl" component={CrawlUpload} />
       <Route path="/history" component={History} />
       <Route path="/planning" component={Planning} />
       <Route path="/controle" component={Controle} />

@@ -1078,6 +1078,72 @@ export const ClientPagespeedRefreshResponse = zod.object({
 
 
 /**
+ * @summary Upload a Screaming Frog crawl export (CSV) for the client and store it
+ */
+export const ClientCrawlUploadParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ClientCrawlUploadBody = zod.object({
+  "csv": zod.string().describe('Raw Screaming Frog \"Internal: All\" CSV export.'),
+  "crawledAt": zod.coerce.date().optional().describe('When the crawl actually ran (optional; defaults to now).')
+})
+
+export const ClientCrawlUploadResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "groupId": zod.number().nullish(),
+  "business": zod.string().nullish(),
+  "world": zod.string().nullish(),
+  "services": zod.string().nullish(),
+  "audience": zod.string().nullish(),
+  "locations": zod.string().nullish(),
+  "languages": zod.string().nullish(),
+  "mainGoal": zod.string().nullish(),
+  "conversionAction": zod.string().nullish(),
+  "kpis": zod.string().nullish(),
+  "budget": zod.string().nullish(),
+  "toneOfVoice": zod.string().nullish(),
+  "channels": zod.string().nullish(),
+  "restrictions": zod.string().nullish(),
+  "website": zod.string().nullish(),
+  "landingPages": zod.string().nullish(),
+  "currentState": zod.string().nullish(),
+  "googleAdsData": zod.string().nullish(),
+  "searchConsoleData": zod.string().nullish(),
+  "reportEmail": zod.string().nullish(),
+  "websiteIntake": zod.string().nullish(),
+  "websiteIntakeAt": zod.coerce.date().nullish(),
+  "googleAdsCustomerId": zod.string().nullish(),
+  "googleAdsLive": zod.string().nullish(),
+  "googleAdsLiveAt": zod.coerce.date().nullish(),
+  "competitorAdvertisers": zod.string().nullish(),
+  "competitorAdsLive": zod.string().nullish(),
+  "competitorAdsLiveAt": zod.coerce.date().nullish(),
+  "searchConsoleSiteUrl": zod.string().nullish(),
+  "searchConsoleLive": zod.string().nullish(),
+  "searchConsoleLiveAt": zod.coerce.date().nullish(),
+  "ga4PropertyId": zod.string().nullish(),
+  "ga4Live": zod.string().nullish(),
+  "ga4LiveAt": zod.coerce.date().nullish(),
+  "placesQuery": zod.string().nullish(),
+  "placesCompetitors": zod.string().nullish(),
+  "placesLive": zod.string().nullish(),
+  "placesLiveAt": zod.coerce.date().nullish(),
+  "pagespeedUrls": zod.string().nullish(),
+  "pagespeedLive": zod.string().nullish(),
+  "pagespeedLiveAt": zod.coerce.date().nullish(),
+  "businessProfileLocationId": zod.string().nullish(),
+  "businessProfileLive": zod.string().nullish(),
+  "businessProfileLiveAt": zod.coerce.date().nullish(),
+  "crawlLive": zod.string().nullish(),
+  "crawlLiveAt": zod.coerce.date().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
  * @summary Pull live Google Business Profile performance for the client and store it
  */
 export const ClientBusinessProfileRefreshParams = zod.object({

@@ -68,6 +68,11 @@ app.use(
   "/api/crawl-intake",
   express.text({ type: () => true, limit: "25mb" }),
 );
+// The in-app crawl upload (POST /api/clients/:id/crawl-upload) carries a CSV
+// export inside a JSON body that can be several MB, so parse client routes with
+// a larger cap. body-parser marks the request parsed, so the global JSON parser
+// below skips it.
+app.use("/api/clients", express.json({ limit: "25mb" }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

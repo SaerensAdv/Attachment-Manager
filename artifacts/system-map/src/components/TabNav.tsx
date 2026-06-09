@@ -8,6 +8,7 @@ import {
   ShieldCheck,
   BarChart3,
   CalendarClock,
+  Bug,
 } from "lucide-react";
 
 const tabs = [
@@ -15,6 +16,7 @@ const tabs = [
   { href: "/dashboard", label: "Dashboard", icon: BarChart3 },
   { href: "/team", label: "Team", icon: Contact },
   { href: "/clients", label: "Klanten", icon: Users },
+  { href: "/crawl", label: "Crawl", icon: Bug },
   { href: "/history", label: "Archief", icon: Archive },
   { href: "/planning", label: "Planning", icon: CalendarClock },
   { href: "/controle", label: "Controle", icon: ShieldCheck },

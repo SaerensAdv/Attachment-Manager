@@ -19,3 +19,11 @@ The licensed Screaming Frog SEO Spider is a **desktop** crawler the cloud can ne
 - A new `knowledge/<x>.md` node is an **isolated graph node** until some agent/workflow cites it by its **exact backtick path** (`knowledge/<x>.md`). Backtick path refs in `ARCHITECTURE.md` do NOT create graph edges — only references from doc-graph nodes (agents/workflows) do. Crawl is wired into `agents/seo-specialist.md` (Tuur owns technical SEO). Verify with `GET /api/docs/validate` → expect `0/0/0`.
 
 **Why:** these three invariants each came from a review catch (data-loss on bad push, locale 1000× distortion, contract drift) and the recurring "isolated knowledge node" trap.
+
+## Two upload doors (don't conflate them)
+
+There are now **two** ways a crawl enters the app, sharing the same `summarizeCrawl` core + the reject-empty-to-protect-last-good invariant:
+- **External push** `POST /api/crawl-intake` — secret-gated (`x-trigger-secret`), raw `text/csv` body, OUT of OpenAPI. For automated pushes from the user's own machine.
+- **In-app upload** `POST /api/clients/:id/crawl-upload` — **ungated** (interactive same-origin, like the other `/clients/:id/*-refresh` mutations), IN OpenAPI (`CrawlUploadInput`), serves the `/crawl` upload page (multi-file, per-file client assignment).
+
+**orval bodies are always JSON.** The generated client hardcodes `Content-Type: application/json` + `JSON.stringify(body)`, so a `text/csv` request body does NOT round-trip through a generated hook. The in-app upload therefore carries the CSV **inside a JSON field** (`{ csv, crawledAt? }`). Because that JSON can be multi-MB, `/api/clients` gets a route-scoped `express.json({ limit: "25mb" })` before the global parser (same trick as `/api/team` for portraits). **How to apply:** any new endpoint that must accept a large/non-JSON body via a generated orval hook must wrap the payload in JSON and raise the matching route-scoped body limit.

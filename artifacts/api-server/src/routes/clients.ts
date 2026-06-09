@@ -26,6 +26,7 @@ import {
   buildBriefingPrompt,
   parseBriefingJson,
 } from "../lib/briefing-suggest";
+import { summarizeCrawl } from "../lib/screaming-frog";
 
 const router: IRouter = Router();
 
@@ -775,6 +776,67 @@ router.post("/clients/:id/pagespeed-refresh", async (req, res) => {
       detail: err instanceof Error ? err.message : String(err),
     });
   }
+});
+
+// In-app upload of a Screaming Frog crawl export. Unlike the secret-gated
+// /crawl-intake (built for automated pushes from the user's own machine), this
+// endpoint serves the in-app upload page: it is an interactive, same-origin
+// mutation like the other client refreshes, so it is not behind a trigger
+// secret. The CSV travels inside a JSON body (orval always sends JSON), which is
+// why /api/clients parses with a larger body limit in app.ts.
+router.post("/clients/:id/crawl-upload", async (req, res) => {
+  const id = parseId(req.params.id);
+  if (id === null) {
+    res.status(400).json({ error: "Ongeldige id." });
+    return;
+  }
+
+  const body = (req.body ?? {}) as { csv?: unknown; crawledAt?: unknown };
+  const csv = typeof body.csv === "string" ? body.csv : "";
+  if (!csv.trim()) {
+    res.status(400).json({
+      error:
+        "Lege export: voeg de Screaming Frog CSV ('Internal: All') toe.",
+    });
+    return;
+  }
+
+  let crawledAt: Date | undefined;
+  if (typeof body.crawledAt === "string" && body.crawledAt.trim()) {
+    const parsed = new Date(body.crawledAt);
+    if (!Number.isNaN(parsed.getTime())) crawledAt = parsed;
+  }
+
+  const [row] = await db
+    .select()
+    .from(clientsTable)
+    .where(eq(clientsTable.id, id));
+  if (!row) {
+    res.status(404).json({ error: "Klant niet gevonden." });
+    return;
+  }
+
+  const summary = summarizeCrawl(csv, { crawledAt });
+
+  // A malformed or non-Screaming-Frog upload yields zero usable records. Reject
+  // it instead of overwriting the last good crawl with a "no data" placeholder,
+  // so one bad upload can never erase the technical context the agents rely on.
+  if (summary.records.length === 0) {
+    res.status(400).json({ error: summary.text });
+    return;
+  }
+
+  const [updated] = await db
+    .update(clientsTable)
+    .set({
+      crawlLive: summary.text,
+      crawlLiveAt: summary.fetchedAt,
+      updatedAt: new Date(),
+    })
+    .where(eq(clientsTable.id, id))
+    .returning();
+
+  res.json(serialize(updated));
 });
 
 router.post("/clients/:id/business-profile-refresh", async (req, res) => {

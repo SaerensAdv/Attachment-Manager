@@ -38,6 +38,7 @@ import type {
   ClientInput,
   ClientList,
   ClientRefreshAllResult,
+  CrawlUploadInput,
   DeleteClientGroup200,
   DocContent,
   DocContentUpdate,
@@ -2315,6 +2316,78 @@ export const useClientPagespeedRefresh = <TError = ErrorType<ErrorResponse>,
         TContext
       > => {
       return useMutation(getClientPagespeedRefreshMutationOptions(options));
+    }
+
+export const getClientCrawlUploadUrl = (id: number,) => {
+
+
+
+
+  return `/api/clients/${id}/crawl-upload`
+}
+
+/**
+ * @summary Upload a Screaming Frog crawl export (CSV) for the client and store it
+ */
+export const clientCrawlUpload = async (id: number,
+    crawlUploadInput: CrawlUploadInput, options?: RequestInit): Promise<Client> => {
+
+  return customFetch<Client>(getClientCrawlUploadUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      crawlUploadInput,)
+  }
+);}
+
+
+
+
+export const getClientCrawlUploadMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof clientCrawlUpload>>, TError,{id: number;data: BodyType<CrawlUploadInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof clientCrawlUpload>>, TError,{id: number;data: BodyType<CrawlUploadInput>}, TContext> => {
+
+const mutationKey = ['clientCrawlUpload'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof clientCrawlUpload>>, {id: number;data: BodyType<CrawlUploadInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  clientCrawlUpload(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ClientCrawlUploadMutationResult = NonNullable<Awaited<ReturnType<typeof clientCrawlUpload>>>
+    export type ClientCrawlUploadMutationBody = BodyType<CrawlUploadInput>
+    export type ClientCrawlUploadMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Upload a Screaming Frog crawl export (CSV) for the client and store it
+ */
+export const useClientCrawlUpload = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof clientCrawlUpload>>, TError,{id: number;data: BodyType<CrawlUploadInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof clientCrawlUpload>>,
+        TError,
+        {id: number;data: BodyType<CrawlUploadInput>},
+        TContext
+      > => {
+      return useMutation(getClientCrawlUploadMutationOptions(options));
     }
 
 export const getClientBusinessProfileRefreshUrl = (id: number,) => {

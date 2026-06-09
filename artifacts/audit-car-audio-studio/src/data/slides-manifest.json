@@ -1,0 +1,82 @@
+[
+  {
+    "id": "7c3b2a1d-2e5f-4b22-8c31-8d001cover00",
+    "position": 1,
+    "filepath": "src/pages/slides/Cover.tsx",
+    "title": "Cover",
+    "description": "Titelpagina — Google Ads-audit Car Audio Limburg Studio, 2026 vs 2025.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "7c3b2a1d-2e5f-4b22-8c31-8d002samenv0",
+    "position": 2,
+    "filepath": "src/pages/slides/Samenvatting.tsx",
+    "title": "Managementsamenvatting",
+    "description": "Kernboodschap: meer verkeer, conversies omlaag, leadkost bijna verdubbeld.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "7c3b2a1d-2e5f-4b22-8c31-8d003oordeel",
+    "position": 3,
+    "filepath": "src/pages/slides/Oordeel.tsx",
+    "title": "Oordeel",
+    "description": "Verdict: meting werkt, maar kost per conversie steeg van €27,31 naar €51,50.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "7c3b2a1d-2e5f-4b22-8c31-8d004kpitab0",
+    "position": 4,
+    "filepath": "src/pages/slides/KpiTabel.tsx",
+    "title": "Kerncijfers YoY",
+    "description": "KPI-tabel 2025 vs 2026 met verschillen.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "7c3b2a1d-2e5f-4b22-8c31-8d005grafiek",
+    "position": 5,
+    "filepath": "src/pages/slides/Grafiek.tsx",
+    "title": "De kloof in beeld",
+    "description": "Grafiek: conversies omlaag, kost per conversie omhoog.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "7c3b2a1d-2e5f-4b22-8c31-8d006strate0",
+    "position": 6,
+    "filepath": "src/pages/slides/Strategie.tsx",
+    "title": "Strategie",
+    "description": "Bevinding 1: één Max-clicks-campagne verving de gerichte structuur.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "7c3b2a1d-2e5f-4b22-8c31-8d007struct0",
+    "position": 7,
+    "filepath": "src/pages/slides/Structuur.tsx",
+    "title": "Structuur",
+    "description": "Bevinding 2: budget loopt niet meer via de bewezen leadcampagnes.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "7c3b2a1d-2e5f-4b22-8c31-8d008verspi0",
+    "position": 8,
+    "filepath": "src/pages/slides/Verspilling.tsx",
+    "title": "Verspilling & overlap",
+    "description": "Bevinding 3: CarPlay-termen zonder conversies + overlap tussen accounts.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "7c3b2a1d-2e5f-4b22-8c31-8d009aanbev",
+    "position": 9,
+    "filepath": "src/pages/slides/Aanbevelingen.tsx",
+    "title": "Aanbevelingen",
+    "description": "Prioriteitenlijst met verwacht effect.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "7c3b2a1d-2e5f-4b22-8c31-8d010closin",
+    "position": 10,
+    "filepath": "src/pages/slides/Closing.tsx",
+    "title": "Volgende stap",
+    "description": "Afsluiting: volgende stap en contact Saerens Advertising.",
+    "speakerNotes": ""
+  }
+]

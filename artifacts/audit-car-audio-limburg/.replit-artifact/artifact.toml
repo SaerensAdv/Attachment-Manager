@@ -1,0 +1,31 @@
+kind = "slides"
+previewPath = "/audit-car-audio-limburg/"
+title = "Google Ads-audit — Car Audio Limburg"
+version = "1.0.0"
+id = "artifacts/audit-car-audio-limburg"
+router = "path"
+
+[[integratedSkills]]
+name = "slides"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/audit-car-audio-limburg/" ]
+localPort = 23821
+
+[services.development]
+run = "pnpm --filter @workspace/audit-car-audio-limburg run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/audit-car-audio-limburg", "run", "build" ]
+publicDir = "artifacts/audit-car-audio-limburg/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "23821"
+BASE_PATH = "/audit-car-audio-limburg/"

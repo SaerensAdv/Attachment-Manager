@@ -1,0 +1,82 @@
+[
+  {
+    "id": "0f2a1b6c-1d4e-4a11-9b21-7c001cover00",
+    "position": 1,
+    "filepath": "src/pages/slides/Cover.tsx",
+    "title": "Cover",
+    "description": "Titelpagina — Google Ads-audit Car Audio Limburg, 2026 vs 2025.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "0f2a1b6c-1d4e-4a11-9b21-7c002samenv0",
+    "position": 2,
+    "filepath": "src/pages/slides/Samenvatting.tsx",
+    "title": "Managementsamenvatting",
+    "description": "Kernboodschap: meer verkeer, conversies weggevallen, rendement niet meetbaar.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "0f2a1b6c-1d4e-4a11-9b21-7c003oordeel",
+    "position": 3,
+    "filepath": "src/pages/slides/Oordeel.tsx",
+    "title": "Oordeel",
+    "description": "Verdict: rendement niet te beoordelen, conversietracking uitgevallen (31 → 1).",
+    "speakerNotes": ""
+  },
+  {
+    "id": "0f2a1b6c-1d4e-4a11-9b21-7c004kpitab0",
+    "position": 4,
+    "filepath": "src/pages/slides/KpiTabel.tsx",
+    "title": "Kerncijfers YoY",
+    "description": "KPI-tabel 2025 vs 2026 met verschillen.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "0f2a1b6c-1d4e-4a11-9b21-7c005grafiek",
+    "position": 5,
+    "filepath": "src/pages/slides/Grafiek.tsx",
+    "title": "De kloof in beeld",
+    "description": "Grafiek: klikken omhoog, conversies bijna nul.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "0f2a1b6c-1d4e-4a11-9b21-7c006tracki0",
+    "position": 6,
+    "filepath": "src/pages/slides/Tracking.tsx",
+    "title": "Meting",
+    "description": "Bevinding 1: waarom de cijfers op een meetfout wijzen + eerste actie.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "0f2a1b6c-1d4e-4a11-9b21-7c007struct0",
+    "position": 7,
+    "filepath": "src/pages/slides/Structuur.tsx",
+    "title": "Structuur",
+    "description": "Bevinding 2: budget loopt niet meer via de bewezen campagnes.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "0f2a1b6c-1d4e-4a11-9b21-7c008verspi0",
+    "position": 8,
+    "filepath": "src/pages/slides/Verspilling.tsx",
+    "title": "Verspilling & overlap",
+    "description": "Bevinding 3: budget lekt weg op CarPlay-termen + overlap tussen accounts.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "0f2a1b6c-1d4e-4a11-9b21-7c009aanbev",
+    "position": 9,
+    "filepath": "src/pages/slides/Aanbevelingen.tsx",
+    "title": "Aanbevelingen",
+    "description": "Prioriteitenlijst met verwacht effect.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "0f2a1b6c-1d4e-4a11-9b21-7c010closin",
+    "position": 10,
+    "filepath": "src/pages/slides/Closing.tsx",
+    "title": "Volgende stap",
+    "description": "Afsluiting: volgende stap en contact Saerens Advertising.",
+    "speakerNotes": ""
+  }
+]

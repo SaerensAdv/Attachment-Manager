@@ -1890,6 +1890,11 @@ components:
         businessProfileLiveAt:
           type: ["string", "null"]
           format: date-time
+        crawlLive:
+          type: ["string", "null"]
+        crawlLiveAt:
+          type: ["string", "null"]
+          format: date-time
         createdAt:
           type: string
           format: date-time
@@ -2058,6 +2063,7 @@ components:
             - pagespeed
             - businessProfile
             - websiteIntake
+            - crawl
           properties:
             googleAds:
               $ref: "#/components/schemas/IntegrationCoverage"
@@ -2074,6 +2080,8 @@ components:
             businessProfile:
               $ref: "#/components/schemas/IntegrationCoverage"
             websiteIntake:
+              $ref: "#/components/schemas/IntegrationCoverage"
+            crawl:
               $ref: "#/components/schemas/IntegrationCoverage"
     ClientCoverageList:
       type: object

@@ -225,6 +225,7 @@ function serialize(client: Client) {
     businessProfileLiveAt: client.businessProfileLiveAt
       ? client.businessProfileLiveAt.toISOString()
       : null,
+    crawlLiveAt: client.crawlLiveAt ? client.crawlLiveAt.toISOString() : null,
     createdAt: client.createdAt.toISOString(),
     updatedAt: client.updatedAt.toISOString(),
   };
@@ -284,6 +285,10 @@ router.get("/clients/coverage", async (_req, res) => {
       websiteIntake: {
         configured: has(c.website) || has(c.landingPages),
         liveAt: iso(c.websiteIntakeAt),
+      },
+      crawl: {
+        configured: has(c.website),
+        liveAt: iso(c.crawlLiveAt),
       },
     },
   }));

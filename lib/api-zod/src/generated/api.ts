@@ -505,6 +505,8 @@ export const GetClientsResponse = zod.object({
   "businessProfileLocationId": zod.string().nullish(),
   "businessProfileLive": zod.string().nullish(),
   "businessProfileLiveAt": zod.coerce.date().nullish(),
+  "crawlLive": zod.string().nullish(),
+  "crawlLiveAt": zod.coerce.date().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 }))
@@ -601,6 +603,8 @@ export const GetClientResponse = zod.object({
   "businessProfileLocationId": zod.string().nullish(),
   "businessProfileLive": zod.string().nullish(),
   "businessProfileLiveAt": zod.coerce.date().nullish(),
+  "crawlLive": zod.string().nullish(),
+  "crawlLiveAt": zod.coerce.date().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -692,6 +696,8 @@ export const UpdateClientResponse = zod.object({
   "businessProfileLocationId": zod.string().nullish(),
   "businessProfileLive": zod.string().nullish(),
   "businessProfileLiveAt": zod.coerce.date().nullish(),
+  "crawlLive": zod.string().nullish(),
+  "crawlLiveAt": zod.coerce.date().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -759,6 +765,8 @@ export const ClientWebsiteIntakeResponse = zod.object({
   "businessProfileLocationId": zod.string().nullish(),
   "businessProfileLive": zod.string().nullish(),
   "businessProfileLiveAt": zod.coerce.date().nullish(),
+  "crawlLive": zod.string().nullish(),
+  "crawlLiveAt": zod.coerce.date().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -818,6 +826,8 @@ export const ClientGoogleAdsRefreshResponse = zod.object({
   "businessProfileLocationId": zod.string().nullish(),
   "businessProfileLive": zod.string().nullish(),
   "businessProfileLiveAt": zod.coerce.date().nullish(),
+  "crawlLive": zod.string().nullish(),
+  "crawlLiveAt": zod.coerce.date().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -877,6 +887,8 @@ export const ClientSearchConsoleRefreshResponse = zod.object({
   "businessProfileLocationId": zod.string().nullish(),
   "businessProfileLive": zod.string().nullish(),
   "businessProfileLiveAt": zod.coerce.date().nullish(),
+  "crawlLive": zod.string().nullish(),
+  "crawlLiveAt": zod.coerce.date().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -936,6 +948,8 @@ export const ClientGa4RefreshResponse = zod.object({
   "businessProfileLocationId": zod.string().nullish(),
   "businessProfileLive": zod.string().nullish(),
   "businessProfileLiveAt": zod.coerce.date().nullish(),
+  "crawlLive": zod.string().nullish(),
+  "crawlLiveAt": zod.coerce.date().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -995,6 +1009,8 @@ export const ClientPlacesRefreshResponse = zod.object({
   "businessProfileLocationId": zod.string().nullish(),
   "businessProfileLive": zod.string().nullish(),
   "businessProfileLiveAt": zod.coerce.date().nullish(),
+  "crawlLive": zod.string().nullish(),
+  "crawlLiveAt": zod.coerce.date().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -1054,6 +1070,8 @@ export const ClientPagespeedRefreshResponse = zod.object({
   "businessProfileLocationId": zod.string().nullish(),
   "businessProfileLive": zod.string().nullish(),
   "businessProfileLiveAt": zod.coerce.date().nullish(),
+  "crawlLive": zod.string().nullish(),
+  "crawlLiveAt": zod.coerce.date().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -1113,6 +1131,8 @@ export const ClientBusinessProfileRefreshResponse = zod.object({
   "businessProfileLocationId": zod.string().nullish(),
   "businessProfileLive": zod.string().nullish(),
   "businessProfileLiveAt": zod.coerce.date().nullish(),
+  "crawlLive": zod.string().nullish(),
+  "crawlLiveAt": zod.coerce.date().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -1172,6 +1192,8 @@ export const ClientCompetitorAdsRefreshResponse = zod.object({
   "businessProfileLocationId": zod.string().nullish(),
   "businessProfileLive": zod.string().nullish(),
   "businessProfileLiveAt": zod.coerce.date().nullish(),
+  "crawlLive": zod.string().nullish(),
+  "crawlLiveAt": zod.coerce.date().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -1214,6 +1236,10 @@ export const GetClientsCoverageResponse = zod.object({
   "liveAt": zod.string().nullish().describe('ISO timestamp of the last successful refresh, or null')
 }),
   "websiteIntake": zod.object({
+  "configured": zod.boolean(),
+  "liveAt": zod.string().nullish().describe('ISO timestamp of the last successful refresh, or null')
+}),
+  "crawl": zod.object({
   "configured": zod.boolean(),
   "liveAt": zod.string().nullish().describe('ISO timestamp of the last successful refresh, or null')
 })
@@ -1335,6 +1361,8 @@ export const ClientRefreshAllResponse = zod.object({
   "businessProfileLocationId": zod.string().nullish(),
   "businessProfileLive": zod.string().nullish(),
   "businessProfileLiveAt": zod.coerce.date().nullish(),
+  "crawlLive": zod.string().nullish(),
+  "crawlLiveAt": zod.coerce.date().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 }),
@@ -1402,6 +1430,8 @@ export const ClientBriefingSuggestResponse = zod.object({
   "businessProfileLocationId": zod.string().nullish(),
   "businessProfileLive": zod.string().nullish(),
   "businessProfileLiveAt": zod.coerce.date().nullish(),
+  "crawlLive": zod.string().nullish(),
+  "crawlLiveAt": zod.coerce.date().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 }),

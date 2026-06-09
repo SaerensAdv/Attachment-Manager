@@ -16,4 +16,5 @@ export type ClientCoverageIntegrations = {
   pagespeed: IntegrationCoverage;
   businessProfile: IntegrationCoverage;
   websiteIntake: IntegrationCoverage;
+  crawl: IntegrationCoverage;
 };

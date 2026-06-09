@@ -166,6 +166,8 @@ Today everything is still done by hand. The target split keeps control in one pl
 
 First automations to target (founder priority): **monthly reports, search-term checks for negative keywords, and ad copy generation.**
 
+Some data sources cannot be reached from the cloud at all. **Screaming Frog SEO Spider** is a licensed *desktop* crawler, so its technical crawl follows the brain-vs-executor split in a semi-automatic shape ("Model B"): the agency runs the crawl on their own machine and pushes the export to the brain, which stores the **latest** crawl per client and reads it during runs (never starting a crawl itself, never inventing numbers). The intake contract and the agent guidance live in `knowledge/screaming-frog-crawl-intake.md`.
+
 ### ClickUp as the work-management & approval layer
 
 Axel already runs the agency in ClickUp, so it is the natural surface for *tasks, assignment, statuses, and human approval* — the visible layer on top of the brain. The intent: the app creates a task per deliverable, assigns the responsible agent, posts the generated draft back, and a human moves the task to `Approved`; that approval (delivered via webhook) is what lets the executor act. ClickUp does **not** become a second brain — agent definitions, knowledge, and dossiers stay in this repo.

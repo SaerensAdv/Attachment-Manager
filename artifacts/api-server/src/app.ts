@@ -61,6 +61,13 @@ app.use("/api/route", llmLimiter);
 // that exceeds the default 100kb JSON limit, so parse team routes with a larger
 // cap. body-parser marks the request parsed, so the global parser below skips it.
 app.use("/api/team", express.json({ limit: "12mb" }));
+// Screaming Frog crawl intake (POST /api/crawl-intake) carries a raw CSV export
+// that can be several MB, so parse that path as text with a larger cap.
+// body-parser marks the request parsed, so the global JSON parser below skips it.
+app.use(
+  "/api/crawl-intake",
+  express.text({ type: () => true, limit: "25mb" }),
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

@@ -97,6 +97,10 @@ export interface Client {
   businessProfileLive?: string | null;
   /** @nullable */
   businessProfileLiveAt?: Date | null;
+  /** @nullable */
+  crawlLive?: string | null;
+  /** @nullable */
+  crawlLiveAt?: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }

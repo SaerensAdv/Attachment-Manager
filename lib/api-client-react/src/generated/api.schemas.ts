@@ -325,6 +325,10 @@ export interface Client {
   businessProfileLive?: string | null;
   /** @nullable */
   businessProfileLiveAt?: string | null;
+  /** @nullable */
+  crawlLive?: string | null;
+  /** @nullable */
+  crawlLiveAt?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -448,6 +452,7 @@ export type ClientCoverageIntegrations = {
   pagespeed: IntegrationCoverage;
   businessProfile: IntegrationCoverage;
   websiteIntake: IntegrationCoverage;
+  crawl: IntegrationCoverage;
 };
 
 export interface ClientCoverage {

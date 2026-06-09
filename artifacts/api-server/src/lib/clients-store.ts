@@ -168,6 +168,17 @@ export function clientToMarkdown(client: Client): string {
         )
       : null,
     codeBlock("Website content (raw)", client.websiteIntake),
+    client.crawlLive?.trim()
+      ? paragraph(
+          "Technical crawl (Screaming Frog)",
+          `Read-only technical SEO crawl exported from Screaming Frog SEO Spider${
+            client.crawlLiveAt
+              ? ` (crawled ${client.crawlLiveAt.toISOString().slice(0, 10)})`
+              : ""
+          }.`,
+        )
+      : null,
+    codeBlock("Technical crawl (Screaming Frog)", client.crawlLive),
   ];
 
   return sections.filter((s): s is string => s !== null).join("\n\n") + "\n";

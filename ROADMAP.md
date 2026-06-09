@@ -301,6 +301,26 @@ So the pattern **confirms the direction** rather than prescribing a rebuild — 
 
 **Where it fits:** cross-cutting, brain-side; both ideas extend Phase 4 (memory) and the self-improvement section, and respect the core principle — observe/advise, human reviews before real use.
 
+### D. Second-brain modules on the radar
+
+A shortlist the founder flagged as worth keeping (from a longer brainstorm, June 2026). Not scoped yet — captured so they are not lost. Each leans on the same capture → distil → file-back loop the app already has, and on the north star of reducing mental load.
+
+- **Day cockpit (today-view)** — one morning screen that proposes the deep-work block from open tasks, runs awaiting approval, and mails to review. Answers "where do I start?" and respects the morning/afternoon rhythm.
+- **Communication brain (inbox)** — capture incoming client mail (Gmail already connected, read), triage it, draft replies in the afternoon, link each thread to the right client dossier, and track "waiting on …". Matches the afternoon AI-maildraft rhythm.
+- **Meeting & call capture** — record/transcribe client calls, auto-summarize into the dossier, extract decisions + action items (NL/FR). Nothing is lost after a call.
+- **Knowledge ingest (reading pipeline)** — drop an article/link/gist; an agent summarizes and files it into `knowledge/` with cross-links. Applied to Google Ads/Meta changelogs and marketing trends; feeds the skill-refresh digest. The Karpathy ingest operation made concrete.
+- **Goals cockpit (north star)** — track the €10k goal plus other quarterly goals (#clients, margin, pipeline) with progress and blockers. The Dashboard becomes a goals overview, not just revenue.
+- **Relationship brain (people, not just clients)** — a who's-who of contacts (client-side, suppliers, partners, freelancers): last contact, context, follow-up reminders. The people-graph beside the client-graph.
+
+### E. Historical data as a learning corpus (warm start)
+
+The founder's point: the brain should not start empty. Pull in *existing* history so it is smart from day one — and keeps getting smarter.
+
+- **Email history** — ingest prior client email threads (the agency's own mailbox, read-only via the Gmail connection) to learn each client's tone, recurring questions, past commitments, and preferences. Distil into the client dossier — file *learnings*, not raw dumps.
+- **Google Ads history** — go beyond the current snapshot and read a longer time range (read-only) to learn what actually worked per client/vertical: seasonality, which changes moved the needle, durable winners and losers. Feeds the outcome-feedback-loop and win/loss analysis already on the roadmap.
+- **Why it matters:** turns the brain from "smart going forward" into "smart about this client's whole past" — exactly where a human's memory fades. The backfill is what makes the second brain feel like it has always been here.
+- **Guardrails:** read-only; ingest is best-effort and deduped; store distilled learnings in the dossier / `knowledge/`, not bulk archives; same human-review principle before anything is acted on.
+
 ---
 
 ## What stays true across all phases

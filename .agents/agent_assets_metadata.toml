@@ -275,3 +275,21 @@ id = "9d8bBqwCdn_S8TqhKYQhn"
 uri = "file://higgsfield-tests/beauty-icon-website-highlight.mp4"
 type = "video"
 title = "beauty-icon.nl — website highlight clip (9:16, Higgsfield)"
+
+[[outputs]]
+id = "pT5pxYXrs-Ilzo5HbBpXy"
+uri = "file://attached_assets/generated_audio/speech_beauty_icon_reel_vo.mp3"
+type = "audio"
+title = "beauty_icon_reel_vo"
+
+[[outputs]]
+id = "1sXsAs1hAm3i97QKIiPTc"
+uri = "file://attached_assets/generated_audio/music_beauty_icon_reel_bed.mp3"
+type = "audio"
+title = "beauty_icon_reel_bed"
+
+[[outputs]]
+id = "lT2rrEsDiQNZ-Ry_efEq2"
+uri = "file://higgsfield-tests/beauty-icon-reel-FINAL.mp4"
+type = "video"
+title = "Beauty Icon — volledige reel (9:16, 21s)"

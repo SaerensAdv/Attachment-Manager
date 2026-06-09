@@ -263,3 +263,9 @@ id = "fvwsvMosBe2sy6LiAp_Rx"
 uri = "file://.local/exports/demo-prompts/5-ad-creatives.replit-prompt.md"
 type = "text"
 title = "5. Visuele advertentiecreatives (preview-set)"
+
+[[outputs]]
+id = "78k85drOwbx86T9pDwVMi"
+uri = "file://higgsfield-tests/beauty-icon-ugc-test.mp4"
+type = "video"
+title = "Beauty Icon — UGC testclip (Higgsfield, 9:16)"

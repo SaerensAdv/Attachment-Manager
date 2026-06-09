@@ -311,6 +311,7 @@ A shortlist the founder flagged as worth keeping (from a longer brainstorm, June
 - **Knowledge ingest (reading pipeline)** — drop an article/link/gist; an agent summarizes and files it into `knowledge/` with cross-links. Applied to Google Ads/Meta changelogs and marketing trends; feeds the skill-refresh digest. The Karpathy ingest operation made concrete.
 - **Goals cockpit (north star)** — track the €10k goal plus other quarterly goals (#clients, margin, pipeline) with progress and blockers. The Dashboard becomes a goals overview, not just revenue.
 - **Relationship brain (people, not just clients)** — a who's-who of contacts (client-side, suppliers, partners, freelancers): last contact, context, follow-up reminders. The people-graph beside the client-graph.
+- **Continuous client narrative (reporting memory)** — remember what a client was told last month so reports form one continuous story rather than isolated snapshots. Builds on the monthly-report pipeline.
 
 ### E. Historical data as a learning corpus (warm start)
 

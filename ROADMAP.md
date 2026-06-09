@@ -265,6 +265,44 @@ Reframe: this pushes us from "a map of an AI team" toward "a map of a cost-aware
 
 ---
 
+## From AI team to second brain (future direction)
+
+Added 2026-06-09 as a direction note — captured to revisit later with fresh eyes, not scheduled work. The founder's framing: this app is becoming less "just an AI team" and more a **second brain / business operating system** for the agency. Three threads below.
+
+### A. Finance & margin layer
+
+Today the app tracks *expected* recurring revenue (the per-client and per-klantgroep `monthly_fee`, shown on the Dashboard against a €10k/month goal). The next layer turns "what should it earn" into "what do we actually earn — and keep."
+
+- **Outgoing invoices** — record real billed/received amounts per client(group), alongside the planned fee. Surfaces the gap between agreed and invoiced, plus what is still outstanding. Foundation for everything below.
+- **Monthly costs** — agency-level recurring costs (tools, subscriptions, ad spend, etc.) so the Dashboard can show *net*, not just revenue. The €10k goal gains a counterpart.
+- **Cost per project/client** — attribute delivery cost (e.g. a separate Replit project) to a client. Combined with invoices + costs, this yields a real **margin per client(group)** — the most valuable number, and the hardest to source cleanly.
+- **Decisive open question (for "minder shit aan mijn hoofd"):** where do these numbers live today? If invoicing already happens in a tool (e.g. Billit / Teamleader / Yuki), prefer an integration over manual entry; if it is Excel / in-the-head, a simple entry screen. Confirm before building.
+- **Double-count caution:** reuse the fee rule already shipped — track each amount at exactly one level, and warn when both a group and its member fiches carry a value.
+
+### B. Prospect CRM (growth layer)
+
+A separate domain from delivery: a lightweight funnel — lead → conversation → proposal → won (a won lead becomes a client fiche). Connects to the existing "Klanten ontdekken" discovery flow and the founder's afternoon AI-maildraft rhythm. Bigger module; runs parallel to the finance layer rather than blocking it.
+
+### C. The LLM Wiki pattern — validation, and ideas to borrow
+
+Context the founder surfaced (June 2026): the popular "Claude + Obsidian second brain" setups, and Andrej Karpathy's **LLM Wiki** idea file (gist, April 2026: https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f). The pattern: instead of RAG re-deriving knowledge on every query, the LLM **incrementally builds and maintains a persistent, interlinked markdown wiki** ("ingest once, reason forever"). Three layers — raw sources / LLM-owned wiki / a schema doc (CLAUDE.md or AGENTS.md) — and three operations: ingest, query (file good answers back as new pages), lint (health-check for contradictions, stale claims, orphans). Index-first navigation; embeddings only when you outgrow it.
+
+**Why this matters here:** the app is already a domain-specific instantiation of this exact pattern, as a hosted web app rather than Obsidian + a CLI. The mapping is close:
+- Raw sources → `knowledge/`, client docs, crawl snapshots, website intake
+- Wiki + schema → `AGENTS.md` / `ARCHITECTURE.md`, the doc-graph, the Kaart (graph view)
+- Ingest → intake / crawl / discovery flows
+- Query + file-back → the generation engine + run archive + deliverables
+- Lint → the learning loop (review → proposals → apply)
+- The gist's optional hybrid search tool (`qmd`, BM25 + vector) → already built (Orama BM25 + local embeddings fused via RRF)
+
+So the pattern **confirms the direction** rather than prescribing a rebuild — Obsidian is not required. Two concrete ideas worth stealing:
+1. **Auto-file good answers back as knowledge** — when a generation/report produces something durable (a comparison, an analysis, a discovered connection), file it back into `knowledge/` so explorations compound instead of vanishing into run history.
+2. **A "wiki-lint" over the doc-graph** — periodically health-check `knowledge/` + the doc-graph for orphans, stale/contradicted claims, and missing cross-references; feed findings into the existing learning loop. (Overlaps with the "knowledge-gap detector" under self-improvement.)
+
+**Where it fits:** cross-cutting, brain-side; both ideas extend Phase 4 (memory) and the self-improvement section, and respect the core principle — observe/advise, human reviews before real use.
+
+---
+
 ## What stays true across all phases
 
 - Output is always reviewable by a human before real use.

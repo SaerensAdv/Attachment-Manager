@@ -269,3 +269,9 @@ id = "78k85drOwbx86T9pDwVMi"
 uri = "file://higgsfield-tests/beauty-icon-ugc-test.mp4"
 type = "video"
 title = "Beauty Icon — UGC testclip (Higgsfield, 9:16)"
+
+[[outputs]]
+id = "9d8bBqwCdn_S8TqhKYQhn"
+uri = "file://higgsfield-tests/beauty-icon-website-highlight.mp4"
+type = "video"
+title = "beauty-icon.nl — website highlight clip (9:16, Higgsfield)"

@@ -162,9 +162,11 @@ export default function Clients() {
   const groupCreateMut = useCreateClientGroup();
 
   // Build the register sections: one block per klantgroep (kapstok) that has
-  // members, sorted by name, followed by an "Zonder groep" block for ungrouped
-  // fiches. Groups with zero members are not shown as headers in the register
-  // (they remain selectable in the editor).
+  // members OR a monthly fee, sorted by name, followed by an "Zonder groep"
+  // block for ungrouped fiches. Empty, fee-less groups stay hidden as headers
+  // (they remain selectable in the editor); a fee-bearing group must surface so
+  // its fee can be edited even when it has no member fiches (e.g. an agency
+  // relationship like SIX).
   const sections = useMemo(() => {
     const byGroup = new Map<number, Client[]>();
     const ungrouped: Client[] = [];
@@ -178,7 +180,7 @@ export default function Clients() {
       }
     }
     const named = groups
-      .filter((g) => byGroup.has(g.id))
+      .filter((g) => byGroup.has(g.id) || (g.monthlyFee ?? 0) > 0)
       .map((g) => ({
         id: g.id as number | null,
         name: g.name,

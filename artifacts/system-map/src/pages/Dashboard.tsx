@@ -127,10 +127,24 @@ function RevenueOverview() {
   const reached = total >= goal && goal > 0;
   const remaining = Math.max(0, goal - total);
 
-  const withFee = data.clients
+  const clientRows = data.clients
     .filter((c) => (c.monthlyFeeEur ?? 0) > 0)
-    .sort((a, b) => (b.monthlyFeeEur ?? 0) - (a.monthlyFeeEur ?? 0));
-  const maxFee = withFee[0]?.monthlyFeeEur ?? 0;
+    .map((c) => ({
+      id: c.id,
+      name: c.name,
+      fee: c.monthlyFeeEur ?? 0,
+      kind: "client" as const,
+    }));
+  const groupRows = (data.groups ?? [])
+    .filter((g) => (g.monthlyFeeEur ?? 0) > 0)
+    .map((g) => ({
+      id: g.id,
+      name: g.name,
+      fee: g.monthlyFeeEur ?? 0,
+      kind: "group" as const,
+    }));
+  const withFee = [...clientRows, ...groupRows].sort((a, b) => b.fee - a.fee);
+  const maxFee = withFee[0]?.fee ?? 0;
 
   return (
     <Reveal>
@@ -210,41 +224,61 @@ function RevenueOverview() {
           </div>
         </div>
 
-        {/* Per-client breakdown */}
+        {/* Per-client & per-group breakdown */}
         <div className="flex items-baseline justify-between mt-8 mb-3">
           <h3 className="font-['Playfair_Display'] font-bold text-lg uppercase tracking-wider">
-            Per klant
+            Per klant &amp; groep
           </h3>
           <span className="font-['Space_Mono'] text-[9px] uppercase tracking-[0.2em] text-muted-foreground">
-            {data.withFeeCount} van {data.clientCount} met fee
+            {clientRows.length} klant{clientRows.length === 1 ? "" : "en"}
+            {groupRows.length > 0 && (
+              <>
+                {" · "}
+                {groupRows.length} groep{groupRows.length === 1 ? "" : "en"}
+              </>
+            )}{" "}
+            met fee
           </span>
         </div>
 
         {withFee.length === 0 ? (
           <p className="font-['Inter'] text-sm text-muted-foreground italic border border-foreground/20 bg-background/40 px-5 py-8 text-center">
-            Nog geen fees ingevuld. Vul per klant een maandelijkse fee in op de
-            Klanten-fiche, dan vult dit overzicht zich automatisch.
+            Nog geen fees ingevuld. Vul een maandelijkse fee in op een
+            klanten-fiche of klantgroep, dan vult dit overzicht zich
+            automatisch.
           </p>
         ) : (
           <div className="border-2 border-foreground bg-card shadow-[3px_3px_0px_hsl(var(--foreground))] divide-y divide-foreground/15">
-            {withFee.map((c, i) => {
-              const fee = c.monthlyFeeEur ?? 0;
+            {withFee.map((r, i) => {
+              const fee = r.fee;
               const barPct = maxFee > 0 ? Math.round((fee / maxFee) * 100) : 0;
               const sharePct = total > 0 ? Math.round((fee / total) * 100) : 0;
+              const isGroup = r.kind === "group";
               return (
                 <Link
-                  key={c.id}
+                  key={`${r.kind}-${r.id}`}
                   href="/clients"
                   className="group flex items-center gap-4 px-4 py-3 hover:bg-foreground/5"
-                  data-testid={`revenue-client-${c.id}`}
+                  data-testid={`revenue-${r.kind}-${r.id}`}
                 >
                   <span className="font-['Space_Mono'] text-[10px] text-muted-foreground w-4 shrink-0">
                     {i + 1}
                   </span>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-baseline justify-between gap-3">
-                      <span className="font-['Inter'] font-medium text-sm truncate">
-                        {c.name}
+                      <span className="flex items-center gap-2 min-w-0">
+                        <span className="font-['Inter'] font-medium text-sm truncate">
+                          {r.name}
+                        </span>
+                        <span
+                          className={`font-['Space_Mono'] text-[8px] uppercase tracking-[0.15em] px-1.5 py-0.5 border shrink-0 ${
+                            isGroup
+                              ? "border-accent/50 text-accent bg-accent/5"
+                              : "border-foreground/25 text-muted-foreground"
+                          }`}
+                        >
+                          {isGroup ? "Groep" : "Klant"}
+                        </span>
                       </span>
                       <span className="font-['Space_Mono'] text-xs whitespace-nowrap">
                         {formatEuro(fee)}

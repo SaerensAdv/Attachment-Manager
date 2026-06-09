@@ -11,6 +11,8 @@ export interface ClientInput {
   /** @nullable */
   groupId?: number | null;
   /** @nullable */
+  monthlyFee?: number | null;
+  /** @nullable */
   business?: string | null;
   /** @nullable */
   world?: string | null;

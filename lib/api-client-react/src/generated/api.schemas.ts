@@ -234,11 +234,28 @@ export interface UploadPortraitRequest {
   imageBase64: string;
 }
 
+export interface RevenueClient {
+  id: number;
+  name: string;
+  /** @nullable */
+  monthlyFeeEur: number | null;
+}
+
+export interface RevenueSummary {
+  goalEur: number;
+  totalMonthlyFeeEur: number;
+  clientCount: number;
+  withFeeCount: number;
+  clients: RevenueClient[];
+}
+
 export interface Client {
   id: number;
   name: string;
   /** @nullable */
   groupId?: number | null;
+  /** @nullable */
+  monthlyFee?: number | null;
   /** @nullable */
   business?: string | null;
   /** @nullable */
@@ -337,6 +354,8 @@ export interface ClientInput {
   name: string;
   /** @nullable */
   groupId?: number | null;
+  /** @nullable */
+  monthlyFee?: number | null;
   /** @nullable */
   business?: string | null;
   /** @nullable */

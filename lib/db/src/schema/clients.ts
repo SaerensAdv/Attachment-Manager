@@ -14,6 +14,9 @@ export const clientsTable = pgTable("clients", {
   groupId: integer("group_id").references(() => clientGroupsTable.id, {
     onDelete: "set null",
   }),
+  // Maandelijkse fee (retainer) in hele euro's die deze klant oplevert.
+  // Voedt het omzet-overzicht op het dashboard (totaal vs. maanddoel).
+  monthlyFee: integer("monthly_fee"),
   business: text("business"),
   world: text("world"),
   services: text("services"),

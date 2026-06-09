@@ -12,6 +12,8 @@ export interface Client {
   /** @nullable */
   groupId?: number | null;
   /** @nullable */
+  monthlyFee?: number | null;
+  /** @nullable */
   business?: string | null;
   /** @nullable */
   world?: string | null;

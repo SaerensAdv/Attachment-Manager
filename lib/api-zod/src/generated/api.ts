@@ -462,6 +462,7 @@ export const GetClientsResponse = zod.object({
   "id": zod.number(),
   "name": zod.string(),
   "groupId": zod.number().nullish(),
+  "monthlyFee": zod.number().nullish(),
   "business": zod.string().nullish(),
   "world": zod.string().nullish(),
   "services": zod.string().nullish(),
@@ -519,6 +520,7 @@ export const GetClientsResponse = zod.object({
 export const CreateClientBody = zod.object({
   "name": zod.string(),
   "groupId": zod.number().nullish(),
+  "monthlyFee": zod.number().nullish(),
   "business": zod.string().nullish(),
   "world": zod.string().nullish(),
   "services": zod.string().nullish(),
@@ -560,6 +562,7 @@ export const GetClientResponse = zod.object({
   "id": zod.number(),
   "name": zod.string(),
   "groupId": zod.number().nullish(),
+  "monthlyFee": zod.number().nullish(),
   "business": zod.string().nullish(),
   "world": zod.string().nullish(),
   "services": zod.string().nullish(),
@@ -620,6 +623,7 @@ export const UpdateClientParams = zod.object({
 export const UpdateClientBody = zod.object({
   "name": zod.string(),
   "groupId": zod.number().nullish(),
+  "monthlyFee": zod.number().nullish(),
   "business": zod.string().nullish(),
   "world": zod.string().nullish(),
   "services": zod.string().nullish(),
@@ -653,6 +657,7 @@ export const UpdateClientResponse = zod.object({
   "id": zod.number(),
   "name": zod.string(),
   "groupId": zod.number().nullish(),
+  "monthlyFee": zod.number().nullish(),
   "business": zod.string().nullish(),
   "world": zod.string().nullish(),
   "services": zod.string().nullish(),
@@ -722,6 +727,7 @@ export const ClientWebsiteIntakeResponse = zod.object({
   "id": zod.number(),
   "name": zod.string(),
   "groupId": zod.number().nullish(),
+  "monthlyFee": zod.number().nullish(),
   "business": zod.string().nullish(),
   "world": zod.string().nullish(),
   "services": zod.string().nullish(),
@@ -783,6 +789,7 @@ export const ClientGoogleAdsRefreshResponse = zod.object({
   "id": zod.number(),
   "name": zod.string(),
   "groupId": zod.number().nullish(),
+  "monthlyFee": zod.number().nullish(),
   "business": zod.string().nullish(),
   "world": zod.string().nullish(),
   "services": zod.string().nullish(),
@@ -844,6 +851,7 @@ export const ClientSearchConsoleRefreshResponse = zod.object({
   "id": zod.number(),
   "name": zod.string(),
   "groupId": zod.number().nullish(),
+  "monthlyFee": zod.number().nullish(),
   "business": zod.string().nullish(),
   "world": zod.string().nullish(),
   "services": zod.string().nullish(),
@@ -905,6 +913,7 @@ export const ClientGa4RefreshResponse = zod.object({
   "id": zod.number(),
   "name": zod.string(),
   "groupId": zod.number().nullish(),
+  "monthlyFee": zod.number().nullish(),
   "business": zod.string().nullish(),
   "world": zod.string().nullish(),
   "services": zod.string().nullish(),
@@ -966,6 +975,7 @@ export const ClientPlacesRefreshResponse = zod.object({
   "id": zod.number(),
   "name": zod.string(),
   "groupId": zod.number().nullish(),
+  "monthlyFee": zod.number().nullish(),
   "business": zod.string().nullish(),
   "world": zod.string().nullish(),
   "services": zod.string().nullish(),
@@ -1027,6 +1037,7 @@ export const ClientPagespeedRefreshResponse = zod.object({
   "id": zod.number(),
   "name": zod.string(),
   "groupId": zod.number().nullish(),
+  "monthlyFee": zod.number().nullish(),
   "business": zod.string().nullish(),
   "world": zod.string().nullish(),
   "services": zod.string().nullish(),
@@ -1093,6 +1104,7 @@ export const ClientCrawlUploadResponse = zod.object({
   "id": zod.number(),
   "name": zod.string(),
   "groupId": zod.number().nullish(),
+  "monthlyFee": zod.number().nullish(),
   "business": zod.string().nullish(),
   "world": zod.string().nullish(),
   "services": zod.string().nullish(),
@@ -1186,6 +1198,7 @@ export const ClientBusinessProfileRefreshResponse = zod.object({
   "id": zod.number(),
   "name": zod.string(),
   "groupId": zod.number().nullish(),
+  "monthlyFee": zod.number().nullish(),
   "business": zod.string().nullish(),
   "world": zod.string().nullish(),
   "services": zod.string().nullish(),
@@ -1247,6 +1260,7 @@ export const ClientCompetitorAdsRefreshResponse = zod.object({
   "id": zod.number(),
   "name": zod.string(),
   "groupId": zod.number().nullish(),
+  "monthlyFee": zod.number().nullish(),
   "business": zod.string().nullish(),
   "world": zod.string().nullish(),
   "services": zod.string().nullish(),
@@ -1347,6 +1361,22 @@ export const GetClientsCoverageResponse = zod.object({
 
 
 /**
+ * @summary Monthly fee total vs. goal, with per-client breakdown
+ */
+export const GetClientsRevenueResponse = zod.object({
+  "goalEur": zod.number(),
+  "totalMonthlyFeeEur": zod.number(),
+  "clientCount": zod.number(),
+  "withFeeCount": zod.number(),
+  "clients": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "monthlyFeeEur": zod.number().nullable()
+}))
+})
+
+
+/**
  * @summary Discover unlinked accounts + fillable keys (review payload, read-only)
  */
 export const GetClientsDiscoveryResponse = zod.object({
@@ -1416,6 +1446,7 @@ export const ClientRefreshAllResponse = zod.object({
   "id": zod.number(),
   "name": zod.string(),
   "groupId": zod.number().nullish(),
+  "monthlyFee": zod.number().nullish(),
   "business": zod.string().nullish(),
   "world": zod.string().nullish(),
   "services": zod.string().nullish(),
@@ -1485,6 +1516,7 @@ export const ClientBriefingSuggestResponse = zod.object({
   "id": zod.number(),
   "name": zod.string(),
   "groupId": zod.number().nullish(),
+  "monthlyFee": zod.number().nullish(),
   "business": zod.string().nullish(),
   "world": zod.string().nullish(),
   "services": zod.string().nullish(),

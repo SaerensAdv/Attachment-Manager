@@ -1,10 +1,16 @@
 import type { Client, ClientInput } from "@workspace/api-client-react";
 
-// `groupId` is numeric and lives outside the string-only form state (it is
-// managed separately in the editor, not as a text field).
-export type FieldKey = Exclude<keyof ClientInput, "name" | "groupId">;
+// `groupId` and `monthlyFee` are numeric and live outside the string-only form
+// state (they are managed separately in the editor, not as text fields).
+export type FieldKey = Exclude<
+  keyof ClientInput,
+  "name" | "groupId" | "monthlyFee"
+>;
 
-export type FormState = Record<Exclude<keyof ClientInput, "groupId">, string>;
+export type FormState = Record<
+  Exclude<keyof ClientInput, "groupId" | "monthlyFee">,
+  string
+>;
 
 export interface FieldDef {
   key: FieldKey;

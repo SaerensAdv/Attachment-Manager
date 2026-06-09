@@ -72,6 +72,8 @@ export * from './proposalList';
 export * from './refreshOutcome';
 export * from './refreshOutcomeStatus';
 export * from './requestChangesInput';
+export * from './revenueClient';
+export * from './revenueSummary';
 export * from './schedule';
 export * from './scheduleInput';
 export * from './scheduleList';

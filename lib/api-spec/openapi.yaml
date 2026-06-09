@@ -959,6 +959,18 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ClientCoverageList"
+  /clients/revenue:
+    get:
+      operationId: getClientsRevenue
+      tags: [clients]
+      summary: Monthly fee total vs. goal, with per-client breakdown
+      responses:
+        "200":
+          description: Revenue summary across all clients
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RevenueSummary"
   /clients/discovery:
     get:
       operationId: getClientsDiscovery
@@ -1846,6 +1858,37 @@ components:
             The portrait image encoded as base64. A data-URL prefix
             (e.g. "data:image/png;base64,") is tolerated and stripped. The
             decoded bytes must be a PNG, JPEG or WebP image.
+    RevenueClient:
+      type: object
+      required: [id, name, monthlyFeeEur]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        monthlyFeeEur:
+          type: ["integer", "null"]
+    RevenueSummary:
+      type: object
+      required:
+        - goalEur
+        - totalMonthlyFeeEur
+        - clientCount
+        - withFeeCount
+        - clients
+      properties:
+        goalEur:
+          type: number
+        totalMonthlyFeeEur:
+          type: number
+        clientCount:
+          type: integer
+        withFeeCount:
+          type: integer
+        clients:
+          type: array
+          items:
+            $ref: "#/components/schemas/RevenueClient"
     Client:
       type: object
       required: [id, name, createdAt, updatedAt]
@@ -1855,6 +1898,8 @@ components:
         name:
           type: string
         groupId:
+          type: ["integer", "null"]
+        monthlyFee:
           type: ["integer", "null"]
         business:
           type: ["string", "null"]
@@ -1968,6 +2013,8 @@ components:
         name:
           type: string
         groupId:
+          type: ["integer", "null"]
+        monthlyFee:
           type: ["integer", "null"]
         business:
           type: ["string", "null"]

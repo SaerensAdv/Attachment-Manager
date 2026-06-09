@@ -80,8 +80,15 @@ const MAX_NAME_LEN = 200;
 interface ClientInput {
   name: string;
   groupId: number | null;
+  monthlyFee: number | null;
   values: Partial<Record<FieldKey, string | null>>;
 }
+
+/** The agency's monthly gross-revenue target (whole euros) the dashboard tracks
+ * progress towards. Single source of truth — change here to move the goal. */
+const MONTHLY_REVENUE_GOAL_EUR = 10_000;
+/** Upper sanity bound for a single client's monthly fee (whole euros). */
+const MAX_MONTHLY_FEE_EUR = 1_000_000;
 
 /**
  * Parse the optional `groupId` from a request body. Returns the numeric id, or
@@ -96,6 +103,26 @@ function parseGroupId(raw: unknown): number | null | { error: string } {
     return { error: "Ongeldige klantgroep." };
   }
   return id;
+}
+
+/**
+ * Parse the optional monthly fee (whole euros) from a request body. Returns the
+ * amount, `null` when absent / cleared, or an error string when malformed.
+ */
+function parseMonthlyFee(raw: unknown): number | null | { error: string } {
+  if (raw === undefined || raw === null) return null;
+  // A blank (or whitespace-only) string means "nog niet ingevuld" → null, not 0.
+  if (typeof raw === "string" && raw.trim() === "") return null;
+  const n = typeof raw === "string" ? Number(raw.trim()) : Number(raw);
+  if (!Number.isFinite(n) || !Number.isInteger(n) || n < 0) {
+    return {
+      error: "Maandelijkse fee moet een geheel bedrag in euro zijn (0 of meer).",
+    };
+  }
+  if (n > MAX_MONTHLY_FEE_EUR) {
+    return { error: "Maandelijkse fee is onrealistisch hoog." };
+  }
+  return n;
 }
 
 /**
@@ -131,6 +158,11 @@ function parseBody(body: unknown): ClientInput | { error: string } {
   const groupId = parseGroupId(obj.groupId);
   if (groupId !== null && typeof groupId === "object") {
     return { error: groupId.error };
+  }
+
+  const monthlyFee = parseMonthlyFee(obj.monthlyFee);
+  if (monthlyFee !== null && typeof monthlyFee === "object") {
+    return { error: monthlyFee.error };
   }
 
   const values: Partial<Record<FieldKey, string | null>> = {};
@@ -198,7 +230,7 @@ function parseBody(body: unknown): ClientInput | { error: string } {
     }
   }
 
-  return { name, groupId, values };
+  return { name, groupId, monthlyFee, values };
 }
 
 /** Shape a DB row for the API response (timestamps as ISO strings). */
@@ -299,6 +331,44 @@ router.get("/clients/coverage", async (_req, res) => {
 });
 
 /**
+ * Revenue overview (read-only): the agency's monthly-fee total versus the goal,
+ * plus a per-client breakdown so the dashboard can show "aan hoeveel zitten we
+ * deze maand" in één oogopslag. Pure read of the fees we already hold — no
+ * external calls. A null fee means "nog niet ingevuld" and counts as €0.
+ */
+router.get("/clients/revenue", async (_req, res) => {
+  const rows = await db
+    .select({
+      id: clientsTable.id,
+      name: clientsTable.name,
+      monthlyFee: clientsTable.monthlyFee,
+    })
+    .from(clientsTable)
+    .orderBy(clientsTable.name);
+
+  const clients = rows.map((c) => ({
+    id: c.id,
+    name: c.name,
+    monthlyFeeEur: c.monthlyFee ?? null,
+  }));
+  const totalMonthlyFeeEur = clients.reduce(
+    (sum, c) => sum + (c.monthlyFeeEur ?? 0),
+    0,
+  );
+  const withFeeCount = clients.filter(
+    (c) => (c.monthlyFeeEur ?? 0) > 0,
+  ).length;
+
+  res.json({
+    goalEur: MONTHLY_REVENUE_GOAL_EUR,
+    totalMonthlyFeeEur,
+    clientCount: clients.length,
+    withFeeCount,
+    clients,
+  });
+});
+
+/**
  * Discovery (read-only): find accounts the agency manages that aren't yet a
  * client, plus missing integration keys we can confidently fill on existing
  * clients. Returns a review payload — nothing is created or changed here; the
@@ -342,7 +412,12 @@ router.post("/clients", async (req, res) => {
   try {
     const [row] = await db
       .insert(clientsTable)
-      .values({ name: parsed.name, groupId: parsed.groupId, ...parsed.values })
+      .values({
+        name: parsed.name,
+        groupId: parsed.groupId,
+        monthlyFee: parsed.monthlyFee,
+        ...parsed.values,
+      })
       .returning();
     res.status(201).json(serialize(row));
   } catch (err) {
@@ -387,6 +462,7 @@ router.put("/clients/:id", async (req, res) => {
       .set({
         name: parsed.name,
         groupId: parsed.groupId,
+        monthlyFee: parsed.monthlyFee,
         ...parsed.values,
         updatedAt: new Date(),
       })

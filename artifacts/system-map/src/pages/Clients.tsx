@@ -27,6 +27,7 @@ import {
   Activity,
   BarChart3,
   Building2,
+  Euro,
   Gauge,
   Globe,
   Layers,
@@ -77,6 +78,9 @@ export default function Clients() {
   // Klantgroep ("kapstok") of the open fiche — numeric and kept outside the
   // string-only FormState. null = ungrouped.
   const [groupId, setGroupId] = useState<number | null>(null);
+  // Maandelijkse fee (hele euro's) — numeriek, dus net als groupId buiten de
+  // string-only FormState gehouden en apart in de save-payload gemengd.
+  const [monthlyFee, setMonthlyFee] = useState<number | null>(null);
   // Inline "nieuwe klantgroep" composer in the editor selector.
   const [newGroupName, setNewGroupName] = useState("");
   const [creatingGroup, setCreatingGroup] = useState(false);
@@ -229,6 +233,7 @@ export default function Clients() {
     setEditing("new");
     setForm(EMPTY_FORM);
     setGroupId(null);
+    setMonthlyFee(null);
     setNewGroupName("");
     setFormError(null);
     setConfirmDelete(false);
@@ -248,6 +253,7 @@ export default function Clients() {
     setEditing(c.id);
     setForm(clientToForm(c));
     setGroupId(c.groupId ?? null);
+    setMonthlyFee(c.monthlyFee ?? null);
     setNewGroupName("");
     setFormError(null);
     setConfirmDelete(false);
@@ -288,6 +294,7 @@ export default function Clients() {
     setEditing(null);
     setForm(EMPTY_FORM);
     setGroupId(null);
+    setMonthlyFee(null);
     setNewGroupName("");
     setFormError(null);
     setConfirmDelete(false);
@@ -339,7 +346,7 @@ export default function Clients() {
       return;
     }
     setFormError(null);
-    const payload = { ...formToInput(form), groupId };
+    const payload = { ...formToInput(form), groupId, monthlyFee };
 
     const onError = (err: unknown) =>
       setFormError(err instanceof Error ? err.message : "Opslaan mislukt");
@@ -353,6 +360,7 @@ export default function Clients() {
             setEditing(created.id);
             setForm(clientToForm(created));
             setGroupId(created.groupId ?? null);
+            setMonthlyFee(created.monthlyFee ?? null);
             setEditingUpdatedAt(created.updatedAt);
           },
           onError,
@@ -373,6 +381,7 @@ export default function Clients() {
             invalidate();
             setForm(clientToForm(updated));
             setGroupId(updated.groupId ?? null);
+            setMonthlyFee(updated.monthlyFee ?? null);
             setEditingUpdatedAt(updated.updatedAt);
           },
           onError: (err) => {
@@ -383,6 +392,7 @@ export default function Clients() {
               invalidate();
               setForm(clientToForm(conflict));
               setGroupId(conflict.groupId ?? null);
+              setMonthlyFee(conflict.monthlyFee ?? null);
               setEditingUpdatedAt(conflict.updatedAt);
               setFormError(
                 "Deze fiche is intussen elders aangepast. De nieuwste versie is geladen — voer je wijziging opnieuw door.",
@@ -959,6 +969,53 @@ export default function Clients() {
                         )}
                         Maak
                       </button>
+                    </div>
+                  </div>
+
+                  {/* Maandelijkse fee — voedt het omzet-overzicht op het dashboard */}
+                  <div className="flex flex-col gap-2 border border-foreground/30 bg-foreground/5 p-4">
+                    <div className="flex items-center gap-2">
+                      <Euro className="w-4 h-4 text-accent" />
+                      <label
+                        htmlFor="client-monthly-fee"
+                        className="font-['Space_Mono'] text-[10px] uppercase tracking-widest"
+                      >
+                        Maandelijkse fee
+                      </label>
+                    </div>
+                    <p className="font-['Inter'] text-xs text-muted-foreground">
+                      Brutobedrag per maand dat deze klant oplevert. Voedt het
+                      omzet-overzicht op het dashboard.
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <span className="font-['Playfair_Display'] font-black text-lg text-muted-foreground">
+                        €
+                      </span>
+                      <input
+                        id="client-monthly-fee"
+                        type="number"
+                        min={0}
+                        step={50}
+                        inputMode="numeric"
+                        value={monthlyFee ?? ""}
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          if (v === "") {
+                            setMonthlyFee(null);
+                            return;
+                          }
+                          const n = Math.round(Number(v));
+                          setMonthlyFee(
+                            Number.isFinite(n) ? Math.max(0, n) : null,
+                          );
+                        }}
+                        placeholder="0"
+                        data-testid="input-monthly-fee"
+                        className={`${INPUT_CLASS} w-40`}
+                      />
+                      <span className="font-['Space_Mono'] text-[10px] uppercase tracking-wider text-muted-foreground">
+                        / maand
+                      </span>
                     </div>
                   </div>
 

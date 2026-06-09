@@ -57,6 +57,7 @@ import type {
   ImprovementProposal,
   ProposalList,
   RequestChangesInput,
+  RevenueSummary,
   Schedule,
   ScheduleInput,
   ScheduleList,
@@ -2673,6 +2674,83 @@ export function useGetClientsCoverage<TData = Awaited<ReturnType<typeof getClien
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetClientsCoverageQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetClientsRevenueUrl = () => {
+
+
+
+
+  return `/api/clients/revenue`
+}
+
+/**
+ * @summary Monthly fee total vs. goal, with per-client breakdown
+ */
+export const getClientsRevenue = async ( options?: RequestInit): Promise<RevenueSummary> => {
+
+  return customFetch<RevenueSummary>(getGetClientsRevenueUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetClientsRevenueQueryKey = () => {
+    return [
+    `/api/clients/revenue`
+    ] as const;
+    }
+
+
+export const getGetClientsRevenueQueryOptions = <TData = Awaited<ReturnType<typeof getClientsRevenue>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getClientsRevenue>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetClientsRevenueQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getClientsRevenue>>> = ({ signal }) => getClientsRevenue({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getClientsRevenue>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetClientsRevenueQueryResult = NonNullable<Awaited<ReturnType<typeof getClientsRevenue>>>
+export type GetClientsRevenueQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Monthly fee total vs. goal, with per-client breakdown
+ */
+
+export function useGetClientsRevenue<TData = Awaited<ReturnType<typeof getClientsRevenue>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getClientsRevenue>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetClientsRevenueQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

@@ -1144,6 +1144,38 @@ export const ClientCrawlUploadResponse = zod.object({
 
 
 /**
+ * @summary List a client's crawl snapshots (history) for month-over-month comparison
+ */
+export const GetClientCrawlSnapshotsParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetClientCrawlSnapshotsResponse = zod.object({
+  "snapshots": zod.array(zod.object({
+  "id": zod.number(),
+  "clientId": zod.number(),
+  "crawledAt": zod.coerce.date(),
+  "stats": zod.object({
+  "totalUrls": zod.number(),
+  "clientErrors": zod.number(),
+  "serverErrors": zod.number(),
+  "redirects": zod.number(),
+  "redirectChains": zod.number(),
+  "redirectLoops": zod.number(),
+  "missingTitles": zod.number(),
+  "duplicateTitles": zod.number(),
+  "missingMetaDescriptions": zod.number(),
+  "duplicateMetaDescriptions": zod.number(),
+  "missingH1": zod.number(),
+  "nonIndexable": zod.number(),
+  "slowPages": zod.number(),
+  "largePages": zod.number()
+}).describe('Aggregated, normalized counts from one Screaming Frog crawl.')
+}))
+})
+
+
+/**
  * @summary Pull live Google Business Profile performance for the client and store it
  */
 export const ClientBusinessProfileRefreshParams = zod.object({

@@ -851,6 +851,30 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /clients/{id}/crawl-snapshots:
+    get:
+      operationId: getClientCrawlSnapshots
+      tags: [clients]
+      summary: List a client's crawl snapshots (history) for month-over-month comparison
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: The client's crawl snapshots, newest first
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CrawlSnapshotList"
+        "400":
+          description: Invalid id
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /clients/{id}/business-profile-refresh:
     post:
       operationId: clientBusinessProfileRefresh
@@ -2034,6 +2058,74 @@ components:
           type: string
           format: date-time
           description: When the crawl actually ran (optional; defaults to now).
+    CrawlStats:
+      type: object
+      description: Aggregated, normalized counts from one Screaming Frog crawl.
+      required:
+        - totalUrls
+        - clientErrors
+        - serverErrors
+        - redirects
+        - redirectChains
+        - redirectLoops
+        - missingTitles
+        - duplicateTitles
+        - missingMetaDescriptions
+        - duplicateMetaDescriptions
+        - missingH1
+        - nonIndexable
+        - slowPages
+        - largePages
+      properties:
+        totalUrls:
+          type: integer
+        clientErrors:
+          type: integer
+        serverErrors:
+          type: integer
+        redirects:
+          type: integer
+        redirectChains:
+          type: integer
+        redirectLoops:
+          type: integer
+        missingTitles:
+          type: integer
+        duplicateTitles:
+          type: integer
+        missingMetaDescriptions:
+          type: integer
+        duplicateMetaDescriptions:
+          type: integer
+        missingH1:
+          type: integer
+        nonIndexable:
+          type: integer
+        slowPages:
+          type: integer
+        largePages:
+          type: integer
+    CrawlSnapshot:
+      type: object
+      required: [id, clientId, crawledAt, stats]
+      properties:
+        id:
+          type: integer
+        clientId:
+          type: integer
+        crawledAt:
+          type: string
+          format: date-time
+        stats:
+          $ref: "#/components/schemas/CrawlStats"
+    CrawlSnapshotList:
+      type: object
+      required: [snapshots]
+      properties:
+        snapshots:
+          type: array
+          items:
+            $ref: "#/components/schemas/CrawlSnapshot"
     ClientGroupInput:
       type: object
       required: [name]

@@ -27,6 +27,7 @@ import {
   parseBriefingJson,
 } from "../lib/briefing-suggest";
 import { summarizeCrawl } from "../lib/screaming-frog";
+import { recordSnapshot, listSnapshots } from "../lib/crawl-history";
 
 const router: IRouter = Router();
 
@@ -836,7 +837,30 @@ router.post("/clients/:id/crawl-upload", async (req, res) => {
     .where(eq(clientsTable.id, id))
     .returning();
 
+  // Keep a point in the history so months can be compared. Best-effort: a
+  // failure here must not undo the upload (the latest crawl is already stored).
+  await recordSnapshot(id, summary.fetchedAt, summary.stats);
+
   res.json(serialize(updated));
+});
+
+// Crawl history for a client: one snapshot per crawl day, newest first, used by
+// the upload page to compare technical SEO month over month.
+router.get("/clients/:id/crawl-snapshots", async (req, res) => {
+  const id = parseId(req.params.id);
+  if (id === null) {
+    res.status(400).json({ error: "Ongeldige id." });
+    return;
+  }
+  const snapshots = await listSnapshots(id);
+  res.json({
+    snapshots: snapshots.map((s) => ({
+      id: s.id,
+      clientId: s.clientId,
+      crawledAt: s.crawledAt.toISOString(),
+      stats: s.stats,
+    })),
+  });
 });
 
 router.post("/clients/:id/business-profile-refresh", async (req, res) => {

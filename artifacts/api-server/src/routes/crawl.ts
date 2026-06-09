@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import { db, clientsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { summarizeCrawl } from "../lib/screaming-frog";
+import { recordSnapshot } from "../lib/crawl-history";
 
 const router: IRouter = Router();
 
@@ -91,6 +92,9 @@ router.post("/crawl-intake", async (req, res): Promise<void> => {
     })
     .where(eq(clientsTable.id, id))
     .returning();
+
+  // Keep a point in the history so months can be compared. Best-effort.
+  await recordSnapshot(id, summary.fetchedAt, summary.stats);
 
   res.json({
     id: updated.id,

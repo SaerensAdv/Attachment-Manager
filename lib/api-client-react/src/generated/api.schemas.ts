@@ -413,6 +413,37 @@ export interface CrawlUploadInput {
   crawledAt?: string;
 }
 
+/**
+ * Aggregated, normalized counts from one Screaming Frog crawl.
+ */
+export interface CrawlStats {
+  totalUrls: number;
+  clientErrors: number;
+  serverErrors: number;
+  redirects: number;
+  redirectChains: number;
+  redirectLoops: number;
+  missingTitles: number;
+  duplicateTitles: number;
+  missingMetaDescriptions: number;
+  duplicateMetaDescriptions: number;
+  missingH1: number;
+  nonIndexable: number;
+  slowPages: number;
+  largePages: number;
+}
+
+export interface CrawlSnapshot {
+  id: number;
+  clientId: number;
+  crawledAt: string;
+  stats: CrawlStats;
+}
+
+export interface CrawlSnapshotList {
+  snapshots: CrawlSnapshot[];
+}
+
 export interface ClientGroupInput {
   name: string;
   /** @nullable */

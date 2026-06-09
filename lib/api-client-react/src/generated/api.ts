@@ -38,6 +38,7 @@ import type {
   ClientInput,
   ClientList,
   ClientRefreshAllResult,
+  CrawlSnapshotList,
   CrawlUploadInput,
   DeleteClientGroup200,
   DocContent,
@@ -2389,6 +2390,83 @@ export const useClientCrawlUpload = <TError = ErrorType<ErrorResponse>,
       > => {
       return useMutation(getClientCrawlUploadMutationOptions(options));
     }
+
+export const getGetClientCrawlSnapshotsUrl = (id: number,) => {
+
+
+
+
+  return `/api/clients/${id}/crawl-snapshots`
+}
+
+/**
+ * @summary List a client's crawl snapshots (history) for month-over-month comparison
+ */
+export const getClientCrawlSnapshots = async (id: number, options?: RequestInit): Promise<CrawlSnapshotList> => {
+
+  return customFetch<CrawlSnapshotList>(getGetClientCrawlSnapshotsUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetClientCrawlSnapshotsQueryKey = (id: number,) => {
+    return [
+    `/api/clients/${id}/crawl-snapshots`
+    ] as const;
+    }
+
+
+export const getGetClientCrawlSnapshotsQueryOptions = <TData = Awaited<ReturnType<typeof getClientCrawlSnapshots>>, TError = ErrorType<ErrorResponse>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getClientCrawlSnapshots>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetClientCrawlSnapshotsQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getClientCrawlSnapshots>>> = ({ signal }) => getClientCrawlSnapshots(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getClientCrawlSnapshots>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetClientCrawlSnapshotsQueryResult = NonNullable<Awaited<ReturnType<typeof getClientCrawlSnapshots>>>
+export type GetClientCrawlSnapshotsQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary List a client's crawl snapshots (history) for month-over-month comparison
+ */
+
+export function useGetClientCrawlSnapshots<TData = Awaited<ReturnType<typeof getClientCrawlSnapshots>>, TError = ErrorType<ErrorResponse>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getClientCrawlSnapshots>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetClientCrawlSnapshotsQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getClientBusinessProfileRefreshUrl = (id: number,) => {
 

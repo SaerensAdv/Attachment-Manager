@@ -329,6 +329,12 @@ export interface Client {
   /** @nullable */
   searchConsoleLiveAt?: string | null;
   /** @nullable */
+  bingSiteUrl?: string | null;
+  /** @nullable */
+  bingLive?: string | null;
+  /** @nullable */
+  bingLiveAt?: string | null;
+  /** @nullable */
   ga4PropertyId?: string | null;
   /** @nullable */
   ga4Live?: string | null;
@@ -412,6 +418,8 @@ export interface ClientInput {
   competitorAdvertisers?: string | null;
   /** @nullable */
   searchConsoleSiteUrl?: string | null;
+  /** @nullable */
+  bingSiteUrl?: string | null;
   /** @nullable */
   ga4PropertyId?: string | null;
   /** @nullable */
@@ -528,6 +536,7 @@ export type ClientCoverageIntegrations = {
   googleAds: IntegrationCoverage;
   competitorAds: IntegrationCoverage;
   searchConsole: IntegrationCoverage;
+  bing: IntegrationCoverage;
   ga4: IntegrationCoverage;
   places: IntegrationCoverage;
   pagespeed: IntegrationCoverage;

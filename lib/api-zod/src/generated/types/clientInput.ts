@@ -57,6 +57,8 @@ export interface ClientInput {
   /** @nullable */
   searchConsoleSiteUrl?: string | null;
   /** @nullable */
+  bingSiteUrl?: string | null;
+  /** @nullable */
   ga4PropertyId?: string | null;
   /** @nullable */
   placesQuery?: string | null;

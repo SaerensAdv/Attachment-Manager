@@ -707,6 +707,42 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /clients/{id}/bing-refresh:
+    post:
+      operationId: clientBingRefresh
+      tags: [clients]
+      summary: Pull live Bing Webmaster data for the client and store it
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: The updated client with fresh live Bing Webmaster data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Client"
+        "400":
+          description: Invalid request (e.g. no site, missing config)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Client not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "502":
+          description: Bing Webmaster could not be read
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /clients/{id}/ga4-refresh:
     post:
       operationId: clientGa4Refresh
@@ -1983,6 +2019,13 @@ components:
         searchConsoleLiveAt:
           type: ["string", "null"]
           format: date-time
+        bingSiteUrl:
+          type: ["string", "null"]
+        bingLive:
+          type: ["string", "null"]
+        bingLiveAt:
+          type: ["string", "null"]
+          format: date-time
         ga4PropertyId:
           type: ["string", "null"]
         ga4Live:
@@ -2077,6 +2120,8 @@ components:
         competitorAdvertisers:
           type: ["string", "null"]
         searchConsoleSiteUrl:
+          type: ["string", "null"]
+        bingSiteUrl:
           type: ["string", "null"]
         ga4PropertyId:
           type: ["string", "null"]
@@ -2273,6 +2318,7 @@ components:
             - googleAds
             - competitorAds
             - searchConsole
+            - bing
             - ga4
             - places
             - pagespeed
@@ -2285,6 +2331,8 @@ components:
             competitorAds:
               $ref: "#/components/schemas/IntegrationCoverage"
             searchConsole:
+              $ref: "#/components/schemas/IntegrationCoverage"
+            bing:
               $ref: "#/components/schemas/IntegrationCoverage"
             ga4:
               $ref: "#/components/schemas/IntegrationCoverage"

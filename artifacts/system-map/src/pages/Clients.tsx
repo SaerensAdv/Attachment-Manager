@@ -9,6 +9,7 @@ import {
   useClientGoogleAdsRefresh,
   useClientCompetitorAdsRefresh,
   useClientSearchConsoleRefresh,
+  useClientBingRefresh,
   useClientGa4Refresh,
   useClientPlacesRefresh,
   useClientPagespeedRefresh,
@@ -113,6 +114,13 @@ export default function Clients() {
     text: string | null;
     at: string | null;
   }>({ text: null, at: null });
+  // Live Bing Webmaster — set by the bing-refresh endpoint; the verified site
+  // URL is an editable field. Bing's BE/NL share is small, so this is a
+  // supplementary organic-search source next to Search Console.
+  const [liveBing, setLiveBing] = useState<{
+    text: string | null;
+    at: string | null;
+  }>({ text: null, at: null });
   // Live GA4 analytics (fase 4) — set by the ga4-refresh endpoint; the property
   // id is an editable field.
   const [liveGa4, setLiveGa4] = useState<{
@@ -209,6 +217,7 @@ export default function Clients() {
   const adsMut = useClientGoogleAdsRefresh();
   const competMut = useClientCompetitorAdsRefresh();
   const scMut = useClientSearchConsoleRefresh();
+  const bingMut = useClientBingRefresh();
   const ga4Mut = useClientGa4Refresh();
   const placesMut = useClientPlacesRefresh();
   const pagespeedMut = useClientPagespeedRefresh();
@@ -221,6 +230,7 @@ export default function Clients() {
   const refreshingAds = adsMut.isPending;
   const refreshingCompetitors = competMut.isPending;
   const refreshingSearchConsole = scMut.isPending;
+  const refreshingBing = bingMut.isPending;
   const refreshingGa4 = ga4Mut.isPending;
   const refreshingPlaces = placesMut.isPending;
   const refreshingPagespeed = pagespeedMut.isPending;
@@ -245,6 +255,7 @@ export default function Clients() {
     setLiveAds({ text: null, at: null });
     setLiveCompetitors({ text: null, at: null });
     setLiveSearchConsole({ text: null, at: null });
+    setLiveBing({ text: null, at: null });
     setLiveGa4({ text: null, at: null });
     setLivePlaces({ text: null, at: null });
     setLivePagespeed({ text: null, at: null });
@@ -272,6 +283,10 @@ export default function Clients() {
     setLiveSearchConsole({
       text: c.searchConsoleLive ?? null,
       at: c.searchConsoleLiveAt ?? null,
+    });
+    setLiveBing({
+      text: c.bingLive ?? null,
+      at: c.bingLiveAt ?? null,
     });
     setLiveGa4({
       text: c.ga4Live ?? null,
@@ -306,6 +321,7 @@ export default function Clients() {
     setLiveAds({ text: null, at: null });
     setLiveCompetitors({ text: null, at: null });
     setLiveSearchConsole({ text: null, at: null });
+    setLiveBing({ text: null, at: null });
     setLiveGa4({ text: null, at: null });
     setLivePlaces({ text: null, at: null });
     setLivePagespeed({ text: null, at: null });
@@ -496,6 +512,30 @@ export default function Clients() {
             err instanceof Error
               ? err.message
               : "Search Console ophalen mislukt",
+          ),
+      },
+    );
+  };
+
+  const handleBing = () => {
+    if (typeof editing !== "number") return;
+    setFormError(null);
+    bingMut.mutate(
+      { id: editing },
+      {
+        onSuccess: (updated) => {
+          invalidate();
+          setForm(clientToForm(updated));
+          setLiveBing({
+            text: updated.bingLive ?? null,
+            at: updated.bingLiveAt ?? null,
+          });
+        },
+        onError: (err) =>
+          setFormError(
+            err instanceof Error
+              ? err.message
+              : "Bing Webmaster ophalen mislukt",
           ),
       },
     );
@@ -1637,12 +1677,106 @@ export default function Clients() {
                     </>
                   )}
 
-                  {/* Section VII — live GA4 analytics (existing clients only) */}
+                  {/* Section VII — live Bing Webmaster (existing clients only) */}
                   {typeof editing === "number" && (
                     <>
                       <div className="flex items-baseline justify-between border-b-2 border-foreground pb-1">
                         <h3 className="font-['Playfair_Display'] font-bold text-lg uppercase tracking-wider">
-                          VII. Live GA4
+                          VII. Live Bing Webmaster
+                        </h3>
+                        <span className="font-['Space_Mono'] text-xs text-muted-foreground">
+                          Organisch zoekverkeer (Bing)
+                        </span>
+                      </div>
+
+                      <p className="font-['Inter'] text-sm text-muted-foreground -mt-4">
+                        Haalt live cijfers op uit Bing Webmaster Tools (recentste
+                        ~4 weken): klikken, impressies, CTR en gemiddelde positie,
+                        plus top-zoektermen en -pagina's. Alleen-lezen. Let op: Bing
+                        heeft een klein marktaandeel in BE/NL — gebruik dit als
+                        aanvulling op Search Console, niet als hoofdbron.
+                      </p>
+
+                      <div className="flex flex-col gap-1.5">
+                        <label className="font-['Space_Mono'] text-[10px] uppercase tracking-widest">
+                          Bing Webmaster-site
+                        </label>
+                        <Input
+                          value={form.bingSiteUrl}
+                          onChange={(e) =>
+                            setField("bingSiteUrl", e.target.value)
+                          }
+                          placeholder="Bv. https://voorbeeld.be/"
+                          data-testid="input-client-bingSiteUrl"
+                          className={INPUT_CLASS}
+                        />
+                        <span className="font-['Space_Mono'] text-[9px] tracking-wider text-muted-foreground/60">
+                          De volledige URL van de in Bing geverifieerde site.
+                          Bewaar eerst met "Wijzigingen opslaan" voor je ophaalt.
+                        </span>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-3">
+                        <button
+                          onClick={handleBing}
+                          disabled={refreshingBing || !form.bingSiteUrl.trim()}
+                          data-testid="button-bing-refresh"
+                          className="py-2.5 px-4 border-2 border-foreground text-foreground font-['Space_Mono'] text-[11px] uppercase tracking-widest flex items-center gap-2 hover:bg-foreground hover:text-background transition-colors disabled:opacity-50 disabled:pointer-events-none"
+                        >
+                          {refreshingBing ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Globe className="w-4 h-4" />
+                          )}
+                          {liveBing.text ? "Opnieuw ophalen" : "Bing ophalen"}
+                        </button>
+                        {!form.bingSiteUrl.trim() ? (
+                          <span className="font-['Space_Mono'] text-[10px] uppercase tracking-wider text-muted-foreground/70">
+                            Vul eerst de site-URL in
+                          </span>
+                        ) : liveBing.at ? (
+                          <span className="font-['Space_Mono'] text-[10px] uppercase tracking-wider text-muted-foreground">
+                            Laatst opgehaald:{" "}
+                            {new Date(liveBing.at).toLocaleString("nl-BE", {
+                              dateStyle: "medium",
+                              timeStyle: "short",
+                            })}
+                          </span>
+                        ) : (
+                          <span className="font-['Space_Mono'] text-[10px] uppercase tracking-wider text-muted-foreground/70">
+                            Nog niet opgehaald
+                          </span>
+                        )}
+                      </div>
+
+                      {liveBing.text && (
+                        <div className="flex flex-col gap-2">
+                          <div className="flex items-baseline justify-between border-b border-foreground/20 pb-1">
+                            <span className="font-['Space_Mono'] text-[10px] uppercase tracking-widest">
+                              Opgehaalde data
+                            </span>
+                            <span className="font-['Space_Mono'] text-[9px] tracking-wider text-muted-foreground/60">
+                              {liveBing.text.length.toLocaleString("nl-BE")}{" "}
+                              tekens
+                            </span>
+                          </div>
+                          <pre
+                            data-testid="text-bing-live"
+                            className="max-h-72 overflow-auto whitespace-pre-wrap break-words border border-foreground/30 bg-background p-3 font-['Space_Mono'] text-[11px] leading-relaxed text-muted-foreground"
+                          >
+                            {liveBing.text}
+                          </pre>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {/* Section VIII — live GA4 analytics (existing clients only) */}
+                  {typeof editing === "number" && (
+                    <>
+                      <div className="flex items-baseline justify-between border-b-2 border-foreground pb-1">
+                        <h3 className="font-['Playfair_Display'] font-bold text-lg uppercase tracking-wider">
+                          VIII. Live GA4
                         </h3>
                         <span className="font-['Space_Mono'] text-xs text-muted-foreground">
                           Website-analytics
@@ -1731,12 +1865,12 @@ export default function Clients() {
                     </>
                   )}
 
-                  {/* Section VIII — live Google Maps / Places (existing clients only) */}
+                  {/* Section IX — live Google Maps / Places (existing clients only) */}
                   {typeof editing === "number" && (
                     <>
                       <div className="flex items-baseline justify-between border-b-2 border-foreground pb-1">
                         <h3 className="font-['Playfair_Display'] font-bold text-lg uppercase tracking-wider">
-                          VIII. Live Google Maps
+                          IX. Live Google Maps
                         </h3>
                         <span className="font-['Space_Mono'] text-xs text-muted-foreground">
                           Lokale reputatie
@@ -1838,12 +1972,12 @@ export default function Clients() {
                     </>
                   )}
 
-                  {/* Section IX — live PageSpeed Insights (existing clients only) */}
+                  {/* Section X — live PageSpeed Insights (existing clients only) */}
                   {typeof editing === "number" && (
                     <>
                       <div className="flex items-baseline justify-between border-b-2 border-foreground pb-1">
                         <h3 className="font-['Playfair_Display'] font-bold text-lg uppercase tracking-wider">
-                          IX. Live PageSpeed
+                          X. Live PageSpeed
                         </h3>
                         <span className="font-['Space_Mono'] text-xs text-muted-foreground">
                           Snelheid landingspagina's
@@ -1940,12 +2074,12 @@ export default function Clients() {
                     </>
                   )}
 
-                  {/* Section X — live Google Business Profile (existing clients only) */}
+                  {/* Section XI — live Google Business Profile (existing clients only) */}
                   {typeof editing === "number" && (
                     <>
                       <div className="flex items-baseline justify-between border-b-2 border-foreground pb-1">
                         <h3 className="font-['Playfair_Display'] font-bold text-lg uppercase tracking-wider">
-                          X. Live Business Profile
+                          XI. Live Business Profile
                         </h3>
                         <span className="font-['Space_Mono'] text-xs text-muted-foreground">
                           Lokale aanwezigheid (GMB)

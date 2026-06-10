@@ -20,6 +20,7 @@ import {
   fetchSearchConsoleReport,
   SearchConsoleConfigError,
 } from "../lib/search-console";
+import { fetchBingReport, BingConfigError } from "../lib/bing-webmaster";
 import { fetchGa4Report, Ga4ConfigError } from "../lib/ga4";
 import { fetchPlacesReport, PlacesConfigError } from "../lib/places";
 import { fetchPageSpeedReport, PageSpeedConfigError } from "../lib/pagespeed";
@@ -64,6 +65,7 @@ const FIELDS = [
   "googleAdsCustomerId",
   "competitorAdvertisers",
   "searchConsoleSiteUrl",
+  "bingSiteUrl",
   "ga4PropertyId",
   "placesQuery",
   "placesCompetitors",
@@ -200,6 +202,16 @@ function parseBody(body: unknown): ClientInput | { error: string } {
     }
   }
 
+  // Bing Webmaster site must be a full URL-prefix property (https://...). Bing
+  // has no "sc-domain:" concept, so reject anything that isn't an http(s) URL.
+  const bingRaw = values.bingSiteUrl;
+  if (bingRaw && !/^https?:\/\/[^\s]+$/i.test(bingRaw)) {
+    return {
+      error:
+        'Bing Webmaster-site moet de volledige URL zijn, bv. "https://voorbeeld.be/".',
+    };
+  }
+
   // GA4 property id is numeric (optionally with a "properties/" prefix). Reject
   // anything else early so a typo never reaches the GA4 Data API.
   const ga4Raw = values.ga4PropertyId;
@@ -232,6 +244,7 @@ function serialize(client: Client) {
     searchConsoleLiveAt: client.searchConsoleLiveAt
       ? client.searchConsoleLiveAt.toISOString()
       : null,
+    bingLiveAt: client.bingLiveAt ? client.bingLiveAt.toISOString() : null,
     ga4LiveAt: client.ga4LiveAt ? client.ga4LiveAt.toISOString() : null,
     placesLiveAt: client.placesLiveAt
       ? client.placesLiveAt.toISOString()
@@ -289,6 +302,7 @@ router.get("/clients/coverage", async (_req, res) => {
         configured: has(c.searchConsoleSiteUrl),
         liveAt: iso(c.searchConsoleLiveAt),
       },
+      bing: { configured: has(c.bingSiteUrl), liveAt: iso(c.bingLiveAt) },
       ga4: { configured: has(c.ga4PropertyId), liveAt: iso(c.ga4LiveAt) },
       places: { configured: has(c.placesQuery), liveAt: iso(c.placesLiveAt) },
       pagespeed: {
@@ -698,6 +712,54 @@ router.post("/clients/:id/search-console-refresh", async (req, res) => {
   }
 });
 
+router.post("/clients/:id/bing-refresh", async (req, res) => {
+  const id = parseId(req.params.id);
+  if (id === null) {
+    res.status(400).json({ error: "Ongeldige id." });
+    return;
+  }
+  const [row] = await db
+    .select()
+    .from(clientsTable)
+    .where(eq(clientsTable.id, id));
+  if (!row) {
+    res.status(404).json({ error: "Klant niet gevonden." });
+    return;
+  }
+
+  const siteUrl = (row.bingSiteUrl ?? "").trim();
+  if (!siteUrl) {
+    res.status(400).json({
+      error:
+        "Deze klant heeft nog geen Bing Webmaster-site. Vul de site-URL in (bv. https://voorbeeld.be/) en bewaar eerst.",
+    });
+    return;
+  }
+
+  try {
+    const report = await fetchBingReport(siteUrl);
+    const [updated] = await db
+      .update(clientsTable)
+      .set({
+        bingLive: report.text,
+        bingLiveAt: report.fetchedAt,
+        updatedAt: new Date(),
+      })
+      .where(eq(clientsTable.id, id))
+      .returning();
+    res.json(serialize(updated));
+  } catch (err) {
+    if (err instanceof BingConfigError) {
+      res.status(400).json({ error: err.message });
+      return;
+    }
+    res.status(502).json({
+      error: "Kon Bing Webmaster niet uitlezen.",
+      detail: err instanceof Error ? err.message : String(err),
+    });
+  }
+});
+
 router.post("/clients/:id/ga4-refresh", async (req, res) => {
   const id = parseId(req.params.id);
   if (id === null) {
@@ -1069,6 +1131,16 @@ async function refreshConfiguredIntegrations(
       );
       updates.searchConsoleLive = report.text;
       updates.searchConsoleLiveAt = report.fetchedAt;
+    },
+  );
+
+  await run(
+    "bing",
+    (row.bingSiteUrl ?? "").trim().length > 0,
+    async () => {
+      const report = await fetchBingReport((row.bingSiteUrl ?? "").trim());
+      updates.bingLive = report.text;
+      updates.bingLiveAt = report.fetchedAt;
     },
   );
 

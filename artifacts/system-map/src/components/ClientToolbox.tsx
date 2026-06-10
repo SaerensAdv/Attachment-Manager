@@ -26,6 +26,7 @@ const INTEGRATION_LABELS: Record<string, string> = {
   googleAds: "Google Ads",
   competitorAds: "Concurrent-ads",
   searchConsole: "Search Console",
+  bing: "Bing Webmaster",
   ga4: "GA4",
   places: "Maps / Places",
   pagespeed: "PageSpeed",

@@ -2110,6 +2110,76 @@ export const useClientSearchConsoleRefresh = <TError = ErrorType<ErrorResponse>,
       return useMutation(getClientSearchConsoleRefreshMutationOptions(options));
     }
 
+export const getClientBingRefreshUrl = (id: number,) => {
+
+
+
+
+  return `/api/clients/${id}/bing-refresh`
+}
+
+/**
+ * @summary Pull live Bing Webmaster data for the client and store it
+ */
+export const clientBingRefresh = async (id: number, options?: RequestInit): Promise<Client> => {
+
+  return customFetch<Client>(getClientBingRefreshUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getClientBingRefreshMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof clientBingRefresh>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof clientBingRefresh>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['clientBingRefresh'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof clientBingRefresh>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  clientBingRefresh(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ClientBingRefreshMutationResult = NonNullable<Awaited<ReturnType<typeof clientBingRefresh>>>
+
+    export type ClientBingRefreshMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Pull live Bing Webmaster data for the client and store it
+ */
+export const useClientBingRefresh = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof clientBingRefresh>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof clientBingRefresh>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getClientBingRefreshMutationOptions(options));
+    }
+
 export const getClientGa4RefreshUrl = (id: number,) => {
 
 

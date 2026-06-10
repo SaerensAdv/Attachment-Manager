@@ -166,6 +166,7 @@ export const EMPTY_FORM: FormState = {
   googleAdsCustomerId: "",
   competitorAdvertisers: "",
   searchConsoleSiteUrl: "",
+  bingSiteUrl: "",
   ga4PropertyId: "",
   placesQuery: "",
   placesCompetitors: "",

@@ -113,6 +113,17 @@ export function clientToMarkdown(client: Client): string {
         )
       : null,
     codeBlock("Search Console live performance", client.searchConsoleLive),
+    client.bingLive?.trim()
+      ? paragraph(
+          "Bing Webmaster (live)",
+          `Live read-only organic-search performance pulled from Bing Webmaster Tools${
+            client.bingLiveAt
+              ? ` (fetched ${client.bingLiveAt.toISOString().slice(0, 10)})`
+              : ""
+          }. Let op: Bing heeft een klein marktaandeel in BE/NL — gebruik als aanvulling, niet als hoofdbron.`,
+        )
+      : null,
+    codeBlock("Bing Webmaster live performance", client.bingLive),
     client.ga4Live?.trim()
       ? paragraph(
           "GA4 analytics (live)",

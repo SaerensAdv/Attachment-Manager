@@ -11,6 +11,7 @@ export type ClientCoverageIntegrations = {
   googleAds: IntegrationCoverage;
   competitorAds: IntegrationCoverage;
   searchConsole: IntegrationCoverage;
+  bing: IntegrationCoverage;
   ga4: IntegrationCoverage;
   places: IntegrationCoverage;
   pagespeed: IntegrationCoverage;

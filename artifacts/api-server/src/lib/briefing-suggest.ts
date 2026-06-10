@@ -90,6 +90,7 @@ export function buildBriefingContext(client: Client): string {
       "Search Console (live)",
       clamp(client.searchConsoleLive, MAX_LIVE_CHARS),
     ),
+    block("Bing Webmaster (live)", clamp(client.bingLive, MAX_LIVE_CHARS)),
     block("GA4 analytics (live)", clamp(client.ga4Live, MAX_LIVE_CHARS)),
     block(
       "Google Maps / Places (live)",

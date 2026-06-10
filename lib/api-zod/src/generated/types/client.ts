@@ -74,6 +74,12 @@ export interface Client {
   /** @nullable */
   searchConsoleLiveAt?: Date | null;
   /** @nullable */
+  bingSiteUrl?: string | null;
+  /** @nullable */
+  bingLive?: string | null;
+  /** @nullable */
+  bingLiveAt?: Date | null;
+  /** @nullable */
   ga4PropertyId?: string | null;
   /** @nullable */
   ga4Live?: string | null;

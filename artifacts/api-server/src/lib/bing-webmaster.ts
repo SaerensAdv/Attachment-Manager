@@ -16,8 +16,11 @@
  *  - Dates are `/Date(ms)/` strings (epoch ms, sometimes with a `-0700` suffix).
  *  - GetQueryStats / GetPageStats return WEEKLY buckets with no date or row
  *    limit — we aggregate the most recent ~4 weeks ourselves.
- *  - Those two methods return positions multiplied by 10 (180 = position 18.0),
- *    so we divide by `BING_POSITION_SCALE`.
+ *  - Those two methods return an average position per row. Empirically (verified
+ *    live against a verified account) the value is already a real 1-based rank
+ *    (1–21 = page 1–3), NOT the ×10 form some docs describe — so the de-scale
+ *    factor `BING_POSITION_SCALE` is 1. It stays a named constant so a future
+ *    account that returns ×10 values can be corrected with a one-line change.
  *  - CTR is never returned, so we derive it from clicks / impressions.
  */
 
@@ -26,8 +29,12 @@ import { computeBingSignals, renderBingSignals } from "./bing-webmaster-signals"
 
 const BING_BASE = "https://ssl.bing.com/webmaster/api.svc/json";
 
-/** GetQueryStats/GetPageStats return positions ×10 (180 → 18.0). */
-const BING_POSITION_SCALE = 10;
+/**
+ * De-scale factor for the average-position fields. Verified live: Bing returns
+ * real 1-based ranks here (e.g. 4 = position 4.0), so the factor is 1. If a
+ * future account returns the ×10 form (40 = position 4.0), set this to 10.
+ */
+const BING_POSITION_SCALE = 1;
 /** Aggregate the most recent ~4 weeks (28 days) of weekly/daily buckets. */
 const BING_WINDOW_DAYS = 28;
 const MAX_ROWS = 50;

@@ -299,3 +299,9 @@ id = "0HXTGnsTIe8OC27KTEtSE"
 uri = "file://.local/outputs/Attachment-Manager.pdf"
 type = "pdf"
 title = "Attachment Manager.pdf"
+
+[[outputs]]
+id = "8WIpbaRvy3wTv7wYBpW17"
+uri = "file://.local/outputs/Google-Ads-audit---Car-Audio-Limburg-Studio.pdf"
+type = "pdf"
+title = "Google Ads-audit — Car Audio Limburg Studio.pdf"

@@ -67,15 +67,18 @@ export default function KpiTabel() {
       </div>
 
       <p className="absolute bottom-[8.5vh] left-[6vw] right-[6vw] text-muted text-[1.15vw] text-pretty">
-        Conversiewaarde staat in beide periodes op €0 — niet ingesteld, dus
-        ROAS is niet te berekenen.
+        De conversieteller is begin 2026 strikter gezet: de zwakke ‘offerte-tab’
+        werd vervangen door een echte ‘Offerteaanvraag’. Op vergelijkbare basis
+        daalden telefoon, mail en contact van 81 naar 29 (zie volgende slide).
+        Conversiewaarde staat in beide jaren op €0, dus ROAS is niet te
+        berekenen.
       </p>
 
       <p className="absolute bottom-[4vh] left-[6vw] text-muted text-[0.95vw]">
         Bron: Google Ads (read-only) · opgehaald 9 juni 2026 · periode 1 jan – 9 jun
       </p>
       <p className="absolute bottom-[4vh] right-[6vw] text-muted text-[1vw]">
-        04 / 10
+        04 / 11
       </p>
     </div>
   );

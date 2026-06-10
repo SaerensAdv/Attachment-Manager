@@ -10,7 +10,7 @@ export default function Tracking() {
           Bevinding 1 · Meting
         </p>
         <h2 className="font-display font-extrabold text-[3.3vw] leading-[1.06] tracking-tight max-w-[70vw] text-balance">
-          Waarom de cijfers op een meetfout wijzen
+          Wat de cijfers echt vertellen
         </h2>
       </div>
 
@@ -19,35 +19,37 @@ export default function Tracking() {
           <div className="w-[0.9vw] h-[0.9vw] bg-primary mt-[1vh] shrink-0" />
           <p className="text-[1.55vw] leading-[1.4] text-[#33333c] text-pretty">
             <span className="font-semibold text-text">
-              23% méér klikken, 97% minder conversies.
+              De meting werkt — de volledige webshop-funnel wordt sinds 2026
+              gevolgd.
             </span>{" "}
-            Dat gedraagt zich als een meet-, niet als een marktprobleem.
+            6.443 productweergaves, 14 keer toevoegen aan winkelwagen, 4
+            checkouts.
           </p>
         </div>
         <div className="flex items-start gap-[1.4vw] mb-[3vh]">
           <div className="w-[0.9vw] h-[0.9vw] bg-primary mt-[1vh] shrink-0" />
           <p className="text-[1.55vw] leading-[1.4] text-[#33333c] text-pretty">
             <span className="font-semibold text-text">
-              Shopping: €1.386,95 over 6.042 klikken → 1 conversie.
+              De funnel stokt ná de winkelwagen: 14 toevoegingen → 1 aankoop.
             </span>{" "}
-            Onwaarschijnlijk laag voor een webshop met dit verkeer.
+            Dat wijst op site, aanbod of prijs — geen meetfout.
           </p>
         </div>
         <div className="flex items-start gap-[1.4vw] mb-[3vh]">
           <div className="w-[0.9vw] h-[0.9vw] bg-primary mt-[1vh] shrink-0" />
           <p className="text-[1.55vw] leading-[1.4] text-[#33333c] text-pretty">
             <span className="font-semibold text-text">
-              Search ‘CarPlay’ (Max. clicks): €864,84 over 981 klikken → 0
-              conversies.
+              Het contactformulier wordt niet meer geteld.
             </span>{" "}
-            Geen enkele meetbare actie geregistreerd.
+            In 2025 leverde dat 18 conversies; sinds de herziening verdwijnt die
+            lead uit de cijfers.
           </p>
         </div>
         <div className="flex items-start gap-[1.4vw]">
           <div className="w-[0.9vw] h-[0.9vw] bg-primary mt-[1vh] shrink-0" />
           <p className="text-[1.55vw] leading-[1.4] text-[#33333c] text-pretty">
             <span className="font-semibold text-text">
-              Conversiewaarde zakte naar €179.
+              De getelde aankoopwaarde zakte naar €179.
             </span>{" "}
             Een daling van 71% tegenover 2025.
           </p>
@@ -55,15 +57,15 @@ export default function Tracking() {
       </div>
 
       <div className="absolute top-[31vh] right-[6vw] w-[33vw] bg-white rounded-[1vw] border-2 border-[#f4a425] p-[2.4vw]">
-        <p className="text-[#c0392b] text-[1vw] font-bold uppercase tracking-[0.16em] mb-[1.6vh]">
-          Eerste actie · Blokkerend
+        <p className="text-[#33333c] text-[1vw] font-bold uppercase tracking-[0.16em] mb-[1.6vh]">
+          Eerste actie · Hoog
         </p>
         <p className="text-[1.7vw] font-display font-bold leading-[1.25] text-text text-pretty">
-          Controleer de Google Ads-tag en Enhanced Conversions
+          Herstel de contactformulier-meting en valideer de aankoop-tag
         </p>
         <p className="text-[1.4vw] text-muted leading-[1.45] mt-[2vh] text-pretty">
-          Valideer met testconversies vóór elke verdere optimalisatie. Zonder
-          betrouwbare meting is sturen op resultaat onmogelijk.
+          Zo wordt elke lead opnieuw geteld en kunnen we de funnel-uitval na de
+          winkelwagen gericht aanpakken.
         </p>
       </div>
 
@@ -71,7 +73,7 @@ export default function Tracking() {
         Bron: Google Ads (read-only) · opgehaald 9 juni 2026 · periode 1 jan – 9 jun
       </p>
       <p className="absolute bottom-[4vh] right-[6vw] text-muted text-[1vw]">
-        06 / 10
+        07 / 11
       </p>
     </div>
   );

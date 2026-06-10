@@ -12,7 +12,7 @@
     "position": 2,
     "filepath": "src/pages/slides/Samenvatting.tsx",
     "title": "Managementsamenvatting",
-    "description": "Kernboodschap: meer verkeer, conversies weggevallen, rendement niet meetbaar.",
+    "description": "Kernboodschap: meer verkeer, getelde conversies lager door striktere meting plus reëel signaal.",
     "speakerNotes": ""
   },
   {
@@ -20,7 +20,7 @@
     "position": 3,
     "filepath": "src/pages/slides/Oordeel.tsx",
     "title": "Oordeel",
-    "description": "Verdict: rendement niet te beoordelen, conversietracking uitgevallen (31 → 1).",
+    "description": "Verdict: meting hertekend, maar op vergelijkbare basis daalden de aankopen (13 → 1).",
     "speakerNotes": ""
   },
   {
@@ -32,24 +32,32 @@
     "speakerNotes": ""
   },
   {
-    "id": "0f2a1b6c-1d4e-4a11-9b21-7c005grafiek",
+    "id": "0f2a1b6c-1d4e-4a11-9b21-7c005conver",
     "position": 5,
+    "filepath": "src/pages/slides/ConversiesPerActie.tsx",
+    "title": "Conversies per actie",
+    "description": "Per-actie uitsplitsing 2025 vs 2026: striktere meetdefinitie + reële daling aankopen.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "0f2a1b6c-1d4e-4a11-9b21-7c005grafiek",
+    "position": 6,
     "filepath": "src/pages/slides/Grafiek.tsx",
     "title": "De kloof in beeld",
-    "description": "Grafiek: klikken omhoog, conversies bijna nul.",
+    "description": "Grafiek: klikken omhoog, aankopen op vergelijkbare basis omlaag.",
     "speakerNotes": ""
   },
   {
     "id": "0f2a1b6c-1d4e-4a11-9b21-7c006tracki0",
-    "position": 6,
+    "position": 7,
     "filepath": "src/pages/slides/Tracking.tsx",
     "title": "Meting",
-    "description": "Bevinding 1: waarom de cijfers op een meetfout wijzen + eerste actie.",
+    "description": "Bevinding 1: meting werkt, funnel stokt na winkelwagen, contactformulier niet meer geteld.",
     "speakerNotes": ""
   },
   {
     "id": "0f2a1b6c-1d4e-4a11-9b21-7c007struct0",
-    "position": 7,
+    "position": 8,
     "filepath": "src/pages/slides/Structuur.tsx",
     "title": "Structuur",
     "description": "Bevinding 2: budget loopt niet meer via de bewezen campagnes.",
@@ -57,7 +65,7 @@
   },
   {
     "id": "0f2a1b6c-1d4e-4a11-9b21-7c008verspi0",
-    "position": 8,
+    "position": 9,
     "filepath": "src/pages/slides/Verspilling.tsx",
     "title": "Verspilling & overlap",
     "description": "Bevinding 3: budget lekt weg op CarPlay-termen + overlap tussen accounts.",
@@ -65,7 +73,7 @@
   },
   {
     "id": "0f2a1b6c-1d4e-4a11-9b21-7c009aanbev",
-    "position": 9,
+    "position": 10,
     "filepath": "src/pages/slides/Aanbevelingen.tsx",
     "title": "Aanbevelingen",
     "description": "Prioriteitenlijst met verwacht effect.",
@@ -73,7 +81,7 @@
   },
   {
     "id": "0f2a1b6c-1d4e-4a11-9b21-7c010closin",
-    "position": 10,
+    "position": 11,
     "filepath": "src/pages/slides/Closing.tsx",
     "title": "Volgende stap",
     "description": "Afsluiting: volgende stap en contact Saerens Advertising.",

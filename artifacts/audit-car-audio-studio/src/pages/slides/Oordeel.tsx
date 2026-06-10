@@ -16,8 +16,9 @@ export default function Oordeel() {
           De campagnes leveren leads, maar tegen bijna dubbele kost
         </h2>
         <p className="mt-[3.5vh] text-[1.9vw] text-muted max-w-[64vw] leading-[1.45] text-pretty">
-          De meting werkt: 45 conversies in 2026 tegenover 88 in 2025. Maar de
-          kost per conversie steeg met 89% — bij 17% méér klikken.
+          Een deel van de daling van 88 naar 45 is een striktere meting sinds
+          begin 2026. Maar de directe contactacties daalden écht (81 → 29) en de
+          kost per conversie steeg met 89%, bij 17% méér klikken.
         </p>
       </div>
 
@@ -40,7 +41,7 @@ export default function Oordeel() {
         Bron: Google Ads (read-only) · opgehaald 9 juni 2026 · periode 1 jan – 9 jun
       </p>
       <p className="absolute bottom-[4vh] right-[6vw] text-muted text-[1vw]">
-        03 / 10
+        03 / 11
       </p>
     </div>
   );

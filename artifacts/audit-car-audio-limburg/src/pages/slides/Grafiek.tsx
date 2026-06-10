@@ -10,7 +10,7 @@ export default function Grafiek() {
           De kloof in beeld
         </p>
         <h2 className="font-display font-extrabold text-[3.3vw] leading-[1.06] tracking-tight max-w-[70vw] text-balance">
-          Meer klikken, nagenoeg geen gemeten conversies
+          Meer klikken, maar de aankopen daalden
         </h2>
       </div>
 
@@ -41,12 +41,12 @@ export default function Grafiek() {
 
         <div className="bg-white rounded-[1vw] border border-[#e4e2ee] px-[3vw] pt-[3vh] pb-[2.5vh]">
           <p className="text-text font-display font-bold text-[1.5vw] mb-[2.5vh]">
-            Gemeten conversies
+            Aankopen (vergelijkbaar gemeten)
           </p>
           <div className="flex items-end justify-center gap-[5vw] h-[40vh]">
             <div className="flex flex-col items-center justify-end h-full">
               <span className="text-muted text-[1.4vw] font-semibold mb-[1vh]">
-                31
+                13
               </span>
               <div className="w-[6.5vw] h-[39vh] bg-[#c9c6f2] rounded-t-[0.4vw]" />
               <span className="text-muted text-[1.2vw] mt-[1.2vh]">2025</span>
@@ -55,7 +55,7 @@ export default function Grafiek() {
               <span className="text-[#c0392b] text-[1.4vw] font-bold mb-[1vh]">
                 1
               </span>
-              <div className="w-[6.5vw] h-[1.3vh] bg-[#c0392b] rounded-t-[0.4vw]" />
+              <div className="w-[6.5vw] h-[3vh] bg-[#c0392b] rounded-t-[0.4vw]" />
               <span className="text-text text-[1.2vw] font-semibold mt-[1.2vh]">
                 2026
               </span>
@@ -64,11 +64,16 @@ export default function Grafiek() {
         </div>
       </div>
 
+      <p className="absolute bottom-[8.5vh] left-[6vw] right-[6vw] text-muted text-[1.05vw] text-pretty">
+        Vergelijkbaar gemeten: enkel aankopen, los van de striktere
+        conversieteller sinds 2026. De getelde conversies gingen van 31 naar 1 —
+        zie de vorige slide.
+      </p>
       <p className="absolute bottom-[4vh] left-[6vw] text-muted text-[0.95vw]">
         Bron: Google Ads (read-only) · opgehaald 9 juni 2026 · periode 1 jan – 9 jun
       </p>
       <p className="absolute bottom-[4vh] right-[6vw] text-muted text-[1vw]">
-        05 / 10
+        06 / 11
       </p>
     </div>
   );

@@ -10,21 +10,22 @@ export default function Samenvatting() {
           Managementsamenvatting
         </p>
         <h2 className="font-display font-extrabold text-[3.3vw] leading-[1.06] tracking-tight max-w-[62vw] text-balance">
-          Meer verkeer, maar de conversies zijn weggevallen
+          Meer verkeer, maar minder getelde conversies
         </h2>
       </div>
 
       <div className="absolute top-[35vh] left-[6vw] w-[45vw]">
         <p className="text-[1.65vw] leading-[1.55] text-[#33333c] text-pretty">
           Car Audio Limburg kreeg in 2026 méér budget en méér verkeer dan in
-          dezelfde periode vorig jaar, maar de gemeten conversies vielen terug
-          van 31 naar 1. Dat patroon wijst sterk op een defecte
-          conversietracking, niet op een marktdaling.
+          dezelfde periode vorig jaar, maar het aantal getelde conversies viel
+          terug van 31 naar 1. Die daling is voor een groot deel een meetkwestie: sinds
+          de tracking-herziening begin 2026 telt enkel een aankoop nog mee,
+          terwijl in 2025 ook het contactformulier meetelde.
         </p>
         <p className="text-[1.65vw] leading-[1.55] text-[#33333c] mt-[3vh] text-pretty">
-          Daardoor is het werkelijke rendement vandaag niet betrouwbaar te
-          beoordelen. De campagnes die in 2025 de leads brachten, staan
-          bovendien op pauze.
+          Toch is er ook een reëel signaal: de gemeten aankopen zakten van 13
+          naar 1 en de campagnes die in 2025 de leads brachten, staan op pauze.
+          De meting zelf werkt — de volledige webshop-funnel wordt nu gevolgd.
         </p>
       </div>
 
@@ -71,7 +72,7 @@ export default function Samenvatting() {
         Bron: Google Ads (read-only) · opgehaald 9 juni 2026 · periode 1 jan – 9 jun
       </p>
       <p className="absolute bottom-[4vh] right-[6vw] text-muted text-[1vw]">
-        02 / 10
+        02 / 11
       </p>
     </div>
   );

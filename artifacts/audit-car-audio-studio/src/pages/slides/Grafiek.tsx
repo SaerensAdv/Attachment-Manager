@@ -64,11 +64,15 @@ export default function Grafiek() {
         </div>
       </div>
 
+      <p className="absolute bottom-[8.5vh] left-[6vw] right-[6vw] text-muted text-[1.05vw] text-pretty">
+        Een deel van de daling van 88 naar 45 is een striktere meting sinds
+        2026; de directe contactacties daalden echter ook reëel (81 → 29).
+      </p>
       <p className="absolute bottom-[4vh] left-[6vw] text-muted text-[0.95vw]">
         Bron: Google Ads (read-only) · opgehaald 9 juni 2026 · periode 1 jan – 9 jun
       </p>
       <p className="absolute bottom-[4vh] right-[6vw] text-muted text-[1vw]">
-        05 / 10
+        06 / 11
       </p>
     </div>
   );

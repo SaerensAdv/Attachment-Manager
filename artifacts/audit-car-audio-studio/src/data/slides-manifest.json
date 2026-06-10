@@ -12,7 +12,7 @@
     "position": 2,
     "filepath": "src/pages/slides/Samenvatting.tsx",
     "title": "Managementsamenvatting",
-    "description": "Kernboodschap: meer verkeer, conversies omlaag, leadkost bijna verdubbeld.",
+    "description": "Kernboodschap: meer verkeer, conversies lager (deels striktere meting), leadkost hoger.",
     "speakerNotes": ""
   },
   {
@@ -20,7 +20,7 @@
     "position": 3,
     "filepath": "src/pages/slides/Oordeel.tsx",
     "title": "Oordeel",
-    "description": "Verdict: meting werkt, maar kost per conversie steeg van €27,31 naar €51,50.",
+    "description": "Verdict: deels striktere meting, maar directe contactacties daalden echt; CPA €27,31 → €51,50.",
     "speakerNotes": ""
   },
   {
@@ -32,8 +32,16 @@
     "speakerNotes": ""
   },
   {
-    "id": "7c3b2a1d-2e5f-4b22-8c31-8d005grafiek",
+    "id": "7c3b2a1d-2e5f-4b22-8c31-8d005conver",
     "position": 5,
+    "filepath": "src/pages/slides/ConversiesPerActie.tsx",
+    "title": "Conversies per actie",
+    "description": "Per-actie uitsplitsing 2025 vs 2026: striktere meetdefinitie + reële daling contactacties.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "7c3b2a1d-2e5f-4b22-8c31-8d005grafiek",
+    "position": 6,
     "filepath": "src/pages/slides/Grafiek.tsx",
     "title": "De kloof in beeld",
     "description": "Grafiek: conversies omlaag, kost per conversie omhoog.",
@@ -41,7 +49,7 @@
   },
   {
     "id": "7c3b2a1d-2e5f-4b22-8c31-8d006strate0",
-    "position": 6,
+    "position": 7,
     "filepath": "src/pages/slides/Strategie.tsx",
     "title": "Strategie",
     "description": "Bevinding 1: één Max-clicks-campagne verving de gerichte structuur.",
@@ -49,7 +57,7 @@
   },
   {
     "id": "7c3b2a1d-2e5f-4b22-8c31-8d007struct0",
-    "position": 7,
+    "position": 8,
     "filepath": "src/pages/slides/Structuur.tsx",
     "title": "Structuur",
     "description": "Bevinding 2: budget loopt niet meer via de bewezen leadcampagnes.",
@@ -57,7 +65,7 @@
   },
   {
     "id": "7c3b2a1d-2e5f-4b22-8c31-8d008verspi0",
-    "position": 8,
+    "position": 9,
     "filepath": "src/pages/slides/Verspilling.tsx",
     "title": "Verspilling & overlap",
     "description": "Bevinding 3: CarPlay-termen zonder conversies + overlap tussen accounts.",
@@ -65,7 +73,7 @@
   },
   {
     "id": "7c3b2a1d-2e5f-4b22-8c31-8d009aanbev",
-    "position": 9,
+    "position": 10,
     "filepath": "src/pages/slides/Aanbevelingen.tsx",
     "title": "Aanbevelingen",
     "description": "Prioriteitenlijst met verwacht effect.",
@@ -73,7 +81,7 @@
   },
   {
     "id": "7c3b2a1d-2e5f-4b22-8c31-8d010closin",
-    "position": 10,
+    "position": 11,
     "filepath": "src/pages/slides/Closing.tsx",
     "title": "Volgende stap",
     "description": "Afsluiting: volgende stap en contact Saerens Advertising.",

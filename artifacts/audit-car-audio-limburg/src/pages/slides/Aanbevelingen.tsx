@@ -23,16 +23,16 @@ export default function Aanbevelingen() {
 
         <div className="grid grid-cols-[1.1fr_3.1fr_2.2fr] items-center py-[1.7vh] border-b border-[#e4e2ee] text-[1.35vw]">
           <span>
-            <span className="bg-[#c0392b] text-white rounded-full px-[1.1vw] py-[0.5vh] text-[1vw] font-semibold">
-              Blokkerend
+            <span className="bg-accent text-[#1a1a22] rounded-full px-[1.1vw] py-[0.5vh] text-[1vw] font-semibold">
+              Hoog
             </span>
           </span>
           <span className="pr-[1.5vw] text-pretty">
-            Herstel de conversietracking (tag + Enhanced Conversions), valideer
-            met testconversies.
+            Herstel de contactformulier-meting en valideer de aankoop-tag in
+            Google Ads.
           </span>
           <span className="text-muted text-pretty">
-            Meten weer betrouwbaar — de basis voor elke optimalisatie.
+            Elke lead opnieuw geteld; betrouwbare basis voor optimalisatie.
           </span>
         </div>
 
@@ -47,7 +47,7 @@ export default function Aanbevelingen() {
             plaats van Max Clicks.
           </span>
           <span className="text-muted text-pretty">
-            Terug naar de structuur die in 2025 31 conversies haalde.
+            Terug naar de structuur die in 2025 de meeste leads opleverde.
           </span>
         </div>
 
@@ -100,7 +100,7 @@ export default function Aanbevelingen() {
         Bron: Google Ads (read-only) · opgehaald 9 juni 2026 · periode 1 jan – 9 jun
       </p>
       <p className="absolute bottom-[4vh] right-[6vw] text-muted text-[1vw]">
-        09 / 10
+        10 / 11
       </p>
     </div>
   );

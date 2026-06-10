@@ -17,14 +17,15 @@ export default function Samenvatting() {
       <div className="absolute top-[35vh] left-[6vw] w-[45vw]">
         <p className="text-[1.65vw] leading-[1.55] text-[#33333c] text-pretty">
           Car Audio Limburg Studio kreeg in 2026 méér vertoningen en méér
-          klikken dan in dezelfde periode vorig jaar, maar het aantal gemeten
-          conversies zakte van 88 naar 45. De kost per conversie liep daardoor
-          op van €27,31 naar €51,50.
+          klikken dan in dezelfde periode vorig jaar, maar het aantal getelde
+          conversies zakte van 88 naar 45. Een deel daarvan is een striktere
+          meting sinds begin 2026 — toch daalden ook de directe contactacties
+          (telefoon, mail, contact) écht, van 81 naar 29.
         </p>
         <p className="text-[1.65vw] leading-[1.55] text-[#33333c] mt-[3vh] text-pretty">
-          De meting werkt nog — het probleem zit in de strategie. Het volledige
-          budget loopt nu via één campagne met de biedstrategie Max. clicks,
-          terwijl de gerichtere campagnes uit 2025 op pauze staan.
+          De meting werkt — het probleem zit grotendeels in de strategie. Het
+          volledige budget loopt nu via één campagne met de biedstrategie Max.
+          clicks, terwijl de gerichtere campagnes uit 2025 op pauze staan.
         </p>
       </div>
 
@@ -71,7 +72,7 @@ export default function Samenvatting() {
         Bron: Google Ads (read-only) · opgehaald 9 juni 2026 · periode 1 jan – 9 jun
       </p>
       <p className="absolute bottom-[4vh] right-[6vw] text-muted text-[1vw]">
-        02 / 10
+        02 / 11
       </p>
     </div>
   );

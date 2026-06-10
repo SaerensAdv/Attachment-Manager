@@ -68,7 +68,7 @@ export default function Verspilling() {
         Bron: Google Ads (read-only) · opgehaald 9 juni 2026 · periode 1 jan – 9 jun
       </p>
       <p className="absolute bottom-[4vh] right-[6vw] text-muted text-[1vw]">
-        08 / 10
+        09 / 11
       </p>
     </div>
   );

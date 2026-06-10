@@ -293,3 +293,9 @@ id = "lT2rrEsDiQNZ-Ry_efEq2"
 uri = "file://higgsfield-tests/beauty-icon-reel-FINAL.mp4"
 type = "video"
 title = "Beauty Icon — volledige reel (9:16, 21s)"
+
+[[outputs]]
+id = "0HXTGnsTIe8OC27KTEtSE"
+uri = "file://.local/outputs/Attachment-Manager.pdf"
+type = "pdf"
+title = "Attachment Manager.pdf"

@@ -1,0 +1,31 @@
+kind = "slides"
+previewPath = "/saerens-audit-deck-template/"
+title = "Saerens audit-deck (sjabloon)"
+version = "1.0.0"
+id = "artifacts/saerens-audit-deck-template"
+router = "path"
+
+[[integratedSkills]]
+name = "slides"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/saerens-audit-deck-template/" ]
+localPort = 8082
+
+[services.development]
+run = "pnpm --filter @workspace/saerens-audit-deck-template run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/saerens-audit-deck-template", "run", "build" ]
+publicDir = "artifacts/saerens-audit-deck-template/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "8082"
+BASE_PATH = "/saerens-audit-deck-template/"

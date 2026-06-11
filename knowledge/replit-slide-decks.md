@@ -15,7 +15,7 @@ A "how to use it" reference for handing slide-deck work to the Replit Agent. Whe
 - **Narrative arc** — the slides in order, each with its single purpose. A strong deck has one idea per slide.
 - **Per-slide content** — the headline and the concrete bullet points / numbers for each slide, taken from the team's work. Do not invent figures.
 - **Visuals per slide** — charts (and what they show), icons, imagery direction. Name the chart type and the data behind it.
-- **Theme** — colours, fonts, and visual style. A pitch/sales/results deck is agency-authored, so apply the Saerens house style (`knowledge/saerens-brand.md`): the deck is Saerens-branded, not the client's brand. Light or dark sections per the house style.
+- **Theme & layout** — colours, fonts, and visual style. A pitch/sales/results deck is agency-authored, so apply the Saerens house style (`knowledge/saerens-brand.md`): the deck is Saerens-branded, not the client's brand. Light or dark sections per the house style. For the fixed slide-by-slide layout and reusable blocks, follow `knowledge/saerens-deck-layout.md` rather than inventing a structure.
 - **Slide count** — an explicit number (e.g. "10 slides").
 
 ## Good prompting habits for decks

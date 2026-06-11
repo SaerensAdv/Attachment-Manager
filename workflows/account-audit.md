@@ -48,7 +48,7 @@ flowchart TD
 
 ## Required output
 
-Use `templates/google-ads-output.md` (audit variant), or `templates/audit-report.md` for a standalone audit deliverable. Must include:
+Use `templates/google-ads-output.md` (audit variant), or `templates/audit-report.md` for a standalone audit deliverable. When the audit is presented as a slide deck, follow the Saerens deck layout standard (`knowledge/saerens-deck-layout.md`). Must include:
 
 - Overall account health summary
 - Tracking & measurement findings

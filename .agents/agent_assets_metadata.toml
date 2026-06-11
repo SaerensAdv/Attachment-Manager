@@ -305,3 +305,9 @@ id = "8WIpbaRvy3wTv7wYBpW17"
 uri = "file://.local/outputs/Google-Ads-audit---Car-Audio-Limburg-Studio.pdf"
 type = "pdf"
 title = "Google Ads-audit — Car Audio Limburg Studio.pdf"
+
+[[outputs]]
+id = "_FptB6e1iLPI5MwA0YOhY"
+uri = "file://voorbeeld-maandrapport.pdf"
+type = "pdf"
+title = "Voorbeeld maandrapport-PDF (huisstijl)"

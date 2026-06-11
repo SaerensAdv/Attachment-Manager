@@ -13,7 +13,6 @@ This is the single reference for how anything we hand over *looks* when **Saeren
 ## The house style (agency-authored material)
 
 - **Agency:** Saerens Advertising — Official Google Partner agency for Google Ads, 100% remote, active in Flanders and the Netherlands.
-- **Positioning line:** "Van clicks naar klanten."
 - **How we work (use as copy where relevant, not as a placeholder):** fixed monthly fee, no setup cost, no yearly contract, monthly cancellable, transparent via a live dashboard, honest advice, reply within 24h.
 - **Palette:**
   - Near-black `#0A0A0B` — dark backgrounds / cover
@@ -24,7 +23,7 @@ This is the single reference for how anything we hand over *looks* when **Saeren
   - Muted grey `#6B6B72` — secondary text
   - White `#FFFFFF`, light panel `#F5F5F8`, hairline `#E4E2EE`
 - **Type:** headings in **Plus Jakarta Sans**, body in **Outfit** (both Google Fonts).
-- **Logo & mark:** the wordmark "SAERENS ADVERTISING" (Plus Jakarta Sans, light letter-spacing) with an "SA" monogram. The mark lives at `https://saerensadvertising.com/SA_logo-100.webp` — a single-colour line logo; on a dark background tint it white with CSS `filter: brightness(0) invert(1)`. Put the tagline "Van clicks naar klanten" under the logo.
+- **Logo & mark:** the wordmark "SAERENS ADVERTISING" (Plus Jakarta Sans, light letter-spacing) with an "SA" monogram. The mark lives at `https://saerensadvertising.com/SA_logo-100.webp` — a single-colour line logo; on a dark background tint it white with CSS `filter: brightness(0) invert(1)`.
 - **Layout feel:** like the Saerens report — a dark cover / opening screen (near-black with purple + amber accents and the white SA mark), then light content; pill-shaped buttons; generous whitespace; businesslike, clear, trustworthy; never any emoji.
 - **Agency contact:** contact person Axel Saerens, e-mail `axel@saerensadvertising.com`, website `saerensadvertising.com`. Fill these in rather than leaving them open; leave only a genuinely unknown detail (e.g. a phone number) as a placeholder.
 - **Real proof points (last 365 days — only on agency-authored material, and only when the context calls for it):** 3,93× average ROAS, €1,58M conversion value, 1.820+ leads, €456K managed ad spend. Never invent other figures.

@@ -149,12 +149,7 @@ function drawCover(doc: PDFKit.PDFDocument, meta: ReportPdfMeta): void {
     .font("Helvetica-Bold")
     .fontSize(11)
     .fillColor(WHITE)
-    .text("SAERENS ADVERTISING", x + 56, 72, { characterSpacing: 2 });
-  doc
-    .font("Helvetica")
-    .fontSize(8)
-    .fillColor(CARD_LABEL)
-    .text("VAN CLICKS NAAR KLANTEN", x + 56, 88, { characterSpacing: 2 });
+    .text("SAERENS ADVERTISING", x + 56, 80, { characterSpacing: 2 });
 
   // Title block (inside the indigo band)
   doc
@@ -620,7 +615,7 @@ export function renderReportPdf(
         .font("Helvetica")
         .fontSize(7.5)
         .fillColor(MUTED)
-        .text("SAERENS ADVERTISING — VAN CLICKS NAAR KLANTEN", MARGIN.left, fy + 8, {
+        .text("SAERENS ADVERTISING", MARGIN.left, fy + 8, {
           characterSpacing: 1,
           lineBreak: false,
         });

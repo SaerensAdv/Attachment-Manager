@@ -18,9 +18,6 @@ export default function Closing() {
           <span className="font-display font-bold tracking-[0.16em] text-[1.25vw]">
             SAERENS ADVERTISING
           </span>
-          <span className="text-[#9a98c7] text-[0.95vw] tracking-[0.08em]">
-            Van clicks naar klanten
-          </span>
         </div>
       </div>
 

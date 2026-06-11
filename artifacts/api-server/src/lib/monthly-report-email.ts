@@ -151,7 +151,6 @@ export function buildBrandedEmail(args: {
     // header band
     `<tr><td style="background:${NEARBLACK};padding:26px 32px;border-bottom:3px solid ${PURPLE};">` +
     `<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:bold;letter-spacing:2px;color:#FFFFFF;">SAERENS ADVERTISING</div>` +
-    `<div style="font-family:Arial,Helvetica,sans-serif;font-size:10px;letter-spacing:2px;color:${AMBER};margin-top:3px;">VAN CLICKS NAAR KLANTEN</div>` +
     `</td></tr>` +
     // title
     `<tr><td style="padding:28px 32px 6px;">` +

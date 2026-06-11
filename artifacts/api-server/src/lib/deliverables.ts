@@ -298,11 +298,11 @@ function buildAdCopyCsvPrompt(ctx: DeliverableContext): DeliverablePrompt {
 const SAERENS_HOUSE_STYLE = [
   "## Saerens-huisstijl",
   "Dit is bureau-afzendermateriaal: Saerens Advertising is de afzender. Pas de Saerens-huisstijl actief toe in het ontwerp (zoals het Saerens Google Ads-rapport) — niet als losse placeholder.",
-  '- Bureau: Saerens Advertising — officieel Google Partner-bureau voor Google Ads, 100% remote, actief in Vlaanderen en Nederland. Positionering: "Van clicks naar klanten".',
+  '- Bureau: Saerens Advertising — officieel Google Partner-bureau voor Google Ads, 100% remote, actief in Vlaanderen en Nederland.',
   "- Werkwijze (gebruik als copy waar relevant, niet als placeholder): vaste maandelijkse vergoeding, geen opstartkosten, geen jaarcontract, maandelijks opzegbaar, transparant via een live dashboard, eerlijk advies, reactie binnen 24 uur.",
   "- Kleurenpalet: achtergrond near-black #0A0A0B, indigo #29274E, paars #716BEB (primair accent), amber #F4A425 (CTA-accent), tekst-inkt #1A1A22, gedempt grijs #6B6B72, wit #FFFFFF, lichtpaneel #F5F5F8, haarlijn #E4E2EE.",
   "- Typografie: koppen in 'Plus Jakarta Sans', bodytekst in 'Outfit' (beide via Google Fonts). Gebruik deze lettertypes overal, ook als het team een ander (generiek) lettertype zoals Inter voorstelde — voor merkelementen (kleuren, lettertypes, logo) gaat de huisstijl vóór op generieke teamkeuzes.",
-  '- Logo & merk: gebruik het woordmerk "SAERENS ADVERTISING" (in Plus Jakarta Sans, lichte letterspatiëring) met een "SA"-monogram. Het merkteken staat op https://saerensadvertising.com/SA_logo-100.webp (eenkleurig lijn-logo; op een donkere achtergrond wit maken met CSS-filter brightness(0) invert(1)). Zet de tagline "Van clicks naar klanten" onder het logo.',
+  '- Logo & merk: gebruik het woordmerk "SAERENS ADVERTISING" (in Plus Jakarta Sans, lichte letterspatiëring) met een "SA"-monogram. Het merkteken staat op https://saerensadvertising.com/SA_logo-100.webp (eenkleurig lijn-logo; op een donkere achtergrond wit maken met CSS-filter brightness(0) invert(1)).',
   "- Stijl: zoals het Saerens-rapport — een donkere cover/openingsscherm (near-black met paars + amber accenten en het witte SA-merk), gevolgd door lichte inhoud; pill-vormige knoppen; ruime witruimte; zakelijk, helder, vertrouwenwekkend; nooit emoji's.",
   "- Contact (bureau): contactpersoon Axel Saerens, e-mail axel@saerensadvertising.com, website saerensadvertising.com. Vul deze in i.p.v. ze open te laten; laat enkel een echt onbekend gegeven (bv. telefoonnummer) als placeholder staan.",
   "- Bewijspunten (echte cijfers, laatste 365 dagen — alleen op bureau-afzendermateriaal en alleen als de context erom vraagt): 3,93x gemiddelde ROAS, 1,58 miljoen euro conversiewaarde, 1.820+ leads, 456.000 euro beheerd advertentiebudget. Verzin nooit andere cijfers.",
@@ -311,7 +311,7 @@ const SAERENS_HOUSE_STYLE = [
 const SAERENS_SIGNATURE = [
   "## Saerens-signatuur",
   "Bij dit artefact staat het merk van de klant centraal in de inhoud en het ontwerp. Saerens Advertising verschijnt alleen als afzender-signatuur — gebruik de huisstijl NIET om het klantmerk te vervangen of te overschaduwen.",
-  '- Beperk de Saerens-aanwezigheid tot een afsluitende signatuur (bv. een korte logo-reveal of eindkaart): het woordmerk "SAERENS ADVERTISING" met "SA"-monogram en de tagline "Van clicks naar klanten".',
+  '- Beperk de Saerens-aanwezigheid tot een afsluitende signatuur (bv. een korte logo-reveal of eindkaart): het woordmerk "SAERENS ADVERTISING" met "SA"-monogram.',
   "- Logo: het merkteken staat op https://saerensadvertising.com/SA_logo-100.webp (eenkleurig lijn-logo; op een donkere achtergrond wit maken met CSS-filter brightness(0) invert(1)).",
   "- Saerens-accentkleuren (alleen subtiel in de signatuur, niet in de hele klantinhoud): paars #716BEB, amber #F4A425, near-black #0A0A0B.",
   "- Vermeld geen bureau-bewijspunten (ROAS, conversiewaarde, leads, budget) en geen bureau-werkwijze op klant-afzendermateriaal — die horen alleen op materiaal waar Saerens zelf de afzender is.",

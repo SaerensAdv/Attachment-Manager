@@ -70,7 +70,7 @@ export default function Grafiek() {
         pas ze aan op de echte verhouding.]
       </p>
       <p className="absolute bottom-[4vh] left-[6vw] text-muted text-[0.95vw]">
-        Bron: Google Ads (read-only) · opgehaald [datum] · periode [periode]
+        Bron: Google Ads (read-only) · opgehaald [[meta.opgehaald]] · periode [[period.rangeShort]]
       </p>
       <p className="absolute bottom-[4vh] right-[6vw] text-muted text-[1vw]">
         06 / 11

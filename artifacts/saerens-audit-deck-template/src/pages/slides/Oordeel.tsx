@@ -24,20 +24,20 @@ export default function Oordeel() {
       <div className="absolute bottom-[15vh] left-[6vw] flex items-end gap-[5vw]">
         <div>
           <p className="text-muted text-[1.1vw] uppercase tracking-[0.16em] mb-[1vh]">
-            [Kernmetriek] · [periode A] → [periode B]
+            [[oordeel.kernmetriekLabel]] · [[period.aYear]] → [[period.bYear]]
           </p>
           <p className="font-display font-extrabold text-[5.6vw] leading-none">
-            [a] <span className="text-primary">→</span>{" "}
-            <span className="text-[#c0392b]">[b]</span>
+            [[oordeel.a]] <span className="text-primary">→</span>{" "}
+            <span className="text-[#c0392b]">[[oordeel.b]]</span>
           </p>
         </div>
         <div className="bg-accent text-[#1a1a22] rounded-full px-[2.2vw] py-[1.4vh] font-display font-bold text-[1.4vw] mb-[1vh]">
-          Status: [Verbeterend / Stabiel / Verslechterend]
+          Status: [[oordeel.status]]
         </div>
       </div>
 
       <p className="absolute bottom-[4vh] left-[6vw] text-muted text-[0.95vw]">
-        Bron: Google Ads (read-only) · opgehaald [datum] · periode [periode]
+        Bron: Google Ads (read-only) · opgehaald [[meta.opgehaald]] · periode [[period.rangeShort]]
       </p>
       <p className="absolute bottom-[4vh] right-[6vw] text-muted text-[1vw]">
         03 / 11

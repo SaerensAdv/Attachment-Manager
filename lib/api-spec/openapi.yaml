@@ -1955,6 +1955,16 @@ components:
           type: ["integer", "null"]
         monthlyFee:
           type: ["integer", "null"]
+        billingName:
+          type: ["string", "null"]
+        billingAddress:
+          type: ["string", "null"]
+        billingCountry:
+          type: ["string", "null"]
+        vatNumber:
+          type: ["string", "null"]
+        btwMode:
+          type: ["string", "null"]
         business:
           type: ["string", "null"]
         world:
@@ -2077,6 +2087,16 @@ components:
           type: ["integer", "null"]
         monthlyFee:
           type: ["integer", "null"]
+        billingName:
+          type: ["string", "null"]
+        billingAddress:
+          type: ["string", "null"]
+        billingCountry:
+          type: ["string", "null"]
+        vatNumber:
+          type: ["string", "null"]
+        btwMode:
+          type: ["string", "null"]
         business:
           type: ["string", "null"]
         world:

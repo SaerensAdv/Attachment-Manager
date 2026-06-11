@@ -113,7 +113,7 @@ const REPORT_INTERNAL_HEADING =
  *  - whole sections whose body is essentially just a "[AAN TE VULLEN]" stub,
  *  - any stray placeholder lines elsewhere.
  */
-function toClientFacingReport(markdown: string): string {
+export function toClientFacingReport(markdown: string): string {
   const lines = markdown.replace(/\r\n/g, "\n").split("\n");
   const headingRe = /^(#{1,6})\s+(.*?)\s*$/;
   const out: string[] = [];

@@ -14,6 +14,16 @@ export interface Client {
   /** @nullable */
   monthlyFee?: number | null;
   /** @nullable */
+  billingName?: string | null;
+  /** @nullable */
+  billingAddress?: string | null;
+  /** @nullable */
+  billingCountry?: string | null;
+  /** @nullable */
+  vatNumber?: string | null;
+  /** @nullable */
+  btwMode?: string | null;
+  /** @nullable */
   business?: string | null;
   /** @nullable */
   world?: string | null;

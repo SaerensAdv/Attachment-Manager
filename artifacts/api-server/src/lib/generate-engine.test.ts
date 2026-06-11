@@ -85,7 +85,11 @@ vi.mock("./docs", () => ({
 }));
 
 // Imported after the mocks above (vi.mock is hoisted).
-import { runGeneration, type GenerationContext } from "./generate-engine";
+import {
+  runGeneration,
+  toClientFacingReport,
+  type GenerationContext,
+} from "./generate-engine";
 
 function makeCtx(over: Partial<GenerationContext> = {}): GenerationContext {
   return {
@@ -473,5 +477,43 @@ describe("runGeneration — parallel stages", () => {
     const stages = plan?.stages as unknown[][];
     expect(stages.length).toBe(1);
     expect(stages[0].length).toBe(2);
+  });
+});
+
+describe("toClientFacingReport", () => {
+  it("keeps client-facing prose untouched", () => {
+    const md = "## Wat we voorstellen\n\nWe optimaliseren je campagnes.";
+    expect(toClientFacingReport(md)).toBe(md);
+  });
+
+  it("drops internal-only heading sections", () => {
+    const md = [
+      "## Voorstel",
+      "",
+      "Een korte intro.",
+      "",
+      "## Interne nota's",
+      "",
+      "Niet voor de klant.",
+    ].join("\n");
+    const out = toClientFacingReport(md);
+    expect(out).toContain("Een korte intro.");
+    expect(out).not.toContain("Interne nota's");
+    expect(out).not.toContain("Niet voor de klant.");
+  });
+
+  it("drops sections that are essentially just a placeholder", () => {
+    const md = [
+      "## Resultaten",
+      "",
+      "[AAN TE VULLEN]",
+      "",
+      "## Aanpak",
+      "",
+      "Concrete stappen die we zetten voor je account.",
+    ].join("\n");
+    const out = toClientFacingReport(md);
+    expect(out).not.toContain("[AAN TE VULLEN]");
+    expect(out).toContain("Concrete stappen die we zetten voor je account.");
   });
 });

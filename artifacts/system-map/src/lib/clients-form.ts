@@ -172,6 +172,11 @@ export const EMPTY_FORM: FormState = {
   placesCompetitors: "",
   pagespeedUrls: "",
   businessProfileLocationId: "",
+  billingName: "",
+  billingAddress: "",
+  billingCountry: "",
+  vatNumber: "",
+  btwMode: "",
 };
 
 export function clientToForm(c: Client): FormState {

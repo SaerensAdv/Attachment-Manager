@@ -20,6 +20,7 @@
 export * from "./client-groups";
 export * from "./clients";
 export * from "./generations";
+export * from "./invoices";
 export * from "./monitored-terms";
 export * from "./proposals";
 export * from "./schedules";

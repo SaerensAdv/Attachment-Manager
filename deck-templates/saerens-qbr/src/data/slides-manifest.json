@@ -1,0 +1,74 @@
+[
+  {
+    "id": "0b3a1d2e-9c4f-4a10-8b21-1f0a7c6d5e01",
+    "position": 1,
+    "filepath": "src/pages/slides/Cover.tsx",
+    "title": "Cover",
+    "description": "Donkere openingsslide met wordmark, klantnaam en kwartaal.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "1c4b2e3f-0d5a-4b21-9c32-2a1b8d7e6f02",
+    "position": 2,
+    "filepath": "src/pages/slides/Samenvatting.tsx",
+    "title": "Managementsamenvatting",
+    "description": "Kernboodschap met twee alinea's en vier KPI-kaarten (QoQ + JoJ).",
+    "speakerNotes": ""
+  },
+  {
+    "id": "2d5c3f40-1e6b-4c32-8d43-3b2c9e8f7003",
+    "position": 3,
+    "filepath": "src/pages/slides/Oordeel.tsx",
+    "title": "Kernconclusie",
+    "description": "Eindoordeel met hero-metriek en QoQ/JoJ status-pills.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "3e6d4051-2f7c-4d43-9e54-4c3d0f907104",
+    "position": 4,
+    "filepath": "src/pages/slides/KwartaalOpKwartaal.tsx",
+    "title": "Kwartaal-op-kwartaal",
+    "description": "Vergelijkende KPI-tabel vorig kwartaal versus dit kwartaal.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "4f7e5162-3a8d-4e54-8f65-5d4e10a18205",
+    "position": 5,
+    "filepath": "src/pages/slides/JaarOpJaar.tsx",
+    "title": "Jaar-op-jaar",
+    "description": "Vergelijkende KPI-tabel zelfde kwartaal vorig jaar versus nu.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "5a8f6273-4b9e-4f65-9a76-6e5f21b29306",
+    "position": 6,
+    "filepath": "src/pages/slides/Grafiek.tsx",
+    "title": "Trend in beeld",
+    "description": "Staafgrafieken over drie kwartalen voor conversies en waarde.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "6b907384-5c0f-4076-8b87-7f6032c3a407",
+    "position": 7,
+    "filepath": "src/pages/slides/Uitgevoerd.tsx",
+    "title": "Uitgevoerd dit kwartaal",
+    "description": "Genummerde acties links en een impact-callout rechts.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "7c018495-6d10-4187-9c98-806143d4b508",
+    "position": 8,
+    "filepath": "src/pages/slides/PlanVolgendKwartaal.tsx",
+    "title": "Volgend kwartaal",
+    "description": "Prioriteitentabel met acties; doelstellingen blijven open.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a034b7c8-9043-44ba-8fcb-b39476070b0b",
+    "position": 9,
+    "filepath": "src/pages/slides/Closing.tsx",
+    "title": "Volgende stap",
+    "description": "Donkere afsluitslide met volgende stap en agency-contact.",
+    "speakerNotes": ""
+  }
+]

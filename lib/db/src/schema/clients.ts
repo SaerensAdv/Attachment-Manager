@@ -17,6 +17,14 @@ export const clientsTable = pgTable("clients", {
   // Maandelijkse fee (retainer) in hele euro's die deze klant oplevert.
   // Voedt het omzet-overzicht op het dashboard (totaal vs. maanddoel).
   monthlyFee: integer("monthly_fee"),
+  // Facturatiegegevens — de klant is de ontvanger van de factuur. Alles
+  // optioneel zodat bestaande rijen geldig blijven. `billingName` valt terug op
+  // `name` wanneer leeg. `btwMode` is "btw_21" of "verlegd" (zie saerens-billing.ts).
+  billingName: text("billing_name"),
+  billingAddress: text("billing_address"),
+  billingCountry: text("billing_country"),
+  vatNumber: text("vat_number"),
+  btwMode: text("btw_mode"),
   business: text("business"),
   world: text("world"),
   services: text("services"),

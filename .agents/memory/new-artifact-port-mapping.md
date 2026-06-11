@@ -28,6 +28,15 @@ and `[services.env].PORT` to the free declared port (e.g. 8082), then
 path and re-registers the proxy route. (`verifyAndReplaceArtifactToml` with the same
 content does NOT add a missing `.replit` port mapping, so a no-op re-sync won't help.)
 
+**Caveat — free declared ports are scarce:** there are only ~7 declared `[[ports]]`
+total. Once you repoint a new artifact onto the lone free/orphan one (e.g. 8099), NONE
+remain free for the NEXT new artifact. So if a later `createArtifact` also fails to
+auto-map, there may be no free declared port to repoint to — at that point consolidate
+artifacts, free one, or ask the user to reload the workspace (which re-reconciles
+`.replit` from the artifact.toml files). Confirmed working: repointing the generated
+audit-deck demo 24294→8099 flipped its workflow to running with `openPorts:[8099]` and
+the proxy preview rendered.
+
 **Why:** burned many restart attempts assuming it was a startup-time/cartographer/
 resource issue (the error even hints "optimize resource-intensive startup"); it was
 purely the missing port declaration.

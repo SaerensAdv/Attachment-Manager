@@ -26,20 +26,20 @@ export default function Cover() {
           Google Ads-audit
         </p>
         <h1 className="font-display font-extrabold text-[6vw] leading-[0.98] tracking-tight text-balance">
-          [Klantnaam]
+          [[meta.klantnaam]]
         </h1>
         <div className="h-[0.5vh] w-[13vw] bg-[#716beb] mt-[3vh] mb-[3vh]" />
         <p className="text-[#c9c8d6] text-[1.9vw] font-light">
-          Prestatie-analyse · [periode] · [vergelijking]
+          Prestatie-analyse · [[period.rangeLong]] · [[period.vergelijking]]
         </p>
       </div>
 
       <div className="absolute bottom-[5vh] left-[6vw] right-[6vw] flex items-end justify-between">
         <p className="text-[#6b6b72] text-[1.1vw]">
-          Vertrouwelijk · Opgesteld [datum]
+          Vertrouwelijk · Opgesteld [[meta.opgehaald]]
         </p>
         <p className="text-[#6b6b72] text-[1.1vw]">
-          Google Ads-account [Account-ID]
+          Google Ads-account [[meta.accountId]]
         </p>
       </div>
     </div>

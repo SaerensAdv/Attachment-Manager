@@ -30,6 +30,7 @@ import {
   Building2,
   Euro,
   FileDown,
+  Receipt,
   Gauge,
   Globe,
   Layers,
@@ -153,6 +154,21 @@ export default function Clients() {
 
   // One-page Google Ads snapshot PDF (deterministic, server-rendered).
   const [snapshotting, setSnapshotting] = useState(false);
+  const [factuurPreviewing, setFactuurPreviewing] = useState(false);
+  const [issuingInvoice, setIssuingInvoice] = useState(false);
+  const [confirmIssue, setConfirmIssue] = useState(false);
+  const [offerteProse, setOfferteProse] = useState("");
+  const [offerteLines, setOfferteLines] = useState<
+    { label: string; amountEur: string; recurrence: "eenmalig" | "maandelijks" }[]
+  >([
+    {
+      label: "Beheer Google Ads — maandelijkse vergoeding",
+      amountEur: "",
+      recurrence: "maandelijks",
+    },
+  ]);
+  const [offerteValidUntil, setOfferteValidUntil] = useState("");
+  const [offerteGenerating, setOfferteGenerating] = useState(false);
   // AI briefing suggestions (proposal only — never auto-saved). The user reviews
   // each value and applies it into the form before saving.
   const [briefingSuggestions, setBriefingSuggestions] =
@@ -246,6 +262,18 @@ export default function Clients() {
     setBriefingNotes("");
   };
 
+  const resetOfferte = () => {
+    setOfferteProse("");
+    setOfferteLines([
+      {
+        label: "Beheer Google Ads — maandelijkse vergoeding",
+        amountEur: "",
+        recurrence: "maandelijks",
+      },
+    ]);
+    setOfferteValidUntil("");
+  };
+
   const startCreate = () => {
     setEditing("new");
     setForm(EMPTY_FORM);
@@ -254,6 +282,7 @@ export default function Clients() {
     setNewGroupName("");
     setFormError(null);
     setConfirmDelete(false);
+    setConfirmIssue(false);
     clearBriefingSuggestions();
     setIntake({ text: null, at: null });
     setLiveAds({ text: null, at: null });
@@ -265,6 +294,7 @@ export default function Clients() {
     setLivePagespeed({ text: null, at: null });
     setLiveBusinessProfile({ text: null, at: null });
     setEditingUpdatedAt(null);
+    resetOfferte();
   };
 
   const startEdit = (c: Client) => {
@@ -275,6 +305,7 @@ export default function Clients() {
     setNewGroupName("");
     setFormError(null);
     setConfirmDelete(false);
+    setConfirmIssue(false);
     setIntake({ text: c.websiteIntake ?? null, at: c.websiteIntakeAt ?? null });
     setLiveAds({
       text: c.googleAdsLive ?? null,
@@ -310,6 +341,7 @@ export default function Clients() {
     });
     setEditingUpdatedAt(c.updatedAt);
     clearBriefingSuggestions();
+    resetOfferte();
   };
 
   const closeEditor = () => {
@@ -320,6 +352,7 @@ export default function Clients() {
     setNewGroupName("");
     setFormError(null);
     setConfirmDelete(false);
+    setConfirmIssue(false);
     clearBriefingSuggestions();
     setIntake({ text: null, at: null });
     setLiveAds({ text: null, at: null });
@@ -331,6 +364,7 @@ export default function Clients() {
     setLivePagespeed({ text: null, at: null });
     setLiveBusinessProfile({ text: null, at: null });
     setEditingUpdatedAt(null);
+    resetOfferte();
   };
 
   const setField = (key: keyof ClientInput, value: string) =>
@@ -512,6 +546,178 @@ export default function Clients() {
       );
     } finally {
       setSnapshotting(false);
+    }
+  };
+
+  // Effectief factureerbare maandfee: klant-fiche heeft voorrang op de groep.
+  const effectiveFee =
+    monthlyFee ??
+    (groupId != null
+      ? (groups.find((g) => g.id === groupId)?.monthlyFee ?? null)
+      : null);
+
+  const offerteHasValidLine = offerteLines.some(
+    (l) =>
+      l.label.trim() !== "" &&
+      l.amountEur.trim() !== "" &&
+      Number.isFinite(Number(l.amountEur)) &&
+      Number(l.amountEur) >= 0,
+  );
+
+  const triggerDownload = (blob: Blob, filename: string) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  };
+
+  const errorFromResponse = async (res: Response): Promise<string> => {
+    let msg = `HTTP ${res.status}`;
+    try {
+      const j = await res.json();
+      msg = j.error || j.detail || msg;
+    } catch {
+      /* non-JSON error body */
+    }
+    return msg;
+  };
+
+  // Proforma-preview: opent een PDF zonder een factuurnummer te verbruiken.
+  const handleFactuurPreview = async () => {
+    if (typeof editing !== "number") return;
+    setFormError(null);
+    setFactuurPreviewing(true);
+    try {
+      const res = await fetch(
+        `${import.meta.env.BASE_URL}api/clients/${editing}/factuur-preview.pdf`,
+        { credentials: "include" },
+      );
+      if (!res.ok) throw new Error(await errorFromResponse(res));
+      const blob = await res.blob();
+      const slug =
+        (form.name || "klant")
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/(^-|-$)/g, "") || "klant";
+      triggerDownload(blob, `proforma-${slug}.pdf`);
+    } catch (err) {
+      setFormError(
+        err instanceof Error ? err.message : "Proforma opstellen mislukt",
+      );
+    } finally {
+      setFactuurPreviewing(false);
+    }
+  };
+
+  // Definitieve factuur uitgeven: kent een sluitend nummer toe en bewaart de rij.
+  const handleIssueInvoice = async () => {
+    if (typeof editing !== "number") return;
+    setFormError(null);
+    setIssuingInvoice(true);
+    try {
+      const res = await fetch(
+        `${import.meta.env.BASE_URL}api/clients/${editing}/invoices`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({}),
+        },
+      );
+      if (!res.ok) throw new Error(await errorFromResponse(res));
+      const number = res.headers.get("X-Invoice-Number") || "";
+      const blob = await res.blob();
+      triggerDownload(blob, number ? `factuur-${number}.pdf` : "factuur.pdf");
+      setConfirmIssue(false);
+    } catch (err) {
+      setFormError(
+        err instanceof Error ? err.message : "Factuur uitgeven mislukt",
+      );
+    } finally {
+      setIssuingInvoice(false);
+    }
+  };
+
+  // --- Offerte (hybride: AI-tekst + handmatige prijzen) -------------------
+  const updateOfferteLine = (
+    i: number,
+    patch: Partial<{
+      label: string;
+      amountEur: string;
+      recurrence: "eenmalig" | "maandelijks";
+    }>,
+  ) =>
+    setOfferteLines((prev) =>
+      prev.map((l, idx) => (idx === i ? { ...l, ...patch } : l)),
+    );
+
+  const addOfferteLine = () =>
+    setOfferteLines((prev) =>
+      prev.length >= 25
+        ? prev
+        : [...prev, { label: "", amountEur: "", recurrence: "maandelijks" }],
+    );
+
+  const removeOfferteLine = (i: number) =>
+    setOfferteLines((prev) =>
+      prev.length <= 1 ? prev : prev.filter((_, idx) => idx !== i),
+    );
+
+  const handleOfferte = async () => {
+    if (typeof editing !== "number") return;
+    setFormError(null);
+    const lines = offerteLines
+      .filter(
+        (l) =>
+          l.label.trim() !== "" &&
+          l.amountEur.trim() !== "" &&
+          Number.isFinite(Number(l.amountEur)) &&
+          Number(l.amountEur) >= 0,
+      )
+      .map((l) => ({
+        label: l.label.trim(),
+        amountEur: Number(l.amountEur),
+        recurrence: l.recurrence,
+      }));
+    if (lines.length === 0) {
+      setFormError(
+        "Voeg minstens één geldige prijsregel toe (omschrijving + bedrag).",
+      );
+      return;
+    }
+    setOfferteGenerating(true);
+    try {
+      const res = await fetch(
+        `${import.meta.env.BASE_URL}api/clients/${editing}/offerte.pdf`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            proseMarkdown: offerteProse,
+            lines,
+            validUntilLabel: offerteValidUntil.trim() || undefined,
+          }),
+        },
+      );
+      if (!res.ok) throw new Error(await errorFromResponse(res));
+      const blob = await res.blob();
+      const slug =
+        (form.name || "klant")
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/(^-|-$)/g, "") || "klant";
+      triggerDownload(blob, `offerte-${slug}.pdf`);
+    } catch (err) {
+      setFormError(
+        err instanceof Error ? err.message : "Offerte opstellen mislukt",
+      );
+    } finally {
+      setOfferteGenerating(false);
     }
   };
 
@@ -2232,6 +2438,355 @@ export default function Clients() {
                           </pre>
                         </div>
                       )}
+                    </>
+                  )}
+
+                  {/* Section XII — facturatie (existing clients only) */}
+                  {typeof editing === "number" && (
+                    <>
+                      <div className="flex items-baseline justify-between border-b-2 border-foreground pb-1">
+                        <h3 className="font-['Playfair_Display'] font-bold text-lg uppercase tracking-wider">
+                          XII. Facturatie
+                        </h3>
+                        <span className="font-['Space_Mono'] text-xs text-muted-foreground">
+                          Deterministisch — geen AI
+                        </span>
+                      </div>
+
+                      <p className="font-['Inter'] text-sm text-muted-foreground -mt-4">
+                        Stelt een proforma of definitieve factuur op uit het
+                        klantdossier en de maandelijkse fee. De proforma verbruikt
+                        geen nummer; bij "Factuur uitgeven" wordt een sluitend
+                        factuurnummer toegekend en bewaard.
+                      </p>
+
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <div className="flex flex-col gap-1.5 sm:col-span-2">
+                          <label className="font-['Space_Mono'] text-[10px] uppercase tracking-widest">
+                            Facturatienaam
+                          </label>
+                          <Input
+                            value={form.billingName}
+                            onChange={(e) =>
+                              setField("billingName", e.target.value)
+                            }
+                            placeholder="Leeg = klantnaam wordt gebruikt"
+                            data-testid="input-client-billingName"
+                            className={INPUT_CLASS}
+                          />
+                        </div>
+                        <div className="flex flex-col gap-1.5 sm:col-span-2">
+                          <label className="font-['Space_Mono'] text-[10px] uppercase tracking-widest">
+                            Facturatieadres
+                          </label>
+                          <Textarea
+                            value={form.billingAddress}
+                            onChange={(e) =>
+                              setField("billingAddress", e.target.value)
+                            }
+                            placeholder={"Straat en nummer\nPostcode + gemeente"}
+                            rows={3}
+                            data-testid="input-client-billingAddress"
+                            className={INPUT_CLASS}
+                          />
+                          <span className="font-['Space_Mono'] text-[9px] tracking-wider text-muted-foreground/60">
+                            Eén regel per adreslijn. Verplicht om te factureren.
+                          </span>
+                        </div>
+                        <div className="flex flex-col gap-1.5">
+                          <label className="font-['Space_Mono'] text-[10px] uppercase tracking-widest">
+                            Land
+                          </label>
+                          <Input
+                            value={form.billingCountry}
+                            onChange={(e) =>
+                              setField("billingCountry", e.target.value)
+                            }
+                            placeholder="België"
+                            data-testid="input-client-billingCountry"
+                            className={INPUT_CLASS}
+                          />
+                        </div>
+                        <div className="flex flex-col gap-1.5">
+                          <label className="font-['Space_Mono'] text-[10px] uppercase tracking-widest">
+                            Btw-nummer
+                          </label>
+                          <Input
+                            value={form.vatNumber}
+                            onChange={(e) =>
+                              setField("vatNumber", e.target.value)
+                            }
+                            placeholder="BE 0123.456.789"
+                            data-testid="input-client-vatNumber"
+                            className={INPUT_CLASS}
+                          />
+                        </div>
+                        <div className="flex flex-col gap-1.5 sm:col-span-2">
+                          <label className="font-['Space_Mono'] text-[10px] uppercase tracking-widest">
+                            Btw-modus
+                          </label>
+                          <select
+                            value={form.btwMode}
+                            onChange={(e) =>
+                              setField("btwMode", e.target.value)
+                            }
+                            data-testid="select-client-btwMode"
+                            className={`${INPUT_CLASS} w-full`}
+                          >
+                            <option value="">
+                              Automatisch (afgeleid uit btw-nummer)
+                            </option>
+                            <option value="btw_21">Belgische btw — 21%</option>
+                            <option value="verlegd">
+                              Btw verlegd (intracommunautair B2B)
+                            </option>
+                          </select>
+                          <span className="font-['Space_Mono'] text-[9px] tracking-wider text-muted-foreground/60">
+                            "Verlegd" vereist het btw-nummer van de klant.
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col gap-1 border border-foreground/30 bg-foreground/5 p-3">
+                        <span className="font-['Space_Mono'] text-[10px] uppercase tracking-widest text-muted-foreground">
+                          Factureerbare fee
+                        </span>
+                        {effectiveFee != null ? (
+                          <span className="font-['Playfair_Display'] font-black text-lg">
+                            € {effectiveFee.toLocaleString("nl-BE")} / maand
+                            <span className="font-['Space_Mono'] text-[10px] font-normal uppercase tracking-wider text-muted-foreground ml-2">
+                              {monthlyFee != null ? "klant-fiche" : "groep"}
+                            </span>
+                          </span>
+                        ) : (
+                          <span className="font-['Inter'] text-sm text-muted-foreground">
+                            Nog geen fee ingesteld op de fiche of de groep.
+                          </span>
+                        )}
+                      </div>
+
+                      <p className="font-['Space_Mono'] text-[9px] leading-relaxed tracking-wider text-muted-foreground/60">
+                        Let op: sinds 1 januari 2026 geldt in België de
+                        verplichting tot gestructureerde e-facturatie (Peppol) voor
+                        B2B. Deze PDF is een leesbare kopie, geen vervanging van de
+                        Peppol-e-factuur.
+                      </p>
+
+                      <div className="flex flex-wrap items-center gap-3">
+                        <button
+                          onClick={handleFactuurPreview}
+                          disabled={
+                            factuurPreviewing ||
+                            effectiveFee == null ||
+                            !form.billingAddress.trim()
+                          }
+                          data-testid="button-factuur-preview"
+                          className="py-2.5 px-4 border-2 border-foreground text-foreground font-['Space_Mono'] text-[11px] uppercase tracking-widest flex items-center gap-2 hover:bg-foreground hover:text-background transition-colors disabled:opacity-50 disabled:pointer-events-none"
+                        >
+                          {factuurPreviewing ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <FileDown className="w-4 h-4" />
+                          )}
+                          Proforma (PDF)
+                        </button>
+
+                        {confirmIssue ? (
+                          <>
+                            <span className="font-['Space_Mono'] text-[10px] uppercase tracking-widest text-muted-foreground">
+                              Definitief uitgeven?
+                            </span>
+                            <button
+                              onClick={handleIssueInvoice}
+                              disabled={issuingInvoice}
+                              data-testid="button-confirm-issue-invoice"
+                              className="py-2.5 px-4 bg-accent text-accent-foreground border-2 border-accent font-['Space_Mono'] text-[11px] uppercase tracking-widest flex items-center gap-2 shadow-[4px_4px_0px_hsl(var(--foreground))] active:translate-x-1 active:translate-y-1 active:shadow-none transition-all disabled:opacity-50 disabled:pointer-events-none"
+                            >
+                              {issuingInvoice ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <Receipt className="w-4 h-4" />
+                              )}
+                              Bevestig & download
+                            </button>
+                            <button
+                              onClick={() => setConfirmIssue(false)}
+                              disabled={issuingInvoice}
+                              data-testid="button-cancel-issue-invoice"
+                              className="py-2.5 px-4 border-2 border-foreground text-foreground font-['Space_Mono'] text-[11px] uppercase tracking-widest hover:bg-foreground hover:text-background transition-colors disabled:opacity-50 disabled:pointer-events-none"
+                            >
+                              Annuleren
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            onClick={() => setConfirmIssue(true)}
+                            disabled={
+                              effectiveFee == null || !form.billingAddress.trim()
+                            }
+                            data-testid="button-issue-invoice"
+                            className="py-2.5 px-4 border-2 border-foreground text-foreground font-['Space_Mono'] text-[11px] uppercase tracking-widest flex items-center gap-2 hover:bg-foreground hover:text-background transition-colors disabled:opacity-50 disabled:pointer-events-none"
+                          >
+                            <Receipt className="w-4 h-4" />
+                            Factuur uitgeven
+                          </button>
+                        )}
+
+                        {(effectiveFee == null ||
+                          !form.billingAddress.trim()) && (
+                          <span className="font-['Space_Mono'] text-[10px] uppercase tracking-wider text-muted-foreground/70">
+                            Vul fee + facturatieadres in en bewaar eerst
+                          </span>
+                        )}
+                      </div>
+                    </>
+                  )}
+
+                  {/* Section XIII — offerte (existing clients only) */}
+                  {typeof editing === "number" && (
+                    <>
+                      <div className="flex items-baseline justify-between border-b-2 border-foreground pb-1">
+                        <h3 className="font-['Playfair_Display'] font-bold text-lg uppercase tracking-wider">
+                          XIII. Offerte
+                        </h3>
+                        <span className="font-['Space_Mono'] text-xs text-muted-foreground">
+                          Hybride — AI-tekst + jouw prijzen
+                        </span>
+                      </div>
+
+                      <p className="font-['Inter'] text-sm text-muted-foreground -mt-4">
+                        Stelt een vrijblijvende offerte op: plak de voorsteltekst
+                        (bv. uit de sales-proposal generatie) en vul de
+                        prijsregels in. Geen factuurnummer, geen
+                        btw-berekening — een offerte is niet-bindend. De PDF is
+                        het document zelf.
+                      </p>
+
+                      <div className="flex flex-col gap-1.5">
+                        <label className="font-['Space_Mono'] text-[10px] uppercase tracking-widest">
+                          Voorsteltekst (markdown)
+                        </label>
+                        <Textarea
+                          value={offerteProse}
+                          onChange={(e) => setOfferteProse(e.target.value)}
+                          placeholder={
+                            "## Wat we voorstellen\n\nKorte intro…\n\n- Aanpak\n- Wat je mag verwachten"
+                          }
+                          rows={8}
+                          data-testid="input-offerte-prose"
+                          className={INPUT_CLASS}
+                        />
+                        <span className="font-['Space_Mono'] text-[9px] tracking-wider text-muted-foreground/60">
+                          Interne nota's en [AAN TE VULLEN]-placeholders worden
+                          automatisch verwijderd. Tekst optioneel — alleen
+                          prijzen mag ook.
+                        </span>
+                      </div>
+
+                      <div className="flex flex-col gap-2">
+                        <label className="font-['Space_Mono'] text-[10px] uppercase tracking-widest">
+                          Prijsregels (excl. btw)
+                        </label>
+                        {offerteLines.map((line, i) => (
+                          <div
+                            key={i}
+                            className="grid gap-2 sm:grid-cols-[1fr_110px_130px_auto] items-center"
+                          >
+                            <Input
+                              value={line.label}
+                              onChange={(e) =>
+                                updateOfferteLine(i, { label: e.target.value })
+                              }
+                              placeholder="Omschrijving"
+                              data-testid={`input-offerte-line-label-${i}`}
+                              className={INPUT_CLASS}
+                            />
+                            <Input
+                              value={line.amountEur}
+                              onChange={(e) =>
+                                updateOfferteLine(i, {
+                                  amountEur: e.target.value,
+                                })
+                              }
+                              placeholder="€ bedrag"
+                              inputMode="decimal"
+                              data-testid={`input-offerte-line-amount-${i}`}
+                              className={INPUT_CLASS}
+                            />
+                            <select
+                              value={line.recurrence}
+                              onChange={(e) =>
+                                updateOfferteLine(i, {
+                                  recurrence: e.target.value as
+                                    | "eenmalig"
+                                    | "maandelijks",
+                                })
+                              }
+                              data-testid={`select-offerte-line-recurrence-${i}`}
+                              className={`${INPUT_CLASS} w-full`}
+                            >
+                              <option value="maandelijks">Per maand</option>
+                              <option value="eenmalig">Eenmalig</option>
+                            </select>
+                            <button
+                              onClick={() => removeOfferteLine(i)}
+                              disabled={offerteLines.length <= 1}
+                              data-testid={`button-offerte-line-remove-${i}`}
+                              title="Regel verwijderen"
+                              className="p-2 border-2 border-foreground/30 text-muted-foreground hover:border-destructive hover:text-destructive transition-colors disabled:opacity-30 disabled:pointer-events-none"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ))}
+                        <button
+                          onClick={addOfferteLine}
+                          disabled={offerteLines.length >= 25}
+                          data-testid="button-offerte-line-add"
+                          className="self-start py-2 px-3 border-2 border-dashed border-foreground/40 text-foreground font-['Space_Mono'] text-[10px] uppercase tracking-widest flex items-center gap-2 hover:border-foreground hover:bg-foreground/5 transition-colors disabled:opacity-50 disabled:pointer-events-none"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          Regel toevoegen
+                        </button>
+                      </div>
+
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <div className="flex flex-col gap-1.5">
+                          <label className="font-['Space_Mono'] text-[10px] uppercase tracking-widest">
+                            Geldig tot
+                          </label>
+                          <Input
+                            value={offerteValidUntil}
+                            onChange={(e) =>
+                              setOfferteValidUntil(e.target.value)
+                            }
+                            placeholder="Leeg = 30 dagen (bv. 31 juli 2026)"
+                            data-testid="input-offerte-valid-until"
+                            className={INPUT_CLASS}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-3">
+                        <button
+                          onClick={handleOfferte}
+                          disabled={offerteGenerating || !offerteHasValidLine}
+                          data-testid="button-offerte-download"
+                          className="py-2.5 px-4 border-2 border-foreground text-foreground font-['Space_Mono'] text-[11px] uppercase tracking-widest flex items-center gap-2 hover:bg-foreground hover:text-background transition-colors disabled:opacity-50 disabled:pointer-events-none"
+                        >
+                          {offerteGenerating ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <FileDown className="w-4 h-4" />
+                          )}
+                          Offerte (PDF)
+                        </button>
+                        {!offerteHasValidLine && (
+                          <span className="font-['Space_Mono'] text-[10px] uppercase tracking-wider text-muted-foreground/70">
+                            Vul minstens één prijsregel in
+                          </span>
+                        )}
+                      </div>
                     </>
                   )}
 

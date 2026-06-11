@@ -33,41 +33,41 @@ export default function Samenvatting() {
             Kosten
           </p>
           <p className="font-display font-extrabold text-[2.7vw] text-text mt-[0.4vh] leading-none">
-            [±%]
+            [[kpi.kosten.delta]]
           </p>
-          <p className="text-muted text-[1.05vw] mt-[1vh]">[waarde] · [periode]</p>
+          <p className="text-muted text-[1.05vw] mt-[1vh]">[[kpi.kosten.b]] · [[period.rangeShort]]</p>
         </div>
         <div className="bg-white rounded-[0.8vw] border border-[#e4e2ee] p-[1.7vw]">
           <p className="text-muted text-[0.95vw] uppercase tracking-[0.14em]">
             Klikken
           </p>
           <p className="font-display font-extrabold text-[2.7vw] text-text mt-[0.4vh] leading-none">
-            [±%]
+            [[kpi.klikken.delta]]
           </p>
-          <p className="text-muted text-[1.05vw] mt-[1vh]">[waarde] · [periode]</p>
+          <p className="text-muted text-[1.05vw] mt-[1vh]">[[kpi.klikken.b]] · [[period.rangeShort]]</p>
         </div>
         <div className="bg-white rounded-[0.8vw] border border-[#e4e2ee] p-[1.7vw]">
           <p className="text-muted text-[0.95vw] uppercase tracking-[0.14em]">
             Conversies
           </p>
           <p className="font-display font-extrabold text-[2.7vw] text-[#c0392b] mt-[0.4vh] leading-none">
-            [±%]
+            [[kpi.conversies.delta]]
           </p>
-          <p className="text-muted text-[1.05vw] mt-[1vh]">[waarde] · [periode]</p>
+          <p className="text-muted text-[1.05vw] mt-[1vh]">[[kpi.conversies.b]] · [[period.rangeShort]]</p>
         </div>
         <div className="bg-white rounded-[0.8vw] border border-[#e4e2ee] p-[1.7vw]">
           <p className="text-muted text-[0.95vw] uppercase tracking-[0.14em]">
             Conversiewaarde
           </p>
           <p className="font-display font-extrabold text-[2.7vw] text-[#c0392b] mt-[0.4vh] leading-none">
-            [±%]
+            [[kpi.conversiewaarde.delta]]
           </p>
-          <p className="text-muted text-[1.05vw] mt-[1vh]">[waarde] · [periode]</p>
+          <p className="text-muted text-[1.05vw] mt-[1vh]">[[kpi.conversiewaarde.b]] · [[period.rangeShort]]</p>
         </div>
       </div>
 
       <p className="absolute bottom-[4vh] left-[6vw] text-muted text-[0.95vw]">
-        Bron: Google Ads (read-only) · opgehaald [datum] · periode [periode]
+        Bron: Google Ads (read-only) · opgehaald [[meta.opgehaald]] · periode [[period.rangeShort]]
       </p>
       <p className="absolute bottom-[4vh] right-[6vw] text-muted text-[1vw]">
         02 / 11

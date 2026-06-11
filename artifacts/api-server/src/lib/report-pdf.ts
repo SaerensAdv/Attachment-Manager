@@ -126,22 +126,60 @@ function ensureSpace(doc: PDFKit.PDFDocument, needed: number): void {
 
 // --- Cover page -------------------------------------------------------------
 
+/** A soft radial colour wash — fakes the deck's blurred glow blobs in pdfkit. */
+function drawGlow(
+  doc: PDFKit.PDFDocument,
+  W: number,
+  H: number,
+  cx: number,
+  cy: number,
+  r: number,
+  color: string,
+  opacity: number,
+): void {
+  const g = doc.radialGradient(cx, cy, 0, cx, cy, r);
+  g.stop(0, color, opacity);
+  g.stop(1, color, 0);
+  doc.save();
+  doc.rect(0, 0, W, H).fill(g);
+  doc.restore();
+}
+
+/** Turn "Maandrapport — vorige maand" into a clean, non-duplicated subline. */
+function periodFromSubtitle(subtitle: string): string {
+  const m = /^maandrapport\s*[—–-]\s*(.*)$/i.exec(subtitle.trim());
+  let p = (m ? m[1] : subtitle).trim();
+  if (p.length === 0) p = "Maandrapport";
+  return p.charAt(0).toUpperCase() + p.slice(1);
+}
+
+/** Largest title size (≤34pt) that keeps the client name within two lines, so a
+ * long name can never overflow into the fixed-position KPI cards below. */
+function fitTitleSize(doc: PDFKit.PDFDocument, name: string, width: number): number {
+  doc.font("Helvetica-Bold");
+  for (const size of [34, 29, 24, 20]) {
+    doc.fontSize(size);
+    if (doc.heightOfString(name, { width }) <= size * 2.3) return size;
+  }
+  return 20;
+}
+
 function drawCover(doc: PDFKit.PDFDocument, meta: ReportPdfMeta): void {
   const W = doc.page.width;
   const H = doc.page.height;
+  const x = MARGIN.left;
 
   doc.save();
   doc.rect(0, 0, W, H).fill(NEARBLACK);
-  // Soft indigo glow band behind the title block.
-  doc.rect(0, 132, W, 168).fill(INDIGO);
-  doc.rect(0, 132, W, 3).fill(PURPLE);
   doc.restore();
 
-  const x = MARGIN.left;
+  // Soft brand glows (mirrors the deck cover's blurred indigo/purple blobs).
+  drawGlow(doc, W, H, W - 24, 36, 380, PURPLE, 0.26);
+  drawGlow(doc, W, H, 18, H - 28, 340, INDIGO, 0.55);
 
   // Logo + wordmark
   try {
-    doc.image(SA_LOGO_WHITE_PNG, x, 60, { width: 44 });
+    doc.image(SA_LOGO_WHITE_PNG, x, 58, { width: 42 });
   } catch {
     /* logo is best-effort */
   }
@@ -149,34 +187,53 @@ function drawCover(doc: PDFKit.PDFDocument, meta: ReportPdfMeta): void {
     .font("Helvetica-Bold")
     .fontSize(11)
     .fillColor(WHITE)
-    .text("SAERENS ADVERTISING", x + 56, 80, { characterSpacing: 2 });
+    .text("SAERENS ADVERTISING", x + 54, 76, {
+      characterSpacing: 2,
+      lineBreak: false,
+    });
 
-  // Title block (inside the indigo band)
+  // Hero title block — sits in the lower-centre for an editorial, deck-like balance.
   doc
     .font("Helvetica-Bold")
     .fontSize(10)
     .fillColor(AMBER)
-    .text("MAANDRAPPORT GOOGLE ADS", x, 162, { characterSpacing: 3 });
+    .text("MAANDRAPPORT GOOGLE ADS", x, 308, {
+      characterSpacing: 3,
+      lineBreak: false,
+    });
+  const titleSize = fitTitleSize(doc, meta.clientName, contentWidth(doc));
   doc
     .font("Helvetica-Bold")
-    .fontSize(34)
+    .fontSize(titleSize)
     .fillColor(WHITE)
-    .text(meta.clientName, x, 184, { width: contentWidth(doc) });
+    .text(meta.clientName, x, 330, {
+      width: contentWidth(doc),
+      height: titleSize * 2.4,
+      ellipsis: true,
+    });
+  // Signature purple underline (the deck's hero accent).
+  const uy = doc.y + 10;
+  doc.save();
+  doc.rect(x, uy, 120, 4).fill(PURPLE);
+  doc.restore();
   doc
     .font("Helvetica")
     .fontSize(13)
     .fillColor("#C9C7D6")
-    .text(`${meta.subtitle}  ·  ${meta.dateLabel}`, x, doc.y + 4);
+    .text(`${periodFromSubtitle(meta.subtitle)}  ·  ${meta.dateLabel}`, x, uy + 18, {
+      width: contentWidth(doc),
+      lineBreak: false,
+    });
 
   // KPI cards from live metrics
   const m = meta.metrics;
   if (m) {
     const cur = m.currency || "EUR";
     const cards: { label: string; value: string; accent: string }[] = [
-      { label: "ADSPEND", value: eur(m.totals.cost, cur, 0), accent: PURPLE },
+      { label: "KOSTEN", value: eur(m.totals.cost, cur, 0), accent: PURPLE },
       { label: "LEADS", value: int(m.totals.conversions), accent: PURPLE },
       {
-        label: "COST PER LEAD",
+        label: "KOST PER LEAD",
         value: m.totals.cpa !== null ? eur(m.totals.cpa, cur, 2) : "n.v.t.",
         accent: AMBER,
       },
@@ -188,28 +245,35 @@ function drawCover(doc: PDFKit.PDFDocument, meta: ReportPdfMeta): void {
     ];
     const gap = 14;
     const cw = (contentWidth(doc) - gap * 3) / 4;
-    const ch = 92;
-    const cy = 372;
+    const ch = 96;
+    const cy = 486;
     cards.forEach((card, i) => {
       const cx = x + i * (cw + gap);
       doc.save();
-      doc.roundedRect(cx, cy, cw, ch, 6).fill(CARD_DARK);
+      doc.roundedRect(cx, cy, cw, ch, 7).fill(CARD_DARK);
       doc.rect(cx, cy, cw, 3).fill(card.accent);
       doc.restore();
       doc
         .font("Helvetica-Bold")
         .fontSize(7.5)
         .fillColor(CARD_LABEL)
-        .text(card.label, cx + 12, cy + 18, { characterSpacing: 1.2, width: cw - 24 });
+        .text(card.label, cx + 13, cy + 18, {
+          characterSpacing: 1.2,
+          width: cw - 26,
+          lineBreak: false,
+        });
       doc
         .font("Helvetica-Bold")
         .fontSize(19)
         .fillColor(WHITE)
-        .text(card.value, cx + 12, cy + 40, { width: cw - 24, lineBreak: false });
+        .text(card.value, cx + 13, cy + 42, { width: cw - 26, lineBreak: false });
     });
 
-    // Secondary stat strip
-    const sy = cy + ch + 26;
+    // Secondary stat strip, set off by a faint divider.
+    const sy = cy + ch + 30;
+    doc.save();
+    doc.rect(x, sy - 14, contentWidth(doc), 1).fill("#262532");
+    doc.restore();
     doc
       .font("Helvetica")
       .fontSize(9.5)
@@ -222,26 +286,42 @@ function drawCover(doc: PDFKit.PDFDocument, meta: ReportPdfMeta): void {
         )}%`,
         x,
         sy,
-        { width: contentWidth(doc) },
+        { width: contentWidth(doc), lineBreak: false },
       );
   }
 
-  // Footer line on the cover
+  // Footer meta — left/right like the deck cover.
   const savedBottom = doc.page.margins.bottom;
   doc.page.margins.bottom = 0;
+  const fy = H - 52;
   doc
     .font("Helvetica")
-    .fontSize(8)
+    .fontSize(8.5)
     .fillColor("#6E6C82")
-    .text(
-      meta.metrics
-        ? `Google Ads · ${meta.metrics.accountName} (${meta.metrics.customerId})`
-        : "Saerens Advertising",
-      x,
-      H - 62,
-      { width: contentWidth(doc), lineBreak: false },
-    );
+    .text(`Vertrouwelijk · Opgesteld ${meta.dateLabel}`, x, fy, {
+      lineBreak: false,
+    });
+  if (m) {
+    doc
+      .font("Helvetica")
+      .fontSize(8.5)
+      .fillColor("#6E6C82")
+      .text(`Google Ads · ${m.accountName} (${m.customerId})`, x, fy, {
+        width: contentWidth(doc),
+        align: "right",
+        lineBreak: false,
+      });
+  }
   doc.page.margins.bottom = savedBottom;
+
+  // Bottom accent bar (purple → amber), the deck's signature footer rule.
+  const bar = doc.linearGradient(0, 0, W, 0);
+  bar.stop(0, PURPLE);
+  bar.stop(0.62, PURPLE);
+  bar.stop(1, AMBER);
+  doc.save();
+  doc.rect(0, H - 6, W, 6).fill(bar);
+  doc.restore();
 }
 
 // --- Charts -----------------------------------------------------------------
@@ -263,6 +343,28 @@ function sectionTitle(doc: PDFKit.PDFDocument, text: string): void {
     .strokeColor(PURPLE)
     .stroke();
   doc.moveDown(0.7);
+}
+
+/** A lighter, tick-marked label for sub-blocks (e.g. each chart) — avoids
+ * stacking two underlined titles in the same section. */
+function chartLabel(doc: PDFKit.PDFDocument, text: string): void {
+  ensureSpace(doc, 28);
+  doc.x = MARGIN.left;
+  doc.moveDown(0.3);
+  const y = doc.y;
+  doc.save();
+  doc.rect(MARGIN.left, y + 1.5, 3, 11).fill(PURPLE);
+  doc.restore();
+  doc
+    .font("Helvetica-Bold")
+    .fontSize(11)
+    .fillColor(INK)
+    .text(text, MARGIN.left + 10, y, {
+      width: contentWidth(doc) - 10,
+      lineBreak: false,
+    });
+  doc.x = MARGIN.left;
+  doc.y = y + 18;
 }
 
 function hbarChart(
@@ -327,7 +429,7 @@ function drawCharts(doc: PDFKit.PDFDocument, m: GoogleAdsMetrics): void {
     .slice(0, 6);
 
   if (byCost.length > 0) {
-    sectionTitle(doc, "Kosten per campagne");
+    chartLabel(doc, "Kosten per campagne");
     hbarChart(
       doc,
       byCost.map((c) => ({
@@ -338,7 +440,7 @@ function drawCharts(doc: PDFKit.PDFDocument, m: GoogleAdsMetrics): void {
     );
   }
   if (byConv.length > 0) {
-    sectionTitle(doc, "Leads per campagne");
+    chartLabel(doc, "Leads per campagne");
     hbarChart(
       doc,
       byConv.map((c) => ({
@@ -377,6 +479,10 @@ function drawTable(doc: PDFKit.PDFDocument, rawRows: string[][]): void {
   if (body.length > 0 && isSeparatorRow(body[0])) body = body.slice(1);
   const cols = Math.max(header.length, ...body.map((r) => r.length));
 
+  const padX = 7;
+  const padY = 5;
+  const cw = contentWidth(doc);
+
   // Column widths weighted by content length (first column gets more room).
   const weights: number[] = [];
   for (let c = 0; c < cols; c++) {
@@ -385,14 +491,23 @@ function drawTable(doc: PDFKit.PDFDocument, rawRows: string[][]): void {
     weights.push(Math.min(Math.max(maxLen, 5), 36) * (c === 0 ? 1.5 : 1));
   }
   const totalW = weights.reduce((a, b) => a + b, 0);
-  const cw = contentWidth(doc);
-  const widths = weights.map((w) => (w / totalW) * cw);
+
+  // Every column must be at least wide enough to show its header on one line —
+  // otherwise short headers like "Leads" wrap to "Lead\ns". Reserve the header
+  // widths first, then distribute the remaining space by the content weights.
+  doc.font("Helvetica-Bold").fontSize(9);
+  const minWidths = Array.from({ length: cols }, (_, c) =>
+    Math.min(doc.widthOfString(header[c] ?? "") + padX * 2 + 2, cw * 0.5),
+  );
+  const minSum = minWidths.reduce((a, b) => a + b, 0);
+  const widths =
+    minSum < cw
+      ? weights.map((w, c) => minWidths[c] + (w / totalW) * (cw - minSum))
+      : weights.map((w) => (w / totalW) * cw);
+
   const numeric = Array.from({ length: cols }, (_, c) =>
     body.length > 0 ? body.every((r) => !r[c] || isNumericCell(r[c])) : false,
   );
-
-  const padX = 7;
-  const padY = 5;
 
   const measureRow = (cells: string[], bold: boolean): number => {
     let h = 0;
@@ -432,7 +547,7 @@ function drawTable(doc: PDFKit.PDFDocument, rawRows: string[][]): void {
         .fillColor(opts.textColor)
         .text(cells[c] ?? "", x + padX, y + padY, {
           width: widths[c] - padX * 2,
-          align: numeric[c] && !opts.header ? "right" : "left",
+          align: numeric[c] ? "right" : "left",
         });
       x += widths[c];
     }

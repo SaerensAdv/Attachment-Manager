@@ -34,3 +34,21 @@ numbered, hr, and GitHub pipe tables) and horizontal bar charts.
 `## <AgentTitle>` heading; the client-facing PDF uses the LAST such section
 (the Humanizer's polished version) via `extractFinalReport`, falling back to the
 full text (agent headers stripped) if that body looks too thin (<200 chars).
+
+**Gradients ARE available** (pdfkit 0.18): `doc.radialGradient(x0,y0,r0,x1,y1,r1)`
+and `doc.linearGradient(x1,y1,x2,y2)`, each `.stop(pos, color, opacity)`, used via
+`doc.rect(...).fill(grad)`. Opacity stops emit SMasks and render fine. This is how
+the cover fakes the deck's blurred glow blobs (radial stop opacity→0 over a
+full-page rect) and the purple→amber bottom accent bar — no Chromium/blur needed.
+
+**Cover = deck huisstijl, keep in lockstep.** The PDF cover deliberately mirrors
+the slide-deck cover (`saerens-audit-deck-template` Cover.tsx): amber eyebrow →
+big headline → signature purple underline → subline, soft indigo/purple glows,
+left/right footer, bottom gradient bar. If the deck cover identity changes, change
+this cover too.
+**Why:** the user explicitly asked for the PDF to look "like the deck".
+
+**Fixed-Y cover blocks need defensive sizing.** KPI cards sit at a hard-coded
+`cy`, so a long client name flowing at 34pt could overflow into them. `fitTitleSize`
+picks the largest size (≤34) keeping the name within ~2 lines, plus a `height`+
+`ellipsis` cap. Any future fixed-Y block under flowing text needs the same guard.

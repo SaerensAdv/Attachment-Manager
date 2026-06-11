@@ -29,6 +29,7 @@ import {
   BarChart3,
   Building2,
   Euro,
+  FileDown,
   Gauge,
   Globe,
   Layers,
@@ -149,6 +150,9 @@ export default function Clients() {
   // editor. We echo it back on save so the server can reject (409) if someone
   // else changed the fiche in the meantime, instead of silently overwriting.
   const [editingUpdatedAt, setEditingUpdatedAt] = useState<string | null>(null);
+
+  // One-page Google Ads snapshot PDF (deterministic, server-rendered).
+  const [snapshotting, setSnapshotting] = useState(false);
   // AI briefing suggestions (proposal only — never auto-saved). The user reviews
   // each value and applies it into the form before saving.
   const [briefingSuggestions, setBriefingSuggestions] =
@@ -467,6 +471,48 @@ export default function Clients() {
           ),
       },
     );
+  };
+
+  const handleSnapshot = async () => {
+    if (typeof editing !== "number") return;
+    setFormError(null);
+    setSnapshotting(true);
+    try {
+      const res = await fetch(
+        `${import.meta.env.BASE_URL}api/clients/${editing}/snapshot.pdf`,
+        { credentials: "include" },
+      );
+      if (!res.ok) {
+        let msg = `HTTP ${res.status}`;
+        try {
+          const j = await res.json();
+          msg = j.error || j.detail || msg;
+        } catch {
+          /* non-JSON error body */
+        }
+        throw new Error(msg);
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const slug =
+        (form.name || "klant")
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/(^-|-$)/g, "") || "klant";
+      a.download = `snapshot-${slug}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setFormError(
+        err instanceof Error ? err.message : "Snapshot opstellen mislukt",
+      );
+    } finally {
+      setSnapshotting(false);
+    }
   };
 
   const handleCompetitorAds = () => {
@@ -1433,6 +1479,21 @@ export default function Clients() {
                             <BarChart3 className="w-4 h-4" />
                           )}
                           {liveAds.text ? "Opnieuw ophalen" : "Google Ads ophalen"}
+                        </button>
+                        <button
+                          onClick={handleSnapshot}
+                          disabled={
+                            snapshotting || !form.googleAdsCustomerId.trim()
+                          }
+                          data-testid="button-snapshot-pdf"
+                          className="py-2.5 px-4 border-2 border-foreground text-foreground font-['Space_Mono'] text-[11px] uppercase tracking-widest flex items-center gap-2 hover:bg-foreground hover:text-background transition-colors disabled:opacity-50 disabled:pointer-events-none"
+                        >
+                          {snapshotting ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <FileDown className="w-4 h-4" />
+                          )}
+                          Snapshot (PDF)
                         </button>
                         {!form.googleAdsCustomerId.trim() ? (
                           <span className="font-['Space_Mono'] text-[10px] uppercase tracking-wider text-muted-foreground/70">

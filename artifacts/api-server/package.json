@@ -17,6 +17,7 @@
     "@replit/connectors-sdk": "^0.4.1",
     "@swc/helpers": "^0.5.23",
     "@workspace/api-zod": "workspace:*",
+    "@workspace/brand": "workspace:*",
     "@workspace/db": "workspace:*",
     "@workspace/integrations-anthropic-ai": "workspace:*",
     "cookie-parser": "^1.4.7",

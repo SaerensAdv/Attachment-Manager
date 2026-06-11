@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "@workspace/brand/brand.css";
 
 @theme inline {
   --color-primary: var(--slide-primary);
@@ -10,17 +11,8 @@
   --font-body: var(--font-body-family);
 }
 
-:root {
-  /* Saerens Advertising house style */
-  --slide-primary: #716beb; /* purple accent */
-  --slide-accent: #f4a425; /* amber highlight */
-  --slide-bg: #f5f5f8; /* light panel */
-  --slide-text: #1a1a22; /* ink */
-  --slide-muted: #6b6b72; /* muted grey */
-  --font-display-family: "Plus Jakarta Sans", system-ui, sans-serif;
-  --font-body-family: "Outfit", system-ui, sans-serif;
-  color-scheme: light;
-}
+/* Saerens house-style tokens (--slide-*, fonts, color-scheme) come from
+   @workspace/brand/brand.css imported above — the single source of truth. */
 
 html,
 body,

@@ -187,6 +187,9 @@ importers:
       '@workspace/api-zod':
         specifier: workspace:*
         version: link:../../lib/api-zod
+      '@workspace/brand':
+        specifier: workspace:*
+        version: link:../../lib/brand
       '@workspace/db':
         specifier: workspace:*
         version: link:../../lib/db
@@ -547,6 +550,10 @@ importers:
         version: 3.25.76
 
   artifacts/saerens-audit-deck-template:
+    dependencies:
+      '@workspace/brand':
+        specifier: workspace:*
+        version: link:../../lib/brand
     devDependencies:
       '@replit/vite-plugin-cartographer':
         specifier: 'catalog:'
@@ -846,6 +853,15 @@ importers:
       zod:
         specifier: 'catalog:'
         version: 3.25.76
+
+  lib/brand:
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 25.6.2
+      tsx:
+        specifier: 'catalog:'
+        version: 4.21.0
 
   lib/db:
     dependencies:

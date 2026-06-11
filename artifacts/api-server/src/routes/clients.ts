@@ -15,6 +15,7 @@ import {
   fetchWebsiteIntake,
 } from "../lib/website-intake";
 import { fetchGoogleAdsReport, GoogleAdsConfigError } from "../lib/google-ads";
+import { renderSnapshotPdf } from "../lib/snapshot-pdf";
 import { fetchCompetitorAds, SerpApiConfigError } from "../lib/serpapi";
 import {
   fetchSearchConsoleReport,
@@ -605,6 +606,74 @@ router.post("/clients/:id/google-ads-refresh", async (req, res) => {
     }
     res.status(502).json({
       error: "Kon Google Ads niet uitlezen.",
+      detail: err instanceof Error ? err.message : String(err),
+    });
+  }
+});
+
+/**
+ * One-page, branded "snapshot" PDF of the client's live Google Ads numbers.
+ * Read-only: pulls fresh metrics (last 30 days) and renders them — nothing is
+ * written to Google or the DB. Returned inline so the browser can preview or
+ * save it. Mirrors the live-fetch route's error handling.
+ */
+router.get("/clients/:id/snapshot.pdf", async (req, res) => {
+  const id = parseId(req.params.id);
+  if (id === null) {
+    res.status(400).json({ error: "Ongeldige id." });
+    return;
+  }
+  const [row] = await db
+    .select()
+    .from(clientsTable)
+    .where(eq(clientsTable.id, id));
+  if (!row) {
+    res.status(404).json({ error: "Klant niet gevonden." });
+    return;
+  }
+
+  const customerId = (row.googleAdsCustomerId ?? "").replace(/\D/g, "");
+  if (!customerId) {
+    res.status(400).json({
+      error:
+        "Deze klant heeft nog geen Google Ads customer ID. Vul het in en bewaar eerst.",
+    });
+    return;
+  }
+
+  try {
+    const report = await fetchGoogleAdsReport(row.googleAdsCustomerId ?? "");
+    const dateLabel = new Intl.DateTimeFormat("nl-BE", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+      timeZone: "Europe/Brussels",
+    }).format(new Date());
+    const pdf = await renderSnapshotPdf({
+      clientName: row.name,
+      dateLabel,
+      metrics: report.metrics,
+    });
+    const slug =
+      row.name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/(^-|-$)/g, "") || "klant";
+    res.status(200);
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Length", String(pdf.length));
+    res.setHeader(
+      "Content-Disposition",
+      `inline; filename="snapshot-${slug}.pdf"`,
+    );
+    res.end(pdf);
+  } catch (err) {
+    if (err instanceof GoogleAdsConfigError) {
+      res.status(400).json({ error: err.message });
+      return;
+    }
+    res.status(502).json({
+      error: "Kon de snapshot niet opstellen.",
       detail: err instanceof Error ? err.message : String(err),
     });
   }

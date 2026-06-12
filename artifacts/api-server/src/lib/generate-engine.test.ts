@@ -88,6 +88,7 @@ vi.mock("./docs", () => ({
 import {
   runGeneration,
   toClientFacingReport,
+  stripHumanizerMeta,
   type GenerationContext,
 } from "./generate-engine";
 
@@ -515,5 +516,94 @@ describe("toClientFacingReport", () => {
     const out = toClientFacingReport(md);
     expect(out).not.toContain("[AAN TE VULLEN]");
     expect(out).toContain("Concrete stappen die we zetten voor je account.");
+  });
+});
+
+describe("stripHumanizerMeta", () => {
+  it("keeps only the humanized version and drops QC meta (heading form)", () => {
+    const md = [
+      "## Humanized version",
+      "",
+      "Hi Axel,",
+      "",
+      "Bedankt voor je reactie. We pakken de kost per conversie aan.",
+      "",
+      "Met vriendelijke groeten,",
+      "Lore",
+      "",
+      "## Wat veranderde",
+      "",
+      "- Openingszin korter gemaakt.",
+      "",
+      "## Preserved",
+      "Alle feiten behouden.",
+      "",
+      "## Flags",
+      "Geen.",
+    ].join("\n");
+    const out = stripHumanizerMeta(md);
+    expect(out).toContain("Hi Axel,");
+    expect(out).toContain("Met vriendelijke groeten,");
+    expect(out).not.toContain("Humanized version");
+    expect(out).not.toContain("Wat veranderde");
+    expect(out).not.toContain("Preserved");
+    expect(out).not.toContain("Flags");
+    expect(out).not.toContain("Openingszin korter");
+  });
+
+  it("handles numbered/bold labels and English meta titles", () => {
+    const md = [
+      "1. **Humanized version**",
+      "",
+      "Hello, here is the reply.",
+      "",
+      "2. **What changed**",
+      "Tone tweaks.",
+      "3. **Flags**",
+      "None.",
+    ].join("\n");
+    const out = stripHumanizerMeta(md);
+    expect(out).toBe("Hello, here is the reply.");
+  });
+
+  it("returns plain prose unchanged when there is no QC structure", () => {
+    const md = "Hi Axel,\n\nAlles is in orde.\n\nGroeten,\nLore";
+    expect(stripHumanizerMeta(md)).toBe(md);
+  });
+
+  it("only triggers on standalone meta-label lines, not inline mentions", () => {
+    const md = [
+      "## Humanized version",
+      "",
+      "Hi Axel,",
+      "",
+      "We flaggen niets bijzonders en alle cijfers blijven preserved zoals besproken.",
+      "",
+      "Groeten,",
+      "Lore",
+      "",
+      "## Flags",
+      "Geen.",
+    ].join("\n");
+    const out = stripHumanizerMeta(md);
+    expect(out).toContain("We flaggen niets bijzonders en alle cijfers blijven preserved");
+    expect(out).toContain("Groeten,");
+    expect(out).not.toContain("## Flags");
+    expect(out).not.toContain("Geen.");
+  });
+
+  it("drops any preamble before the humanized label", () => {
+    const md = [
+      "Here is my pass:",
+      "",
+      "## Humanized version",
+      "",
+      "De definitieve tekst.",
+      "",
+      "## Preserved",
+      "Niets gewijzigd aan de feiten.",
+    ].join("\n");
+    const out = stripHumanizerMeta(md);
+    expect(out).toBe("De definitieve tekst.");
   });
 });

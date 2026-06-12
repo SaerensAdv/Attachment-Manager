@@ -102,6 +102,45 @@ function extractFinalReport(teamWork: string, titles: string[]): string {
   return stripAgentHeadings(teamWork, titles).trim();
 }
 
+/** A line that introduces the Humanizer's "Humanized version" block, as either a
+ * markdown heading (`## Humanized version`) or a numbered/bold label
+ * (`1. **Humanized version**`), in English or Dutch. */
+const HUMANIZED_LABEL_RE =
+  /^(?:#{1,6}\s*|\d+\.\s*)?\*{0,2}(?:humanized version|gehumaniseerde versie|menselijke versie)\*{0,2}\s*:?\s*$/i;
+/** A line that introduces one of the Humanizer's trailing meta sections (what
+ * changed / preserved / flags / approval note). Everything from here on is
+ * internal QC commentary, never part of the client-facing text. */
+const HUMANIZER_META_LABEL_RE =
+  /^(?:#{1,6}\s*|\d+\.\s*)?\*{0,2}(?:what changed|wat (?:is er )?veranderd[e]?|changes|wijzigingen|preserved|behouden|flags|vlaggen|human approval required|menselijke goedkeuring(?: vereist)?)\*{0,2}\s*:?\s*$/i;
+
+/**
+ * Reduce the Humanizer's structured output to just its "Humanized version" — the
+ * one part that is client-facing. The Humanizer (`agents/humanizer.md`) emits a
+ * rewritten draft followed by internal QC notes (what changed / preserved /
+ * flags / approval). Those notes are valuable in the archived audit trail but
+ * must never reach the client, so we strip them only when building the
+ * client-facing report/reply. If the output has no recognisable structure
+ * (plain rewritten prose), it is returned unchanged.
+ */
+export function stripHumanizerMeta(text: string): string {
+  const lines = text.replace(/\r\n/g, "\n").split("\n");
+  const out: string[] = [];
+  let sawLabel = false;
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (HUMANIZER_META_LABEL_RE.test(trimmed)) break; // internal notes start here
+    if (!sawLabel && HUMANIZED_LABEL_RE.test(trimmed)) {
+      // Drop the "Humanized version" label and any preamble before it.
+      sawLabel = true;
+      out.length = 0;
+      continue;
+    }
+    out.push(line);
+  }
+  const result = out.join("\n").trim();
+  return result.length > 0 ? result : text.trim();
+}
+
 const REPORT_PLACEHOLDER = /AAN TE VULLEN|\[(in |nog )?te vullen|\[to fill|\[todo|\[placeholder/i;
 const REPORT_INTERNAL_HEADING =
   /interne nota|niet voor de klant|menselijke goedkeuring|intern gebruik|approval required|internal note/i;
@@ -1384,15 +1423,17 @@ export async function runGeneration(
         // send rather than risk leaking internal content to the client.
         // When the Humanizer rewrote the draft (untruncated), prefer its
         // section as the report body over the raw specialist sections.
-        const reportTitles =
+        const reportHumanized =
           humanizerRan && !steps.some(
             (s) => s.role === "quality" && s.agentTitle === humanizerTitle && s.status === "truncated",
-          )
-            ? [...memberTitles, humanizerTitle]
-            : memberTitles;
-        const clientReport = toClientFacingReport(
-          extractFinalReport(teamWork, reportTitles),
-        );
+          );
+        const reportTitles = reportHumanized
+          ? [...memberTitles, humanizerTitle]
+          : memberTitles;
+        const reportFinal = reportHumanized
+          ? stripHumanizerMeta(extractFinalReport(teamWork, reportTitles))
+          : extractFinalReport(teamWork, reportTitles);
+        const clientReport = toClientFacingReport(reportFinal);
         if (!clientReport) {
           throw new Error(
             "De klantgerichte rapportversie is leeg na het verwijderen van interne/placeholder-secties; rapport niet verzonden.",
@@ -1538,15 +1579,17 @@ export async function runGeneration(
         // Client-facing: strip internal/placeholder sections, and prefer the
         // Humanizer's rewritten section over the raw specialist text when it ran
         // without truncation (mirrors the monthly-report body selection).
-        const replyTitles =
+        const replyHumanized =
           humanizerRan && !steps.some(
             (s) => s.role === "quality" && s.agentTitle === humanizerTitle && s.status === "truncated",
-          )
-            ? [...memberTitles, humanizerTitle]
-            : memberTitles;
-        const replyBody = toClientFacingReport(
-          extractFinalReport(teamWork, replyTitles),
-        );
+          );
+        const replyTitles = replyHumanized
+          ? [...memberTitles, humanizerTitle]
+          : memberTitles;
+        const replyFinal = replyHumanized
+          ? stripHumanizerMeta(extractFinalReport(teamWork, replyTitles))
+          : extractFinalReport(teamWork, replyTitles);
+        const replyBody = toClientFacingReport(replyFinal);
         if (!replyBody) {
           throw new Error(
             "Het klantgerichte antwoord is leeg na het verwijderen van interne/placeholder-secties; niet verzonden.",

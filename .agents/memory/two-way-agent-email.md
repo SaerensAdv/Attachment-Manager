@@ -33,6 +33,19 @@ through the SAME approval queue, then sends in-thread on approve.
   running the team (`claimInbound`), so a crash/retry never re-processes a message.
   Accepted at-most-once drop on crash-after-claim is the deliberate tradeoff.
 - Skip non-client noise: SENT, owner, `Auto-Submitted`, bulk/list, mailer-daemon.
+- **Humanizer QC scaffolding must never reach the client.** When `clientFacing=true`
+  the Humanizer runs and emits `Humanized version` + internal meta (`What changed`/
+  `Wat veranderde`, `Preserved`/`Behouden`, `Flags`, `Human approval required`), all
+  as same-level `##` headings under `## Humanizer`. `extractFinalReport` returns that
+  whole block and `toClientFacingReport` does NOT match those titles, so they leaked
+  into the sent reply. Fix = `stripHumanizerMeta()` (keeps only the Humanized-version
+  body; cuts at the first meta label; matches `##`-heading AND `1. **bold**` forms,
+  EN+NL; standalone label lines only, not inline words), applied at BOTH client-facing
+  extraction sites GATED on `humanizerRan && !truncated`. **Why:** the email-reply path
+  is the only one that runs the humanizer client-facing (monthly-report-email is
+  `clientFacing=false`), so this bug is invisible until Phase 2 is exercised live.
+  **How to apply:** strip at the EXTRACTION sites, never at the append site — the
+  archived `finalMarkdown` must keep the full humanizer output + QA review for audit.
 
 ## Wiring / shape
 - `email_threads`: `gmailThreadId` unique, `clientPath`, `headAgentPath`, `subject`,

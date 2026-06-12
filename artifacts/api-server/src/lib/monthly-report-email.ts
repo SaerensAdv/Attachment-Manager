@@ -3,6 +3,7 @@ import { renderReportPdf } from "./report-pdf";
 import { sendEmail, type InlineImage, type SendEmailResult } from "./email";
 import type { GoogleAdsMetrics } from "./google-ads";
 import { loadPortraitBytes } from "./portraits";
+import { SAERENS_LOGO_CID, saerensLogoInlineImage } from "./brand-logo";
 
 /**
  * Building and sending the client-facing monthly report e-mail lives here, apart
@@ -88,8 +89,8 @@ export function escapeHtml(s: string): string {
 
 /**
  * The fixed Content-ID under which the Head's portrait is embedded; the HTML
- * refers to it as `cid:head-portrait`. A single inline image is reused by both
- * the header chip and the footer signature.
+ * refers to it as `cid:head-portrait`. A single inline image used by the footer
+ * signature band.
  */
 export const HEAD_PORTRAIT_CID = "head-portrait";
 
@@ -121,8 +122,8 @@ export async function resolveHeadPortrait(
   const bytes = await loadPortraitBytes(slug);
   if (!bytes) return null;
   // Embed a small, round-ready thumbnail rather than the full-size portrait: the
-  // header chip renders at 44px and the signature at 56px, so 128px covers 2x
-  // DPR while keeping the MIME payload tiny. A full-res PNG trips the send
+  // footer signature renders at 56px, so 128px covers 2x DPR while keeping the
+  // MIME payload tiny. A full-res PNG trips the send
   // proxy's request-size limit with a 413, so if the resize fails we drop the
   // photo (text-only signature) rather than embed the raw bytes and risk failing
   // the whole, owner-approved send.
@@ -138,17 +139,16 @@ export async function resolveHeadPortrait(
 }
 
 /**
- * A small round portrait chip for the dark header band (right-aligned), shown
- * only when a portrait is embedded. Inline styles + explicit dimensions so it
- * renders in email clients that ignore CSS.
+ * The "SA" monogram chip for the dark header band, locked up to the LEFT of the
+ * wordmark. Rendered only when the logo is embedded. Inline styles + explicit
+ * dimensions so it renders in email clients that ignore CSS.
  */
-export function headerAvatar(portraitCid?: string): string {
-  if (!portraitCid) return "";
+export function headerLogo(logoCid?: string): string {
+  if (!logoCid) return "";
   return (
-    `<td valign="middle" align="right" style="width:44px;">` +
-    `<img src="cid:${portraitCid}" width="44" height="44" alt="" ` +
-    `style="display:block;width:44px;height:44px;border-radius:50%;` +
-    `object-fit:cover;border:2px solid rgba(255,255,255,0.28);" />` +
+    `<td valign="middle" style="width:40px;padding-right:12px;">` +
+    `<img src="cid:${logoCid}" width="36" height="36" alt="Saerens Advertising" ` +
+    `style="display:block;width:36px;height:36px;" />` +
     `</td>`
   );
 }
@@ -195,8 +195,10 @@ export function buildBrandedEmail(args: {
   metrics: GoogleAdsMetrics | null;
   /** Footer signature (Head name + role); falls back to the agency line. */
   signature?: string;
-  /** Content-ID of the Head's embedded portrait (header chip + signature). */
+  /** Content-ID of the Head's embedded portrait (footer signature only). */
   portraitCid?: string;
+  /** Content-ID of the embedded SA logo (header lockup). */
+  logoCid?: string;
 }): string {
   const { clientName, periodLabel, dateLabel, bodyText, metrics } = args;
   const NEARBLACK = "#0A0A0B";
@@ -277,11 +279,11 @@ export function buildBrandedEmail(args: {
     `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F5F5F8;padding:24px 0;">` +
     `<tr><td align="center">` +
     `<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:600px;max-width:600px;background:#FFFFFF;border-radius:10px;overflow:hidden;border:1px solid ${HAIR};">` +
-    // header band (company brand left, Head portrait chip right)
+    // header band (SA logo + company wordmark lockup, left-aligned)
     `<tr><td style="background:${NEARBLACK};padding:22px 32px;border-bottom:3px solid ${PURPLE};">` +
-    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>` +
+    `<table role="presentation" cellpadding="0" cellspacing="0"><tr>` +
+    headerLogo(args.logoCid) +
     `<td valign="middle"><div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:bold;letter-spacing:2px;color:#FFFFFF;">SAERENS ADVERTISING</div></td>` +
-    headerAvatar(args.portraitCid) +
     `</tr></table>` +
     `</td></tr>` +
     // title
@@ -327,8 +329,12 @@ export async function deliverMonthlyReport(
     metrics: payload.metrics,
   });
 
-  // Embed the responsible Head's portrait (best-effort: null -> text-only).
+  // Always embed the SA logo (header lockup); embed the Head's portrait when
+  // available (footer signature). Both best-effort: a missing portrait -> the
+  // signature renders text-only.
+  const logo = saerensLogoInlineImage();
   const portrait = await resolveHeadPortrait(payload.headAgentPath);
+  const inlineImages = portrait ? [logo, portrait] : [logo];
 
   const html = buildBrandedEmail({
     clientName: payload.clientName,
@@ -338,6 +344,7 @@ export async function deliverMonthlyReport(
     metrics: payload.metrics,
     signature: payload.signature,
     portraitCid: portrait?.cid,
+    logoCid: SAERENS_LOGO_CID,
   });
 
   const filename = `maandrapport-${payload.clientName
@@ -356,6 +363,6 @@ export async function deliverMonthlyReport(
     fromName: payload.fromName,
     cc: payload.cc,
     attachments: [{ filename, mimeType: "application/pdf", content: pdf }],
-    inlineImages: portrait ? [portrait] : undefined,
+    inlineImages,
   });
 }

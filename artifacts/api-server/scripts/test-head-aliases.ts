@@ -4,13 +4,15 @@ import {
   buildBrandedEmail,
   resolveHeadPortrait,
 } from "../src/lib/monthly-report-email";
+import { SAERENS_LOGO_CID, saerensLogoInlineImage } from "../src/lib/brand-logo";
 
 /**
  * One-off verification for the per-Head email identity + portrait. For each
  * department Head it sends a REAL branded email from that Head's alias, with the
- * Head's portrait embedded inline (header chip + footer signature), so a human
- * can confirm both the visible sender AND that each email carries the right
- * face. Drives the exact production send path (buildBrandedEmail + inline CID).
+ * SA logo in the header lockup and the Head's portrait in the footer signature,
+ * so a human can confirm both the visible sender AND that each email carries the
+ * right face. Drives the exact production send path (buildBrandedEmail + inline
+ * CID).
  */
 const TEST_TO = process.env.TEST_TO || "ax.saerens@gmail.com";
 
@@ -39,6 +41,7 @@ async function main(): Promise<void> {
       continue;
     }
 
+    const logo = saerensLogoInlineImage();
     const portrait = await resolveHeadPortrait(id.headAgentPath);
     const subject = `Profielfoto-test — ${id.name ?? id.departmentTitle} (${id.departmentTitle})`;
     const html = buildBrandedEmail({
@@ -47,12 +50,13 @@ async function main(): Promise<void> {
       dateLabel: "12 juni 2026",
       bodyText: [
         `Dag,`,
-        `Dit is een testbericht om de afzender én de ingesloten profielfoto te verifiëren.`,
+        `Dit is een testbericht om de afzender, het SA-logo in de header én de ingesloten profielfoto te verifiëren.`,
         `Verwachte afzender: ${id.displayName}.`,
       ].join("\n\n"),
       metrics: null,
       signature: id.signature,
       portraitCid: portrait?.cid,
+      logoCid: SAERENS_LOGO_CID,
     });
 
     try {
@@ -62,7 +66,7 @@ async function main(): Promise<void> {
         html,
         fromAddress: id.address,
         fromName: id.displayName,
-        inlineImages: portrait ? [portrait] : undefined,
+        inlineImages: portrait ? [logo, portrait] : [logo],
       });
       console.log(
         `SENT  ${id.address.padEnd(34)} foto:${portrait ? "ja " : "nee"}  als "${id.displayName}"  (msgId ${res.messageId})`,

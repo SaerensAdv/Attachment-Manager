@@ -63,11 +63,24 @@ through the SAME approval queue, then sends in-thread on approve.
   threading internals). `ApprovalPanel` renders the email-reply variant.
 - `workflows/client-email.md` carries `<!-- deliverable: email-reply -->`.
 
-## Inline Head portrait (CID image in outbound emails)
-Both client emails (monthly report + reply) embed the responsible Head's portrait as
-an inline `cid:` image (dark-header chip + footer signature band). Native Gmail inbox
-avatars were rejected: they need paid per-Head Workspace mailboxes or BIMI (one domain
-logo) — the in-email portrait is the free, controllable path.
+## Inline images in outbound emails (SA logo + Head portrait, CID)
+Both client emails (monthly report + reply) carry TWO inline `cid:` images: the SA
+brand logo in the dark-header lockup (left of the wordmark) and the responsible Head's
+portrait in the footer signature band ONLY. The portrait was moved out of the header at
+the user's request — header = company brand, footer = personal signature.
+- **SA logo is a self-contained base64 PNG constant** in `lib/brand-logo.ts`
+  (`SAERENS_LOGO_CID="sa-logo"`, `saerensLogoInlineImage()`). **Why a constant, not file
+  IO / object storage:** api-server dev runs from a BUNDLED dist that is wiped on rebuild,
+  so a baked-in constant is the robust source for a fixed brand asset. Source = the 72×72
+  transparent indigo "SA" monogram (downscaled from `higgsfield-tests/saerens-logo.png`);
+  transparent bg sits cleanly on the `#0A0A0B` header and ties into the `#716BEB` accent.
+- **Logo is ALWAYS embedded; portrait is best-effort.** `deliverMonthlyReport` /
+  `deliverEmailReply` build `inlineImages = portrait ? [logo, portrait] : [logo]` and always
+  pass `logoCid`. Header helper `headerLogo(logoCid)` (renders nothing if no cid);
+  `signatureBand` (56px footer portrait) is the only portrait site now. `headerAvatar` was
+  removed.
+Native Gmail inbox avatars were rejected: they need paid per-Head Workspace mailboxes or
+BIMI (one domain logo) — the in-email portrait is the free, controllable path.
 - **Downscale before embedding, and DROP on failure.** `resolveHeadPortrait` resizes the
   stored portrait to a small square thumb (`sharp`, ~128px) before embedding. **Why:** the
   full-res PNG trips an **HTTP 413** at the Gmail send proxy. On a resize/throw, return

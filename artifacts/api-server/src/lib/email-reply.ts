@@ -1,10 +1,11 @@
 import { sendEmail, type SendEmailResult } from "./email";
 import {
   escapeHtml,
-  headerAvatar,
+  headerLogo,
   resolveHeadPortrait,
   signatureBand,
 } from "./monthly-report-email";
+import { SAERENS_LOGO_CID, saerensLogoInlineImage } from "./brand-logo";
 
 /**
  * The second kind of human-gated client email: a REPLY drafted by the team in
@@ -98,8 +99,10 @@ export function parseEmailReplyPayload(raw: unknown): EmailReplyPayload | null {
 export function buildReplyEmail(args: {
   bodyText: string;
   signature?: string;
-  /** Content-ID of the Head's embedded portrait (header chip + signature). */
+  /** Content-ID of the Head's embedded portrait (footer signature only). */
   portraitCid?: string;
+  /** Content-ID of the embedded SA logo (header lockup). */
+  logoCid?: string;
 }): string {
   const NEARBLACK = "#0A0A0B";
   const PURPLE = "#716BEB";
@@ -130,9 +133,9 @@ export function buildReplyEmail(args: {
     `<tr><td align="center">` +
     `<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:600px;max-width:600px;background:#FFFFFF;border-radius:10px;overflow:hidden;border:1px solid ${HAIR};">` +
     `<tr><td style="background:${NEARBLACK};padding:22px 32px;border-bottom:3px solid ${PURPLE};">` +
-    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>` +
+    `<table role="presentation" cellpadding="0" cellspacing="0"><tr>` +
+    headerLogo(args.logoCid) +
     `<td valign="middle"><div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:bold;letter-spacing:2px;color:#FFFFFF;">SAERENS ADVERTISING</div></td>` +
-    headerAvatar(args.portraitCid) +
     `</tr></table>` +
     `</td></tr>` +
     `<tr><td style="padding:26px 32px 6px;">${paragraphs}</td></tr>` +
@@ -155,12 +158,17 @@ export function buildReplyEmail(args: {
 export async function deliverEmailReply(
   payload: EmailReplyPayload,
 ): Promise<SendEmailResult> {
-  // Embed the responsible Head's portrait (best-effort: null -> text-only).
+  // Always embed the SA logo (header lockup); embed the Head's portrait when
+  // available (footer signature). Both best-effort: a missing portrait -> the
+  // signature renders text-only.
+  const logo = saerensLogoInlineImage();
   const portrait = await resolveHeadPortrait(payload.headAgentPath);
+  const inlineImages = portrait ? [logo, portrait] : [logo];
   const html = buildReplyEmail({
     bodyText: payload.replyBody,
     signature: payload.signature,
     portraitCid: portrait?.cid,
+    logoCid: SAERENS_LOGO_CID,
   });
   return sendEmail({
     to: payload.recipient,
@@ -172,6 +180,6 @@ export async function deliverEmailReply(
     inReplyTo: payload.inReplyTo,
     references: payload.references,
     threadId: payload.threadId,
-    inlineImages: portrait ? [portrait] : undefined,
+    inlineImages,
   });
 }

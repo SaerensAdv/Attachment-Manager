@@ -28,6 +28,8 @@ export default function ApprovalPanel({
   approvalNote,
   recipient,
   reviewerVerdict,
+  deliveryKind,
+  emailReply,
   onRequestedChanges,
   onResolved,
 }: {
@@ -41,6 +43,22 @@ export default function ApprovalPanel({
   /** Internal reviewer verdict surfaced live (archive shows it in the body). */
   reviewerVerdict?: string | null;
   /**
+   * Which kind of delivery is held: "email-reply" (an inbound client reply the
+   * team drafted) or, by default, the monthly report. Drives the copy + whether
+   * the inbound/draft review block is shown.
+   */
+  deliveryKind?: string | null;
+  /**
+   * For a held email reply, the reviewable content (what the client wrote and
+   * the drafted response). Only present for "email-reply" held drafts.
+   */
+  emailReply?: {
+    recipient: string;
+    subject: string;
+    inboundText: string;
+    replyBody: string;
+  } | null;
+  /**
    * Called after changes are requested, with the note, so the caller can
    * regenerate with that context (only wired in the live run flow).
    */
@@ -48,6 +66,8 @@ export default function ApprovalPanel({
   /** Called after any resolution so the parent can refresh its view. */
   onResolved?: () => void;
 }) {
+  const isReply = deliveryKind === "email-reply";
+  const sentToRecipient = emailReply?.recipient ?? recipient;
   const queryClient = useQueryClient();
   const [note, setNote] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -108,7 +128,9 @@ export default function ApprovalPanel({
             Goedkeuring
           </p>
           <p className="font-['Inter'] text-sm text-foreground">
-            Goedgekeurd en verzonden naar de klant.
+            {isReply
+              ? "Antwoord goedgekeurd en in de conversatie verzonden naar de klant."
+              : "Goedgekeurd en verzonden naar de klant."}
           </p>
         </div>
       </div>
@@ -125,7 +147,9 @@ export default function ApprovalPanel({
               Goedkeuring
             </p>
             <p className="font-['Inter'] text-sm text-foreground">
-              Wijzigingen gevraagd — rapport is niet verzonden.
+              {isReply
+                ? "Wijzigingen gevraagd — antwoord is niet verzonden."
+                : "Wijzigingen gevraagd — rapport is niet verzonden."}
             </p>
           </div>
         </div>
@@ -145,13 +169,54 @@ export default function ApprovalPanel({
         Goedkeuring vereist
       </p>
       <h3 className="font-['Playfair_Display'] font-black text-xl uppercase tracking-tight mb-2">
-        Rapport klaar — wacht op jouw akkoord
+        {isReply
+          ? "Antwoord klaar — wacht op jouw akkoord"
+          : "Rapport klaar — wacht op jouw akkoord"}
       </h3>
       <p className="font-['Inter'] text-sm text-muted-foreground mb-4 max-w-2xl">
-        Dit maandrapport is opgesteld maar nog niet verzonden. Keur het goed om
-        het{recipient ? ` naar ${recipient}` : " naar de klant"} te sturen, of
-        vraag wijzigingen om het tegen te houden en opnieuw te genereren.
+        {isReply ? (
+          <>
+            Dit antwoord op de klant is opgesteld maar nog niet verzonden. Keur
+            het goed om het in dezelfde e-mailconversatie
+            {sentToRecipient ? ` naar ${sentToRecipient}` : " naar de klant"} te
+            sturen, of vraag wijzigingen om het tegen te houden en opnieuw te
+            genereren.
+          </>
+        ) : (
+          <>
+            Dit maandrapport is opgesteld maar nog niet verzonden. Keur het goed
+            om het{recipient ? ` naar ${recipient}` : " naar de klant"} te
+            sturen, of vraag wijzigingen om het tegen te houden en opnieuw te
+            genereren.
+          </>
+        )}
       </p>
+
+      {isReply && emailReply && (
+        <div className="mb-4 grid grid-cols-1 gap-3">
+          <div className="border-2 border-foreground/20 bg-background/40 px-4 py-3">
+            <p className="font-['Space_Mono'] text-[10px] uppercase tracking-widest text-muted-foreground mb-1">
+              Bericht van de klant
+            </p>
+            {emailReply.subject && (
+              <p className="font-['Inter'] text-xs text-muted-foreground mb-2">
+                Onderwerp: {emailReply.subject}
+              </p>
+            )}
+            <p className="font-['Inter'] text-sm text-foreground whitespace-pre-wrap">
+              {emailReply.inboundText.trim() || "(geen tekst meegestuurd)"}
+            </p>
+          </div>
+          <div className="border-2 border-accent/50 bg-accent/5 px-4 py-3">
+            <p className="font-['Space_Mono'] text-[10px] uppercase tracking-widest text-muted-foreground mb-1">
+              Voorgesteld antwoord
+            </p>
+            <p className="font-['Inter'] text-sm text-foreground whitespace-pre-wrap">
+              {emailReply.replyBody.trim()}
+            </p>
+          </div>
+        </div>
+      )}
 
       {reviewerVerdict && (
         <div className="mb-4 border-l-2 border-accent pl-3">

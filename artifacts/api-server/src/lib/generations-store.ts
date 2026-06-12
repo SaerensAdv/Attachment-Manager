@@ -7,7 +7,7 @@ import {
   type InsertGeneration,
   type InsertGenerationStep,
 } from "@workspace/db";
-import { asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, isNotNull } from "drizzle-orm";
 import { estimateCostEur } from "./model-pricing";
 
 /** Persist a finished generation. Returns the stored row. */
@@ -317,6 +317,46 @@ export async function setGenerationApproval(
     .where(eq(generationsTable.id, id))
     .returning();
   return row ?? null;
+}
+
+/**
+ * Atomically claim a held client-facing delivery for sending: flip
+ * approval_status pending -> approved, but ONLY while it is still pending and a
+ * held snapshot exists. A concurrent approver (a second tab/user) loses this
+ * conditional update and gets null, which prevents the same email being sent
+ * twice. The held snapshot is intentionally left intact here and cleared only
+ * after the send succeeds; on a send failure the caller reverts to pending so
+ * the draft stays retryable.
+ */
+export async function claimGenerationApprovalForSend(
+  id: number,
+): Promise<Generation | null> {
+  const [row] = await db
+    .update(generationsTable)
+    .set({ approvalStatus: "approved", approvalAt: new Date() })
+    .where(
+      and(
+        eq(generationsTable.id, id),
+        eq(generationsTable.approvalStatus, "pending"),
+        isNotNull(generationsTable.pendingDelivery),
+      ),
+    )
+    .returning();
+  return row ?? null;
+}
+
+/**
+ * Release a claim that could not be delivered: return the run to "pending" with
+ * its held snapshot still in place, so the owner can retry the send. Used when a
+ * claimed draft turns out to be unreadable or the send call fails.
+ */
+export async function revertGenerationApprovalToPending(
+  id: number,
+): Promise<void> {
+  await db
+    .update(generationsTable)
+    .set({ approvalStatus: "pending", approvalAt: null })
+    .where(eq(generationsTable.id, id));
 }
 
 /**

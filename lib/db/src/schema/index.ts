@@ -19,6 +19,7 @@
 
 export * from "./client-groups";
 export * from "./clients";
+export * from "./email-threads";
 export * from "./generations";
 export * from "./invoices";
 export * from "./monitored-terms";

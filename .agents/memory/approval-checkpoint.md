@@ -26,6 +26,16 @@ live runs.
 - Resolution endpoints: `POST /generations/:id/approve` (deliver, mark approved,
   append step; guards keep it pending on send failure — 409/422/502) and
   `POST /generations/:id/request-changes` (hold, record note, append step).
+- `approve` must CLAIM atomically before sending: a conditional UPDATE flips
+  pending→approved WHERE id AND status="pending" AND pendingDelivery IS NOT NULL
+  (`claimGenerationApprovalForSend`). Losing the claim (concurrent second tab/user)
+  returns null ⇒ 409, so a client email can NEVER be double-sent. The held snapshot
+  is kept through the send and cleared only on success (`clearPending:true`); every
+  failure path (unreadable 422, send error 502) calls
+  `revertGenerationApprovalToPending` so the draft stays retryable. Known narrow
+  tradeoff: a crash between claim and send leaves a stuck "approved"+held+unsent
+  draft — never an unapproved or double send, which is the invariant that matters.
+  `request-changes` stays a plain non-atomic check (it never sends, so no double-send risk).
 - `approvalStatus` values: `"pending" | "approved" | "changes_requested"`.
 - Frontend reuses one `ApprovalPanel` component in BOTH the live `GenerationPanel`
   and the `History` detail panel, so any trigger source can be resolved.

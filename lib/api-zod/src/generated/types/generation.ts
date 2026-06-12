@@ -5,6 +5,8 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { GenerationPendingDeliveryKind } from './generationPendingDeliveryKind';
+import type { GenerationPendingEmailReply } from './generationPendingEmailReply';
 
 export interface Generation {
   id: number;
@@ -38,4 +40,14 @@ export interface Generation {
   /** @nullable */
   approvalAt: Date | null;
   hasPendingDelivery: boolean;
+  /**
+     * Which kind of drafted-but-unsent delivery is held on this run, or null when none is pending.
+     * @nullable
+     */
+  pendingDeliveryKind: GenerationPendingDeliveryKind;
+  /**
+     * For a held inbound email reply (drafted autonomously, no live session), the reviewable content so a human can approve from the archive. Identity/threading internals are intentionally omitted.
+     * @nullable
+     */
+  pendingEmailReply: GenerationPendingEmailReply;
 }

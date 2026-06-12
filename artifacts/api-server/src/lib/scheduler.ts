@@ -2,6 +2,7 @@ import { Cron } from "croner";
 import { logger } from "./logger";
 import { resolveGenerationContext, runGeneration } from "./generate-engine";
 import { claim, listDue, markRun } from "./schedules-store";
+import { startInboundPoller } from "./email-inbound";
 import type { Schedule as ScheduleRow } from "@workspace/db";
 
 const TICK_INTERVAL_MS = 60_000;
@@ -130,4 +131,6 @@ export function startScheduler(): void {
   // A short initial delay lets the server settle before the first sweep.
   setTimeout(() => void tick(), 5_000);
   setInterval(() => void tick(), TICK_INTERVAL_MS);
+  // The inbound-email poller (Phase 2) runs as a sibling loop with its own guard.
+  startInboundPoller();
 }

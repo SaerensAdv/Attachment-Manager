@@ -21,6 +21,8 @@ import {
   type GoogleAdsMetrics,
 } from "./google-ads";
 import type { ReportDeliveryPayload } from "./monthly-report-email";
+import type { EmailReplyPayload } from "./email-reply";
+import { resolveHeadIdentity, ownerEmail } from "./email-identity";
 
 /** Remove the internal "## <AgentTitle>" section headers from team output. */
 function stripAgentHeadings(text: string, titles: string[]): string {
@@ -235,7 +237,29 @@ export const QC_REVIEWER_PATH = "agents/qa-compliance-reviewer.md";
 export const QC_HUMANIZER_PATH = "agents/humanizer.md";
 const QC_PATHS = new Set<string>([QC_REVIEWER_PATH, QC_HUMANIZER_PATH]);
 
-/** Everything needed to run a generation, after validation. */
+/**
+ * Inbound-reply context attached by the email poller (Phase 2). When present on
+ * a run whose workflow declares the `email-reply` deliverable, the engine holds
+ * a team-drafted reply for approval instead of sending anything, carrying the
+ * threading headers needed to land the reply in the original Gmail conversation.
+ */
+export interface EmailReplyContext {
+  /** FK to the email_threads row this conversation belongs to. */
+  emailThreadId: number;
+  /** Gmail threadId to attach the reply to. */
+  gmailThreadId: string;
+  /** The whitelisted client recipient (client.reportEmail). */
+  recipient: string;
+  /** Subject for the reply (e.g. "Re: <original subject>"). */
+  subject: string;
+  /** Message-ID of the client's inbound message we are replying to. */
+  inReplyTo: string | null;
+  /** Space-separated References chain (the thread's Message-IDs so far). */
+  references: string | null;
+  /** The client's inbound message text, kept so a human can review in context. */
+  inboundText: string;
+}
+
 export interface GenerationContext {
   teamPaths: string[];
   memberTitles: string[];
@@ -248,6 +272,11 @@ export interface GenerationContext {
   deliverableKind: ReturnType<typeof getDeliverableKind>;
   request: string;
   clientDocs: DocFile[];
+  /**
+   * Set by the inbound email poller for an `email-reply` run; carries the thread
+   * + inbound message so the engine can hold a threaded reply for approval.
+   */
+  emailReply?: EmailReplyContext;
   /**
    * Execution plan as groups of indices into `teamPaths`. Each group runs in
    * order; agents WITHIN a group run in parallel (independent branches that all
@@ -549,6 +578,7 @@ export async function runGeneration(
         totalTokens: totalTokens || null,
         approvalStatus,
         pendingDelivery: pendingApproval,
+        emailThreadId: ctx.emailReply?.emailThreadId ?? null,
       });
       savedId = row.id;
       // Best-effort: a failure to write the step trail must never lose the run.
@@ -1419,6 +1449,11 @@ export async function runGeneration(
         // reviewer's verdict and approves (release) or requests changes. The PDF
         // is rendered at approval time from this payload, so nothing reaches the
         // client unattended.
+        // Freeze the responsible Head's email identity (derived from the lead
+        // agent's department) so the held draft is sent FROM that Head with the
+        // owner in CC. Best-effort: a missing alias degrades to the primary
+        // mailbox (Gmail rewrites an unverified From anyway).
+        const identity = await resolveHeadIdentity(teamPaths[0]);
         const payload: ReportDeliveryPayload = {
           recipient,
           subject,
@@ -1428,6 +1463,11 @@ export async function runGeneration(
           emailBody,
           clientReport,
           metrics: reportMetrics,
+          fromName: identity?.displayName,
+          fromAddress: identity?.address ?? undefined,
+          cc: ownerEmail() ?? undefined,
+          signature: identity?.signature,
+          headAgentPath: identity?.headAgentPath ?? teamPaths[0],
         };
         pendingApproval = JSON.stringify(payload);
         approvalStatus = "pending";
@@ -1470,6 +1510,109 @@ export async function runGeneration(
       // Drafting the report succeeded even though it is held for approval, so the
       // run itself stays "completed"; only a real drafting failure marks it
       // partial. The held send is tracked by approvalStatus, not run status.
+      if (actionStatus !== "completed") runStatus = "partial";
+    }
+
+    // Action deliverable (Phase 2): hold a team-drafted REPLY to an inbound
+    // client message. Same human-approval checkpoint as the monthly report —
+    // nothing is sent here — but the snapshot carries the threading headers so
+    // the approved reply lands in the original Gmail conversation. The inbound
+    // context (thread, recipient, message-id chain) is attached by the poller.
+    if (deliverableKind === "email-reply" && !isGone()) {
+      const actionStartedAt = Date.now();
+      let actionStatus = "completed";
+      let actionError: string | null = null;
+      const er = ctx.emailReply ?? null;
+      try {
+        send({ type: "deliverable_start", deliverable: { title: "Antwoord opstellen" } });
+        if (!er) {
+          throw new Error(
+            "Geen e-mailthread-context voor dit antwoord (interne fout).",
+          );
+        }
+        const teamWork = deliverableSource.trim();
+        if (!teamWork) {
+          throw new Error("Het team leverde geen antwoord om te versturen.");
+        }
+
+        // Client-facing: strip internal/placeholder sections, and prefer the
+        // Humanizer's rewritten section over the raw specialist text when it ran
+        // without truncation (mirrors the monthly-report body selection).
+        const replyTitles =
+          humanizerRan && !steps.some(
+            (s) => s.role === "quality" && s.agentTitle === humanizerTitle && s.status === "truncated",
+          )
+            ? [...memberTitles, humanizerTitle]
+            : memberTitles;
+        const replyBody = toClientFacingReport(
+          extractFinalReport(teamWork, replyTitles),
+        );
+        if (!replyBody) {
+          throw new Error(
+            "Het klantgerichte antwoord is leeg na het verwijderen van interne/placeholder-secties; niet verzonden.",
+          );
+        }
+
+        if (isGone()) throw new Error("Afgebroken voor opslag.");
+
+        // Freeze the responsible Head's identity (same derivation as the report)
+        // so the held reply is sent FROM that Head with the owner in CC.
+        const identity = await resolveHeadIdentity(teamPaths[0]);
+        const payload: EmailReplyPayload = {
+          kind: "email-reply",
+          recipient: er.recipient,
+          subject: er.subject,
+          clientName,
+          replyBody,
+          inboundText: er.inboundText,
+          fromName: identity?.displayName,
+          fromAddress: identity?.address ?? undefined,
+          cc: ownerEmail() ?? undefined,
+          signature: identity?.signature,
+          headAgentPath: identity?.headAgentPath ?? teamPaths[0],
+          threadId: er.gmailThreadId,
+          inReplyTo: er.inReplyTo ?? undefined,
+          references: er.references ?? undefined,
+          emailThreadId: er.emailThreadId,
+        };
+        pendingApproval = JSON.stringify(payload);
+        approvalStatus = "pending";
+        send({ type: "deliverable_done", truncated: false });
+        // Surface the inbound message + the held reply draft + the internal
+        // reviewer verdict so a human can decide before it goes out.
+        send({
+          type: "approval_required",
+          recipient: er.recipient,
+          clientReport: replyBody,
+          reviewerVerdict: reviewerText.trim() || null,
+        });
+      } catch (err) {
+        if (isGone() || (err instanceof Error && err.name === "AbortError")) {
+          actionStatus = "aborted";
+        } else {
+          actionStatus = "failed";
+          actionError = (err instanceof Error ? err.message : String(err)).slice(
+            0,
+            500,
+          );
+          send({ type: "deliverable_error", message: actionError });
+        }
+      }
+      steps.push({
+        agentPath: workflowPath,
+        agentTitle:
+          actionStatus === "completed"
+            ? "Antwoord opgesteld — wacht op goedkeuring"
+            : "Antwoord opstellen",
+        stepOrder: nextStepOrder++,
+        role: "deliverable",
+        status: actionStatus,
+        durationMs: Date.now() - actionStartedAt,
+        inputTokens: null,
+        outputTokens: null,
+        charCount: null,
+        errorMessage: actionError,
+      });
       if (actionStatus !== "completed") runStatus = "partial";
     }
 

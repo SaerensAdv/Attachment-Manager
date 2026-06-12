@@ -5,6 +5,7 @@ import {
   text,
   timestamp,
 } from "drizzle-orm/pg-core";
+import { emailThreadsTable } from "./email-threads";
 
 /**
  * Persisted AI team generations — the archive/history of work the "brain"
@@ -58,6 +59,13 @@ export const generationsTable = pgTable("generations", {
   // client-facing report markdown + metrics) so the PDF can be re-rendered and
   // sent at approval time without re-running the team. Cleared once resolved.
   pendingDelivery: text("pending_delivery"),
+  // Links a run to the e-mail conversation it belongs to: a sent monthly report
+  // opens a thread; a drafted reply continues one. Null for runs that produce no
+  // client e-mail. ON DELETE SET NULL so deleting a thread never loses the run.
+  emailThreadId: integer("email_thread_id").references(
+    () => emailThreadsTable.id,
+    { onDelete: "set null" },
+  ),
 });
 
 export type Generation = typeof generationsTable.$inferSelect;

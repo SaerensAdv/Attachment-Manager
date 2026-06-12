@@ -69,6 +69,27 @@ export function checkGoogleAdsEnv(env: NodeJS.ProcessEnv = process.env): string[
 }
 
 /**
+ * Shape-check the optional two-way agent email config (sender domain + owner CC).
+ * Both are optional: when unset, outbound mail simply falls back to the primary
+ * mailbox with no per-Head alias and no CC. Warns (never throws) on a value that
+ * is set but malformed, so a typo surfaces at boot instead of at send time.
+ */
+export function checkAgentEmailEnv(env: NodeJS.ProcessEnv = process.env): string[] {
+  const warnings: string[] = [];
+  const domain = (env.AGENT_EMAIL_DOMAIN ?? "").trim();
+  const owner = (env.OWNER_EMAIL ?? "").trim();
+  if (domain && !/^[a-z0-9.-]+\.[a-z]{2,}$/i.test(domain)) {
+    warnings.push(
+      "AGENT_EMAIL_DOMAIN lijkt geen geldig domein (bv. saerensadvertising.com).",
+    );
+  }
+  if (owner && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(owner)) {
+    warnings.push("OWNER_EMAIL lijkt geen geldig e-mailadres.");
+  }
+  return warnings;
+}
+
+/**
  * Validate required env and warn about an optional misconfiguration. Throws on a
  * missing/invalid required variable so the process exits at boot with a clear
  * message rather than crashing on the first request.
@@ -84,6 +105,10 @@ export function validateEnv(env: NodeJS.ProcessEnv = process.env): AppEnv {
 
   for (const warning of checkGoogleAdsEnv(env)) {
     logger.warn({ scope: "env:google-ads" }, warning);
+  }
+
+  for (const warning of checkAgentEmailEnv(env)) {
+    logger.warn({ scope: "env:agent-email" }, warning);
   }
 
   return {

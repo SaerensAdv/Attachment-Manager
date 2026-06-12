@@ -1,5 +1,5 @@
 import { renderReportPdf } from "./report-pdf";
-import { sendEmail } from "./email";
+import { sendEmail, type SendEmailResult } from "./email";
 import type { GoogleAdsMetrics } from "./google-ads";
 
 /**
@@ -27,6 +27,19 @@ export interface ReportDeliveryPayload {
   /** The client-facing report markdown that becomes the attached PDF. */
   clientReport: string;
   metrics: GoogleAdsMetrics | null;
+  // Sender identity (the responsible Head) + owner CC, snapshotted at run time
+  // so the held draft sends from the right Head after approval. All optional:
+  // when absent the mail falls back to the primary mailbox with no CC.
+  /** Full "From" display name, e.g. "Sven — Paid Media, Saerens Advertising". */
+  fromName?: string;
+  /** Derived alias address; only honoured as a verified Gmail "send as". */
+  fromAddress?: string;
+  /** Agency owner kept in CC. */
+  cc?: string;
+  /** Plain-text footer signature (Head name + role). */
+  signature?: string;
+  /** The Head agent's doc path — used to route inbound replies (Phase 2). */
+  headAgentPath?: string;
 }
 
 /** Narrow an arbitrary JSON value into a ReportDeliveryPayload, or null. */
@@ -42,6 +55,8 @@ export function parseReportDeliveryPayload(
   const clientName = str(p.clientName);
   const clientReport = str(p.clientReport);
   if (!recipient || !subject || !clientName || !clientReport) return null;
+  const optStr = (v: unknown): string | undefined =>
+    typeof v === "string" && v.trim().length > 0 ? v : undefined;
   return {
     recipient,
     subject,
@@ -51,6 +66,14 @@ export function parseReportDeliveryPayload(
     emailBody: typeof p.emailBody === "string" ? p.emailBody : "",
     clientReport,
     metrics: (p.metrics ?? null) as GoogleAdsMetrics | null,
+    // Carry the snapshotted sender identity through, or the held draft would
+    // lose its From/Cc/signature when re-read at approval time and send from
+    // the primary mailbox instead of the responsible Head.
+    fromName: optStr(p.fromName),
+    fromAddress: optStr(p.fromAddress),
+    cc: optStr(p.cc),
+    signature: optStr(p.signature),
+    headAgentPath: optStr(p.headAgentPath),
   };
 }
 
@@ -68,6 +91,8 @@ export function buildBrandedEmail(args: {
   dateLabel: string;
   bodyText: string;
   metrics: GoogleAdsMetrics | null;
+  /** Footer signature (Head name + role); falls back to the agency line. */
+  signature?: string;
 }): string {
   const { clientName, periodLabel, dateLabel, bodyText, metrics } = args;
   const NEARBLACK = "#0A0A0B";
@@ -167,7 +192,11 @@ export function buildBrandedEmail(args: {
     // footer
     `<tr><td style="padding:18px 32px 26px;border-top:1px solid ${HAIR};">` +
     `<div style="font-family:Arial,Helvetica,sans-serif;font-size:11px;line-height:1.5;color:${MUTED};">` +
-    `Het volledige rapport vind je in de bijgevoegde PDF.<br>Saerens Advertising · Google Ads` +
+    `Het volledige rapport vind je in de bijgevoegde PDF.<br>${
+      args.signature && args.signature.trim()
+        ? escapeHtml(args.signature.trim()).replace(/\n/g, "<br>")
+        : "Saerens Advertising · Google Ads"
+    }` +
     `</div></td></tr>` +
     `</table></td></tr></table></body></html>`
   );
@@ -181,7 +210,7 @@ export function buildBrandedEmail(args: {
  */
 export async function deliverMonthlyReport(
   payload: ReportDeliveryPayload,
-): Promise<void> {
+): Promise<SendEmailResult> {
   const pdf = await renderReportPdf(payload.clientReport, {
     clientName: payload.clientName,
     subtitle: `Maandrapport — ${payload.periodLabel}`,
@@ -195,6 +224,7 @@ export async function deliverMonthlyReport(
     dateLabel: payload.dateLabel,
     bodyText: payload.emailBody,
     metrics: payload.metrics,
+    signature: payload.signature,
   });
 
   const filename = `maandrapport-${payload.clientName
@@ -202,12 +232,16 @@ export async function deliverMonthlyReport(
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "")}.pdf`;
 
-  await sendEmail({
+  // Send FROM the responsible Head with the owner in CC. Returns the Gmail
+  // thread + Message-ID so the caller can persist the conversation for Phase 2
+  // (inbound replies routed back to this Head).
+  return sendEmail({
     to: payload.recipient,
     subject: payload.subject,
     html,
-    attachments: [
-      { filename, mimeType: "application/pdf", content: pdf },
-    ],
+    fromAddress: payload.fromAddress,
+    fromName: payload.fromName,
+    cc: payload.cc,
+    attachments: [{ filename, mimeType: "application/pdf", content: pdf }],
   });
 }

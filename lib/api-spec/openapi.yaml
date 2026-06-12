@@ -2627,6 +2627,8 @@ components:
         - approvalNote
         - approvalAt
         - hasPendingDelivery
+        - pendingDeliveryKind
+        - pendingEmailReply
       properties:
         id:
           type: integer
@@ -2681,6 +2683,32 @@ components:
           format: date-time
         hasPendingDelivery:
           type: boolean
+        pendingDeliveryKind:
+          type: ["string", "null"]
+          enum: ["monthly-report", "email-reply", null]
+          description: >-
+            Which kind of drafted-but-unsent delivery is held on this run, or
+            null when none is pending.
+        pendingEmailReply:
+          type: ["object", "null"]
+          description: >-
+            For a held inbound email reply (drafted autonomously, no live
+            session), the reviewable content so a human can approve from the
+            archive. Identity/threading internals are intentionally omitted.
+          required:
+            - recipient
+            - subject
+            - inboundText
+            - replyBody
+          properties:
+            recipient:
+              type: string
+            subject:
+              type: string
+            inboundText:
+              type: string
+            replyBody:
+              type: string
     GenerationList:
       type: object
       required: [generations]

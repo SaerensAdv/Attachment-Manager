@@ -622,6 +622,8 @@ export default function History() {
                       status={detail.data.approvalStatus}
                       approvalNote={detail.data.approvalNote}
                       recipient={detail.data.clientName}
+                      deliveryKind={detail.data.pendingDeliveryKind}
+                      emailReply={detail.data.pendingEmailReply}
                       onResolved={() => {
                         queryClient.invalidateQueries({
                           queryKey: getGetGenerationQueryKey(detail.data!.id),

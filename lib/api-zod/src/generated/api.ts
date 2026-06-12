@@ -1840,7 +1840,14 @@ export const GetGenerationResponse = zod.object({
   "approvalStatus": zod.string().nullable(),
   "approvalNote": zod.string().nullable(),
   "approvalAt": zod.coerce.date().nullable(),
-  "hasPendingDelivery": zod.boolean()
+  "hasPendingDelivery": zod.boolean(),
+  "pendingDeliveryKind": zod.union([zod.literal('monthly-report'),zod.literal('email-reply'),zod.literal(null)]).nullable().describe('Which kind of drafted-but-unsent delivery is held on this run, or null when none is pending.'),
+  "pendingEmailReply": zod.object({
+  "recipient": zod.string(),
+  "subject": zod.string(),
+  "inboundText": zod.string(),
+  "replyBody": zod.string()
+}).nullable().describe('For a held inbound email reply (drafted autonomously, no live session), the reviewable content so a human can approve from the archive. Identity\/threading internals are intentionally omitted.')
 })
 
 
@@ -1887,7 +1894,14 @@ export const SetGenerationFeedbackResponse = zod.object({
   "approvalStatus": zod.string().nullable(),
   "approvalNote": zod.string().nullable(),
   "approvalAt": zod.coerce.date().nullable(),
-  "hasPendingDelivery": zod.boolean()
+  "hasPendingDelivery": zod.boolean(),
+  "pendingDeliveryKind": zod.union([zod.literal('monthly-report'),zod.literal('email-reply'),zod.literal(null)]).nullable().describe('Which kind of drafted-but-unsent delivery is held on this run, or null when none is pending.'),
+  "pendingEmailReply": zod.object({
+  "recipient": zod.string(),
+  "subject": zod.string(),
+  "inboundText": zod.string(),
+  "replyBody": zod.string()
+}).nullable().describe('For a held inbound email reply (drafted autonomously, no live session), the reviewable content so a human can approve from the archive. Identity\/threading internals are intentionally omitted.')
 })
 
 
@@ -1921,7 +1935,14 @@ export const ApproveGenerationResponse = zod.object({
   "approvalStatus": zod.string().nullable(),
   "approvalNote": zod.string().nullable(),
   "approvalAt": zod.coerce.date().nullable(),
-  "hasPendingDelivery": zod.boolean()
+  "hasPendingDelivery": zod.boolean(),
+  "pendingDeliveryKind": zod.union([zod.literal('monthly-report'),zod.literal('email-reply'),zod.literal(null)]).nullable().describe('Which kind of drafted-but-unsent delivery is held on this run, or null when none is pending.'),
+  "pendingEmailReply": zod.object({
+  "recipient": zod.string(),
+  "subject": zod.string(),
+  "inboundText": zod.string(),
+  "replyBody": zod.string()
+}).nullable().describe('For a held inbound email reply (drafted autonomously, no live session), the reviewable content so a human can approve from the archive. Identity\/threading internals are intentionally omitted.')
 })
 
 
@@ -1959,7 +1980,14 @@ export const RequestGenerationChangesResponse = zod.object({
   "approvalStatus": zod.string().nullable(),
   "approvalNote": zod.string().nullable(),
   "approvalAt": zod.coerce.date().nullable(),
-  "hasPendingDelivery": zod.boolean()
+  "hasPendingDelivery": zod.boolean(),
+  "pendingDeliveryKind": zod.union([zod.literal('monthly-report'),zod.literal('email-reply'),zod.literal(null)]).nullable().describe('Which kind of drafted-but-unsent delivery is held on this run, or null when none is pending.'),
+  "pendingEmailReply": zod.object({
+  "recipient": zod.string(),
+  "subject": zod.string(),
+  "inboundText": zod.string(),
+  "replyBody": zod.string()
+}).nullable().describe('For a held inbound email reply (drafted autonomously, no live session), the reviewable content so a human can approve from the archive. Identity\/threading internals are intentionally omitted.')
 })
 
 

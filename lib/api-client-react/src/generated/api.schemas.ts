@@ -718,6 +718,29 @@ export interface GenerationSummary {
   triggerSource: string;
 }
 
+/**
+ * Which kind of drafted-but-unsent delivery is held on this run, or null when none is pending.
+ * @nullable
+ */
+export type GenerationPendingDeliveryKind = typeof GenerationPendingDeliveryKind[keyof typeof GenerationPendingDeliveryKind] | null;
+
+
+export const GenerationPendingDeliveryKind = {
+  'monthly-report': 'monthly-report',
+  'email-reply': 'email-reply',
+} as const;
+
+/**
+ * For a held inbound email reply (drafted autonomously, no live session), the reviewable content so a human can approve from the archive. Identity/threading internals are intentionally omitted.
+ * @nullable
+ */
+export type GenerationPendingEmailReply = {
+  recipient: string;
+  subject: string;
+  inboundText: string;
+  replyBody: string;
+} | null;
+
 export interface Generation {
   id: number;
   clientName: string;
@@ -750,6 +773,16 @@ export interface Generation {
   /** @nullable */
   approvalAt: string | null;
   hasPendingDelivery: boolean;
+  /**
+     * Which kind of drafted-but-unsent delivery is held on this run, or null when none is pending.
+     * @nullable
+     */
+  pendingDeliveryKind: GenerationPendingDeliveryKind;
+  /**
+     * For a held inbound email reply (drafted autonomously, no live session), the reviewable content so a human can approve from the archive. Identity/threading internals are intentionally omitted.
+     * @nullable
+     */
+  pendingEmailReply: GenerationPendingEmailReply;
 }
 
 export interface GenerationList {

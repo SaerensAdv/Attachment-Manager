@@ -15,6 +15,7 @@ export type DeliverableKind =
   | "animated-video-prompt"
   | "data-app-prompt"
   | "monthly-report-email"
+  | "email-reply"
   | "google-ads-csv"
   | "negative-keywords-csv"
   | "meta-ad-image"
@@ -70,6 +71,7 @@ const KNOWN: ReadonlySet<DeliverableKind> = new Set([
   "animated-video-prompt",
   "data-app-prompt",
   "monthly-report-email",
+  "email-reply",
   "google-ads-csv",
   "negative-keywords-csv",
 ]);

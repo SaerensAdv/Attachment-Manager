@@ -177,6 +177,25 @@ export async function loadPortraitIndex(): Promise<PortraitIndex> {
 }
 
 /**
+ * Read the raw PNG bytes of an employee's chosen portrait, or null when none is
+ * stored / storage is unreachable. Best-effort by design: callers (e.g. the
+ * email signature) must render gracefully without a portrait, so any failure
+ * collapses to "no portrait" rather than throwing.
+ */
+export async function loadPortraitBytes(slug: string): Promise<Buffer | null> {
+  if (!slug || !slug.trim()) return null;
+  try {
+    const service = new ObjectStorageService();
+    const file = await service.searchPublicObject(portraitObjectName(slug));
+    if (!file) return null;
+    const [bytes] = await file.download();
+    return bytes;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Store (or replace) the chosen portrait for an employee at portraits/<slug>.png
  * in the public bucket. The bytes must already be a normalized PNG. Replacing an
  * existing object bumps its storage generation, which busts the version-keyed

@@ -1,10 +1,16 @@
 import { resolveHeadIdentity } from "../src/lib/email-identity";
 import { sendEmail } from "../src/lib/email";
+import {
+  buildBrandedEmail,
+  resolveHeadPortrait,
+} from "../src/lib/monthly-report-email";
 
 /**
- * One-off verification: send a real email from each department Head's alias so a
- * human can confirm Gmail keeps the per-Head "send as" address (instead of
- * rewriting it to the primary mailbox). Drives the exact production send path.
+ * One-off verification for the per-Head email identity + portrait. For each
+ * department Head it sends a REAL branded email from that Head's alias, with the
+ * Head's portrait embedded inline (header chip + footer signature), so a human
+ * can confirm both the visible sender AND that each email carries the right
+ * face. Drives the exact production send path (buildBrandedEmail + inline CID).
  */
 const TEST_TO = process.env.TEST_TO || "ax.saerens@gmail.com";
 
@@ -32,13 +38,22 @@ async function main(): Promise<void> {
       console.log(`SKIP  geen alias (AGENT_EMAIL_DOMAIN onset?) voor ${id.departmentTitle}`);
       continue;
     }
-    const subject = `Afzender-test — ${id.name ?? id.departmentTitle} (${id.departmentTitle})`;
-    const html = [
-      `<p>Dit is een testbericht om de zichtbare afzender te verifiëren.</p>`,
-      `<p><strong>Verwachte afzender:</strong> ${id.displayName} &lt;${id.address}&gt;</p>`,
-      `<hr/>`,
-      `<pre style="font-family:inherit">${id.signature}</pre>`,
-    ].join("\n");
+
+    const portrait = await resolveHeadPortrait(id.headAgentPath);
+    const subject = `Profielfoto-test — ${id.name ?? id.departmentTitle} (${id.departmentTitle})`;
+    const html = buildBrandedEmail({
+      clientName: "Testklant",
+      periodLabel: "mei 2026",
+      dateLabel: "12 juni 2026",
+      bodyText: [
+        `Dag,`,
+        `Dit is een testbericht om de afzender én de ingesloten profielfoto te verifiëren.`,
+        `Verwachte afzender: ${id.displayName}.`,
+      ].join("\n\n"),
+      metrics: null,
+      signature: id.signature,
+      portraitCid: portrait?.cid,
+    });
 
     try {
       const res = await sendEmail({
@@ -47,9 +62,10 @@ async function main(): Promise<void> {
         html,
         fromAddress: id.address,
         fromName: id.displayName,
+        inlineImages: portrait ? [portrait] : undefined,
       });
       console.log(
-        `SENT  ${id.address.padEnd(40)} als "${id.displayName}"  (msgId ${res.messageId})`,
+        `SENT  ${id.address.padEnd(34)} foto:${portrait ? "ja " : "nee"}  als "${id.displayName}"  (msgId ${res.messageId})`,
       );
     } catch (e) {
       console.log(`FAIL  ${id.address}: ${(e as Error).message}`);

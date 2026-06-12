@@ -31,12 +31,27 @@ export interface EmailAttachment {
   content: Buffer;
 }
 
+/**
+ * An image embedded INSIDE the HTML body (not a download). Referenced from the
+ * markup as `<img src="cid:<cid>">` and carried as a `multipart/related` part
+ * with a matching `Content-ID`. Used for the per-Head portrait so it renders
+ * reliably in Gmail (remote/data: image sources are proxied or stripped).
+ */
+export interface InlineImage {
+  /** Content-ID token (no angle brackets); the HTML refers to `cid:<cid>`. */
+  cid: string;
+  mimeType: string;
+  content: Buffer;
+}
+
 export interface SendEmailInput {
   to: string;
   subject: string;
   /** HTML body. */
   html: string;
   attachments?: EmailAttachment[];
+  /** Images embedded in the HTML body via `cid:` references (see InlineImage). */
+  inlineImages?: InlineImage[];
   /**
    * Sender address. Honoured only when it is a verified Gmail "send as" alias
    * on the connected mailbox; Gmail rewrites it to the primary otherwise.
@@ -163,43 +178,78 @@ export function buildMime(input: SendEmailInput): {
     headers.push(`References: ${sanitizeHeaderValue(input.references)}`);
   }
   headers.push("MIME-Version: 1.0");
-  headers.push(`Content-Type: multipart/mixed; boundary="${boundary}"`);
 
-  const parts: string[] = [];
+  const inlineImages = input.inlineImages ?? [];
+  const attachments = input.attachments ?? [];
 
-  // HTML body (base64 so UTF-8 content travels safely).
-  parts.push(
-    [
-      `--${boundary}`,
-      "Content-Type: text/html; charset=UTF-8",
+  // A MIME part body (its own headers + encoded content), WITHOUT the leading
+  // boundary delimiter — `wrap` adds the delimiters and closing marker.
+  const htmlPart = [
+    "Content-Type: text/html; charset=UTF-8",
+    "Content-Transfer-Encoding: base64",
+    "",
+    chunk76(Buffer.from(input.html, "utf-8").toString("base64")),
+  ].join("\r\n");
+
+  const inlineParts = inlineImages.map((img) => {
+    const cid = sanitizeHeaderValue(img.cid).replace(/[<>"]/g, "");
+    const safeType = sanitizeHeaderValue(img.mimeType).replace(/"/g, "");
+    return [
+      `Content-Type: ${safeType}`,
       "Content-Transfer-Encoding: base64",
+      `Content-ID: <${cid}>`,
+      "Content-Disposition: inline",
       "",
-      chunk76(Buffer.from(input.html, "utf-8").toString("base64")),
-    ].join("\r\n"),
-  );
+      chunk76(img.content.toString("base64")),
+    ].join("\r\n");
+  });
 
-  for (const att of input.attachments ?? []) {
+  const attachmentParts = attachments.map((att) => {
     const safeName = sanitizeHeaderValue(att.filename).replace(/"/g, "");
     const safeType = sanitizeHeaderValue(att.mimeType).replace(/"/g, "");
-    parts.push(
-      [
-        `--${boundary}`,
-        `Content-Type: ${safeType}; name="${safeName}"`,
-        "Content-Transfer-Encoding: base64",
-        `Content-Disposition: attachment; filename="${safeName}"`,
-        "",
-        chunk76(att.content.toString("base64")),
-      ].join("\r\n"),
-    );
-  }
+    return [
+      `Content-Type: ${safeType}; name="${safeName}"`,
+      "Content-Transfer-Encoding: base64",
+      `Content-Disposition: attachment; filename="${safeName}"`,
+      "",
+      chunk76(att.content.toString("base64")),
+    ].join("\r\n");
+  });
 
-  const mime = [
-    headers.join("\r\n"),
-    "",
-    parts.join("\r\n"),
-    `--${boundary}--`,
-    "",
-  ].join("\r\n");
+  // Join part bodies into one multipart block delimited by `b`.
+  const wrap = (b: string, partBodies: string[]): string =>
+    `${partBodies.map((p) => `--${b}\r\n${p}`).join("\r\n")}\r\n--${b}--`;
+
+  let topContentType: string;
+  let bodyBlock: string;
+  if (inlineImages.length === 0) {
+    // No inline images: the original multipart/mixed { html, ...attachments }.
+    topContentType = `multipart/mixed; boundary="${boundary}"`;
+    bodyBlock = wrap(boundary, [htmlPart, ...attachmentParts]);
+  } else if (attachments.length === 0) {
+    // HTML + inline images only: a single multipart/related.
+    topContentType = `multipart/related; boundary="${boundary}"`;
+    bodyBlock = wrap(boundary, [htmlPart, ...inlineParts]);
+  } else {
+    // Both: multipart/mixed { multipart/related { html, inlines }, attachments }
+    // so the inline-referenced images stay bound to the HTML while the PDF
+    // remains a normal download.
+    // The inner boundary must NOT have the outer boundary as a prefix, or a
+    // lenient parser matching delimiters with a startsWith check would truncate
+    // the message at the first inner delimiter. Prefixing (not suffixing) keeps
+    // the two strings divergent from the first character.
+    const relBoundary = `rel_${boundary}`;
+    const relatedPart = [
+      `Content-Type: multipart/related; boundary="${relBoundary}"`,
+      "",
+      wrap(relBoundary, [htmlPart, ...inlineParts]),
+    ].join("\r\n");
+    topContentType = `multipart/mixed; boundary="${boundary}"`;
+    bodyBlock = wrap(boundary, [relatedPart, ...attachmentParts]);
+  }
+  headers.push(`Content-Type: ${topContentType}`);
+
+  const mime = [headers.join("\r\n"), "", bodyBlock, ""].join("\r\n");
 
   return { mime, messageId };
 }

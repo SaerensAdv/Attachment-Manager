@@ -62,3 +62,30 @@ through the SAME approval queue, then sends in-thread on approve.
   `pendingEmailReply` (recipient/subject/inboundText/replyBody only — NO identity or
   threading internals). `ApprovalPanel` renders the email-reply variant.
 - `workflows/client-email.md` carries `<!-- deliverable: email-reply -->`.
+
+## Inline Head portrait (CID image in outbound emails)
+Both client emails (monthly report + reply) embed the responsible Head's portrait as
+an inline `cid:` image (dark-header chip + footer signature band). Native Gmail inbox
+avatars were rejected: they need paid per-Head Workspace mailboxes or BIMI (one domain
+logo) — the in-email portrait is the free, controllable path.
+- **Downscale before embedding, and DROP on failure.** `resolveHeadPortrait` resizes the
+  stored portrait to a small square thumb (`sharp`, ~128px) before embedding. **Why:** the
+  full-res PNG trips an **HTTP 413** at the Gmail send proxy. On a resize/throw, return
+  `null` (text-only signature) — never fall back to the raw bytes, or you reintroduce the
+  413 on an owner-approved send. Best-effort throughout: missing portrait/storage error ⇒
+  null ⇒ email still sends without a photo.
+- **Resolve at SEND time from `headAgentPath`** (slug = basename minus `.md`); no
+  pendingDelivery payload schema change. Header/footer markup is shared (`headerAvatar` /
+  `signatureBand` exported from `monthly-report-email.ts`, reused by `email-reply.ts`).
+- **MIME assembly in `buildMime` has three shapes — preserve exactly:** no inline ⇒ original
+  `multipart/mixed` (keeps backward-compat tests); inline-only ⇒ `multipart/related`;
+  inline **+** attachments ⇒ `multipart/mixed{ multipart/related{ html, inlines }, attachments }`.
+  Inline parts carry `Content-ID: <cid>` + `Content-Disposition: inline`; cid is sanitized
+  (strip `<>"`). **The inner (related) boundary must NOT have the outer boundary as a prefix**
+  (use `rel_${boundary}`, not `${boundary}_rel`) — a lenient parser matching delimiters with
+  `startsWith` would truncate the message at the first inner delimiter. The nested path is the
+  real report path (PDF + portrait); exercise it live, not just inline-only.
+- **Live verify with `scripts/test-head-aliases.ts`** (+ `scripts/build-test.mjs`
+  bundler). The one-liner `esbuild --packages=external` does NOT work: `@workspace/brand`'s
+  dev entry is extensionless TS that Node can't load — must bundle workspace pkgs (mirror
+  `build.mjs` externals + pino plugin → needs `outdir`, not `outfile`).

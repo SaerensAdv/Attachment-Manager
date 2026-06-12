@@ -101,4 +101,74 @@ describe("buildMime", () => {
     });
     expect(headerBlock(mime)).toMatch(/Subject: =\?UTF-8\?B\?/);
   });
+
+  it("keeps a plain (no inline image) body as multipart/mixed", () => {
+    const { mime } = buildMime({
+      to: "client@example.com",
+      subject: "x",
+      html: "<p>hi</p>",
+    });
+    expect(headerBlock(mime)).toContain("Content-Type: multipart/mixed;");
+    expect(mime).not.toContain("multipart/related");
+    expect(mime).not.toContain("Content-ID:");
+  });
+
+  it("embeds an inline image as a multipart/related with a Content-ID", () => {
+    const { mime } = buildMime({
+      to: "client@example.com",
+      subject: "x",
+      html: '<img src="cid:head-portrait">',
+      inlineImages: [
+        { cid: "head-portrait", mimeType: "image/png", content: Buffer.from("PNG") },
+      ],
+    });
+    // No PDF: the whole message is a single multipart/related.
+    expect(headerBlock(mime)).toContain("Content-Type: multipart/related;");
+    expect(mime).toContain("Content-ID: <head-portrait>");
+    expect(mime).toContain("Content-Disposition: inline");
+    // The image bytes ride along base64-encoded.
+    expect(mime).toContain(Buffer.from("PNG").toString("base64"));
+  });
+
+  it("strips angle brackets/quotes from a supplied Content-ID", () => {
+    const { mime } = buildMime({
+      to: "client@example.com",
+      subject: "x",
+      html: "y",
+      inlineImages: [
+        { cid: '<ev"il>', mimeType: "image/png", content: Buffer.from("z") },
+      ],
+    });
+    expect(mime).toContain("Content-ID: <evil>");
+  });
+
+  it("nests inline image + PDF as mixed{ related{ html, img }, pdf }", () => {
+    const { mime } = buildMime({
+      to: "client@example.com",
+      subject: "x",
+      html: '<img src="cid:head-portrait">',
+      inlineImages: [
+        { cid: "head-portrait", mimeType: "image/png", content: Buffer.from("IMG") },
+      ],
+      attachments: [
+        { filename: "rapport.pdf", mimeType: "application/pdf", content: Buffer.from("PDF") },
+      ],
+    });
+    // Outer container is mixed; an inner related part carries the html + image.
+    expect(headerBlock(mime)).toContain("Content-Type: multipart/mixed;");
+    expect(mime).toContain("Content-Type: multipart/related;");
+    expect(mime).toContain("Content-ID: <head-portrait>");
+    // The PDF stays a normal attachment alongside the related block.
+    expect(mime).toContain('Content-Disposition: attachment; filename="rapport.pdf"');
+
+    // The outer boundary must NOT be a prefix of the inner one, or a lenient
+    // parser matching delimiters with startsWith would truncate at the first
+    // inner delimiter.
+    const outer = headerBlock(mime).match(/boundary="([^"]+)"/)?.[1];
+    const inner = mime.match(/multipart\/related; boundary="([^"]+)"/)?.[1];
+    expect(outer).toBeTruthy();
+    expect(inner).toBeTruthy();
+    expect(inner).not.toBe(outer);
+    expect(inner!.startsWith(outer!)).toBe(false);
+  });
 });

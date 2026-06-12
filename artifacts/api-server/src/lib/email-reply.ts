@@ -1,5 +1,10 @@
 import { sendEmail, type SendEmailResult } from "./email";
-import { escapeHtml } from "./monthly-report-email";
+import {
+  escapeHtml,
+  headerAvatar,
+  resolveHeadPortrait,
+  signatureBand,
+} from "./monthly-report-email";
 
 /**
  * The second kind of human-gated client email: a REPLY drafted by the team in
@@ -93,6 +98,8 @@ export function parseEmailReplyPayload(raw: unknown): EmailReplyPayload | null {
 export function buildReplyEmail(args: {
   bodyText: string;
   signature?: string;
+  /** Content-ID of the Head's embedded portrait (header chip + signature). */
+  portraitCid?: string;
 }): string {
   const NEARBLACK = "#0A0A0B";
   const PURPLE = "#716BEB";
@@ -123,12 +130,18 @@ export function buildReplyEmail(args: {
     `<tr><td align="center">` +
     `<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:600px;max-width:600px;background:#FFFFFF;border-radius:10px;overflow:hidden;border:1px solid ${HAIR};">` +
     `<tr><td style="background:${NEARBLACK};padding:22px 32px;border-bottom:3px solid ${PURPLE};">` +
-    `<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:bold;letter-spacing:2px;color:#FFFFFF;">SAERENS ADVERTISING</div>` +
+    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>` +
+    `<td valign="middle"><div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:bold;letter-spacing:2px;color:#FFFFFF;">SAERENS ADVERTISING</div></td>` +
+    headerAvatar(args.portraitCid) +
+    `</tr></table>` +
     `</td></tr>` +
     `<tr><td style="padding:26px 32px 6px;">${paragraphs}</td></tr>` +
-    `<tr><td style="padding:14px 32px 26px;border-top:1px solid ${HAIR};">` +
-    `<div style="font-family:Arial,Helvetica,sans-serif;font-size:11px;line-height:1.5;color:${MUTED};">${footer}</div>` +
-    `</td></tr>` +
+    signatureBand({
+      portraitCid: args.portraitCid,
+      hair: HAIR,
+      muted: MUTED,
+      textHtml: footer,
+    }) +
     `</table></td></tr></table></body></html>`
   );
 }
@@ -142,9 +155,12 @@ export function buildReplyEmail(args: {
 export async function deliverEmailReply(
   payload: EmailReplyPayload,
 ): Promise<SendEmailResult> {
+  // Embed the responsible Head's portrait (best-effort: null -> text-only).
+  const portrait = await resolveHeadPortrait(payload.headAgentPath);
   const html = buildReplyEmail({
     bodyText: payload.replyBody,
     signature: payload.signature,
+    portraitCid: portrait?.cid,
   });
   return sendEmail({
     to: payload.recipient,
@@ -156,5 +172,6 @@ export async function deliverEmailReply(
     inReplyTo: payload.inReplyTo,
     references: payload.references,
     threadId: payload.threadId,
+    inlineImages: portrait ? [portrait] : undefined,
   });
 }

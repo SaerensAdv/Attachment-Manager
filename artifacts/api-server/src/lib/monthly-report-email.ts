@@ -1,6 +1,8 @@
+import sharp from "sharp";
 import { renderReportPdf } from "./report-pdf";
-import { sendEmail, type SendEmailResult } from "./email";
+import { sendEmail, type InlineImage, type SendEmailResult } from "./email";
 import type { GoogleAdsMetrics } from "./google-ads";
+import { loadPortraitBytes } from "./portraits";
 
 /**
  * Building and sending the client-facing monthly report e-mail lives here, apart
@@ -84,6 +86,106 @@ export function escapeHtml(s: string): string {
     .replace(/>/g, "&gt;");
 }
 
+/**
+ * The fixed Content-ID under which the Head's portrait is embedded; the HTML
+ * refers to it as `cid:head-portrait`. A single inline image is reused by both
+ * the header chip and the footer signature.
+ */
+export const HEAD_PORTRAIT_CID = "head-portrait";
+
+/**
+ * Square size (px) of the embedded portrait thumbnail. The chip/signature render
+ * at 44–56px, so this covers 2x DPR while keeping the inline image small enough
+ * to clear the send proxy's request-size limit.
+ */
+const EMAIL_PORTRAIT_PX = 128;
+
+/** Derive an agent slug (`agents/google-ads-strategist.md` -> the basename). */
+export function slugFromAgentPath(path?: string): string | null {
+  if (!path) return null;
+  const base = path.split("/").pop() ?? "";
+  const slug = base.replace(/\.md$/i, "").trim();
+  return slug || null;
+}
+
+/**
+ * Resolve the responsible Head's portrait as an inline image, or null when the
+ * agent has no stored portrait / storage is unreachable. Best-effort: the email
+ * renders without a photo when this returns null.
+ */
+export async function resolveHeadPortrait(
+  headAgentPath?: string,
+): Promise<InlineImage | null> {
+  const slug = slugFromAgentPath(headAgentPath);
+  if (!slug) return null;
+  const bytes = await loadPortraitBytes(slug);
+  if (!bytes) return null;
+  // Embed a small, round-ready thumbnail rather than the full-size portrait: the
+  // header chip renders at 44px and the signature at 56px, so 128px covers 2x
+  // DPR while keeping the MIME payload tiny. A full-res PNG trips the send
+  // proxy's request-size limit with a 413, so if the resize fails we drop the
+  // photo (text-only signature) rather than embed the raw bytes and risk failing
+  // the whole, owner-approved send.
+  try {
+    const thumb = await sharp(bytes)
+      .resize(EMAIL_PORTRAIT_PX, EMAIL_PORTRAIT_PX, { fit: "cover" })
+      .png()
+      .toBuffer();
+    return { cid: HEAD_PORTRAIT_CID, mimeType: "image/png", content: thumb };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * A small round portrait chip for the dark header band (right-aligned), shown
+ * only when a portrait is embedded. Inline styles + explicit dimensions so it
+ * renders in email clients that ignore CSS.
+ */
+export function headerAvatar(portraitCid?: string): string {
+  if (!portraitCid) return "";
+  return (
+    `<td valign="middle" align="right" style="width:44px;">` +
+    `<img src="cid:${portraitCid}" width="44" height="44" alt="" ` +
+    `style="display:block;width:44px;height:44px;border-radius:50%;` +
+    `object-fit:cover;border:2px solid rgba(255,255,255,0.28);" />` +
+    `</td>`
+  );
+}
+
+/**
+ * The footer signature band: the Head's round portrait beside the name/role
+ * lines. Falls back to a text-only band when no portrait is embedded so the
+ * signature always renders.
+ */
+export function signatureBand(args: {
+  portraitCid?: string;
+  textHtml: string;
+  hair: string;
+  muted: string;
+}): string {
+  const text =
+    `<div style="font-family:Arial,Helvetica,sans-serif;font-size:11px;` +
+    `line-height:1.5;color:${args.muted};">${args.textHtml}</div>`;
+  if (!args.portraitCid) {
+    return (
+      `<tr><td style="padding:18px 32px 26px;border-top:1px solid ${args.hair};">` +
+      `${text}</td></tr>`
+    );
+  }
+  return (
+    `<tr><td style="padding:18px 32px 26px;border-top:1px solid ${args.hair};">` +
+    `<table role="presentation" cellpadding="0" cellspacing="0"><tr>` +
+    `<td valign="top" style="padding-right:14px;">` +
+    `<img src="cid:${args.portraitCid}" width="56" height="56" alt="" ` +
+    `style="display:block;width:56px;height:56px;border-radius:50%;` +
+    `object-fit:cover;border:1px solid ${args.hair};" />` +
+    `</td>` +
+    `<td valign="top">${text}</td>` +
+    `</tr></table></td></tr>`
+  );
+}
+
 /** Build a Saerens-branded, email-client-safe HTML body (inline styles only). */
 export function buildBrandedEmail(args: {
   clientName: string;
@@ -93,6 +195,8 @@ export function buildBrandedEmail(args: {
   metrics: GoogleAdsMetrics | null;
   /** Footer signature (Head name + role); falls back to the agency line. */
   signature?: string;
+  /** Content-ID of the Head's embedded portrait (header chip + signature). */
+  portraitCid?: string;
 }): string {
   const { clientName, periodLabel, dateLabel, bodyText, metrics } = args;
   const NEARBLACK = "#0A0A0B";
@@ -173,9 +277,12 @@ export function buildBrandedEmail(args: {
     `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F5F5F8;padding:24px 0;">` +
     `<tr><td align="center">` +
     `<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:600px;max-width:600px;background:#FFFFFF;border-radius:10px;overflow:hidden;border:1px solid ${HAIR};">` +
-    // header band
-    `<tr><td style="background:${NEARBLACK};padding:26px 32px;border-bottom:3px solid ${PURPLE};">` +
-    `<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:bold;letter-spacing:2px;color:#FFFFFF;">SAERENS ADVERTISING</div>` +
+    // header band (company brand left, Head portrait chip right)
+    `<tr><td style="background:${NEARBLACK};padding:22px 32px;border-bottom:3px solid ${PURPLE};">` +
+    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>` +
+    `<td valign="middle"><div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:bold;letter-spacing:2px;color:#FFFFFF;">SAERENS ADVERTISING</div></td>` +
+    headerAvatar(args.portraitCid) +
+    `</tr></table>` +
     `</td></tr>` +
     // title
     `<tr><td style="padding:28px 32px 6px;">` +
@@ -189,15 +296,17 @@ export function buildBrandedEmail(args: {
     `</td></tr>` +
     // body
     `<tr><td style="padding:18px 32px 4px;">${kpiBlock}${paragraphs}</td></tr>` +
-    // footer
-    `<tr><td style="padding:18px 32px 26px;border-top:1px solid ${HAIR};">` +
-    `<div style="font-family:Arial,Helvetica,sans-serif;font-size:11px;line-height:1.5;color:${MUTED};">` +
-    `Het volledige rapport vind je in de bijgevoegde PDF.<br>${
-      args.signature && args.signature.trim()
-        ? escapeHtml(args.signature.trim()).replace(/\n/g, "<br>")
-        : "Saerens Advertising · Google Ads"
-    }` +
-    `</div></td></tr>` +
+    // footer signature band (Head portrait + name/role)
+    signatureBand({
+      portraitCid: args.portraitCid,
+      hair: HAIR,
+      muted: MUTED,
+      textHtml: `Het volledige rapport vind je in de bijgevoegde PDF.<br>${
+        args.signature && args.signature.trim()
+          ? escapeHtml(args.signature.trim()).replace(/\n/g, "<br>")
+          : "Saerens Advertising · Google Ads"
+      }`,
+    }) +
     `</table></td></tr></table></body></html>`
   );
 }
@@ -218,6 +327,9 @@ export async function deliverMonthlyReport(
     metrics: payload.metrics,
   });
 
+  // Embed the responsible Head's portrait (best-effort: null -> text-only).
+  const portrait = await resolveHeadPortrait(payload.headAgentPath);
+
   const html = buildBrandedEmail({
     clientName: payload.clientName,
     periodLabel: payload.periodLabel,
@@ -225,6 +337,7 @@ export async function deliverMonthlyReport(
     bodyText: payload.emailBody,
     metrics: payload.metrics,
     signature: payload.signature,
+    portraitCid: portrait?.cid,
   });
 
   const filename = `maandrapport-${payload.clientName
@@ -243,5 +356,6 @@ export async function deliverMonthlyReport(
     fromName: payload.fromName,
     cc: payload.cc,
     attachments: [{ filename, mimeType: "application/pdf", content: pdf }],
+    inlineImages: portrait ? [portrait] : undefined,
   });
 }

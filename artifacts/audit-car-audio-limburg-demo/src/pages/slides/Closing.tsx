@@ -41,7 +41,7 @@ export default function Closing() {
             axel@saerensadvertising.com · saerensadvertising.com
           </p>
         </div>
-        <p className="text-[#6b6b72] text-[1.1vw]">[datum] · 09 / 09</p>
+        <p className="text-[#6b6b72] text-[1.1vw]">[datum] · 11 / 11</p>
       </div>
     </div>
   );

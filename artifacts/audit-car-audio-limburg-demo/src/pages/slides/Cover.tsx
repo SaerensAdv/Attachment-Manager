@@ -23,20 +23,20 @@ export default function Cover() {
 
       <div className="absolute left-[6vw] top-[39vh] max-w-[84vw]">
         <p className="text-[#f4a425] text-[1.3vw] font-semibold tracking-[0.34em] uppercase mb-[2.4vh]">
-          Kwartaalrapportage
+          Google Ads-audit
         </p>
         <h1 className="font-display font-extrabold text-[6vw] leading-[0.98] tracking-tight text-balance">
           Car Audio Limburg
         </h1>
         <div className="h-[0.5vh] w-[13vw] bg-[#716beb] mt-[3vh] mb-[3vh]" />
         <p className="text-[#c9c8d6] text-[1.9vw] font-light">
-          Prestatie-overzicht · Q1 2026 · 1 januari – 31 maart 2026
+          Prestatie-analyse · 1 januari – 12 juni · 2026 vs 2025
         </p>
       </div>
 
       <div className="absolute bottom-[5vh] left-[6vw] right-[6vw] flex items-end justify-between">
         <p className="text-[#6b6b72] text-[1.1vw]">
-          Vertrouwelijk · Opgesteld 11 juni 2026
+          Vertrouwelijk · Opgesteld 12 juni 2026
         </p>
         <p className="text-[#6b6b72] text-[1.1vw]">
           Google Ads-account 541-666-6067

@@ -7,40 +7,33 @@ export default function Grafiek() {
 
       <div className="absolute top-[7vh] left-[6vw] right-[6vw]">
         <p className="text-primary text-[1.15vw] font-semibold tracking-[0.3em] uppercase mb-[1.6vh]">
-          Trend in beeld
+          Vergelijking in beeld
         </p>
         <h2 className="font-display font-extrabold text-[3.3vw] leading-[1.06] tracking-tight max-w-[70vw] text-balance">
-          [Kernboodschap trend over drie kwartalen]
+          [Kernboodschap grafiek]
         </h2>
       </div>
 
       <div className="absolute top-[30vh] left-[6vw] right-[6vw] grid grid-cols-2 gap-[5vw]">
         <div className="bg-white rounded-[1vw] border border-[#e4e2ee] px-[3vw] pt-[3vh] pb-[2.5vh]">
           <p className="text-text font-display font-bold text-[1.5vw] mb-[2.5vh]">
-            Conversies
+            [Metriek 1]
           </p>
-          <div className="flex items-end justify-center gap-[3.5vw] h-[40vh]">
+          <div className="flex items-end justify-center gap-[5vw] h-[40vh]">
             <div className="flex flex-col items-center justify-end h-full">
-              <span className="text-muted text-[1.3vw] font-semibold mb-[1vh]">
-                24
+              <span className="text-muted text-[1.4vw] font-semibold mb-[1vh]">
+                [a]
               </span>
-              <div className="w-[5vw] h-[24vh] bg-[#d8d6f6] rounded-t-[0.4vw]" />
-              <span className="text-muted text-[1.1vw] mt-[1.2vh]">Q1 2025</span>
+              <div className="w-[6.5vw] h-[32vh] bg-[#c9c6f2] rounded-t-[0.4vw]" />
+              <span className="text-muted text-[1.2vw] mt-[1.2vh]">[Periode A]</span>
             </div>
             <div className="flex flex-col items-center justify-end h-full">
-              <span className="text-muted text-[1.3vw] font-semibold mb-[1vh]">
-                4
+              <span className="text-text text-[1.4vw] font-bold mb-[1vh]">
+                [b]
               </span>
-              <div className="w-[5vw] h-[30vh] bg-[#c9c6f2] rounded-t-[0.4vw]" />
-              <span className="text-muted text-[1.1vw] mt-[1.2vh]">Q4 2025</span>
-            </div>
-            <div className="flex flex-col items-center justify-end h-full">
-              <span className="text-text text-[1.3vw] font-bold mb-[1vh]">
-                1
-              </span>
-              <div className="w-[5vw] h-[37vh] bg-[#716beb] rounded-t-[0.4vw]" />
-              <span className="text-text text-[1.1vw] font-semibold mt-[1.2vh]">
-                Q1 2026
+              <div className="w-[6.5vw] h-[39vh] bg-[#716beb] rounded-t-[0.4vw]" />
+              <span className="text-text text-[1.2vw] font-semibold mt-[1.2vh]">
+                [Periode B]
               </span>
             </div>
           </div>
@@ -48,30 +41,23 @@ export default function Grafiek() {
 
         <div className="bg-white rounded-[1vw] border border-[#e4e2ee] px-[3vw] pt-[3vh] pb-[2.5vh]">
           <p className="text-text font-display font-bold text-[1.5vw] mb-[2.5vh]">
-            Conversiewaarde
+            [Metriek 2]
           </p>
-          <div className="flex items-end justify-center gap-[3.5vw] h-[40vh]">
+          <div className="flex items-end justify-center gap-[5vw] h-[40vh]">
             <div className="flex flex-col items-center justify-end h-full">
-              <span className="text-muted text-[1.3vw] font-semibold mb-[1vh]">
-                €267,95
+              <span className="text-muted text-[1.4vw] font-semibold mb-[1vh]">
+                [a]
               </span>
-              <div className="w-[5vw] h-[22vh] bg-[#d8d6f6] rounded-t-[0.4vw]" />
-              <span className="text-muted text-[1.1vw] mt-[1.2vh]">Q1 2025</span>
+              <div className="w-[6.5vw] h-[39vh] bg-[#c9c6f2] rounded-t-[0.4vw]" />
+              <span className="text-muted text-[1.2vw] mt-[1.2vh]">[Periode A]</span>
             </div>
             <div className="flex flex-col items-center justify-end h-full">
-              <span className="text-muted text-[1.3vw] font-semibold mb-[1vh]">
-                €0,00
+              <span className="text-[#c0392b] text-[1.4vw] font-bold mb-[1vh]">
+                [b]
               </span>
-              <div className="w-[5vw] h-[29vh] bg-[#c9c6f2] rounded-t-[0.4vw]" />
-              <span className="text-muted text-[1.1vw] mt-[1.2vh]">Q4 2025</span>
-            </div>
-            <div className="flex flex-col items-center justify-end h-full">
-              <span className="text-text text-[1.3vw] font-bold mb-[1vh]">
-                €179,00
-              </span>
-              <div className="w-[5vw] h-[36vh] bg-[#716beb] rounded-t-[0.4vw]" />
-              <span className="text-text text-[1.1vw] font-semibold mt-[1.2vh]">
-                Q1 2026
+              <div className="w-[6.5vw] h-[3vh] bg-[#c0392b] rounded-t-[0.4vw]" />
+              <span className="text-text text-[1.2vw] font-semibold mt-[1.2vh]">
+                [Periode B]
               </span>
             </div>
           </div>
@@ -79,14 +65,15 @@ export default function Grafiek() {
       </div>
 
       <p className="absolute bottom-[8.5vh] left-[6vw] right-[6vw] text-muted text-[1.05vw] text-pretty">
-        [Eén regel die de trend duidt: wat de drie kwartalen samen vertellen.
-        Balkhoogtes hier zijn illustratief — pas ze aan op de echte verhouding.]
+        [Eén regel die de grafiek duidt: wat de balken samen vertellen en hoe
+        dat aansluit op de vorige slide. Balkhoogtes hier zijn illustratief —
+        pas ze aan op de echte verhouding.]
       </p>
       <p className="absolute bottom-[4vh] left-[6vw] text-muted text-[0.95vw]">
-        Bron: Google Ads (read-only) · opgehaald 11 juni 2026 · periode Q1 2026
+        Bron: Google Ads (read-only) · opgehaald 12 juni 2026 · periode 1 jan – 12 jun
       </p>
       <p className="absolute bottom-[4vh] right-[6vw] text-muted text-[1vw]">
-        06 / 09
+        06 / 11
       </p>
     </div>
   );

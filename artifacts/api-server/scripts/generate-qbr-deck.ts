@@ -24,7 +24,7 @@ import path from "path";
 
 import type { QbrData } from "../src/lib/qbr-deck-data";
 import { toTokenMap } from "../src/lib/qbr-deck-data";
-import { cloneDeck } from "./lib/deck-clone";
+import { cloneDeck } from "../src/lib/deck-clone";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const WORKSPACE_ROOT = path.resolve(__dirname, "../../..");

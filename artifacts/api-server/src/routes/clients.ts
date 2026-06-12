@@ -17,13 +17,12 @@ import {
 } from "../lib/website-intake";
 import { fetchGoogleAdsReport, GoogleAdsConfigError } from "../lib/google-ads";
 import { renderSnapshotPdf } from "../lib/snapshot-pdf";
-import { buildAuditData } from "../lib/audit-deck-data";
 import {
-  buildQbrData,
-  lastFullQuarter,
-  previousQuarter,
-  sameQuarterLastYear,
-} from "../lib/qbr-deck-data";
+  buildAuditDataForRow,
+  buildQbrDataForRow,
+  generateDeckForRow,
+  type DeckKind,
+} from "../lib/deck-generation";
 import {
   renderFactuurPdf,
   type FactuurRecipient,
@@ -718,18 +717,6 @@ router.get("/clients/:id/snapshot.pdf", async (req, res) => {
   }
 });
 
-/** Calendar Y/M/D for an instant in Europe/Brussels (month/day are 1-based). */
-function brusselsParts(d: Date): { year: number; month: number; day: number } {
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Europe/Brussels",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(d);
-  const get = (t: string) => Number(parts.find((p) => p.type === t)?.value);
-  return { year: get("year"), month: get("month"), day: get("day") };
-}
-
 /**
  * Typed, read-only data contract for the Google Ads audit deck (T7).
  *
@@ -755,52 +742,8 @@ router.get("/clients/:id/audit-data.json", async (req, res) => {
     return;
   }
 
-  const customerId = (row.googleAdsCustomerId ?? "").replace(/\D/g, "");
-  if (!customerId) {
-    res.status(400).json({
-      error:
-        "Deze klant heeft nog geen Google Ads customer ID. Vul het in en bewaar eerst.",
-    });
-    return;
-  }
-
-  // Year-to-date vs the same range a year earlier, anchored on Brussels "today".
-  const now = brusselsParts(new Date());
-  const pad = (n: number) => String(n).padStart(2, "0");
-  // A 29 Feb anchor has no prior-year counterpart in a common year — clamp it.
-  const endDay = now.month === 2 && now.day === 29 ? 28 : now.day;
-  const iso = (y: number, m: number, d: number) => `${y}-${pad(m)}-${pad(d)}`;
-  const bStart = iso(now.year, 1, 1);
-  const bEnd = iso(now.year, now.month, now.day);
-  const aStart = iso(now.year - 1, 1, 1);
-  const aEnd = iso(now.year - 1, now.month, endDay);
-
   try {
-    const [reportA, reportB] = await Promise.all([
-      fetchGoogleAdsReport(row.googleAdsCustomerId ?? "", {
-        custom: { start: aStart, end: aEnd, label: `${aStart} – ${aEnd}` },
-      }),
-      fetchGoogleAdsReport(row.googleAdsCustomerId ?? "", {
-        custom: { start: bStart, end: bEnd, label: `${bStart} – ${bEnd}` },
-      }),
-    ]);
-    const data = buildAuditData({
-      client: {
-        naam: row.name,
-        accountId: row.googleAdsCustomerId ?? customerId,
-      },
-      periodA: {
-        start: new Date(Date.UTC(now.year - 1, 0, 1)),
-        end: new Date(Date.UTC(now.year - 1, now.month - 1, endDay)),
-      },
-      periodB: {
-        start: new Date(Date.UTC(now.year, 0, 1)),
-        end: new Date(Date.UTC(now.year, now.month - 1, now.day)),
-      },
-      fetchedAt: new Date(Date.UTC(now.year, now.month - 1, now.day)),
-      metricsA: reportA.metrics,
-      metricsB: reportB.metrics,
-    });
+    const data = await buildAuditDataForRow(row);
     res.status(200).json(data);
   } catch (err) {
     if (err instanceof GoogleAdsConfigError) {
@@ -841,45 +784,8 @@ router.get("/clients/:id/qbr-data.json", async (req, res) => {
     return;
   }
 
-  const customerId = (row.googleAdsCustomerId ?? "").replace(/\D/g, "");
-  if (!customerId) {
-    res.status(400).json({
-      error:
-        "Deze klant heeft nog geen Google Ads customer ID. Vul het in en bewaar eerst.",
-    });
-    return;
-  }
-
-  // Anchor on Brussels "today"; derive the last full quarter + its QoQ/YoY peers.
-  const now = brusselsParts(new Date());
-  const anchor = new Date(Date.UTC(now.year, now.month - 1, now.day));
-  const quarter = lastFullQuarter(anchor);
-  const prevQuarter = previousQuarter(quarter);
-  const yoyQuarter = sameQuarterLastYear(quarter);
-  const isoDay = (d: Date) => d.toISOString().slice(0, 10);
-  const range = (q: { start: Date; end: Date; label: string }) => ({
-    start: isoDay(q.start),
-    end: isoDay(q.end),
-    label: `${isoDay(q.start)} – ${isoDay(q.end)}`,
-  });
-
   try {
-    const cid = row.googleAdsCustomerId ?? "";
-    const [reportQ, reportPrevQ, reportYoyQ] = await Promise.all([
-      fetchGoogleAdsReport(cid, { custom: range(quarter) }),
-      fetchGoogleAdsReport(cid, { custom: range(prevQuarter) }),
-      fetchGoogleAdsReport(cid, { custom: range(yoyQuarter) }),
-    ]);
-    const data = buildQbrData({
-      client: { naam: row.name, accountId: row.googleAdsCustomerId ?? customerId },
-      quarter,
-      prevQuarter,
-      yoyQuarter,
-      fetchedAt: anchor,
-      metricsQ: reportQ.metrics,
-      metricsPrevQ: reportPrevQ.metrics,
-      metricsYoyQ: reportYoyQ.metrics,
-    });
+    const data = await buildQbrDataForRow(row);
     res.status(200).json(data);
   } catch (err) {
     if (err instanceof GoogleAdsConfigError) {
@@ -888,6 +794,53 @@ router.get("/clients/:id/qbr-data.json", async (req, res) => {
     }
     res.status(502).json({
       error: "Kon de kwartaaldata niet opstellen.",
+      detail: err instanceof Error ? err.message : String(err),
+    });
+  }
+});
+
+/**
+ * Self-service deck generation: build a filled, STATIC audit- or QBR-deck for
+ * one client from live Google Ads data and overlay it onto the shared demo
+ * OUTPUT slot. Same pipeline as the generator scripts, but in-process so it can
+ * be a one-click button. The deck is frozen at the reported numbers; the
+ * durable deliverable is the PPTX/PDF export. Missing customer ID → 400.
+ */
+router.post("/clients/:id/generate-deck", async (req, res) => {
+  const id = parseId(req.params.id);
+  if (id === null) {
+    res.status(400).json({ error: "Ongeldige id." });
+    return;
+  }
+  const kind = (req.body?.kind ?? "") as DeckKind;
+  if (kind !== "audit" && kind !== "qbr") {
+    res.status(400).json({
+      error: "Kies een geldig deck-type: 'audit' of 'qbr'.",
+    });
+    return;
+  }
+  const [row] = await db
+    .select()
+    .from(clientsTable)
+    .where(eq(clientsTable.id, id));
+  if (!row) {
+    res.status(404).json({ error: "Klant niet gevonden." });
+    return;
+  }
+
+  try {
+    const result = await generateDeckForRow({ kind, row });
+    res.status(200).json({ ok: true, ...result });
+  } catch (err) {
+    if (err instanceof GoogleAdsConfigError) {
+      res.status(400).json({ error: err.message });
+      return;
+    }
+    res.status(502).json({
+      error:
+        kind === "audit"
+          ? "Kon het audit-deck niet genereren."
+          : "Kon het QBR-deck niet genereren.",
       detail: err instanceof Error ? err.message : String(err),
     });
   }

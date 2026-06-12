@@ -7,45 +7,40 @@ export default function Oordeel() {
 
       <div className="absolute top-[7vh] left-[6vw]">
         <p className="text-primary text-[1.15vw] font-semibold tracking-[0.3em] uppercase">
-          Kernconclusie
+          Oordeel
         </p>
       </div>
 
-      <div className="absolute top-[20vh] left-[6vw] right-[6vw]">
-        <h2 className="font-display font-extrabold text-[4.2vw] leading-[1.02] tracking-tight max-w-[74vw] text-balance">
-          [Kernconclusie in één zin]
+      <div className="absolute top-[22vh] left-[6vw] right-[6vw]">
+        <h2 className="font-display font-extrabold text-[4.4vw] leading-[1.02] tracking-tight max-w-[74vw] text-balance">
+          [Eindoordeel in één zin]
         </h2>
-        <p className="mt-[3vh] text-[1.85vw] text-muted max-w-[64vw] leading-[1.45] text-pretty">
-          [Eén korte alinea die de conclusie onderbouwt: de belangrijkste
-          verschuiving dit kwartaal en wat die betekent. Eerlijk, nuchter, geen
-          jargon.]
+        <p className="mt-[3.5vh] text-[1.9vw] text-muted max-w-[64vw] leading-[1.45] text-pretty">
+          [Eén korte alinea die het oordeel onderbouwt: de belangrijkste cijfers
+          en wat ze samen betekenen. Eerlijk, nuchter, geen jargon.]
         </p>
       </div>
 
-      <div className="absolute bottom-[14vh] left-[6vw] right-[6vw] flex items-end justify-between gap-[4vw]">
+      <div className="absolute bottom-[15vh] left-[6vw] flex items-end gap-[5vw]">
         <div>
           <p className="text-muted text-[1.1vw] uppercase tracking-[0.16em] mb-[1vh]">
-            Conversies · Q1 2026
+            Conversies · 2025 → 2026
           </p>
-          <p className="font-display font-extrabold text-[5.4vw] leading-none">
-            1
+          <p className="font-display font-extrabold text-[5.6vw] leading-none">
+            31 <span className="text-primary">→</span>{" "}
+            <span className="text-[#c0392b]">1</span>
           </p>
         </div>
-        <div className="flex flex-col gap-[1.4vh] mb-[0.5vh]">
-          <div className="bg-accent text-[#1a1a22] rounded-full px-[1.8vw] py-[1.1vh] font-display font-semibold text-[1.2vw]">
-            QoQ (Q4 2025): −75% · Verslechterend
-          </div>
-          <div className="bg-[#e4e2ee] text-[#1a1a22] rounded-full px-[1.8vw] py-[1.1vh] font-display font-semibold text-[1.2vw]">
-            JoJ (Q1 2025): −96% · Verslechterend
-          </div>
+        <div className="bg-accent text-[#1a1a22] rounded-full px-[2.2vw] py-[1.4vh] font-display font-bold text-[1.4vw] mb-[1vh]">
+          Status: Verslechterend
         </div>
       </div>
 
       <p className="absolute bottom-[4vh] left-[6vw] text-muted text-[0.95vw]">
-        Bron: Google Ads (read-only) · opgehaald 11 juni 2026 · periode Q1 2026
+        Bron: Google Ads (read-only) · opgehaald 12 juni 2026 · periode 1 jan – 12 jun
       </p>
       <p className="absolute bottom-[4vh] right-[6vw] text-muted text-[1vw]">
-        03 / 09
+        03 / 11
       </p>
     </div>
   );

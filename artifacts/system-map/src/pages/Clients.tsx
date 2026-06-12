@@ -37,6 +37,7 @@ import {
   Loader2,
   MapPin,
   Plus,
+  Presentation,
   Save,
   Search,
   Sparkles,
@@ -169,6 +170,12 @@ export default function Clients() {
   ]);
   const [offerteValidUntil, setOfferteValidUntil] = useState("");
   const [offerteGenerating, setOfferteGenerating] = useState(false);
+  const [deckBusy, setDeckBusy] = useState<"audit" | "qbr" | null>(null);
+  const [deckResult, setDeckResult] = useState<{
+    kind: "audit" | "qbr";
+    period: string;
+    previewPath: string;
+  } | null>(null);
   // AI briefing suggestions (proposal only — never auto-saved). The user reviews
   // each value and applies it into the form before saving.
   const [briefingSuggestions, setBriefingSuggestions] =
@@ -546,6 +553,50 @@ export default function Clients() {
       );
     } finally {
       setSnapshotting(false);
+    }
+  };
+
+  const handleGenerateDeck = async (kind: "audit" | "qbr") => {
+    if (typeof editing !== "number") return;
+    setFormError(null);
+    setDeckResult(null);
+    setDeckBusy(kind);
+    try {
+      const res = await fetch(
+        `${import.meta.env.BASE_URL}api/clients/${editing}/generate-deck`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ kind }),
+        },
+      );
+      if (!res.ok) {
+        let msg = `HTTP ${res.status}`;
+        try {
+          const j = await res.json();
+          msg = j.error || j.detail || msg;
+        } catch {
+          /* non-JSON error body */
+        }
+        throw new Error(msg);
+      }
+      const j = (await res.json()) as {
+        kind: "audit" | "qbr";
+        period: string;
+        previewPath: string;
+      };
+      setDeckResult({
+        kind: j.kind,
+        period: j.period,
+        previewPath: j.previewPath,
+      });
+    } catch (err) {
+      setFormError(
+        err instanceof Error ? err.message : "Deck genereren mislukt",
+      );
+    } finally {
+      setDeckBusy(null);
     }
   };
 
@@ -2787,6 +2838,97 @@ export default function Clients() {
                           </span>
                         )}
                       </div>
+                    </>
+                  )}
+
+                  {/* Section XIV — decks (existing clients only) */}
+                  {typeof editing === "number" && (
+                    <>
+                      <div className="flex items-baseline justify-between border-b-2 border-foreground pb-1">
+                        <h3 className="font-['Playfair_Display'] font-bold text-lg uppercase tracking-wider">
+                          XIV. Decks
+                        </h3>
+                        <span className="font-['Space_Mono'] text-xs text-muted-foreground">
+                          Live data → presentatie
+                        </span>
+                      </div>
+
+                      <p className="font-['Inter'] text-sm text-muted-foreground -mt-4">
+                        Genereert een presentatie op basis van de live Google
+                        Ads-cijfers: het audit-deck (dit jaar t.o.v. vorig jaar)
+                        of het QBR-deck (laatste volledige kwartaal, met QoQ en
+                        YoY). De cijfers worden automatisch ingevuld; de
+                        strategische duiding en doelstellingen blijven open
+                        ([...]) zodat je ze zelf afwerkt. De deck wordt opgebouwd
+                        in het gedeelde demo-deck en is daarna exporteerbaar naar
+                        PPTX/PDF. Bewaar eerst je wijzigingen — de generatie
+                        gebruikt het opgeslagen customer ID, niet wat nog in het
+                        formulier staat.
+                      </p>
+
+                      <div className="flex flex-wrap items-center gap-3">
+                        <button
+                          onClick={() => handleGenerateDeck("audit")}
+                          disabled={
+                            deckBusy !== null ||
+                            !form.googleAdsCustomerId.trim()
+                          }
+                          data-testid="button-generate-audit-deck"
+                          className="py-2.5 px-4 border-2 border-foreground text-foreground font-['Space_Mono'] text-[11px] uppercase tracking-widest flex items-center gap-2 hover:bg-foreground hover:text-background transition-colors disabled:opacity-50 disabled:pointer-events-none"
+                        >
+                          {deckBusy === "audit" ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Presentation className="w-4 h-4" />
+                          )}
+                          Audit-deck genereren
+                        </button>
+                        <button
+                          onClick={() => handleGenerateDeck("qbr")}
+                          disabled={
+                            deckBusy !== null ||
+                            !form.googleAdsCustomerId.trim()
+                          }
+                          data-testid="button-generate-qbr-deck"
+                          className="py-2.5 px-4 border-2 border-foreground text-foreground font-['Space_Mono'] text-[11px] uppercase tracking-widest flex items-center gap-2 hover:bg-foreground hover:text-background transition-colors disabled:opacity-50 disabled:pointer-events-none"
+                        >
+                          {deckBusy === "qbr" ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Presentation className="w-4 h-4" />
+                          )}
+                          QBR-deck genereren
+                        </button>
+                        {!form.googleAdsCustomerId.trim() && (
+                          <span className="font-['Space_Mono'] text-[10px] uppercase tracking-wider text-muted-foreground/70">
+                            Vul eerst het customer ID in
+                          </span>
+                        )}
+                      </div>
+
+                      {deckResult && (
+                        <div className="border-l-2 border-accent bg-accent/5 px-4 py-3 flex flex-col gap-1">
+                          <p className="font-['Space_Mono'] text-[10px] uppercase tracking-widest text-foreground">
+                            {deckResult.kind === "audit"
+                              ? "Audit-deck"
+                              : "QBR-deck"}{" "}
+                            klaar — {deckResult.period}
+                          </p>
+                          <p className="text-sm text-muted-foreground font-['Inter']">
+                            De deck is opgebouwd met de live cijfers. Open ze in
+                            het demo-deck en exporteer naar PPTX/PDF.
+                          </p>
+                          <a
+                            href={deckResult.previewPath}
+                            target="_blank"
+                            rel="noreferrer"
+                            data-testid="link-open-generated-deck"
+                            className="self-start mt-1 font-['Space_Mono'] text-[10px] uppercase tracking-widest text-accent underline underline-offset-4 hover:opacity-80"
+                          >
+                            Deck openen →
+                          </a>
+                        </div>
+                      )}
                     </>
                   )}
 

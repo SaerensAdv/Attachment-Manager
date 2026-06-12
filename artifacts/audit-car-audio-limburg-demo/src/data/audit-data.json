@@ -1,0 +1,85 @@
+{
+  "client": {
+    "naam": "Car Audio Limburg",
+    "accountId": "541-666-6067",
+    "accountName": "Car Audio Limburg"
+  },
+  "period": {
+    "aYear": "2025",
+    "bYear": "2026",
+    "vergelijking": "2026 vs 2025",
+    "rangeLong": "1 januari – 12 juni",
+    "rangeShort": "1 jan – 12 jun",
+    "fetchedAt": "12 juni 2026"
+  },
+  "kpis": {
+    "kosten": {
+      "a": 1920.458401,
+      "b": 2310.491032,
+      "deltaPct": 20.309350663201364,
+      "displayA": "€1.920,46",
+      "displayB": "€2.310,49",
+      "displayDelta": "+20%"
+    },
+    "vertoningen": {
+      "a": 332768,
+      "b": 472052,
+      "deltaPct": 41.85618809500913,
+      "displayA": "332.768",
+      "displayB": "472.052",
+      "displayDelta": "+42%"
+    },
+    "klikken": {
+      "a": 6018,
+      "b": 7373,
+      "deltaPct": 22.515785975407113,
+      "displayA": "6.018",
+      "displayB": "7.373",
+      "displayDelta": "+23%"
+    },
+    "ctr": {
+      "a": 0.018084671603038754,
+      "b": 0.015619041969952462,
+      "deltaPct": -0.2465629633086292,
+      "displayA": "1,81%",
+      "displayB": "1,56%",
+      "displayDelta": "−0,25 pp"
+    },
+    "gemCpc": {
+      "a": 0.319119043037554,
+      "b": 0.313371901803879,
+      "deltaPct": -1.8009396051612798,
+      "displayA": "€0,32",
+      "displayB": "€0,31",
+      "displayDelta": "−2%"
+    },
+    "conversies": {
+      "a": 31,
+      "b": 1,
+      "deltaPct": -96.7741935483871,
+      "displayA": "31",
+      "displayB": "1",
+      "displayDelta": "−97%"
+    },
+    "conversiewaarde": {
+      "a": 626.9,
+      "b": 179,
+      "deltaPct": -71.4468017227628,
+      "displayA": "€626,90",
+      "displayB": "€179,00",
+      "displayDelta": "−71%"
+    },
+    "kostPerConversie": {
+      "a": 61.950271,
+      "b": 2310.491032,
+      "deltaPct": null,
+      "displayA": "€61,95",
+      "displayB": "€2.310,49",
+      "displayDelta": "niet bruikbaar"
+    }
+  },
+  "oordeel": {
+    "kernmetriekLabel": "Conversies",
+    "status": "Verslechterend"
+  }
+}

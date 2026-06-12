@@ -76,6 +76,18 @@ vi.mock("../lib/business-profile", () => {
 });
 import { BusinessProfileConfigError } from "../lib/business-profile";
 
+// Deck generation is stubbed so the route tests drive its config-vs-upstream
+// error mapping (400 vs 502) and success shape without cloning decks or hitting
+// the Google Ads API. The route's `instanceof GoogleAdsConfigError` check uses
+// the REAL class (google-ads loads cleanly in tests), so we reject with it.
+const { deckMock } = vi.hoisted(() => ({ deckMock: { generate: vi.fn() } }));
+vi.mock("../lib/deck-generation", () => ({
+  generateDeckForRow: (...args: unknown[]) => deckMock.generate(...args),
+  buildAuditDataForRow: vi.fn(),
+  buildQbrDataForRow: vi.fn(),
+}));
+import { GoogleAdsConfigError } from "../lib/google-ads";
+
 // Imported after the mocks above (vi.mock is hoisted).
 import clientsRouter from "./clients";
 
@@ -106,6 +118,7 @@ beforeEach(() => {
   eqMock.mockClear();
   andMock.mockClear();
   gmbMock.fetch.mockReset();
+  deckMock.generate.mockReset();
 });
 
 describe("PUT /api/clients/:id — optimistic locking", () => {
@@ -312,5 +325,82 @@ describe("POST /api/clients/:id/business-profile-refresh — status mapping", ()
     expect(res.status).toBe(200);
     expect(res.body.businessProfileLive).toBe("GMB report text");
     expect(res.body.businessProfileLiveAt).toBe(fetchedAt.toISOString());
+  });
+});
+
+describe("POST /api/clients/:id/generate-deck", () => {
+  it("rejects an invalid id before touching the database", async () => {
+    const res = await request(makeApp())
+      .post("/api/clients/abc/generate-deck")
+      .send({ kind: "audit" });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe("Ongeldige id.");
+    expect(dbResults).toHaveLength(0);
+    expect(deckMock.generate).not.toHaveBeenCalled();
+  });
+
+  it("rejects an invalid deck kind before touching the database", async () => {
+    const res = await request(makeApp())
+      .post("/api/clients/1/generate-deck")
+      .send({ kind: "bogus" });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toContain("geldig deck-type");
+    expect(dbResults).toHaveLength(0);
+    expect(deckMock.generate).not.toHaveBeenCalled();
+  });
+
+  it("returns 404 when the client does not exist", async () => {
+    queueResults([]); // select → no row
+    const res = await request(makeApp())
+      .post("/api/clients/1/generate-deck")
+      .send({ kind: "audit" });
+    expect(res.status).toBe(404);
+    expect(res.body.error).toBe("Klant niet gevonden.");
+    expect(deckMock.generate).not.toHaveBeenCalled();
+  });
+
+  it("maps a Google Ads config error from the lib to 400", async () => {
+    queueResults([makeRow({ googleAdsCustomerId: "123-456-7890" })]);
+    deckMock.generate.mockRejectedValueOnce(
+      new GoogleAdsConfigError("Geen Google Ads-customer-ID ingesteld."),
+    );
+    const res = await request(makeApp())
+      .post("/api/clients/1/generate-deck")
+      .send({ kind: "audit" });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe("Geen Google Ads-customer-ID ingesteld.");
+  });
+
+  it("maps an upstream/generation error to 502", async () => {
+    queueResults([makeRow({ googleAdsCustomerId: "123-456-7890" })]);
+    deckMock.generate.mockRejectedValueOnce(new Error("searchStream 500"));
+    const res = await request(makeApp())
+      .post("/api/clients/1/generate-deck")
+      .send({ kind: "qbr" });
+    expect(res.status).toBe(502);
+    expect(res.body.error).toContain("QBR-deck");
+    expect(res.body.detail).toBe("searchStream 500");
+  });
+
+  it("returns the generation result on success", async () => {
+    queueResults([makeRow({ googleAdsCustomerId: "123-456-7890" })]);
+    deckMock.generate.mockResolvedValueOnce({
+      kind: "audit",
+      slug: "audit-car-audio-limburg-demo",
+      previewPath: "/audit-car-audio-limburg-demo/",
+      client: "Acme NV",
+      period: "1 januari – 12 juni",
+    });
+    const res = await request(makeApp())
+      .post("/api/clients/1/generate-deck")
+      .send({ kind: "audit" });
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
+    expect(res.body.kind).toBe("audit");
+    expect(res.body.previewPath).toBe("/audit-car-audio-limburg-demo/");
+    expect(deckMock.generate).toHaveBeenCalledWith({
+      kind: "audit",
+      row: expect.objectContaining({ id: 1 }),
+    });
   });
 });

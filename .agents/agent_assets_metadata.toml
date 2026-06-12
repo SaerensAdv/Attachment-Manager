@@ -304,10 +304,34 @@ title = "Attachment Manager.pdf"
 id = "8WIpbaRvy3wTv7wYBpW17"
 uri = "file://.local/outputs/Google-Ads-audit---Car-Audio-Limburg-Studio.pdf"
 type = "pdf"
-title = "Google Ads-audit — Car Audio Limburg Studio.pdf"
+title = "Audit-deck — voorbeeld (Car Audio Limburg Studio)"
 
 [[outputs]]
 id = "_FptB6e1iLPI5MwA0YOhY"
 uri = "file://voorbeeld-maandrapport.pdf"
 type = "pdf"
 title = "Voorbeeld maandrapport-PDF (huisstijl)"
+
+[[outputs]]
+id = "cVoBtNpIJeKuKyhBBLK9c"
+uri = "file://.local/outputs/Voorbeeld-Factuur-proforma.pdf"
+type = "pdf"
+title = "Factuur (proforma) — voorbeeld"
+
+[[outputs]]
+id = "aGpW1xGL1hsPKegLlt7mZ"
+uri = "file://.local/outputs/Voorbeeld-Offerte.pdf"
+type = "pdf"
+title = "Offerte / voorstel — voorbeeld"
+
+[[outputs]]
+id = "WR4gVs02yvlAqbtKagvSW"
+uri = "file://.local/outputs/Voorbeeld-Snapshot.pdf"
+type = "pdf"
+title = "Snapshot one-pager — voorbeeld"
+
+[[outputs]]
+id = "nYSZFoKzLz0WeUK_jUbvk"
+uri = "file://.local/outputs/Saerens-QBR---Car-Audio-Limburg--Q1-2026-.pptx"
+type = "slides"
+title = "QBR-deck (kwartaal) — Car Audio Limburg, Q1 2026"

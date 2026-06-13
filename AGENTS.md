@@ -112,7 +112,7 @@ Content & social is **not** a separate agent: it is a deeper specialty of the Co
 
 Paid-ad **creatives** (full ad sets: angles + on-image text + post copy for Meta and Google Display/Demand Gen) are likewise a deeper specialty of the Copywriter, with creative direction set by the Meta Ads Strategist — not a separate agent.
 
-Two of these are **cross-cutting final steps** rather than channel specialists: the **Humanizer** gives any drafted text a natural-voice pass, and the **QA & Compliance Reviewer** is the quality gate before human approval. Both review or refine other agents' output, which is why each is a distinct shared step rather than folded into one specialist.
+Two of these are **cross-cutting quality-gate steps** rather than channel specialists, and they run **automatically after the team finishes** — not as members of any single workflow: the **QA & Compliance Reviewer** always runs as the quality gate before human approval (claims, policy, live-spend safety), and the **Humanizer** adds a final natural-voice pass whenever the output is client-facing. Because they are a shared runtime gate, individual workflow files list only their *execution* agents under "Agents involved" and do not repeat the QA or Humanizer step. Both review or refine other agents' output, which is why each is a distinct shared gate rather than folded into one specialist.
 
 ## Growing the team (new agent vs deeper specialty)
 

@@ -1,5 +1,7 @@
 # Workflow: Google Ads Account Audit
 
+<!-- deliverable: audit-report -->
+
 ## Goal
 
 Assess the health of an existing Google Ads account and produce a prioritized list of improvements — the kind of "free audit" Saerens offers prospects, or a periodic deep-dive for an existing client.

@@ -1,5 +1,7 @@
 # Workflow: SEO Audit
 
+<!-- deliverable: audit-report -->
+
 ## Goal
 
 Assess a client's (or prospect's) organic search health across technical, on-page, and off-page SEO, and produce a prioritized roadmap of improvements — complementing, not duplicating, their paid search.

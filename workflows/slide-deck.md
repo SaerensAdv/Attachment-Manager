@@ -17,7 +17,7 @@ A client or prospect needs a presentation: a pitch/sales deck, a product overvie
 3. Write the per-slide content (headline + concrete bullets/numbers) from the team's work — never invent figures. Pre-fill what the agency already knows (agency name, positioning, Google Partner status, working model, contact, today's date); mark only genuinely unknown client-specific items as `[AAN TE VULLEN: …]`.
 4. Set the visual direction per slide (chart types and the data behind them, icons, imagery) and the deck theme grounded in the Saerens house style (`knowledge/saerens-brand.md`), the fixed deck layout standard (`knowledge/saerens-deck-layout.md`), and `knowledge/tone-of-voice.md`.
 5. Fix an explicit slide count and confirm export needs (PPTX / Google Slides / PDF).
-6. Flag claims needing confirmation; for client-facing wording add a Humanizer pass; prepare the human approval summary.
+6. Flag claims needing confirmation; prepare the human approval summary.
 
 ## Agents involved
 

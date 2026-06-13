@@ -27,6 +27,18 @@ description: Invariants for the closing quality gate (reviewer + humanizer) and 
   **Why:** the whole point of the gate is a final pass *over the team's output*;
   without the draft in the prompt it just re-guesses from the request text.
 
+## Doc-side counterpart (workflow .md convention)
+- The "gate-only" rule has a docs counterpart: a workflow's **`## Agents involved`
+  lists executors only** — never the QA & Compliance Reviewer or Humanizer. The
+  gate is engine-driven (QA always; Humanizer when client-facing), documented
+  authoritatively in `AGENTS.md` + `agents/orchestrator.md` (+ ARCHITECTURE request
+  flow), so step text should say "review-ready for compliance" rather than naming a
+  QC step. `validateDocs` does NOT enforce this — it's a convention, keep it by hand.
+- Audit workflows (account/seo/measurement) emit the **`audit-report`** text
+  deliverable (marker `<!-- deliverable: audit-report -->`); it converts team work
+  into one client-ready Markdown audit, internal items under `## Interne nota's`.
+  campaign-setup stays markdown (bulk-CSV deferred as a documented upgrade path).
+
 ## Adaptive plan — invariants
 - The orchestrator returns agent groups + `clientFacing` + `touchesLiveAccount`
   + a team sized to the request. The plan is honoured ONLY when its groups cover

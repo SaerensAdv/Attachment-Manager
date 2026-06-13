@@ -52,3 +52,11 @@ Use `templates/google-ads-output.md`. Must include:
 - Tracking checklist
 - Open questions / missing information
 - Human approval required (budget + go-live)
+
+## Later upgrade paths
+
+- **Bulk-CSV deliverable**: a future enhancement could package the approved structure
+  (campaigns, ad groups, keywords, ads) as a Google Ads Editor-compatible bulk CSV —
+  like `workflows/ad-copy.md` does for RSAs. That needs careful per-entity validation
+  and policy checks, so it is intentionally **not** wired up yet; the reviewed
+  `templates/google-ads-output.md` is the current deliverable.

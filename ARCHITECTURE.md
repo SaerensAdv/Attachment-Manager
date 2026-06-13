@@ -105,42 +105,76 @@ saerens-ai-team/
 │   ├── campaign-setup.md
 │   ├── account-audit.md
 │   ├── account-optimization.md
+│   ├── budget-management.md
 │   ├── monthly-reporting.md
 │   ├── client-email.md
+│   ├── client-update.md
 │   ├── seo-audit.md
+│   ├── content-production.md
+│   ├── ad-copy.md
+│   ├── ad-creatives.md
 │   ├── meta-ads-setup.md
+│   ├── shopping-feed-setup.md
 │   ├── landing-page-review.md
+│   ├── cro-experiment.md
 │   ├── web-build.md
 │   ├── slide-deck.md
 │   ├── animated-video.md
 │   ├── data-app.md
 │   ├── tracking-setup.md
-│   ├── client-update.md
-│   ├── ad-creatives.md
-│   └── sales-proposal.md
+│   ├── measurement-audit.md
+│   ├── competitor-research.md
+│   ├── client-onboarding.md
+│   ├── sales-proposal.md
+│   ├── email-automation.md
+│   ├── brand-identity.md
+│   └── legal-review.md
 │
 ├── templates/           # Reusable output formats
 │   ├── campaign-brief.md
 │   ├── google-ads-output.md
 │   ├── reporting-output.md
+│   ├── audit-report.md
 │   ├── client-email.md
 │   ├── ad-creative-output.md
+│   ├── competitor-briefing.md
+│   ├── onboarding-dossier.md
+│   ├── proposal.md
 │   └── task-output.md
 │
 └── knowledge/           # Agency standards (the quality bar)
     ├── agency-principles.md
     ├── tone-of-voice.md
-    ├── saerens-brand.md
+    ├── belgian-market-context.md
+    ├── naming-conventions.md
     ├── agent-personas.md
+    ├── portrait-art-direction.md
+    ├── saerens-brand.md
+    ├── saerens-deck-layout.md
     ├── google-ads-standards.md
+    ├── google-ads-policy.md
+    ├── budget-management-standards.md
+    ├── ad-copy-standards.md
     ├── meta-ads-standards.md
     ├── ad-creative-standards.md
     ├── seo-standards.md
-    ├── landing-page-standards.md
     ├── helpful-content-standards.md
+    ├── landing-page-standards.md
+    ├── experimentation-standards.md
     ├── analytics-standards.md
     ├── reporting-standards.md
-    └── naming-conventions.md
+    ├── competitive-research-standards.md
+    ├── screaming-frog-crawl-intake.md
+    ├── replit-prompting.md
+    ├── replit-slide-decks.md
+    ├── replit-animated-videos.md
+    ├── replit-data-apps.md
+    ├── replit-canvas.md
+    ├── premium-web-motion.md
+    ├── clickup-platform.md
+    ├── clickup-api.md
+    ├── clickup-ai-agents.md
+    └── clickup-webhooks.md
 ```
 
 ## Request flow (today)
@@ -149,7 +183,8 @@ saerens-ai-team/
 2. If information is missing, the Orchestrator asks before handing off.
 3. The chosen **specialist agent** receives the combined context and follows its workflow.
 4. The agent produces output using the matching **template** and the **knowledge** standards.
-5. The output is reviewed by a human before it is used in real work.
+5. A closing **quality gate** runs automatically after the team finishes: the **QA & Compliance Reviewer** always checks claims, policy, and live-spend safety, and the **Humanizer** adds a final natural-voice pass when the output is client-facing. These two are cross-cutting steps, not channel specialists, so individual workflows do not list them as team members.
+6. The output is reviewed by a human before it is used in real work.
 
 ## Request flow (future, Phase 2+)
 

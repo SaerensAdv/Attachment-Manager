@@ -17,15 +17,13 @@ A client needs new ad creatives for Meta (Facebook & Instagram) or Google (Displ
 5. Write **multiple distinct angles** (default: pain point / curiosity / social proof), each with on-image text + primary text + headline + description within platform limits.
 6. Define the **visual direction** per angle (background, imagery, brand colours / logo) for media production.
 7. Check **message match** to the destination landing page.
-8. Flag claims needing confirmation; for live spend add a **QA & Compliance** check; prepare the human approval summary.
+8. Flag claims needing confirmation and make the copy **review-ready for compliance** (policy + claims); prepare the human approval summary.
 
 ## Agents involved
 
 - Orchestrator Agent (routes and briefs)
 - Meta Ads Strategist (creative direction & funnel fit, for paid social)
 - Copywriter (lead — concepts, on-image text, and all post copy)
-- QA & Compliance Reviewer (claims / policy, before live spend)
-- Humanizer (optional natural-voice pass on client-facing copy)
 
 ## Required output
 

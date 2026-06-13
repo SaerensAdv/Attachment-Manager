@@ -40,8 +40,8 @@ structure).
 4. Respect Google Ads **character limits** (headline <= 30, description <= 90, each
    display path <= 15) and **policy** (no unverifiable superlatives, no excessive
    punctuation, no competitor trademarks, no emojis).
-5. Add a **QA & Compliance** pass for claims/policy against `knowledge/google-ads-policy.md`
-   before the human approval note.
+5. Make the copy **review-ready for compliance**: check claims and policy against
+   `knowledge/google-ads-policy.md` so the automatic QA gate and human approval find no surprises.
 6. The deliverable layer converts the approved copy + the real structure into one
    **Google Ads Editor CSV** for the user to review and import.
 
@@ -50,7 +50,6 @@ structure).
 - Orchestrator Agent (routes and briefs)
 - Copywriter (lead — headlines, descriptions, angles)
 - Google Ads Setup Specialist (ad-group mapping, paths, message match to structure)
-- QA & Compliance Reviewer (claims / policy, before the file is used)
 
 ## Required output
 

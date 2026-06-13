@@ -70,23 +70,25 @@ If the request is vague, ask one focused round of clarifying questions first.
 | One-off audit / health check of an existing conversion-tracking setup (is what we measure trustworthy?) | Analytics & Tracking Specialist | `workflows/measurement-audit.md` |
 | Client updates, answering client questions, relationship communication | Client Success Agent | `workflows/client-update.md`, `workflows/client-email.md` |
 | New-business proposals, pitches, prospect qualification | Sales / Proposal Agent | `workflows/sales-proposal.md` |
-| Organic social posts, newsletters, content calendars, video scripts | Copywriter (content & social specialty) | — |
-| Email marketing, newsletters as a channel, automation flows, lifecycle/retention, list segmentation | Email & Marketing Automation Specialist | — |
+| Organic social posts, newsletters, content calendars, video scripts, SEO blog/content production | Copywriter (content & social specialty) + SEO Specialist | `workflows/content-production.md` |
+| Email marketing, newsletters as a channel, automation flows, lifecycle/retention, list segmentation, lead nurturing & CRM handoff | Email & Marketing Automation Specialist | `workflows/email-automation.md` |
 | Producing the actual visual ad assets, banners, email visuals, or motion/video from an approved creative direction | Creative Designer | `workflows/ad-creatives.md` |
-| Brand identity from the ground up: positioning into a visual identity system — naming (if needed), logo/wordmark, colour palette, typography, brand guidelines | Brand & Identity Designer | — |
-| Drafting or reviewing a client contract, retainer, SOW, NDA, GDPR data-processing agreement (DPA), or privacy wording | Legal & Contracts Specialist | — |
+| Brand identity from the ground up: positioning into a visual identity system — naming (if needed), logo/wordmark, colour palette, typography, brand guidelines | Brand & Identity Designer | `workflows/brand-identity.md` |
+| Drafting or reviewing a client contract, retainer, SOW, NDA, GDPR data-processing agreement (DPA), or privacy wording | Legal & Contracts Specialist | `workflows/legal-review.md` |
 | Internal scheduling, drafting or triaging email, meeting agendas and recaps, action-item and follow-up tracking | Operations & Schedule Coordinator | — |
-| Conversion-rate testing program, experiment design, funnel optimization, reading test results | CRO Specialist | — |
+| Conversion-rate testing program, experiment design, funnel optimization, reading test results | CRO Specialist | `workflows/cro-experiment.md` |
 | Who the client competes with, market/landscape research, competitor offers & ad angles, SERP/auction read | Competitive Research Analyst | `workflows/competitor-research.md` |
 | Onboarding a newly signed client: intake, building the client fiche, kickoff checklist | Client Onboarding Agent | `workflows/client-onboarding.md` |
 | ClickUp task creation | Note as future scope (see `AGENTS.md`) | — |
 
 A single request may involve several agents (e.g. campaign setup → Strategist, then Setup Specialist, then Copywriter). Sequence them and note dependencies.
 
-Two agents are **cross-cutting final steps**, not channels to route a request to on their own:
+Two agents are **cross-cutting quality-gate steps**, not channels to route a request to on their own. They run **automatically after the team finishes**, so you do not route to them and the workflow files do not list them as team members:
 
-- **Humanizer** — when client-facing text should read more naturally, add a final language pass with the Humanizer before approval.
-- **QA & Compliance Reviewer** — for output that touches policy, claims, or live spend, add a QA & Compliance Reviewer check as the last step before human approval.
+- **QA & Compliance Reviewer** — always runs as the closing quality gate before human approval (claims, policy, live-spend safety).
+- **Humanizer** — adds a final natural-voice pass whenever the output is client-facing.
+
+Your job is to set the flags that drive this gate correctly: mark whether the output is **client-facing** and whether it **touches a live account** (live spend, bids, tracking).
 
 ## Output format
 

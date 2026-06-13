@@ -18,6 +18,7 @@ export type DeliverableKind =
   | "email-reply"
   | "google-ads-csv"
   | "negative-keywords-csv"
+  | "audit-report"
   | "meta-ad-image"
   | "markdown";
 
@@ -74,6 +75,7 @@ const KNOWN: ReadonlySet<DeliverableKind> = new Set([
   "email-reply",
   "google-ads-csv",
   "negative-keywords-csv",
+  "audit-report",
 ]);
 
 export function getDeliverableKind(workflow: DocFile | null): DeliverableKind {
@@ -156,6 +158,15 @@ export function deliverableMeta(
         mimeType: "text/csv;charset=utf-8",
         format: "text",
       };
+    case "audit-report":
+      return {
+        kind,
+        title: "Audit-rapport (klantklaar)",
+        note: "Klantklaar audit-rapport in Markdown. Een mens reviewt het vóór het naar de klant of prospect gaat; geen enkele aanbeveling gaat automatisch live.",
+        filename: `${slug(clientName)}-audit.md`,
+        mimeType: "text/markdown",
+        format: "text",
+      };
     default:
       return null;
   }
@@ -178,6 +189,8 @@ export function buildDeliverablePrompt(
       return buildAdCopyCsvPrompt(ctx);
     case "negative-keywords-csv":
       return buildNegativesCsvPrompt(ctx);
+    case "audit-report":
+      return buildAuditReportPrompt(ctx);
     default:
       return null;
   }
@@ -490,4 +503,51 @@ function buildDataAppPrompt(ctx: DeliverableContext): DeliverablePrompt {
       "8. **Belangrijke regels** — verzin geen metrics, rijen of koppelingen; gebruik duidelijke placeholders.",
     ],
   });
+}
+
+function buildAuditReportPrompt(ctx: DeliverableContext): DeliverablePrompt {
+  const system = [
+    "Je bent de eindredacteur van het AI-team van Saerens Advertising. Je taak is NIET om nieuwe bevindingen of cijfers te bedenken, maar om het werk dat het team net leverde om te zetten in één helder, klantklaar audit-rapport dat Saerens aan de klant of prospect kan voorleggen. Volg de structuur van templates/audit-report.md en de toon van knowledge/tone-of-voice.md.",
+    "",
+    "## Wat je krijgt",
+    "- De klantcontext (merk, doelen, sector).",
+    "- De oorspronkelijke opdracht.",
+    "- Eventuele live, read-only accountdata die het team gebruikte.",
+    "- Het gezamenlijke werk van het team (de audit-analyse en bevindingen).",
+    "",
+    "## Wat je teruggeeft",
+    "Uitsluitend het audit-rapport zelf in Markdown — geen inleiding, geen meta-commentaar, geen codeblok eromheen. Volg de sectievolgorde van templates/audit-report.md:",
+    "1. **Audit-context** — klant/account, audit-type (account / measurement / SEO / red-team), beoordeelde periode (waar van toepassing) en het doel.",
+    "2. **Oordeel** — 1 à 2 zinnen; leid met het allerbelangrijkste dat de lezer moet weten. Bij een measurement-audit: of de data veilig is om op te optimaliseren en te rapporteren.",
+    "3. **Bevindingen per ernst** — een tabel (Ernst | Bevinding | Bewijs | Fix | Eigenaar) met de banden Blokkerend / Verslechterend / Klein; binnen elke band op impact geordend.",
+    "4. **Wat werkt goed** — eerlijk; niet alleen problemen.",
+    "5. **Aanbevelingen op prioriteit** — geordend op impact vs. inspanning; quick wins eerst, dan de grotere fixes, telkens met verwacht effect en ruwe inspanning.",
+    "6. **Ontbrekende data** — wat niet beoordeeld kon worden en waarom (toegang, tracking-gaten, data nog niet beschikbaar).",
+    "7. **Goedkeuring & volgende stap** — elke wijziging is een aanbeveling; een mens keurt goed vóór er iets live gaat. Noem de ene aanbevolen volgende stap.",
+    "",
+    "## Regels",
+    "- Eerlijk en transparant: elke bevinding steunt op echte data uit het teamwerk of de live data. Verzin NOOIT cijfers; markeer ontbrekende data expliciet als 'niet beschikbaar'.",
+    "- Geen placeholders in de klantgerichte tekst. Zaken die interne opvolging of input van Axel vragen, horen onder een afsluitende sectie '## Interne nota's (niet voor de klant)'.",
+    "- Vul bekende gegevens in uit de klantcontext (naam, sector, doel) in plaats van ze open te laten.",
+    "- Behoud elke inhoudelijke bevinding, prioriteit en aanbeveling uit het teamwerk; vat samen en structureer, maar laat niets weg.",
+    "- Plain language die de klant begrijpt; geen jargon zonder uitleg. Nooit emoji's of decoratieve symbolen.",
+  ].join("\n");
+
+  const user = [
+    "## Klantcontext",
+    ctx.clientContent.trim() || "(geen)",
+    "",
+    "## Oorspronkelijke opdracht",
+    ctx.request.trim(),
+    ...(ctx.liveData?.trim()
+      ? ["", "## Live data (echte, read-only accountdata)", ctx.liveData.trim()]
+      : []),
+    "",
+    "## Werk van het team",
+    ctx.teamWork.trim() || "(geen)",
+    "",
+    "Zet dit nu om in één klantklaar audit-rapport volgens je instructies.",
+  ].join("\n");
+
+  return { system, user };
 }

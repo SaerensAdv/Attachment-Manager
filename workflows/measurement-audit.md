@@ -1,5 +1,7 @@
 # Workflow: Measurement Audit (Conversion-Tracking Health Check)
 
+<!-- deliverable: audit-report -->
+
 ## Goal
 
 Verify that an existing account's measurement is trustworthy *before* anyone optimizes or reports on it. This is a focused health check of live conversion tracking — not a plan for new tracking (that is `workflows/tracking-setup.md`) and not a full account review (that is `workflows/account-audit.md`). It exists because optimizing or reporting on broken data wastes weeks; this catches it first.

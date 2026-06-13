@@ -66,9 +66,9 @@ describe("clientToMarkdown", () => {
     // Pasted Google Ads data that itself contains a ``` fence must not be able
     // to close the markdown code block early (markdown injection guard).
     const md = clientToMarkdown(
-      makeClient({ googleAdsData: "before\n```\nmalicious\n```\nafter" }),
+      makeClient({ googleAdsLive: "before\n```\nmalicious\n```\nafter" }),
     );
-    expect(md).toContain("## Google Ads data (current)");
+    expect(md).toContain("## Google Ads live performance");
     // The opening fence must be longer than any backtick run in the content.
     expect(md).toContain("````\nbefore");
   });

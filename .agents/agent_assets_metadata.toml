@@ -335,3 +335,9 @@ id = "nYSZFoKzLz0WeUK_jUbvk"
 uri = "file://.local/outputs/Saerens-QBR---Car-Audio-Limburg--Q1-2026-.pptx"
 type = "slides"
 title = "QBR-deck (kwartaal) — Car Audio Limburg, Q1 2026"
+
+[[outputs]]
+id = "9VCGA5if8B9SiA1kis0q8"
+uri = "file://.local/outputs/Google-Ads-audit---Car-Audio-Limburg.pdf"
+type = "pdf"
+title = "Google Ads-audit — Car Audio Limburg.pdf"

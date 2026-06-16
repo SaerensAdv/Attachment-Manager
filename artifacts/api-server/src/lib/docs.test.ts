@@ -5,6 +5,7 @@ import {
   textMentions,
   stripNonProse,
   deriveEdges,
+  parseFanoutMarker,
   type DocFile,
 } from "./docs";
 import { clientToDoc } from "./clients-store";
@@ -47,6 +48,33 @@ describe("getDocGraph with injected client docs", () => {
     expect(Array.isArray(graph.edges)).toBe(true);
     expect(Array.isArray(graph.categories)).toBe(true);
   });
+
+  it("carries the fan-out default on workflow nodes and null elsewhere", () => {
+    const graph = getDocGraph([makeClientDoc(7, "Fanout Client")]);
+    for (const node of graph.nodes) {
+      if (node.category === "workflow") {
+        // A real number (0 when the workflow does not opt into fan-out).
+        expect(typeof node.fanout).toBe("number");
+        expect(node.fanout).toBeGreaterThanOrEqual(0);
+        expect(node.fanout).toBeLessThanOrEqual(5);
+      } else {
+        expect(node.fanout).toBeNull();
+      }
+    }
+  });
+});
+
+describe("parseFanoutMarker", () => {
+  it("reads a valid marker, clamped to the safety cap", () => {
+    expect(parseFanoutMarker("<!-- fanout: 3 -->\n# X")).toBe(3);
+    expect(parseFanoutMarker("<!-- fanout: 99 -->")).toBe(5);
+  });
+
+  it("returns 0 for a missing, sub-2, or garbled marker", () => {
+    expect(parseFanoutMarker("# No marker here")).toBe(0);
+    expect(parseFanoutMarker("<!-- fanout: 1 -->")).toBe(0);
+    expect(parseFanoutMarker("<!-- fanout: lots -->")).toBe(0);
+  });
 });
 
 describe("getDocFile with injected client docs", () => {
@@ -68,7 +96,15 @@ function makeDoc(
   title: string,
   content: string,
 ): DocFile {
-  return { id, path: id, category, title, summary: null, content };
+  return {
+    id,
+    path: id,
+    category,
+    title,
+    summary: null,
+    fanout: category === "workflow" ? parseFanoutMarker(content) : null,
+    content,
+  };
 }
 
 describe("textMentions", () => {

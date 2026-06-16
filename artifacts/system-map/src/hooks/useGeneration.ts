@@ -66,6 +66,11 @@ export function useGeneration(
   const [agentPath, setAgentPath] = useState("");
   const [memberPaths, setMemberPaths] = useState<string[]>([]);
 
+  // Fan-out — how many creative variations the lead generates before a best-of
+  // pick. null means "use the workflow's marker default"; 0 forces it off; a
+  // value >= 2 overrides the default for this run only.
+  const [fanoutOverride, setFanoutOverride] = useState<number | null>(null);
+
   // Smart intake — essential inputs still missing after routing.
   const [intakeFields, setIntakeFields] = useState<IntakeField[]>([]);
   const [intakeAnswers, setIntakeAnswers] = useState<Record<string, string>>({});
@@ -120,6 +125,16 @@ export function useGeneration(
   const clients = useMemo(() => byCategory("client"), [nodes]);
   const workflows = useMemo(() => byCategory("workflow"), [nodes]);
 
+  // Per-workflow fan-out marker default (variations the lead generates before a
+  // best-of pick). 0 = the workflow does not opt into fan-out.
+  const fanoutDefaults = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const n of nodes ?? []) {
+      if (n.category === "workflow") map.set(n.path, n.fanout ?? 0);
+    }
+    return map;
+  }, [nodes]);
+
   const allAgents = useMemo(
     () => byCategory("agent").filter((a) => a.path !== "agents/orchestrator.md"),
     [nodes],
@@ -162,6 +177,7 @@ export function useGeneration(
     setWorkflowPath("");
     setAgentPath("");
     setMemberPaths([]);
+    setFanoutOverride(null);
     setSegments([]);
     setRunPlan(null);
     setStreamError(null);
@@ -237,6 +253,12 @@ export function useGeneration(
     }
   };
 
+  // The fan-out override is per-workflow; drop it whenever the workflow changes
+  // so a count chosen for one workflow never leaks onto another.
+  useEffect(() => {
+    setFanoutOverride(null);
+  }, [workflowPath]);
+
   // After routing (and on agent/workflow override) detect missing essential
   // inputs. Best-effort: failures fall back to no extra fields.
   useEffect(() => {
@@ -306,6 +328,13 @@ export function useGeneration(
     teamPaths.length > 0 &&
     request.trim().length > 0;
 
+  // The selected workflow's marker default and the effective count for this run
+  // (the override when set, otherwise the default). The control is only meaningful
+  // for workflows whose marker opts into fan-out (default >= 2).
+  const fanoutDefault = fanoutDefaults.get(workflowPath) ?? 0;
+  const supportsFanout = fanoutDefault >= 2;
+  const effectiveFanout = fanoutOverride ?? fanoutDefault;
+
   const composeRequest = (extraContext?: string) => {
     const base = request.trim();
     const lines = intakeFields
@@ -374,6 +403,9 @@ export function useGeneration(
         ...(result?.plan?.touchesLiveAccount
           ? { touchesLiveAccount: true }
           : {}),
+        // Only send a fan-out override when the user picked one; otherwise the
+        // server falls back to the workflow's marker default.
+        ...(fanoutOverride !== null ? { fanout: fanoutOverride } : {}),
       },
       {
         onPlan: (plan) => {
@@ -663,6 +695,12 @@ export function useGeneration(
     teamPaths,
     titleFor,
     removeMember,
+    // fan-out (creative variations)
+    fanoutDefault,
+    supportsFanout,
+    effectiveFanout,
+    fanoutOverride,
+    setFanoutOverride,
     // intake
     intakeFields,
     intakeAnswers,

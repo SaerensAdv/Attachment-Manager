@@ -1563,7 +1563,7 @@ components:
         - status
     DocNode:
       type: object
-      required: [id, path, title, category, summary]
+      required: [id, path, title, category, summary, fanout]
       properties:
         id:
           type: string
@@ -1580,6 +1580,12 @@ components:
         summary:
           type: ["string", "null"]
           description: First paragraph of the document, if any.
+        fanout:
+          type: ["integer", "null"]
+          description: >-
+            For workflow docs: the default number of creative variations the lead
+            agent fans out into (from the workflow's fanout marker), or 0 when the
+            workflow does not opt into fan-out. null for every non-workflow doc.
     DocEdge:
       type: object
       required: [source, target, kind]

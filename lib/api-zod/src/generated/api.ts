@@ -28,7 +28,8 @@ export const GetDocGraphResponse = zod.object({
   "path": zod.string().describe('Path relative to the docs root (e.g. knowledge\/tone-of-voice.md).'),
   "title": zod.string().describe('The document\'s first heading, or the filename if none.'),
   "category": zod.string().describe('One of core, agent, client, workflow, template, knowledge.'),
-  "summary": zod.string().nullable().describe('First paragraph of the document, if any.')
+  "summary": zod.string().nullable().describe('First paragraph of the document, if any.'),
+  "fanout": zod.number().nullable().describe('For workflow docs: the default number of creative variations the lead agent fans out into (from the workflow\'s fanout marker), or 0 when the workflow does not opt into fan-out. null for every non-workflow doc.')
 })),
   "edges": zod.array(zod.object({
   "source": zod.string().describe('The id of the document the relationship starts from.'),

@@ -1,7 +1,12 @@
 import { anthropic } from "@workspace/integrations-anthropic-ai";
 import type { Client } from "@workspace/db";
 import { buildGenerationContext, type HandoffBrief } from "./generate-context";
-import { getDocFile, type DocFile } from "./docs";
+import {
+  getDocFile,
+  parseFanoutMarker,
+  MAX_FANOUT,
+  type DocFile,
+} from "./docs";
 import { loadClientDocs, getClientRow, dbClientIdFromPath } from "./clients-store";
 import { saveGeneration, saveGenerationSteps } from "./generations-store";
 import {
@@ -586,23 +591,20 @@ export function parseStages(raw: unknown, teamPaths: string[]): number[][] {
   return groups;
 }
 
-/** Upper bound on fan-out variations — a hard safety cap on parallel LLM calls. */
-export const MAX_FANOUT = 5;
+// MAX_FANOUT lives in ./docs (the single source of truth shared with the doc
+// graph) and is re-exported here for the engine's callers and tests.
+export { MAX_FANOUT };
 
 /**
- * Parse a workflow's opt-in fan-out marker (`<!-- fanout: 3 -->`). Fan-out runs
- * the LEAD creative agent N times with diversity, then a selection pass picks the
- * strongest candidate. Returns 0 (off) for any workflow without the marker, a
+ * Parse a workflow doc's opt-in fan-out marker (`<!-- fanout: 3 -->`). Fan-out
+ * runs the LEAD creative agent N times with diversity, then a selection pass
+ * picks the strongest candidate. Returns 0 (off) for a missing doc/marker, a
  * value below 2, or a non-numeric/garbled value, so every non-opted workflow
- * behaves exactly as before. Values above the safety cap are clamped.
+ * behaves exactly as before. Thin convenience wrapper over `parseFanoutMarker`.
  */
 export function parseFanout(workflow: DocFile | null): number {
   if (!workflow) return 0;
-  const m = workflow.content.match(/<!--\s*fanout:\s*(\d+)\s*-->/i);
-  if (!m) return 0;
-  const n = Number.parseInt(m[1], 10);
-  if (!Number.isFinite(n) || n < 2) return 0;
-  return Math.min(n, MAX_FANOUT);
+  return parseFanoutMarker(workflow.content);
 }
 
 /**

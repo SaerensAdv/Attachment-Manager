@@ -13,6 +13,13 @@ export interface DocNode {
   title: string;
   category: string;
   summary: string | null;
+  /**
+   * For workflow docs: the default number of creative variations the lead agent
+   * fans out into (parsed from the workflow's `<!-- fanout: N -->` marker), or 0
+   * when the workflow does not opt into fan-out. null for every non-workflow doc.
+   * Lets the UI surface and tune the count without reading the markdown.
+   */
+  fanout: number | null;
 }
 
 export type DocEdgeKind = "reference" | "routing" | "flow" | "mention";
@@ -37,6 +44,24 @@ export interface DocGraph {
 
 export interface DocFile extends DocNode {
   content: string;
+}
+
+/** Upper bound on fan-out variations — a hard safety cap on parallel LLM calls. */
+export const MAX_FANOUT = 5;
+
+/**
+ * Parse a workflow's opt-in fan-out marker (`<!-- fanout: 3 -->`) from raw
+ * markdown. Returns 0 (off) for content without the marker, a value below 2, or
+ * a non-numeric/garbled value, so every non-opted workflow behaves exactly as
+ * before. Values above the safety cap are clamped. This is the single source of
+ * truth for the marker default, reused by the doc graph and the generate engine.
+ */
+export function parseFanoutMarker(content: string): number {
+  const m = content.match(/<!--\s*fanout:\s*(\d+)\s*-->/i);
+  if (!m) return 0;
+  const n = Number.parseInt(m[1], 10);
+  if (!Number.isFinite(n) || n < 2) return 0;
+  return Math.min(n, MAX_FANOUT);
 }
 
 const CORE_DOCS = ["AGENTS.md", "ARCHITECTURE.md"];
@@ -163,6 +188,7 @@ function scanFiles(): DocFile[] {
       title: firstTitle(content, filename),
       category,
       summary: firstParagraph(content),
+      fanout: category === "workflow" ? parseFanoutMarker(content) : null,
       content,
     });
   };

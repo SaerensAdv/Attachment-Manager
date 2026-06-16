@@ -214,6 +214,7 @@ export function clientToDoc(client: Client): DocFile {
     title: `Client: ${client.name}`,
     category: "client",
     summary: firstParagraph(content),
+    fanout: null,
     content,
   };
 }

@@ -66,6 +66,11 @@ export default function GenerationPanel({
     teamPaths,
     titleFor,
     removeMember,
+    fanoutDefault,
+    supportsFanout,
+    effectiveFanout,
+    fanoutOverride,
+    setFanoutOverride,
     segments,
     runPlan,
     isStreaming,
@@ -382,6 +387,62 @@ export default function GenerationPanel({
                   );
                 })}
               </div>
+
+              {/* Fan-out — how many creative variations the lead tries before a
+                  best-of pick. Only shown for workflows that opt into fan-out. */}
+              {supportsFanout && (
+                <div className="space-y-1.5" data-testid="fanout-control">
+                  <label
+                    htmlFor="fanout-select"
+                    className="flex items-center justify-between font-['Space_Mono'] text-[10px] uppercase tracking-widest text-muted-foreground"
+                  >
+                    <span>Creatieve varianten</span>
+                    <span>
+                      {effectiveFanout >= 2
+                        ? `${effectiveFanout}× → beste`
+                        : "uit"}
+                    </span>
+                  </label>
+                  <Select
+                    value={
+                      fanoutOverride === null ? "default" : String(fanoutOverride)
+                    }
+                    onValueChange={(v) =>
+                      setFanoutOverride(v === "default" ? null : Number(v))
+                    }
+                  >
+                    <SelectTrigger
+                      id="fanout-select"
+                      data-testid="select-fanout"
+                      disabled={isStreaming}
+                      className={selectTriggerClass}
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className={selectContentClass}>
+                      <SelectItem value="default" className={selectItemClass}>
+                        Workflow-standaard ({fanoutDefault} varianten)
+                      </SelectItem>
+                      <SelectItem value="0" className={selectItemClass}>
+                        Uit (1 versie)
+                      </SelectItem>
+                      {[2, 3, 4, 5].map((n) => (
+                        <SelectItem
+                          key={n}
+                          value={String(n)}
+                          className={selectItemClass}
+                        >
+                          {n} varianten
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="font-['Inter'] text-[11px] leading-snug text-muted-foreground">
+                    De lead schrijft dit aantal versies parallel; een selectie
+                    kiest automatisch de sterkste. Meer varianten = meer kost.
+                  </p>
+                </div>
+              )}
 
               <button
                 type="button"

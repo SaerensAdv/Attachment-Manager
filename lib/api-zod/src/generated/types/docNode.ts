@@ -20,4 +20,9 @@ export interface DocNode {
      * @nullable
      */
   summary: string | null;
+  /**
+     * For workflow docs: the default number of creative variations the lead agent fans out into (from the workflow's fanout marker), or 0 when the workflow does not opt into fan-out. null for every non-workflow doc.
+     * @nullable
+     */
+  fanout: number | null;
 }

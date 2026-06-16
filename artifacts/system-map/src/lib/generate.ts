@@ -10,6 +10,12 @@ export interface GeneratePayload {
   clientFacing?: boolean;
   /** Whether the request touches a live account (surfaced as a run note). */
   touchesLiveAccount?: boolean;
+  /**
+   * Override the number of creative variations the lead fans out into for this
+   * run. Omit to use the workflow's marker default; a value below 2 switches
+   * fan-out off. The server clamps it to the MAX_FANOUT safety cap.
+   */
+  fanout?: number;
 }
 
 export interface AgentStartInfo {

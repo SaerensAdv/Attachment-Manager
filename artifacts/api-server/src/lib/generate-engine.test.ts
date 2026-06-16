@@ -89,8 +89,25 @@ import {
   runGeneration,
   toClientFacingReport,
   stripHumanizerMeta,
+  extractHandoffBrief,
+  resolveBriefGateFlags,
   type GenerationContext,
 } from "./generate-engine";
+import { buildGenerationContext, type HandoffBrief } from "./generate-context";
+import type { Mock } from "vitest";
+
+function makeEngineBrief(over: Partial<HandoffBrief> = {}): HandoffBrief {
+  return {
+    agent: "Agent",
+    decisions: [],
+    keyFacts: [],
+    openQuestions: [],
+    forNext: null,
+    clientFacing: null,
+    touchesLiveAccount: null,
+    ...over,
+  };
+}
 
 function makeCtx(over: Partial<GenerationContext> = {}): GenerationContext {
   return {
@@ -374,6 +391,168 @@ describe("runGeneration — final QC gate", () => {
 
     const markdown = String(saveGenerationMock.mock.calls[0][0].finalMarkdown);
     expect(markdown).toContain("Humanized client-ready version.");
+  });
+});
+
+describe("extractHandoffBrief", () => {
+  it("parses a valid brief and strips the comment from the prose", () => {
+    const text =
+      "Zichtbare bijdrage van de strateeg.\n\n" +
+      '<!-- handoff-brief {"decisions":["Kies merkcampagne"],"keyFacts":["Budget 1500"],"openQuestions":[],"forNext":"Schrijf RSA","clientFacing":true,"touchesLiveAccount":false} -->';
+    const { brief, stripped } = extractHandoffBrief(text);
+    expect(stripped).toBe("Zichtbare bijdrage van de strateeg.");
+    expect(stripped).not.toContain("handoff-brief");
+    expect(brief).not.toBeNull();
+    expect(brief?.decisions).toEqual(["Kies merkcampagne"]);
+    expect(brief?.keyFacts).toEqual(["Budget 1500"]);
+    expect(brief?.forNext).toBe("Schrijf RSA");
+    expect(brief?.clientFacing).toBe(true);
+    expect(brief?.touchesLiveAccount).toBe(false);
+  });
+
+  it("returns brief:null but still strips on malformed JSON", () => {
+    const text =
+      "Prose.\n<!-- handoff-brief {not valid json,,, } -->";
+    const { brief, stripped } = extractHandoffBrief(text);
+    expect(brief).toBeNull();
+    expect(stripped).toBe("Prose.");
+    expect(stripped).not.toContain("handoff-brief");
+  });
+
+  it("returns brief:null for an entirely empty brief, still stripping it", () => {
+    const text =
+      'Prose.\n<!-- handoff-brief {"decisions":[],"keyFacts":[],"openQuestions":[],"forNext":"","clientFacing":null,"touchesLiveAccount":null} -->';
+    const { brief, stripped } = extractHandoffBrief(text);
+    expect(brief).toBeNull();
+    expect(stripped).toBe("Prose.");
+  });
+
+  it("returns brief:null and the unchanged prose when there is no brief", () => {
+    const { brief, stripped } = extractHandoffBrief("Just prose, no brief.");
+    expect(brief).toBeNull();
+    expect(stripped).toBe("Just prose, no brief.");
+  });
+
+  it("strips EVERY brief block, even a stray second one", () => {
+    const text =
+      "Prose.\n" +
+      '<!-- handoff-brief {"decisions":["Een"]} -->\n' +
+      'tussentekst\n<!-- handoff-brief {"decisions":["Twee"]} -->';
+    const { brief, stripped } = extractHandoffBrief(text);
+    // First block wins for the payload.
+    expect(brief?.decisions).toEqual(["Een"]);
+    // No comment survives in the prose.
+    expect(stripped).not.toContain("handoff-brief");
+    expect(stripped).toContain("tussentekst");
+  });
+});
+
+describe("resolveBriefGateFlags", () => {
+  it("returns null flags when no brief states them (fall back to routing)", () => {
+    expect(resolveBriefGateFlags([])).toEqual({
+      clientFacing: null,
+      touchesLiveAccount: null,
+    });
+  });
+
+  it("lets the LAST explicit clientFacing win", () => {
+    const flags = resolveBriefGateFlags([
+      makeEngineBrief({ clientFacing: true }),
+      makeEngineBrief({ clientFacing: false }),
+    ]);
+    expect(flags.clientFacing).toBe(false);
+  });
+
+  it("ORs touchesLiveAccount and never downgrades it", () => {
+    const flags = resolveBriefGateFlags([
+      makeEngineBrief({ touchesLiveAccount: true }),
+      makeEngineBrief({ touchesLiveAccount: false }),
+    ]);
+    expect(flags.touchesLiveAccount).toBe(true);
+  });
+});
+
+describe("runGeneration — handoff briefs (integration)", () => {
+  it("strips each agent's brief from the archive and forwards a clean recap to the next agent", async () => {
+    h.streamImpl = streamSequence([
+      'Lead bijdrage.\n<!-- handoff-brief {"decisions":["Merkcampagne eerst"],"forNext":"Schrijf advertenties"} -->',
+      "Tweede bijdrage.",
+    ]);
+
+    const { promise } = run(
+      makeCtx({
+        teamPaths: ["agents/lead.md", "agents/copy.md"],
+        memberTitles: ["Lead", "Copywriter"],
+        stages: [[0], [1]],
+      }),
+    );
+    await promise;
+
+    // The archived markdown never contains the raw brief comment.
+    const markdown = String(saveGenerationMock.mock.calls[0][0].finalMarkdown);
+    expect(markdown).toContain("Lead bijdrage.");
+    expect(markdown).not.toContain("handoff-brief");
+
+    // The second agent's context received the parsed brief as a clean recap.
+    const calls = (buildGenerationContext as unknown as Mock).mock.calls;
+    const secondCall = calls.find(
+      (c) => (c[0] as { agentPath: string }).agentPath === "agents/copy.md",
+    );
+    expect(secondCall).toBeTruthy();
+    const briefs = (
+      secondCall?.[0] as { team?: { handoffBriefs?: unknown[] } }
+    ).team?.handoffBriefs as Array<{ agent: string; decisions: string[] }>;
+    expect(briefs?.[0]?.agent).toBe("Lead");
+    expect(briefs?.[0]?.decisions).toEqual(["Merkcampagne eerst"]);
+  });
+
+  it("skips the planned Humanizer when a brief downgrades clientFacing", async () => {
+    // Routing planned client-facing (so the Humanizer IS in the plan), but the
+    // team's brief reveals the output is internal — the Humanizer is skipped at
+    // execution while the always-on reviewer still runs.
+    h.streamImpl = streamSequence([
+      'Interne analyse.\n<!-- handoff-brief {"clientFacing":false} -->',
+      "Verdict: ok.",
+    ]);
+
+    const { sink, promise } = run(
+      makeCtx({ qcEnabled: true, clientFacing: true }),
+    );
+    await promise;
+
+    // The Humanizer was planned up front (routing said client-facing)...
+    const plan = sink.mock.calls
+      .map((c) => c[0] as Record<string, unknown>)
+      .find((e) => e.type === "plan");
+    const modes = (plan?.qc as Array<{ mode: string }>).map((q) => q.mode);
+    expect(modes).toContain("humanizer");
+
+    // ...but the brief downgrade means only ONE quality step ran (the reviewer),
+    // i.e. the Humanizer was skipped.
+    const steps = saveGenerationStepsMock.mock.calls[0][0] as Array<{
+      role: string;
+    }>;
+    expect(steps.filter((s) => s.role === "quality").length).toBe(1);
+  });
+
+  it("surfaces the live-account note when a brief upgrades touchesLiveAccount", async () => {
+    h.streamImpl = streamSequence([
+      'Bod-aanpassingen.\n<!-- handoff-brief {"touchesLiveAccount":true} -->',
+    ]);
+
+    const { sink, promise } = run(
+      makeCtx({ touchesLiveAccount: false }),
+    );
+    await promise;
+
+    const notes = sink.mock.calls
+      .map((c) => c[0] as Record<string, unknown>)
+      .filter((e) => e.type === "deliverable_note");
+    expect(
+      notes.some((n) =>
+        String(n.message).includes("raakt live uitgaven"),
+      ),
+    ).toBe(true);
   });
 });
 

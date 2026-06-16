@@ -25,6 +25,7 @@ All agents must:
 - Use the **client context** (`clients/`) when a client is specified.
 - Use the relevant **workflow** (`workflows/`) and **template** (`templates/`) when one applies.
 - End meaningful outputs with: open questions, dependencies, and an explicit **"Human approval required"** note where relevant.
+- When working **in a team**, close the output with one optional **handoff brief** as a single HTML comment (`<!-- handoff-brief {…} -->`) on the very last line. It is invisible to the client (HTML comments are stripped before rendering and the engine removes it from the archive) and never changes the visible prose — it is an internal reliability aid that hands the next teammate and the quality gate a clean, structured summary: `decisions`, `keyFacts`, `openQuestions`, `forNext`, plus the flags `clientFacing` and `touchesLiveAccount`. Keep it short; leave a field empty when it does not apply. It is best-effort: a missing or malformed brief never blocks the run.
 
 ## Brand Behavior
 

@@ -61,3 +61,4 @@
 - [Offerte (sales proposal) PDF](offerte-deliverable.md) — hybrid AI-prose + human pricing; non-binding (no DB row, no billing precondition); eenmalig vs maandelijks totals stay separate; prose stripped at route.
 - [Platform vision (multi-tenant)](platform-vision.md) — brainstorm direction: single-tenant agency app → multi-tenant SaaS where clients see their own AI team; "rented liaison agent" mechanic; concept map on the canvas.
 - [Bing Webmaster live intake](bing-webmaster.md) — read-only GSC mirror; avg position is a real 1-based rank NOT ×10 (BING_POSITION_SCALE=1, verify live); bad/unverified site = HTTP 400 NotAuthorized (caught, never zeros-200); one shared API key, full https siteUrl.
+- [Agent side-channel HTML comments](side-channel-comments.md) — internal-only data (monitor-list, handoff-brief) via stripped comments; parse defensively + strip ALL on every exit; brief flags only REFINE the QC plan (downgrade/OR-up), routing is fallback.

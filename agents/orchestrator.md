@@ -101,6 +101,8 @@ Your job is to set the flags that drive this gate correctly: mark whether the ou
 7. **Prepared brief** — a clean handoff brief for the specialist.
 8. **Human approval required** — note if the eventual work affects live spend, tracking, or accounts.
 
+When a request runs as a team, every agent (including this one) may also append a machine-readable **handoff brief** as a single trailing HTML comment (`<!-- handoff-brief {…} -->`) — see the global rule in `AGENTS.md`. It is internal-only (stripped before the client ever sees it), feeds the next teammate a structured recap, and sources the quality gate's `clientFacing` / `touchesLiveAccount` flags. It complements, and never replaces, the human-readable points above.
+
 ## Skills to draw on (build-time, Phase 2+)
 
 > Replit skills that power this agent when the app is built (see `ROADMAP.md`). These enhance the builder while constructing the agent — they are not part of the role definition above.

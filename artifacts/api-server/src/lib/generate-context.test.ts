@@ -73,3 +73,108 @@ describe("buildGenerationContext QC framing", () => {
     expect(systemPrompt).not.toContain("EERSTE DRAFT TEKST VAN HET TEAM.");
   });
 });
+
+import {
+  renderHandoffSummary,
+  HANDOFF_BRIEF_INSTRUCTION,
+  type HandoffBrief,
+} from "./generate-context";
+
+function makeBrief(over: Partial<HandoffBrief> = {}): HandoffBrief {
+  return {
+    agent: "Strateeg",
+    decisions: [],
+    keyFacts: [],
+    openQuestions: [],
+    forNext: null,
+    clientFacing: null,
+    touchesLiveAccount: null,
+    ...over,
+  };
+}
+
+describe("renderHandoffSummary", () => {
+  it("returns an empty string when there is nothing useful to show", () => {
+    expect(renderHandoffSummary([])).toBe("");
+    // A brief carrying only the internal flags renders nothing visible.
+    expect(
+      renderHandoffSummary([
+        makeBrief({ clientFacing: true, touchesLiveAccount: true }),
+      ]),
+    ).toBe("");
+  });
+
+  it("renders decisions, key facts, open questions and the next-agent note", () => {
+    const out = renderHandoffSummary([
+      makeBrief({
+        agent: "Strateeg",
+        decisions: ["Focus op zoeknetwerk"],
+        keyFacts: ["Budget = 1500 EUR/maand"],
+        openQuestions: ["Welke landingspagina?"],
+        forNext: "Schrijf 3 RSA-varianten.",
+      }),
+    ]);
+    expect(out).toContain("Handoff tot nu toe");
+    expect(out).toContain("**Strateeg**");
+    expect(out).toContain("Focus op zoeknetwerk");
+    expect(out).toContain("Budget = 1500 EUR/maand");
+    expect(out).toContain("Welke landingspagina?");
+    expect(out).toContain("Schrijf 3 RSA-varianten.");
+  });
+
+  it("never renders the internal QC flags", () => {
+    const out = renderHandoffSummary([
+      makeBrief({
+        decisions: ["Iets"],
+        clientFacing: true,
+        touchesLiveAccount: true,
+      }),
+    ]);
+    expect(out).not.toContain("clientFacing");
+    expect(out).not.toContain("touchesLiveAccount");
+  });
+});
+
+describe("buildGenerationContext handoff brief wiring", () => {
+  const teamDocs = {
+    ...docs,
+    "agents/strateeg.md": {
+      path: "agents/strateeg.md",
+      title: "Strateeg",
+      content: "strategy role",
+    },
+  };
+
+  it("injects the handoff instruction for an executor and a 'Handoff so far' recap from prior briefs", async () => {
+    docs["agents/strateeg.md"] = teamDocs["agents/strateeg.md"];
+    const { systemPrompt } = await buildGenerationContext({
+      agentPath: "agents/strateeg.md",
+      clientPath: "clients/acme.md",
+      workflowPath: "workflows/wf.md",
+      team: {
+        members: ["Lead", "Strateeg"],
+        position: 1,
+        priorWork: "## Lead\n\nEerste bijdrage.",
+        isFinal: true,
+        handoffBriefs: [
+          makeBrief({ agent: "Lead", decisions: ["Kies merkcampagne"] }),
+        ],
+      },
+    });
+    // The executor is told to emit its own brief.
+    expect(systemPrompt).toContain(HANDOFF_BRIEF_INSTRUCTION);
+    // And it receives the prior team's brief as a clean recap.
+    expect(systemPrompt).toContain("Handoff tot nu toe");
+    expect(systemPrompt).toContain("Kies merkcampagne");
+  });
+
+  it("does NOT inject the handoff instruction for a QC pass", async () => {
+    const { systemPrompt } = await buildGenerationContext({
+      agentPath: "agents/qa-compliance-reviewer.md",
+      clientPath: "clients/acme.md",
+      workflowPath: "workflows/wf.md",
+      qc: { mode: "reviewer", draft: DRAFT },
+    });
+    expect(systemPrompt).not.toContain(HANDOFF_BRIEF_INSTRUCTION);
+  });
+});

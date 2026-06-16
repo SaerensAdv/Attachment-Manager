@@ -12,6 +12,68 @@ export const ALWAYS_KNOWLEDGE = [
 
 const REFERENCE_RE = /\b(?:templates|knowledge)\/[A-Za-z0-9_-]+\.md\b/g;
 
+/**
+ * A typed, best-effort "clean handoff" payload an agent emits alongside its
+ * prose (as a stripped HTML comment, exactly like the monitor-list side
+ * channel). It is an internal reliability aid: it never reaches the client and
+ * never blocks a run. Every field is optional from the agent's side; the parser
+ * fills the gaps. See `extractHandoffBrief` in `generate-engine.ts`.
+ */
+export interface HandoffBrief {
+  /** Title of the agent that emitted the brief (filled in by the engine). */
+  agent: string;
+  /** Key decisions this agent made that downstream steps should respect. */
+  decisions: string[];
+  /** Facts the next step must carry forward unchanged (numbers, names, URLs). */
+  keyFacts: string[];
+  /** Questions left unresolved for a downstream step or a human. */
+  openQuestions: string[];
+  /** A short free-text note aimed specifically at the next agent. */
+  forNext: string | null;
+  /** Whether this output is (part of) client-facing text. `null` = not stated. */
+  clientFacing: boolean | null;
+  /** Whether the work touches live spend, bids or tracking. `null` = not stated. */
+  touchesLiveAccount: boolean | null;
+}
+
+/**
+ * Shared instruction telling each executor agent to append its (optional)
+ * handoff brief as a single HTML comment at the very end of its output. The
+ * comment is invisible (HTML comments are stripped before markdown render) and
+ * is parsed + removed by the engine, so the visible prose is never affected.
+ */
+export const HANDOFF_BRIEF_INSTRUCTION =
+  "- Sluit je bijdrage HELEMAAL ONDERAAN (na de eventuele goedkeuringssectie) af met \u00e9\u00e9n interne overdrachtsnotitie als HTML-commentaar. Dit commentaar wordt nooit aan de klant getoond en verandert niets aan je zichtbare tekst; het is een betrouwbaarheidshulp voor het volgende teamlid en de kwaliteitscontrole. Formaat exact, geldige JSON op \u00e9\u00e9n regel: `<!-- handoff-brief {\"decisions\":[],\"keyFacts\":[],\"openQuestions\":[],\"forNext\":\"\",\"clientFacing\":true,\"touchesLiveAccount\":false} -->`. Hou het kort: `decisions` (jouw kernbeslissingen), `keyFacts` (feiten die exact behouden moeten blijven), `openQuestions` (onbeantwoorde vragen), `forNext` (korte boodschap voor het volgende teamlid), `clientFacing` (is dit (deel van) klant-gerichte tekst?), `touchesLiveAccount` (raakt dit live uitgaven, biedingen of tracking?). Laat een veld leeg of weg als het niet van toepassing is.";
+
+/**
+ * Render accumulated handoff briefs into a concise, structured "Handoff so far"
+ * recap for the next agent's context. Returns "" when there is nothing useful
+ * to show, so callers can omit the section entirely. The internal flags
+ * (clientFacing / touchesLiveAccount) are deliberately left out — they drive the
+ * QC gate, not the next agent's writing.
+ */
+export function renderHandoffSummary(briefs: HandoffBrief[]): string {
+  const parts: string[] = [];
+  for (const b of briefs) {
+    const lines: string[] = [`**${b.agent}**`];
+    if (b.decisions.length)
+      lines.push(`- Beslissingen: ${b.decisions.join("; ")}`);
+    if (b.keyFacts.length)
+      lines.push(`- Vast te houden feiten: ${b.keyFacts.join("; ")}`);
+    if (b.openQuestions.length)
+      lines.push(`- Open vragen: ${b.openQuestions.join("; ")}`);
+    if (b.forNext) lines.push(`- Voor het volgende teamlid: ${b.forNext}`);
+    if (lines.length > 1) parts.push(lines.join("\n"));
+  }
+  if (parts.length === 0) return "";
+  return [
+    "### Handoff tot nu toe (interne overdracht)",
+    "Beknopte, gestructureerde overdracht van de vorige teamleden: hun beslissingen, vast te houden feiten en open vragen. Gebruik dit als betrouwbare leidraad N\u00c1\u00c1ST het volledige werk hierboven (niet in plaats daarvan). Het is een interne hulp en bereikt nooit de klant.",
+    "",
+    parts.join("\n\n"),
+  ].join("\n");
+}
+
 export interface TeamContext {
   /** Ordered titles of the full team, in execution order. */
   members: string[];
@@ -21,6 +83,8 @@ export interface TeamContext {
   priorWork: string;
   /** Whether this agent is the last in the chain (writes the approval section). */
   isFinal: boolean;
+  /** Parsed handoff briefs from prior teammates (best-effort; may be empty). */
+  handoffBriefs?: HandoffBrief[];
 }
 
 export interface GenerationSelection {
@@ -225,6 +289,10 @@ export async function buildGenerationContext(
         team.priorWork.trim()
           ? `\n### Werk van het team tot nu toe\n\n${team.priorWork.trim()}`
           : "",
+        (() => {
+          const summary = renderHandoffSummary(team.handoffBriefs ?? []);
+          return summary ? `\n${summary}` : "";
+        })(),
       ]
         .filter(Boolean)
         .join("\n"),
@@ -249,6 +317,9 @@ export async function buildGenerationContext(
       ? "- Begin je bijdrage met een korte kop die jouw rol benoemt (bv. '## Strategie' of '## Advertentieteksten'), zodat duidelijk is welk teamlid wat leverde."
       : null;
 
+  // Executors emit a handoff brief (the QC passes do not — they close the run).
+  const handoffRule = qc ? null : HANDOFF_BRIEF_INSTRUCTION;
+
   const systemPrompt = [
     "Je bent een AI-agent binnen het AI-team van Saerens Advertising, een Belgisch Google Ads-bureau.",
     `Je vervult de rol van: ${persona}.`,
@@ -265,6 +336,7 @@ export async function buildGenerationContext(
     "- Volg de structuur van het relevante output-template wanneer er een is.",
     teamOutputRule,
     approvalRule,
+    handoffRule,
     "",
     "## Wat je NOOIT doet",
     "- Je stopt nooit middenin een zin en vraagt nooit om 'meer informatie' om verder te kunnen.",

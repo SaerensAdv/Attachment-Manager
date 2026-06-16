@@ -1,6 +1,6 @@
 import { anthropic } from "@workspace/integrations-anthropic-ai";
 import type { Client } from "@workspace/db";
-import { buildGenerationContext } from "./generate-context";
+import { buildGenerationContext, type HandoffBrief } from "./generate-context";
 import { getDocFile, type DocFile } from "./docs";
 import { loadClientDocs, getClientRow, dbClientIdFromPath } from "./clients-store";
 import { saveGeneration, saveGenerationSteps } from "./generations-store";
@@ -76,6 +76,94 @@ function extractMonitorList(text: string): {
     // malformed monitor block — drop it, never sink the run
   }
   return { items, stripped };
+}
+
+/**
+ * Extract the optional typed handoff brief an agent emits as an HTML comment
+ * (`<!-- handoff-brief { ... } -->`), exactly like the monitor-list side
+ * channel: the comment never renders (HTML comments are stripped before
+ * markdown), so we parse its JSON, then return the text with EVERY handoff-brief
+ * block removed so it never leaks into the deliverable or the archived run.
+ * Best-effort: on any malformation (no comment, bad JSON, wrong shape, or an
+ * entirely empty brief) it returns `brief: null` but still strips the block, so
+ * the run continues exactly as it does today (prose only).
+ */
+export function extractHandoffBrief(text: string): {
+  brief: HandoffBrief | null;
+  stripped: string;
+} {
+  // Strip ALL handoff-brief comments (an agent should emit one, but never let a
+  // stray second block leak into the archive).
+  const stripAll = /<!--\s*handoff-brief\b[\s\S]*?-->/gi;
+  const stripped = text.replace(stripAll, "").trim();
+  // Parse the FIRST block for its payload.
+  const one = /<!--\s*handoff-brief\b([\s\S]*?)-->/i;
+  const m = one.exec(text);
+  if (!m) return { brief: null, stripped };
+  try {
+    const parsed = JSON.parse(m[1].trim());
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return { brief: null, stripped };
+    }
+    const p = parsed as Record<string, unknown>;
+    const strArray = (v: unknown): string[] =>
+      Array.isArray(v)
+        ? v
+            .filter((x): x is string => typeof x === "string" && x.trim() !== "")
+            .map((x) => x.trim())
+        : [];
+    const brief: HandoffBrief = {
+      agent: "",
+      decisions: strArray(p.decisions),
+      keyFacts: strArray(p.keyFacts),
+      openQuestions: strArray(p.openQuestions),
+      forNext:
+        typeof p.forNext === "string" && p.forNext.trim() !== ""
+          ? p.forNext.trim()
+          : null,
+      clientFacing: typeof p.clientFacing === "boolean" ? p.clientFacing : null,
+      touchesLiveAccount:
+        typeof p.touchesLiveAccount === "boolean" ? p.touchesLiveAccount : null,
+    };
+    const empty =
+      brief.decisions.length === 0 &&
+      brief.keyFacts.length === 0 &&
+      brief.openQuestions.length === 0 &&
+      brief.forNext === null &&
+      brief.clientFacing === null &&
+      brief.touchesLiveAccount === null;
+    return { brief: empty ? null : brief, stripped };
+  } catch {
+    // malformed brief — drop it, never sink the run
+    return { brief: null, stripped };
+  }
+}
+
+/**
+ * Fold the accumulated handoff briefs into the QC-gate flags. The structured
+ * brief is PREFERRED over routing's resolution when it carries a flag, with
+ * today's logic as the fallback (a `null` field here means "not stated — fall
+ * back"). Semantics:
+ *  - `clientFacing`: the last brief that explicitly states it wins (the most
+ *    downstream agent's view of the final output).
+ *  - `touchesLiveAccount`: OR across briefs — a brief can flag that the work
+ *    touches a live account, but never downgrade that safety signal.
+ */
+export function resolveBriefGateFlags(briefs: HandoffBrief[]): {
+  clientFacing: boolean | null;
+  touchesLiveAccount: boolean | null;
+} {
+  let clientFacing: boolean | null = null;
+  let sawLive = false;
+  let live = false;
+  for (const b of briefs) {
+    if (typeof b.clientFacing === "boolean") clientFacing = b.clientFacing;
+    if (typeof b.touchesLiveAccount === "boolean") {
+      sawLive = true;
+      if (b.touchesLiveAccount) live = true;
+    }
+  }
+  return { clientFacing, touchesLiveAccount: sawLive ? live : null };
 }
 
 /**
@@ -569,6 +657,10 @@ export async function runGeneration(
   const reviewerIndex = qcStepsPlan.find((q) => q.mode === "reviewer")?.index;
 
   let priorWork = "";
+  // Typed handoff briefs accumulated across stages (best-effort). Each agent's
+  // brief is parsed + stripped from its prose; the next stage gets a clean
+  // "Handoff so far" recap and the QC gate can read the flags from them.
+  const handoffBriefs: HandoffBrief[] = [];
   let persisted = false;
   let savedId: number | null = null;
   let runStatus = "completed";
@@ -955,6 +1047,7 @@ export async function runGeneration(
     const runMember = async (
       i: number,
       stagePrior: string,
+      stageBriefs: HandoffBrief[],
     ): Promise<MemberOutcome> => {
       const path = teamPaths[i];
       const isFinal = i === teamPaths.length - 1;
@@ -967,7 +1060,13 @@ export async function runGeneration(
           clientPath,
           workflowPath,
           extraDocs: clientDocs,
-          team: { members: memberTitles, position: i, priorWork: stagePrior, isFinal },
+          team: {
+            members: memberTitles,
+            position: i,
+            priorWork: stagePrior,
+            isFinal,
+            handoffBriefs: stageBriefs,
+          },
           // When the QA & Compliance Reviewer will run, it owns the single
           // human-approval section, so no executor writes its own.
           suppressApproval: reviewerWillRun,
@@ -1076,10 +1175,15 @@ export async function runGeneration(
     stageLoop: for (const group of stages) {
       if (isGone()) break;
       const stagePrior = priorWork;
+      // Snapshot the briefs collected so far: every member in this stage sees
+      // the same prior handoffs (mirroring how stagePrior freezes the prose).
+      const stageBriefs = handoffBriefs.slice();
       const outcomes =
         group.length === 1
-          ? [await runMember(group[0], stagePrior)]
-          : await Promise.all(group.map((i) => runMember(i, stagePrior)));
+          ? [await runMember(group[0], stagePrior, stageBriefs)]
+          : await Promise.all(
+              group.map((i) => runMember(i, stagePrior, stageBriefs)),
+            );
 
       // Reconcile in the group's declared order so parallelism never changes
       // the resulting transcript.
@@ -1098,9 +1202,16 @@ export async function runGeneration(
           errorMessage: outcome.errorMessage,
         });
         // Keep every non-empty contribution except an aborted one (its partial
-        // text is discarded, mirroring the original sequential behaviour).
+        // text is discarded, mirroring the original sequential behaviour). Parse
+        // and STRIP this member's handoff brief before appending, so the comment
+        // never reaches the deliverable or the archive; accumulate the parsed
+        // brief so the next stage gets a clean "Handoff so far" recap.
         if (outcome.text.trim() && outcome.status !== "aborted") {
-          priorWork += `\n\n## ${memberTitles[i]}\n\n${outcome.text.trim()}`;
+          const { brief, stripped } = extractHandoffBrief(outcome.text);
+          if (stripped) {
+            priorWork += `\n\n## ${memberTitles[i]}\n\n${stripped}`;
+          }
+          if (brief) handoffBriefs.push({ ...brief, agent: memberTitles[i] });
         }
         if (outcome.status !== "completed") runStatus = "partial";
       }
@@ -1274,10 +1385,38 @@ export async function runGeneration(
       return status === "aborted" ? "" : text;
     };
 
+    // Source the QC-gate flags from the accumulated handoff briefs, falling
+    // back to routing's resolution when a brief is silent. A brief can only
+    // REFINE the up-front plan, never invent a step that was never announced:
+    //  - clientFacing: a brief may DOWNGRADE (skip the planned Humanizer), but
+    //    cannot synthesise a Humanizer pass that was never planned.
+    //  - touchesLiveAccount: a brief may UPGRADE (surface the live-account note
+    //    after the team runs), but the OR-merge never downgrades the signal.
+    const briefFlags = resolveBriefGateFlags(handoffBriefs);
+    const effectiveClientFacing =
+      briefFlags.clientFacing ?? clientFacing;
+    const effectiveTouchesLiveAccount =
+      briefFlags.touchesLiveAccount === true || touchesLiveAccount;
+
+    // If the team's briefs reveal the work touches a live account but routing
+    // did not flag it up front, surface the one-time note now (best-effort).
+    if (
+      effectiveTouchesLiveAccount &&
+      !touchesLiveAccount &&
+      !isGone()
+    ) {
+      send({
+        type: "deliverable_note",
+        message:
+          "Deze opdracht raakt live uitgaven, tracking of accounts. Het team levert enkel voorstellen; een mens zet niets automatisch live.",
+      });
+    }
+
     let humanizerRan = false;
     if (qcEnabled) {
       if (
         humanizerWillRun &&
+        effectiveClientFacing &&
         humanizerIndex !== undefined &&
         !isGone() &&
         priorWork.trim()

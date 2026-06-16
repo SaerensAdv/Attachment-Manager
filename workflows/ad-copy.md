@@ -1,4 +1,5 @@
 <!-- deliverable: google-ads-csv -->
+<!-- fanout: 3 -->
 
 # Workflow: Google Ads Ad Copy (Search RSA -> CSV)
 

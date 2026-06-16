@@ -1,3 +1,5 @@
+<!-- fanout: 3 -->
+
 # Workflow: Ad Creative Production
 
 ## Goal

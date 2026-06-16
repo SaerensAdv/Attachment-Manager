@@ -16,13 +16,19 @@ const h = vi.hoisted(() => ({
   streamImpl: ((..._args: unknown[]) => {
     throw new Error("streamImpl not set");
   }) as (...args: unknown[]) => unknown,
+  // Non-streaming completions (e.g. the fan-out best-of selection pass). Tests
+  // that exercise fan-out install the WINNER/RATIONALE response they want here.
+  createImpl: (async (..._args: unknown[]) => ({
+    content: [{ type: "text", text: "" }],
+    usage: { input_tokens: 1, output_tokens: 1 },
+  })) as (...args: unknown[]) => Promise<unknown>,
 }));
 
 vi.mock("@workspace/integrations-anthropic-ai", () => ({
   anthropic: {
     messages: {
       stream: (...args: unknown[]) => h.streamImpl(...args),
-      create: vi.fn(),
+      create: (...args: unknown[]) => h.createImpl(...args),
     },
   },
 }));
@@ -178,6 +184,10 @@ beforeEach(() => {
   clientStoreMocks.dbClientIdFromPath.mockReset();
   clientStoreMocks.dbClientIdFromPath.mockReturnValue(null);
   sendEmailMock.mockClear();
+  h.createImpl = async () => ({
+    content: [{ type: "text", text: "" }],
+    usage: { input_tokens: 1, output_tokens: 1 },
+  });
 });
 
 describe("runGeneration — run archival", () => {
@@ -748,6 +758,201 @@ describe("stripHumanizerMeta", () => {
   it("returns plain prose unchanged when there is no QC structure", () => {
     const md = "Hi Axel,\n\nAlles is in orde.\n\nGroeten,\nLore";
     expect(stripHumanizerMeta(md)).toBe(md);
+  });
+
+  describe("runGeneration — fan-out with selection", () => {
+    // A workflow doc carrying the opt-in marker; ctx.fanout is parsed from it.
+    const fanoutWorkflow = (n: number) => ({
+      path: "workflows/ad-copy.md",
+      title: "Ad Copy",
+      content: `<!-- fanout: ${n} -->\n\n# Ad Copy`,
+    });
+
+    it("runs the lead N times in parallel and forwards only the winner", async () => {
+      // Each successive lead candidate gets a distinct text; the selection pass
+      // (create) picks variant 2.
+      h.streamImpl = streamSequence([
+        "Candidate angle one.",
+        "Candidate angle two.",
+        "Candidate angle three.",
+      ]);
+      let createCalls = 0;
+      h.createImpl = async () => {
+        createCalls += 1;
+        return {
+          content: [
+            {
+              type: "text",
+              text: "WINNER: 2\nRATIONALE: Variant 2 heeft de sterkste hook en blijft policy-conform.",
+            },
+          ],
+          usage: { input_tokens: 5, output_tokens: 5 },
+        };
+      };
+
+      const { sink, promise } = run(
+        makeCtx({
+          teamPaths: ["agents/ad-copywriter.md"],
+          memberTitles: ["Ad Copywriter"],
+          workflowPath: "workflows/ad-copy.md",
+          workflowDoc: fanoutWorkflow(3) as never,
+          fanout: 3,
+        }),
+      );
+      const result = await promise;
+
+      expect(result.status).toBe("completed");
+      // The selection (best-of) ranking ran exactly once over the candidates.
+      expect(createCalls).toBe(1);
+
+      // Only the winning candidate's text is archived; the losers are gone.
+      const saved = saveGenerationMock.mock.calls[0][0];
+      const markdown = String(saved.finalMarkdown);
+      expect(markdown).toContain("Candidate angle two.");
+      expect(markdown).not.toContain("Candidate angle one.");
+      expect(markdown).not.toContain("Candidate angle three.");
+
+      // The rationale is recorded in the archive under its own heading.
+      expect(markdown).toContain("## Fan-out — interne selectie");
+      expect(markdown).toContain("sterkste hook");
+
+      // The winner is streamed to the client under the lead index.
+      expect(sink).toHaveBeenCalledWith(
+        expect.objectContaining({ content: "Candidate angle two.", index: 0 }),
+      );
+    });
+
+    it("records the selection as its own audit step attributed to the workflow", async () => {
+      h.streamImpl = streamSequence(["One.", "Two."]);
+      h.createImpl = async () => ({
+        content: [{ type: "text", text: "WINNER: 1\nRATIONALE: Beste keuze." }],
+        usage: { input_tokens: 3, output_tokens: 3 },
+      });
+
+      const { promise } = run(
+        makeCtx({
+          teamPaths: ["agents/ad-copywriter.md"],
+          memberTitles: ["Ad Copywriter"],
+          workflowPath: "workflows/ad-copy.md",
+          fanout: 2,
+        }),
+      );
+      await promise;
+
+      const steps = saveGenerationStepsMock.mock.calls[0][0] as Array<{
+        role: string;
+        status: string;
+        agentPath: string;
+        stepOrder: number;
+      }>;
+      const selection = steps.find((s) => s.role === "selection");
+      expect(selection).toBeTruthy();
+      // Attributed to the workflow (not an agent) so it never pollutes agent KPIs.
+      expect(selection?.agentPath).toBe("workflows/ad-copy.md");
+      // Step orders are unique across the whole run (no collision with the lead).
+      const orders = steps.map((s) => s.stepOrder);
+      expect(new Set(orders).size).toBe(orders.length);
+    });
+
+    it("skips the selection model call when only one candidate is usable", async () => {
+      // First candidate yields text; the rest yield empty (no usable text).
+      let call = 0;
+      h.streamImpl = () => {
+        const text = call === 0 ? "Only usable candidate." : "";
+        call += 1;
+        return {
+          async *[Symbol.asyncIterator]() {
+            if (text) {
+              yield {
+                type: "content_block_delta",
+                delta: { type: "text_delta", text },
+              };
+            }
+          },
+          finalMessage: async () => ({
+            stop_reason: "end_turn",
+            usage: { input_tokens: 1, output_tokens: 1 },
+          }),
+        };
+      };
+      let createCalls = 0;
+      h.createImpl = async () => {
+        createCalls += 1;
+        return { content: [{ type: "text", text: "" }], usage: {} };
+      };
+
+      const { promise } = run(
+        makeCtx({
+          teamPaths: ["agents/ad-copywriter.md"],
+          memberTitles: ["Ad Copywriter"],
+          workflowPath: "workflows/ad-copy.md",
+          fanout: 3,
+        }),
+      );
+      const result = await promise;
+
+      expect(result.status).toBe("completed");
+      // No ranking needed for a single usable candidate.
+      expect(createCalls).toBe(0);
+      const markdown = String(saveGenerationMock.mock.calls[0][0].finalMarkdown);
+      expect(markdown).toContain("Only usable candidate.");
+    });
+
+    it("falls back to the first usable candidate when selection fails (best-effort)", async () => {
+      h.streamImpl = streamSequence(["First angle.", "Second angle."]);
+      h.createImpl = async () => {
+        throw new Error("selector model exploded");
+      };
+
+      const { promise } = run(
+        makeCtx({
+          teamPaths: ["agents/ad-copywriter.md"],
+          memberTitles: ["Ad Copywriter"],
+          workflowPath: "workflows/ad-copy.md",
+          fanout: 2,
+        }),
+      );
+      const result = await promise;
+
+      // A selection failure degrades the run to partial but never discards work.
+      expect(result.status).toBe("partial");
+      const markdown = String(saveGenerationMock.mock.calls[0][0].finalMarkdown);
+      // The first usable candidate is forwarded.
+      expect(markdown).toContain("First angle.");
+      expect(markdown).not.toContain("Second angle.");
+    });
+
+    it("leaves a non-opted workflow completely unchanged (single lead run, no selection)", async () => {
+      h.streamImpl = streamSequence(["Single lead output."]);
+      let createCalls = 0;
+      h.createImpl = async () => {
+        createCalls += 1;
+        return { content: [{ type: "text", text: "" }], usage: {} };
+      };
+
+      const { sink, promise } = run(
+        makeCtx({
+          teamPaths: ["agents/ad-copywriter.md"],
+          memberTitles: ["Ad Copywriter"],
+          workflowPath: "workflows/ad-copy.md",
+          // No fanout marker / fanout 0 ⇒ behaves exactly as before.
+        }),
+      );
+      const result = await promise;
+
+      expect(result.status).toBe("completed");
+      expect(createCalls).toBe(0);
+      const steps = saveGenerationStepsMock.mock.calls[0][0] as Array<{
+        role: string;
+      }>;
+      expect(steps.some((s) => s.role === "selection")).toBe(false);
+      const markdown = String(saveGenerationMock.mock.calls[0][0].finalMarkdown);
+      expect(markdown).toContain("Single lead output.");
+      expect(markdown).not.toContain("## Fan-out — interne selectie");
+      expect(sink).toHaveBeenCalledWith(
+        expect.objectContaining({ content: "Single lead output.", index: 0 }),
+      );
+    });
   });
 
   it("only triggers on standalone meta-label lines, not inline mentions", () => {

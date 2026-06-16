@@ -421,6 +421,13 @@ export interface GenerationContext {
   qcEnabled: boolean;
   /** The work touches live spend, tracking or accounts (human-approval note). */
   touchesLiveAccount: boolean;
+  /**
+   * Fan-out-with-selection: when >= 2, the LEAD agent (index 0) runs this many
+   * times with diversity seeds and a best-of selection pass picks the strongest
+   * candidate before its output flows downstream. 0 (the default) disables
+   * fan-out — the lead runs once, exactly as every non-opted workflow does.
+   */
+  fanout: number;
 }
 
 export type ResolveResult =
@@ -513,6 +520,15 @@ export async function resolveGenerationContext(
       : deliverableKind === null || deliverableKind === "markdown";
   const qcEnabled = b.qcEnabled === false ? false : true;
   const touchesLiveAccount = b.touchesLiveAccount === true;
+  // Fan-out is opt-in via the workflow marker; an explicit numeric body value
+  // overrides it (and can switch it off with a value below 2), always clamped to
+  // the safety cap so a request can never spawn an unbounded number of runs.
+  const fanout =
+    typeof b.fanout === "number" && Number.isFinite(b.fanout)
+      ? b.fanout < 2
+        ? 0
+        : Math.min(Math.floor(b.fanout), MAX_FANOUT)
+      : parseFanout(workflowDoc);
 
   return {
     ok: true,
@@ -532,6 +548,7 @@ export async function resolveGenerationContext(
       clientFacing,
       qcEnabled,
       touchesLiveAccount,
+      fanout,
     },
   };
 }
@@ -568,6 +585,45 @@ export function parseStages(raw: unknown, teamPaths: string[]): number[][] {
   if (used.size !== teamPaths.length) return sequential;
   return groups;
 }
+
+/** Upper bound on fan-out variations — a hard safety cap on parallel LLM calls. */
+export const MAX_FANOUT = 5;
+
+/**
+ * Parse a workflow's opt-in fan-out marker (`<!-- fanout: 3 -->`). Fan-out runs
+ * the LEAD creative agent N times with diversity, then a selection pass picks the
+ * strongest candidate. Returns 0 (off) for any workflow without the marker, a
+ * value below 2, or a non-numeric/garbled value, so every non-opted workflow
+ * behaves exactly as before. Values above the safety cap are clamped.
+ */
+export function parseFanout(workflow: DocFile | null): number {
+  if (!workflow) return 0;
+  const m = workflow.content.match(/<!--\s*fanout:\s*(\d+)\s*-->/i);
+  if (!m) return 0;
+  const n = Number.parseInt(m[1], 10);
+  if (!Number.isFinite(n) || n < 2) return 0;
+  return Math.min(n, MAX_FANOUT);
+}
+
+/**
+ * Per-candidate diversity directives for a fan-out run. Each candidate gets one
+ * distinct angle so the N variations are genuinely different (not reworded
+ * twins). Cycled by index, so any fan-out size up to MAX_FANOUT is covered.
+ */
+const FANOUT_SEEDS = [
+  "Invalshoek A — kies de meest voor de hand liggende, heldere insteek: het kernvoordeel en een duidelijke call-to-action, zakelijk en direct.",
+  "Invalshoek B — kies bewust een ANDERE hoek dan de meest voor de hand liggende: een ander voordeel, een andere doelgroep-hoek of een ander koopmotief.",
+  "Invalshoek C — durf een verrassende, creatievere insteek (sterke hook, ongewone opening) die nog steeds on-brand en policy-conform blijft.",
+  "Invalshoek D — een rationele, bewijs-gedreven insteek: concrete voordelen, cijfers/feiten waar onderbouwd, en CTA-helderheid.",
+  "Invalshoek E — een emotionele, verhalende insteek die inspeelt op de situatie van de doelgroep.",
+];
+
+/** Shared instruction prepended to every fan-out candidate's diversity seed. */
+const FANOUT_DIRECTIVE =
+  "Dit is één van meerdere parallelle varianten. Lever EXACT ÉÉN volledige, " +
+  "zelfstandige versie van de gevraagde copy/creatives volgens onderstaande " +
+  "invalshoek. Verwijs niet naar andere varianten. Respecteer alle platform- en " +
+  "merkregels onverkort.";
 
 interface StepRecord {
   agentPath: string;
@@ -610,6 +666,8 @@ export async function runGeneration(
     qcEnabled,
     touchesLiveAccount,
   } = ctx;
+  // Tolerate an older/partial context shape (e.g. tests) that omits fanout.
+  const fanout = ctx.fanout ?? 0;
 
   const isGone = () => signal.aborted;
 
@@ -678,6 +736,13 @@ export async function runGeneration(
   // Live SEARCH ad-group structure captured at run start for the ad-copy CSV.
   let adCopyLiveData: string | null = null;
   let negativesLiveData: string | null = null;
+  // Fan-out: the written rationale for which candidate won, appended to the
+  // archived markdown at the very end (after the deliverable) for transparency.
+  let fanoutNote = "";
+  // Step-order cursor for any steps recorded DURING the team loop that sit after
+  // the team members (the fan-out selection pass). The QC/deliverable steps
+  // continue from here so the audit trail never collides or double-numbers.
+  let postTeamStepOrder = teamPaths.length;
 
   const persistRun = async (): Promise<boolean> => {
     if (persisted) return true;
@@ -1168,6 +1233,342 @@ export async function runGeneration(
       };
     };
 
+    // Fan-out-with-selection for the LEAD (index 0). Runs the lead `fanout`
+    // times in parallel against the SAME prior-work snapshot — each candidate
+    // gets a distinct diversity seed and never sees another candidate, so the
+    // variations are genuinely different and isolated. A best-of selection pass
+    // then ranks them against the brief + platform policy and forwards ONLY the
+    // winner downstream (its text becomes the lead's contribution). The losing
+    // candidates are discarded and never reach the deliverable or the archive;
+    // the written rationale is captured for transparency. Mirrors runMember's
+    // outcome contract (fatal contextFailed/streamFailed, partial on abort) so
+    // the stage reconcile + archival logic is identical to a normal lead run.
+    const runLeadFanout = async (
+      stagePrior: string,
+      stageBriefs: HandoffBrief[],
+    ): Promise<MemberOutcome> => {
+      const i = 0;
+      const path = teamPaths[i];
+      const isFinal = i === teamPaths.length - 1;
+      const startedAt = Date.now();
+
+      // Build the lead's system prompt ONCE; every candidate shares it and
+      // differs only by the diversity seed on the user turn.
+      let systemPrompt: string;
+      try {
+        ({ systemPrompt } = await buildGenerationContext({
+          agentPath: path,
+          clientPath,
+          workflowPath,
+          extraDocs: clientDocs,
+          team: {
+            members: memberTitles,
+            position: i,
+            priorWork: stagePrior,
+            isFinal,
+            handoffBriefs: stageBriefs,
+          },
+          suppressApproval: reviewerWillRun,
+        }));
+      } catch (err) {
+        return {
+          index: i,
+          text: "",
+          status: "failed",
+          truncated: false,
+          durationMs: Date.now() - startedAt,
+          inputTokens: null,
+          outputTokens: null,
+          errorMessage: (err instanceof Error ? err.message : String(err)).slice(0, 500),
+          contextFailed: true,
+          streamFailed: false,
+        };
+      }
+
+      send({
+        type: "agent_start",
+        index: i,
+        total: grandTotal,
+        agent: { path, title: memberTitles[i] },
+        role: "lead",
+      });
+      send({
+        type: "deliverable_note",
+        message: `Fan-out: ${fanout} varianten worden parallel gegenereerd; de sterkste wordt automatisch gekozen.`,
+      });
+
+      interface Candidate {
+        variant: number;
+        text: string;
+        status: "completed" | "truncated" | "aborted" | "failed";
+        truncated: boolean;
+        inputTokens: number | null;
+        outputTokens: number | null;
+        errorMessage: string | null;
+      }
+
+      // One isolated candidate run. Internal — its deltas are NOT streamed to the
+      // UI (they would interleave under one index); only the winner is shown.
+      const generateCandidate = async (variant: number): Promise<Candidate> => {
+        const seed = FANOUT_SEEDS[variant % FANOUT_SEEDS.length];
+        let text = "";
+        let truncated = false;
+        let inputTokens: number | null = null;
+        let outputTokens: number | null = null;
+        try {
+          const stream = anthropic.messages.stream(
+            {
+              model: "claude-sonnet-4-6",
+              max_tokens: 8192,
+              system: systemPrompt,
+              messages: [
+                {
+                  role: "user",
+                  content: `${request}\n\n---\n\n${FANOUT_DIRECTIVE}\n\n${seed}`,
+                },
+              ],
+            },
+            { signal },
+          );
+          for await (const event of stream) {
+            if (isGone()) break;
+            if (
+              event.type === "content_block_delta" &&
+              event.delta.type === "text_delta"
+            ) {
+              text += event.delta.text;
+            }
+          }
+          if (!isGone()) {
+            const finalMsg = await stream.finalMessage();
+            truncated = finalMsg.stop_reason === "max_tokens";
+            inputTokens = finalMsg.usage?.input_tokens ?? null;
+            outputTokens = finalMsg.usage?.output_tokens ?? null;
+          }
+        } catch (streamErr) {
+          const isAbort =
+            streamErr instanceof Error && streamErr.name === "AbortError";
+          if (!isAbort && !isGone()) {
+            return {
+              variant,
+              text,
+              status: "failed",
+              truncated: false,
+              inputTokens,
+              outputTokens,
+              errorMessage: (streamErr instanceof Error
+                ? streamErr.message
+                : String(streamErr)
+              ).slice(0, 500),
+            };
+          }
+        }
+        const aborted = isGone();
+        return {
+          variant,
+          text,
+          status: aborted ? "aborted" : truncated ? "truncated" : "completed",
+          truncated,
+          inputTokens,
+          outputTokens,
+          errorMessage: null,
+        };
+      };
+
+      const candidates = await Promise.all(
+        Array.from({ length: fanout }, (_, v) => generateCandidate(v)),
+      );
+
+      const sumTok = (pick: (c: Candidate) => number | null): number | null => {
+        const total = candidates.reduce((a, c) => a + (pick(c) ?? 0), 0);
+        return total || null;
+      };
+
+      // A user abort during candidate generation: contribute nothing, mirroring
+      // runMember's aborted outcome (partial text is discarded).
+      if (isGone()) {
+        return {
+          index: i,
+          text: "",
+          status: "aborted",
+          truncated: false,
+          durationMs: Date.now() - startedAt,
+          inputTokens: sumTok((c) => c.inputTokens),
+          outputTokens: sumTok((c) => c.outputTokens),
+          errorMessage: null,
+          contextFailed: false,
+          streamFailed: false,
+        };
+      }
+
+      const usable = candidates.filter(
+        (c) => c.text.trim() && c.status !== "aborted" && c.status !== "failed",
+      );
+
+      // Every candidate failed with a real error: fatal, like a lead stream that
+      // blew up — the outer loop archives + reports it.
+      if (usable.length === 0) {
+        const firstFailed = candidates.find((c) => c.status === "failed");
+        return {
+          index: i,
+          text: candidates.find((c) => c.text.trim())?.text ?? "",
+          status: "failed",
+          truncated: false,
+          durationMs: Date.now() - startedAt,
+          inputTokens: sumTok((c) => c.inputTokens),
+          outputTokens: sumTok((c) => c.outputTokens),
+          errorMessage:
+            firstFailed?.errorMessage ?? "Geen bruikbare fan-out variant.",
+          contextFailed: false,
+          streamFailed: !!firstFailed,
+        };
+      }
+
+      // Selection pass: pick the strongest usable candidate. With a single
+      // usable candidate there is nothing to rank, so skip the model call.
+      let winner = usable[0];
+      let rationale = "";
+      let selStatus = "completed";
+      let selIn: number | null = null;
+      let selOut: number | null = null;
+      const selStartedAt = Date.now();
+
+      if (usable.length === 1) {
+        rationale =
+          "Slechts één bruikbare variant na de fan-out; die is automatisch gekozen.";
+      } else {
+        const list = usable
+          .map(
+            (c, n) =>
+              `### Variant ${n + 1}\n\n${c.text.trim()}`,
+          )
+          .join("\n\n");
+        const selSystem = [
+          "Je bent de beste-van selector van het AI-team van Saerens Advertising. Je krijgt meerdere kandidaat-versies van dezelfde creatieve opdracht (advertentiecopy of creatives). Je taak: kies de ÉNE sterkste variant.",
+          "",
+          "Beoordeel elke variant op: aansluiting bij de brief en de klantcontext, onderscheidende en overtuigende invalshoek, merkstem, en naleving van het advertentiebeleid (Google Ads / Meta): geen onverifieerbare superlatieven, geen verboden claims, respecteer karakterlimieten, geen overdreven leestekens of misleiding.",
+          "",
+          "Antwoord in EXACT dit formaat, niets anders:",
+          "WINNER: <nummer van de gekozen variant>",
+          "RATIONALE: <2 tot 4 zinnen die uitleggen waarom deze variant wint en kort waarom de anderen afvallen>",
+        ].join("\n");
+        const selUser = [
+          "## Brief / oorspronkelijke opdracht",
+          request.trim(),
+          "",
+          "## Klantcontext",
+          clientContent.trim() || "(geen aanvullende klantcontext)",
+          "",
+          `## Kandidaten (${usable.length})`,
+          list,
+          "",
+          `Kies de sterkste variant (1 t.e.m. ${usable.length}).`,
+        ].join("\n");
+        try {
+          const selMsg = await anthropic.messages.create(
+            {
+              model: "claude-sonnet-4-6",
+              max_tokens: 1024,
+              system: selSystem,
+              messages: [{ role: "user", content: selUser }],
+            },
+            { signal },
+          );
+          const selText = selMsg.content
+            .map((b) => (b.type === "text" ? b.text : ""))
+            .join("");
+          const wm = selText.match(/WINNER:\s*(\d+)/i);
+          const rm = selText.match(/RATIONALE:\s*([\s\S]+)/i);
+          const picked = wm ? Number.parseInt(wm[1], 10) - 1 : -1;
+          if (picked >= 0 && picked < usable.length) {
+            winner = usable[picked];
+            rationale =
+              rm?.[1]?.trim() ||
+              selText.trim() ||
+              "Gekozen door de beste-van selector.";
+          } else {
+            rationale =
+              "De selector gaf geen geldige keuze terug; de eerste bruikbare variant is gekozen.";
+            selStatus = "partial";
+          }
+          selIn = selMsg.usage?.input_tokens ?? null;
+          selOut = selMsg.usage?.output_tokens ?? null;
+        } catch (selErr) {
+          if (isGone() || (selErr instanceof Error && selErr.name === "AbortError")) {
+            // Aborted mid-selection: keep the first usable candidate, no note.
+            selStatus = "aborted";
+            rationale = "";
+          } else {
+            // Best-effort: a selection failure never sinks the run — fall back
+            // to the first usable candidate and flag the run partial.
+            selStatus = "failed";
+            rationale =
+              "De beste-van selectie kon niet voltooid worden; de eerste bruikbare variant is gekozen. " +
+              (selErr instanceof Error ? selErr.message : String(selErr)).slice(0, 200);
+          }
+        }
+      }
+
+      const winnerLabel = usable.indexOf(winner) + 1;
+
+      // Record the selection as its own audit-trail step (cost + outcome). It is
+      // attributed to the workflow (not an agent) so it never pollutes agent KPIs.
+      steps.push({
+        agentPath: workflowPath,
+        agentTitle: `Beste-van selectie (fan-out, ${usable.length} varianten)`,
+        stepOrder: postTeamStepOrder++,
+        role: "selection",
+        status: selStatus,
+        durationMs: Date.now() - selStartedAt,
+        inputTokens: selIn,
+        outputTokens: selOut,
+        charCount: rationale.length || null,
+        errorMessage: null,
+      });
+      if (selStatus !== "completed" && selStatus !== "aborted") {
+        runStatus = "partial";
+      }
+
+      // Capture the rationale for the archived markdown + tell the user live.
+      if (rationale.trim()) {
+        fanoutNote =
+          `${fanout} varianten gegenereerd; variant ${winnerLabel} van ${usable.length} bruikbare gekozen.\n\n${rationale.trim()}`;
+        send({
+          type: "deliverable_note",
+          message: `Fan-out: variant ${winnerLabel} gekozen. ${rationale.trim()}`.slice(0, 400),
+        });
+      }
+
+      // Stream the winner's text under the lead index so the UI shows the
+      // chosen output, then close the lead step.
+      send({ content: winner.text, index: i });
+      send({ type: "agent_done", index: i, truncated: winner.truncated });
+
+      return {
+        index: i,
+        text: winner.text,
+        status: winner.status,
+        truncated: winner.truncated,
+        durationMs: Date.now() - startedAt,
+        inputTokens: sumTok((c) => c.inputTokens),
+        outputTokens: sumTok((c) => c.outputTokens),
+        errorMessage: null,
+        contextFailed: false,
+        streamFailed: false,
+      };
+    };
+
+    // Dispatch one team index: the lead uses fan-out-with-selection when the
+    // workflow opted in; everyone else runs once as before.
+    const runIndex = (
+      idx: number,
+      prior: string,
+      briefs: HandoffBrief[],
+    ): Promise<MemberOutcome> =>
+      idx === 0 && fanout >= 2
+        ? runLeadFanout(prior, briefs)
+        : runMember(idx, prior, briefs);
+
     // Execute the plan stage by stage. Members within a stage are genuinely
     // independent, so they run in parallel against the SAME prior-work snapshot
     // and their outputs are appended in stage order for a stable transcript.
@@ -1180,9 +1581,9 @@ export async function runGeneration(
       const stageBriefs = handoffBriefs.slice();
       const outcomes =
         group.length === 1
-          ? [await runMember(group[0], stagePrior, stageBriefs)]
+          ? [await runIndex(group[0], stagePrior, stageBriefs)]
           : await Promise.all(
-              group.map((i) => runMember(i, stagePrior, stageBriefs)),
+              group.map((i) => runIndex(i, stagePrior, stageBriefs)),
             );
 
       // Reconcile in the group's declared order so parallelism never changes
@@ -1277,7 +1678,7 @@ export async function runGeneration(
     //
     // Steps after the team are numbered with a running counter so the audit
     // trail stays ordered as QC inserts steps ahead of the deliverable.
-    let nextStepOrder = teamPaths.length;
+    let nextStepOrder = postTeamStepOrder;
     let reviewerText = "";
 
     // Run one QC agent over a fixed draft. Best-effort: returns text (empty on
@@ -1802,6 +2203,12 @@ export async function runGeneration(
     // AFTER the deliverable/report so it never fed those, but is kept for audit.
     if (reviewerText.trim()) {
       priorWork += `\n\n## QA & Compliance — interne controle\n\n${reviewerText.trim()}`;
+    }
+
+    // Fan-out selection rationale: append AFTER the deliverable snapshot so it
+    // never feeds the deliverable, but the archive records why the winner won.
+    if (fanoutNote.trim()) {
+      priorWork += `\n\n## Fan-out — interne selectie\n\n${fanoutNote.trim()}`;
     }
 
     if (!isGone()) {

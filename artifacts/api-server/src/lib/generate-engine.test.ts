@@ -553,6 +553,41 @@ describe("runGeneration — handoff briefs (integration)", () => {
     expect(copy?.handoffBrief ?? null).toBeNull();
   });
 
+  it("streams each agent's parsed brief live as an agent_brief event", async () => {
+    h.streamImpl = streamSequence([
+      'Lead bijdrage.\n<!-- handoff-brief {"decisions":["Merkcampagne eerst"],"keyFacts":["Budget 1500"],"openQuestions":[],"forNext":"Schrijf advertenties","clientFacing":true,"touchesLiveAccount":false} -->',
+      "Tweede bijdrage zonder brief.",
+    ]);
+
+    const { sink, promise } = run(
+      makeCtx({
+        teamPaths: ["agents/lead.md", "agents/copy.md"],
+        memberTitles: ["Lead", "Copywriter"],
+        stages: [[0], [1]],
+      }),
+    );
+    await promise;
+
+    const briefEvents = sink.mock.calls
+      .map((c) => c[0] as Record<string, unknown>)
+      .filter((e) => e.type === "agent_brief");
+
+    // Only the agent that emitted a valid brief surfaces one live, on its index.
+    expect(briefEvents).toHaveLength(1);
+    const ev = briefEvents[0];
+    expect(ev.index).toBe(0);
+    const brief = ev.brief as {
+      decisions: string[];
+      forNext: string;
+      clientFacing: boolean;
+      agent: string;
+    };
+    expect(brief.decisions).toEqual(["Merkcampagne eerst"]);
+    expect(brief.forNext).toBe("Schrijf advertenties");
+    expect(brief.clientFacing).toBe(true);
+    expect(brief.agent).toBe("Lead");
+  });
+
   it("skips the planned Humanizer when a brief downgrades clientFacing", async () => {
     // Routing planned client-facing (so the Humanizer IS in the plan), but the
     // team's brief reveals the output is internal — the Humanizer is skipped at

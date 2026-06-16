@@ -19,6 +19,16 @@ export interface AgentStartInfo {
   role: "lead" | "member" | "quality";
 }
 
+/** An agent's parsed internal handoff brief, surfaced live as a step completes. */
+export interface AgentBrief {
+  decisions: string[];
+  keyFacts: string[];
+  openQuestions: string[];
+  forNext: string | null;
+  clientFacing: boolean | null;
+  touchesLiveAccount: boolean | null;
+}
+
 export interface PlanMember {
   index: number;
   path: string;
@@ -58,6 +68,8 @@ export interface TeamStreamHandlers {
   onAgentStart: (info: AgentStartInfo) => void;
   onDelta: (index: number, text: string) => void;
   onAgentDone: (index: number, truncated: boolean) => void;
+  /** Fired when an agent's parsed handoff brief becomes available mid-run. */
+  onAgentBrief?: (index: number, brief: AgentBrief) => void;
   onDeliverableStart?: (meta: DeliverableMeta) => void;
   onDeliverableDelta?: (text: string) => void;
   onDeliverableDone?: (truncated: boolean) => void;
@@ -93,6 +105,7 @@ interface StreamEvent {
     | "plan"
     | "agent_start"
     | "agent_done"
+    | "agent_brief"
     | "deliverable_start"
     | "deliverable_delta"
     | "deliverable_done"
@@ -119,6 +132,7 @@ interface StreamEvent {
   recipient?: string;
   clientReport?: string;
   reviewerVerdict?: string | null;
+  brief?: Partial<AgentBrief> & { agent?: string };
 }
 
 /**
@@ -136,6 +150,7 @@ export async function streamGenerateTeam(
     onAgentStart,
     onDelta,
     onAgentDone,
+    onAgentBrief,
     onDeliverableStart,
     onDeliverableDelta,
     onDeliverableDone,
@@ -235,6 +250,24 @@ export async function streamGenerateTeam(
           }
           if (parsed.type === "agent_done") {
             onAgentDone(parsed.index ?? currentIndex, parsed.truncated === true);
+            continue;
+          }
+          if (parsed.type === "agent_brief" && parsed.brief) {
+            const b = parsed.brief;
+            onAgentBrief?.(parsed.index ?? currentIndex, {
+              decisions: Array.isArray(b.decisions) ? b.decisions : [],
+              keyFacts: Array.isArray(b.keyFacts) ? b.keyFacts : [],
+              openQuestions: Array.isArray(b.openQuestions)
+                ? b.openQuestions
+                : [],
+              forNext: typeof b.forNext === "string" ? b.forNext : null,
+              clientFacing:
+                typeof b.clientFacing === "boolean" ? b.clientFacing : null,
+              touchesLiveAccount:
+                typeof b.touchesLiveAccount === "boolean"
+                  ? b.touchesLiveAccount
+                  : null,
+            });
             continue;
           }
           if (parsed.type === "deliverable_start" && parsed.deliverable) {

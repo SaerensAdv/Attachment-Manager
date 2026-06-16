@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/select";
 import type { GenerationController } from "@/hooks/useGeneration";
 import ApprovalPanel from "@/components/ApprovalPanel";
+import { HandoffBriefPanel } from "@/components/HandoffBrief";
 
 const selectTriggerClass =
   "h-10 rounded-none border-foreground bg-card font-['Inter'] text-sm focus:ring-0 focus:ring-offset-0 focus:border-accent shadow-none";
@@ -644,6 +645,7 @@ export default function GenerationPanel({
                           </span>
                         </p>
                       )}
+                      {seg.brief && <HandoffBriefPanel brief={seg.brief} />}
                     </div>
                   );
                 })}

@@ -10,6 +10,7 @@ import {
   type DeliverableMeta,
   type PlanInfo,
   type ApprovalRequiredInfo,
+  type AgentBrief,
 } from "@/lib/generate";
 import { routeRequest, type RoutingResult } from "@/lib/route";
 import { fetchIntake, type IntakeField } from "@/lib/intake";
@@ -29,6 +30,8 @@ export interface AgentSegment {
   truncated: boolean;
   /** Parallel-stage index (members in the same stage run together). */
   stage?: number;
+  /** The agent's parsed internal handoff brief, surfaced as its step completes. */
+  brief?: AgentBrief;
 }
 
 export type DeliverableStatus = "idle" | "working" | "done" | "error";
@@ -423,6 +426,10 @@ export function useGeneration(
             prev.map((s, i) =>
               i === index ? { ...s, status: "done", truncated } : s,
             ),
+          ),
+        onAgentBrief: (index, brief) =>
+          setSegments((prev) =>
+            prev.map((s, i) => (i === index ? { ...s, brief } : s)),
           ),
         onDeliverableStart: (meta) => {
           setDeliverable(meta);

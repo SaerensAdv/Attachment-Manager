@@ -1629,6 +1629,10 @@ export async function runGeneration(
           errorMessage: outcome.errorMessage,
           handoffBrief: stepBrief ? JSON.stringify(stepBrief) : null,
         });
+        // Surface this member's parsed handoff brief live, so a reviewer watching
+        // the run sees the same "Interne overdracht" panel + flags that the
+        // archive shows, the moment each step's brief is reconciled.
+        if (stepBrief) send({ type: "agent_brief", index: i, brief: stepBrief });
         // Keep every non-empty contribution except an aborted one (its partial
         // text is discarded, mirroring the original sequential behaviour). The
         // brief was already parsed + stripped above; accumulate it so the next

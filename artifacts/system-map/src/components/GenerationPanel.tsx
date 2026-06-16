@@ -102,6 +102,7 @@ export default function GenerationPanel({
     pendingGenerationId,
     approvalDraft,
     regenerateWithNotes,
+    fanoutCandidates,
     resetFlow,
   } = gen;
 
@@ -711,6 +712,54 @@ export default function GenerationPanel({
                   );
                 })}
               </div>
+
+              {/* Fan-out: the creative variations + which one won and why */}
+              {fanoutCandidates && fanoutCandidates.candidates.length > 0 && (
+                <div className="mt-8" data-testid="fanout-panel">
+                  <div className="mb-3 flex items-center gap-3 border-b-2 border-foreground pb-2">
+                    <h3 className="font-['Space_Mono'] text-xs font-bold uppercase tracking-widest text-foreground">
+                      Creatieve varianten ({fanoutCandidates.candidates.length})
+                    </h3>
+                    <span className="ml-auto shrink-0 font-['Space_Mono'] text-[10px] uppercase tracking-widest text-muted-foreground">
+                      Beste-van selectie
+                    </span>
+                  </div>
+                  {fanoutCandidates.rationale && (
+                    <p className="mb-4 border-l-2 border-accent bg-accent/5 px-3 py-2 font-['Inter'] text-xs italic text-foreground">
+                      {fanoutCandidates.rationale}
+                    </p>
+                  )}
+                  <div className="flex flex-col gap-4">
+                    {fanoutCandidates.candidates.map((c) => (
+                      <div
+                        key={c.variant}
+                        data-testid={`fanout-candidate-${c.variant}`}
+                        className={`border p-4 ${
+                          c.winner
+                            ? "border-green-600 bg-green-600/5 shadow-[3px_3px_0px_hsl(var(--foreground))]"
+                            : "border-foreground/20 bg-background/50"
+                        }`}
+                      >
+                        <div className="mb-2 flex items-center gap-2">
+                          <span className="font-['Space_Mono'] text-[10px] font-bold uppercase tracking-widest">
+                            Variant {c.variant}
+                          </span>
+                          {c.winner && (
+                            <span className="inline-flex items-center gap-1 border border-green-600 px-1.5 py-0.5 font-['Space_Mono'] text-[9px] uppercase tracking-widest text-green-700">
+                              <Check className="h-3 w-3" /> Gekozen
+                            </span>
+                          )}
+                        </div>
+                        <article className="prose prose-sm max-w-none font-['Inter'] prose-headings:font-['Playfair_Display'] prose-headings:font-bold prose-strong:text-foreground prose-a:text-accent">
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                            {c.text}
+                          </ReactMarkdown>
+                        </article>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Deliverable */}
               {deliverable && (

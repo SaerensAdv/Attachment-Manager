@@ -892,6 +892,56 @@ describe("stripHumanizerMeta", () => {
       expect(sink).toHaveBeenCalledWith(
         expect.objectContaining({ content: "Candidate angle two.", index: 0 }),
       );
+
+      // Every usable variation is emitted live (winner flagged) so the run view
+      // can show the alternatives, not just the auto-chosen winner.
+      const liveEvent = sink.mock.calls
+        .map((c) => c[0] as Record<string, unknown>)
+        .find((e) => e?.type === "fanout_candidates");
+      expect(liveEvent).toBeTruthy();
+      const liveCands = liveEvent!.candidates as Array<{
+        variant: number;
+        text: string;
+        winner: boolean;
+      }>;
+      expect(liveCands).toHaveLength(3);
+      expect(liveCands.map((c) => c.text)).toEqual([
+        "Candidate angle one.",
+        "Candidate angle two.",
+        "Candidate angle three.",
+      ]);
+      expect(liveCands.filter((c) => c.winner)).toHaveLength(1);
+      expect(liveCands.find((c) => c.winner)?.variant).toBe(2);
+
+      // The same snapshot is persisted on the run so the archive can show it.
+      const persisted = JSON.parse(
+        String(saved.fanoutCandidates),
+      ) as {
+        rationale: string;
+        candidates: Array<{ variant: number; text: string; winner: boolean }>;
+      };
+      expect(persisted.candidates).toHaveLength(3);
+      expect(persisted.candidates.find((c) => c.winner)?.text).toBe(
+        "Candidate angle two.",
+      );
+      expect(persisted.rationale).toContain("sterkste hook");
+    });
+
+    it("does not persist fan-out candidates for a non-opted run", async () => {
+      h.streamImpl = streamSequence(["Single lead output."]);
+      h.createImpl = async () => ({ content: [{ type: "text", text: "" }], usage: {} });
+
+      const { promise } = run(
+        makeCtx({
+          teamPaths: ["agents/ad-copywriter.md"],
+          memberTitles: ["Ad Copywriter"],
+          workflowPath: "workflows/ad-copy.md",
+        }),
+      );
+      await promise;
+
+      const saved = saveGenerationMock.mock.calls[0][0];
+      expect(saved.fanoutCandidates).toBeNull();
     });
 
     it("records the selection as its own audit step attributed to the workflow", async () => {

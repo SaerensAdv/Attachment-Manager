@@ -58,6 +58,7 @@ export * from './errorResponse';
 export * from './feedbackInput';
 export * from './feedbackInputVerdict';
 export * from './generation';
+export * from './generationFanoutCandidates';
 export * from './generationList';
 export * from './generationPendingDeliveryKind';
 export * from './generationPendingEmailReply';

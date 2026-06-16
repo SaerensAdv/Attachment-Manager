@@ -1850,7 +1850,16 @@ export const GetGenerationResponse = zod.object({
   "replyBody": zod.string()
 }).nullable().describe('For a held inbound email reply (drafted autonomously, no live session), the reviewable content so a human can approve from the archive. Identity\/threading internals are intentionally omitted.'),
   "clientFacing": zod.boolean().nullable().describe('The effective quality-gate flag this run resolved to (whether the output was client-facing text, which decides if the Humanizer ran). Internal audit signal. Null on runs that failed before the gate resolved.'),
-  "touchesLiveAccount": zod.boolean().nullable().describe('Whether this run\'s work touched live spend, bids or tracking, as resolved for the quality gate. Internal audit signal. Null on runs that failed before the gate resolved.')
+  "touchesLiveAccount": zod.boolean().nullable().describe('Whether this run\'s work touched live spend, bids or tracking, as resolved for the quality gate. Internal audit signal. Null on runs that failed before the gate resolved.'),
+  "fanoutCandidates": zod.object({
+  "rationale": zod.string(),
+  "candidates": zod.array(zod.object({
+  "variant": zod.number(),
+  "text": zod.string(),
+  "status": zod.string(),
+  "winner": zod.boolean()
+}))
+}).nullable().describe('For a fan-out lead step, every usable creative variation that was generated plus the selector\'s rationale, with the winning variant flagged. Lets the archive show the alternatives, not just the auto-chosen winner. Null for runs that did not fan out.')
 })
 
 
@@ -1906,7 +1915,16 @@ export const SetGenerationFeedbackResponse = zod.object({
   "replyBody": zod.string()
 }).nullable().describe('For a held inbound email reply (drafted autonomously, no live session), the reviewable content so a human can approve from the archive. Identity\/threading internals are intentionally omitted.'),
   "clientFacing": zod.boolean().nullable().describe('The effective quality-gate flag this run resolved to (whether the output was client-facing text, which decides if the Humanizer ran). Internal audit signal. Null on runs that failed before the gate resolved.'),
-  "touchesLiveAccount": zod.boolean().nullable().describe('Whether this run\'s work touched live spend, bids or tracking, as resolved for the quality gate. Internal audit signal. Null on runs that failed before the gate resolved.')
+  "touchesLiveAccount": zod.boolean().nullable().describe('Whether this run\'s work touched live spend, bids or tracking, as resolved for the quality gate. Internal audit signal. Null on runs that failed before the gate resolved.'),
+  "fanoutCandidates": zod.object({
+  "rationale": zod.string(),
+  "candidates": zod.array(zod.object({
+  "variant": zod.number(),
+  "text": zod.string(),
+  "status": zod.string(),
+  "winner": zod.boolean()
+}))
+}).nullable().describe('For a fan-out lead step, every usable creative variation that was generated plus the selector\'s rationale, with the winning variant flagged. Lets the archive show the alternatives, not just the auto-chosen winner. Null for runs that did not fan out.')
 })
 
 
@@ -1949,7 +1967,16 @@ export const ApproveGenerationResponse = zod.object({
   "replyBody": zod.string()
 }).nullable().describe('For a held inbound email reply (drafted autonomously, no live session), the reviewable content so a human can approve from the archive. Identity\/threading internals are intentionally omitted.'),
   "clientFacing": zod.boolean().nullable().describe('The effective quality-gate flag this run resolved to (whether the output was client-facing text, which decides if the Humanizer ran). Internal audit signal. Null on runs that failed before the gate resolved.'),
-  "touchesLiveAccount": zod.boolean().nullable().describe('Whether this run\'s work touched live spend, bids or tracking, as resolved for the quality gate. Internal audit signal. Null on runs that failed before the gate resolved.')
+  "touchesLiveAccount": zod.boolean().nullable().describe('Whether this run\'s work touched live spend, bids or tracking, as resolved for the quality gate. Internal audit signal. Null on runs that failed before the gate resolved.'),
+  "fanoutCandidates": zod.object({
+  "rationale": zod.string(),
+  "candidates": zod.array(zod.object({
+  "variant": zod.number(),
+  "text": zod.string(),
+  "status": zod.string(),
+  "winner": zod.boolean()
+}))
+}).nullable().describe('For a fan-out lead step, every usable creative variation that was generated plus the selector\'s rationale, with the winning variant flagged. Lets the archive show the alternatives, not just the auto-chosen winner. Null for runs that did not fan out.')
 })
 
 
@@ -1996,7 +2023,16 @@ export const RequestGenerationChangesResponse = zod.object({
   "replyBody": zod.string()
 }).nullable().describe('For a held inbound email reply (drafted autonomously, no live session), the reviewable content so a human can approve from the archive. Identity\/threading internals are intentionally omitted.'),
   "clientFacing": zod.boolean().nullable().describe('The effective quality-gate flag this run resolved to (whether the output was client-facing text, which decides if the Humanizer ran). Internal audit signal. Null on runs that failed before the gate resolved.'),
-  "touchesLiveAccount": zod.boolean().nullable().describe('Whether this run\'s work touched live spend, bids or tracking, as resolved for the quality gate. Internal audit signal. Null on runs that failed before the gate resolved.')
+  "touchesLiveAccount": zod.boolean().nullable().describe('Whether this run\'s work touched live spend, bids or tracking, as resolved for the quality gate. Internal audit signal. Null on runs that failed before the gate resolved.'),
+  "fanoutCandidates": zod.object({
+  "rationale": zod.string(),
+  "candidates": zod.array(zod.object({
+  "variant": zod.number(),
+  "text": zod.string(),
+  "status": zod.string(),
+  "winner": zod.boolean()
+}))
+}).nullable().describe('For a fan-out lead step, every usable creative variation that was generated plus the selector\'s rationale, with the winning variant flagged. Lets the archive show the alternatives, not just the auto-chosen winner. Null for runs that did not fan out.')
 })
 
 

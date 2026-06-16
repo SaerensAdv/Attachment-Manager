@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { GenerationFanoutCandidates } from './generationFanoutCandidates';
 import type { GenerationPendingDeliveryKind } from './generationPendingDeliveryKind';
 import type { GenerationPendingEmailReply } from './generationPendingEmailReply';
 
@@ -60,4 +61,9 @@ export interface Generation {
      * @nullable
      */
   touchesLiveAccount: boolean | null;
+  /**
+     * For a fan-out lead step, every usable creative variation that was generated plus the selector's rationale, with the winning variant flagged. Lets the archive show the alternatives, not just the auto-chosen winner. Null for runs that did not fan out.
+     * @nullable
+     */
+  fanoutCandidates: GenerationFanoutCandidates;
 }

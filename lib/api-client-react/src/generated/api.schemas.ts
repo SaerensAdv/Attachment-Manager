@@ -746,6 +746,20 @@ export type GenerationPendingEmailReply = {
   replyBody: string;
 } | null;
 
+/**
+ * For a fan-out lead step, every usable creative variation that was generated plus the selector's rationale, with the winning variant flagged. Lets the archive show the alternatives, not just the auto-chosen winner. Null for runs that did not fan out.
+ * @nullable
+ */
+export type GenerationFanoutCandidates = {
+  rationale: string;
+  candidates: {
+  variant: number;
+  text: string;
+  status: string;
+  winner: boolean;
+}[];
+} | null;
+
 export interface Generation {
   id: number;
   clientName: string;
@@ -798,6 +812,11 @@ export interface Generation {
      * @nullable
      */
   touchesLiveAccount: boolean | null;
+  /**
+     * For a fan-out lead step, every usable creative variation that was generated plus the selector's rationale, with the winning variant flagged. Lets the archive show the alternatives, not just the auto-chosen winner. Null for runs that did not fan out.
+     * @nullable
+     */
+  fanoutCandidates: GenerationFanoutCandidates;
 }
 
 export interface GenerationList {

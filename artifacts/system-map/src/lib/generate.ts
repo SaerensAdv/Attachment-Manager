@@ -88,6 +88,12 @@ export interface TeamStreamHandlers {
    * verdict so the UI can present an approve / request-changes decision.
    */
   onApprovalRequired?: (info: ApprovalRequiredInfo) => void;
+  /**
+   * A fan-out lead step finished: every usable creative variation plus the
+   * selector's rationale (winner flagged), so the run view can show the
+   * alternatives next to the auto-chosen winner.
+   */
+  onFanoutCandidates?: (info: FanoutCandidatesInfo) => void;
   onDone: (archived: boolean, info: DoneInfo) => void;
   onError: (message: string) => void;
   signal?: AbortSignal;
@@ -98,6 +104,23 @@ export interface ApprovalRequiredInfo {
   recipient: string;
   clientReport: string;
   reviewerVerdict: string | null;
+}
+
+/** One creative variation produced by a fan-out lead step. */
+export interface FanoutCandidate {
+  variant: number;
+  text: string;
+  status: string;
+  winner: boolean;
+}
+
+/**
+ * The fan-out result surfaced live: every usable creative variation that was
+ * generated plus the selector's rationale, with the winning variant flagged.
+ */
+export interface FanoutCandidatesInfo {
+  rationale: string;
+  candidates: FanoutCandidate[];
 }
 
 /** Extra context carried by the terminal `done` event. */
@@ -117,7 +140,8 @@ interface StreamEvent {
     | "deliverable_done"
     | "deliverable_error"
     | "deliverable_note"
-    | "approval_required";
+    | "approval_required"
+    | "fanout_candidates";
   index?: number;
   total?: number;
   agent?: { path: string; title: string };
@@ -139,6 +163,8 @@ interface StreamEvent {
   clientReport?: string;
   reviewerVerdict?: string | null;
   brief?: Partial<AgentBrief> & { agent?: string };
+  rationale?: string;
+  candidates?: FanoutCandidate[];
 }
 
 /**
@@ -163,6 +189,7 @@ export async function streamGenerateTeam(
     onDeliverableError,
     onDeliverableNote,
     onApprovalRequired,
+    onFanoutCandidates,
     onDone,
     onError,
     signal,
@@ -313,6 +340,19 @@ export async function streamGenerateTeam(
                   ? parsed.reviewerVerdict
                   : null,
             });
+            continue;
+          }
+          if (parsed.type === "fanout_candidates") {
+            if (Array.isArray(parsed.candidates)) {
+              onFanoutCandidates?.({
+                rationale:
+                  typeof parsed.rationale === "string" ? parsed.rationale : "",
+                candidates: parsed.candidates.filter(
+                  (c): c is FanoutCandidate =>
+                    !!c && typeof c.text === "string" && c.text.trim().length > 0,
+                ),
+              });
+            }
             continue;
           }
           if (typeof parsed.content === "string") {

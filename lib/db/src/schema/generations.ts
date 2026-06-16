@@ -60,6 +60,13 @@ export const generationsTable = pgTable("generations", {
   // client-facing report markdown + metrics) so the PDF can be re-rendered and
   // sent at approval time without re-running the team. Cleared once resolved.
   pendingDelivery: text("pending_delivery"),
+  // JSON snapshot of a fan-out lead step: every usable creative variation that
+  // was generated plus the selector's rationale, with the winning variant
+  // flagged. Lets the run/archive view show the alternatives (not just the
+  // auto-chosen winner) so a human can override the pick. Null for non-fan-out
+  // runs. Shape: { rationale: string, candidates: { variant, text, status,
+  // winner }[] }.
+  fanoutCandidates: text("fanout_candidates"),
   // Links a run to the e-mail conversation it belongs to: a sent monthly report
   // opens a thread; a drafted reply continues one. Null for runs that produce no
   // client e-mail. ON DELETE SET NULL so deleting a thread never loses the run.

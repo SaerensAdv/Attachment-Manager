@@ -2637,6 +2637,7 @@ components:
         - pendingEmailReply
         - clientFacing
         - touchesLiveAccount
+        - fanoutCandidates
       properties:
         id:
           type: integer
@@ -2730,6 +2731,37 @@ components:
             Whether this run's work touched live spend, bids or tracking, as
             resolved for the quality gate. Internal audit signal. Null on runs
             that failed before the gate resolved.
+        fanoutCandidates:
+          type: ["object", "null"]
+          description: >-
+            For a fan-out lead step, every usable creative variation that was
+            generated plus the selector's rationale, with the winning variant
+            flagged. Lets the archive show the alternatives, not just the
+            auto-chosen winner. Null for runs that did not fan out.
+          required:
+            - rationale
+            - candidates
+          properties:
+            rationale:
+              type: string
+            candidates:
+              type: array
+              items:
+                type: object
+                required:
+                  - variant
+                  - text
+                  - status
+                  - winner
+                properties:
+                  variant:
+                    type: integer
+                  text:
+                    type: string
+                  status:
+                    type: string
+                  winner:
+                    type: boolean
     GenerationList:
       type: object
       required: [generations]

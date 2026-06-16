@@ -127,6 +127,49 @@ function summarizePendingDelivery(g: Generation): {
   };
 }
 
+/** One persisted fan-out creative variation surfaced to the run/archive view. */
+interface FanoutCandidate {
+  variant: number;
+  text: string;
+  status: string;
+  winner: boolean;
+}
+
+/**
+ * Parse the persisted fan-out snapshot (every usable variation + the selector's
+ * rationale) back into a structured shape, tolerating absent/garbled data. Null
+ * when this run was not a fan-out run.
+ */
+function parseFanoutCandidates(value: string | null): {
+  rationale: string;
+  candidates: FanoutCandidate[];
+} | null {
+  if (!value) return null;
+  try {
+    const parsed = JSON.parse(value) as unknown;
+    if (!parsed || typeof parsed !== "object") return null;
+    const raw = (parsed as { candidates?: unknown }).candidates;
+    if (!Array.isArray(raw)) return null;
+    const candidates = raw
+      .filter((c): c is Record<string, unknown> => !!c && typeof c === "object")
+      .map((c) => ({
+        variant: typeof c.variant === "number" ? c.variant : 0,
+        text: typeof c.text === "string" ? c.text : "",
+        status: typeof c.status === "string" ? c.status : "completed",
+        winner: c.winner === true,
+      }))
+      .filter((c) => c.text.trim().length > 0);
+    if (candidates.length === 0) return null;
+    const rationale =
+      typeof (parsed as { rationale?: unknown }).rationale === "string"
+        ? (parsed as { rationale: string }).rationale
+        : "";
+    return { rationale, candidates };
+  } catch {
+    return null;
+  }
+}
+
 /** Full shape including the assembled markdown body and QA feedback. */
 function serializeDetail(g: Generation) {
   const pending = summarizePendingDelivery(g);
@@ -159,6 +202,11 @@ function serializeDetail(g: Generation) {
     // gate resolved.
     clientFacing: g.clientFacing ?? null,
     touchesLiveAccount: g.touchesLiveAccount ?? null,
+    // For a fan-out lead step: every usable creative variation that was
+    // generated plus the selector's rationale (winner flagged), so the archive
+    // can show the alternatives, not just the auto-chosen winner. Null for runs
+    // that did not fan out.
+    fanoutCandidates: parseFanoutCandidates(g.fanoutCandidates),
   };
 }
 

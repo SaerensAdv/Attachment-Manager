@@ -753,6 +753,18 @@ export async function runGeneration(
   // Fan-out: the written rationale for which candidate won, appended to the
   // archived markdown at the very end (after the deliverable) for transparency.
   let fanoutNote = "";
+  // Fan-out: a structured snapshot of every usable creative variation plus the
+  // selector's rationale, persisted on the run so the run/archive view can show
+  // the alternatives (not just the winner). Null for non-fan-out runs.
+  let fanoutSelection: {
+    rationale: string;
+    candidates: {
+      variant: number;
+      text: string;
+      status: string;
+      winner: boolean;
+    }[];
+  } | null = null;
   // Step-order cursor for any steps recorded DURING the team loop that sit after
   // the team members (the fan-out selection pass). The QC/deliverable steps
   // continue from here so the audit trail never collides or double-numbers.
@@ -788,6 +800,9 @@ export async function runGeneration(
         totalTokens: totalTokens || null,
         approvalStatus,
         pendingDelivery: pendingApproval,
+        fanoutCandidates: fanoutSelection
+          ? JSON.stringify(fanoutSelection)
+          : null,
         emailThreadId: ctx.emailReply?.emailThreadId ?? null,
         clientFacing: effectiveClientFacing,
         touchesLiveAccount: effectiveTouchesLiveAccount,
@@ -1544,6 +1559,26 @@ export async function runGeneration(
       if (selStatus !== "completed" && selStatus !== "aborted") {
         runStatus = "partial";
       }
+
+      // Snapshot every usable variation (winner flagged) + the rationale so the
+      // run/archive view can show the alternatives, not just the auto-chosen
+      // winner. Captured even when the rationale is empty (e.g. selection
+      // aborted) so the variations themselves are never lost.
+      const candidateSnapshot = usable.map((c, n) => ({
+        variant: n + 1,
+        text: c.text.trim(),
+        status: c.status,
+        winner: c === winner,
+      }));
+      fanoutSelection = {
+        rationale: rationale.trim(),
+        candidates: candidateSnapshot,
+      };
+      send({
+        type: "fanout_candidates",
+        rationale: rationale.trim(),
+        candidates: candidateSnapshot,
+      });
 
       // Capture the rationale for the archived markdown + tell the user live.
       if (rationale.trim()) {

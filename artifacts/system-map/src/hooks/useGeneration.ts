@@ -11,6 +11,7 @@ import {
   type PlanInfo,
   type ApprovalRequiredInfo,
   type AgentBrief,
+  type FanoutCandidatesInfo,
 } from "@/lib/generate";
 import { routeRequest, type RoutingResult } from "@/lib/route";
 import { fetchIntake, type IntakeField } from "@/lib/intake";
@@ -98,6 +99,12 @@ export function useGeneration(
   );
   const [approvalDraft, setApprovalDraft] =
     useState<ApprovalRequiredInfo | null>(null);
+
+  // Fan-out: every creative variation generated + the selector's rationale
+  // (winner flagged), so the run view can show the alternatives next to the
+  // auto-chosen winner. Null until a fan-out lead step finishes.
+  const [fanoutCandidates, setFanoutCandidates] =
+    useState<FanoutCandidatesInfo | null>(null);
 
   // Deliverable layer — the concrete end product streamed in like an agent.
   const [deliverable, setDeliverable] = useState<DeliverableMeta | null>(null);
@@ -187,6 +194,7 @@ export function useGeneration(
     setDeliverableError(null);
     setDeliverableTruncated(false);
     setDeliverableNotes([]);
+    setFanoutCandidates(null);
     setRunCompleted(false);
     setJustSaved(false);
     intakeAbortRef.current?.abort();
@@ -228,6 +236,7 @@ export function useGeneration(
     setDeliverableError(null);
     setDeliverableTruncated(false);
     setDeliverableNotes([]);
+    setFanoutCandidates(null);
 
     try {
       const r = await routeRequest(
@@ -377,6 +386,7 @@ export function useGeneration(
     setDeliverableError(null);
     setDeliverableTruncated(false);
     setDeliverableNotes([]);
+    setFanoutCandidates(null);
     setIsStreaming(true);
     startedAtRef.current = Date.now();
     setElapsed(0);
@@ -485,6 +495,8 @@ export function useGeneration(
             prev.includes(message) ? prev : [...prev, message],
           ),
         onApprovalRequired: (info) => setApprovalDraft(info),
+        onFanoutCandidates: (info) =>
+          setFanoutCandidates(info.candidates.length > 0 ? info : null),
         onDone: (archived, info) => {
           setIsStreaming(false);
           abortRef.current = null;
@@ -738,6 +750,8 @@ export function useGeneration(
     pendingGenerationId,
     approvalDraft,
     regenerateWithNotes,
+    // fan-out creative variations
+    fanoutCandidates,
     // lifecycle
     resetFlow,
     hasActiveFlow,

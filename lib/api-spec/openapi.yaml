@@ -2629,6 +2629,8 @@ components:
         - hasPendingDelivery
         - pendingDeliveryKind
         - pendingEmailReply
+        - clientFacing
+        - touchesLiveAccount
       properties:
         id:
           type: integer
@@ -2709,6 +2711,19 @@ components:
               type: string
             replyBody:
               type: string
+        clientFacing:
+          type: ["boolean", "null"]
+          description: >-
+            The effective quality-gate flag this run resolved to (whether the
+            output was client-facing text, which decides if the Humanizer ran).
+            Internal audit signal. Null on runs that failed before the gate
+            resolved.
+        touchesLiveAccount:
+          type: ["boolean", "null"]
+          description: >-
+            Whether this run's work touched live spend, bids or tracking, as
+            resolved for the quality gate. Internal audit signal. Null on runs
+            that failed before the gate resolved.
     GenerationList:
       type: object
       required: [generations]
@@ -2755,9 +2770,44 @@ components:
           type: ["integer", "null"]
         errorMessage:
           type: ["string", "null"]
+        handoffBrief:
+          $ref: "#/components/schemas/HandoffBrief"
         createdAt:
           type: string
           format: date-time
+    HandoffBrief:
+      type: ["object", "null"]
+      description: >-
+        The agent's internal "handoff brief" emitted as a side-channel: its key
+        decisions, facts to carry forward, open questions, a note for the next
+        teammate, and the quality-gate flags. Internal audit signal only — never
+        part of a client-facing deliverable. Null when the agent emitted none.
+      required:
+        - decisions
+        - keyFacts
+        - openQuestions
+        - forNext
+        - clientFacing
+        - touchesLiveAccount
+      properties:
+        decisions:
+          type: array
+          items:
+            type: string
+        keyFacts:
+          type: array
+          items:
+            type: string
+        openQuestions:
+          type: array
+          items:
+            type: string
+        forNext:
+          type: ["string", "null"]
+        clientFacing:
+          type: ["boolean", "null"]
+        touchesLiveAccount:
+          type: ["boolean", "null"]
     GenerationStepList:
       type: object
       required: [steps]

@@ -636,6 +636,12 @@ interface StepRecord {
   outputTokens: number | null;
   charCount: number | null;
   errorMessage: string | null;
+  /**
+   * The agent's parsed handoff brief, serialized to JSON, for the per-agent
+   * audit panel. Only set for executor steps that emitted a valid brief; left
+   * undefined for QC / deliverable / approval steps and briefless agents.
+   */
+  handoffBrief?: string | null;
 }
 
 /**
@@ -722,6 +728,12 @@ export async function runGeneration(
   let persisted = false;
   let savedId: number | null = null;
   let runStatus = "completed";
+  // The effective quality-gate flags this run resolved to (briefs folded over
+  // routing). Initialised to routing's up-front resolution and refined once the
+  // team's handoff briefs are in, so the archived row records what drove the
+  // gate even on a run that fails before the gate runs.
+  let effectiveClientFacing = clientFacing;
+  let effectiveTouchesLiveAccount = touchesLiveAccount;
   // Human approval checkpoint state for a client-facing outbound deliverable.
   // When set to "pending", `pendingApproval` holds the JSON snapshot of the
   // drafted-but-unsent delivery so it can be released after a human approves.
@@ -775,6 +787,8 @@ export async function runGeneration(
         approvalStatus,
         pendingDelivery: pendingApproval,
         emailThreadId: ctx.emailReply?.emailThreadId ?? null,
+        clientFacing: effectiveClientFacing,
+        touchesLiveAccount: effectiveTouchesLiveAccount,
       });
       savedId = row.id;
       // Best-effort: a failure to write the step trail must never lose the run.
@@ -1590,6 +1604,18 @@ export async function runGeneration(
       // the resulting transcript.
       for (const outcome of outcomes) {
         const i = outcome.index;
+        // Parse + STRIP this member's handoff brief up front, so the side-channel
+        // comment never reaches the deliverable or the archive. We keep the
+        // parsed brief in TWO places: the next stage's "Handoff so far" recap
+        // (handoffBriefs) and this step's own audit row (stepBrief), so the run
+        // timeline can show a per-agent panel of what each agent handed off.
+        let stepBrief: HandoffBrief | null = null;
+        let strippedText = outcome.text;
+        if (outcome.text.trim() && outcome.status !== "aborted") {
+          const { brief, stripped } = extractHandoffBrief(outcome.text);
+          strippedText = stripped;
+          if (brief) stepBrief = { ...brief, agent: memberTitles[i] };
+        }
         steps.push({
           agentPath: teamPaths[i],
           agentTitle: memberTitles[i],
@@ -1601,18 +1627,17 @@ export async function runGeneration(
           outputTokens: outcome.outputTokens,
           charCount: outcome.text.length || null,
           errorMessage: outcome.errorMessage,
+          handoffBrief: stepBrief ? JSON.stringify(stepBrief) : null,
         });
         // Keep every non-empty contribution except an aborted one (its partial
-        // text is discarded, mirroring the original sequential behaviour). Parse
-        // and STRIP this member's handoff brief before appending, so the comment
-        // never reaches the deliverable or the archive; accumulate the parsed
-        // brief so the next stage gets a clean "Handoff so far" recap.
+        // text is discarded, mirroring the original sequential behaviour). The
+        // brief was already parsed + stripped above; accumulate it so the next
+        // stage gets a clean "Handoff so far" recap.
         if (outcome.text.trim() && outcome.status !== "aborted") {
-          const { brief, stripped } = extractHandoffBrief(outcome.text);
-          if (stripped) {
-            priorWork += `\n\n## ${memberTitles[i]}\n\n${stripped}`;
+          if (strippedText) {
+            priorWork += `\n\n## ${memberTitles[i]}\n\n${strippedText}`;
           }
-          if (brief) handoffBriefs.push({ ...brief, agent: memberTitles[i] });
+          if (stepBrief) handoffBriefs.push(stepBrief);
         }
         if (outcome.status !== "completed") runStatus = "partial";
       }
@@ -1794,9 +1819,8 @@ export async function runGeneration(
     //  - touchesLiveAccount: a brief may UPGRADE (surface the live-account note
     //    after the team runs), but the OR-merge never downgrades the signal.
     const briefFlags = resolveBriefGateFlags(handoffBriefs);
-    const effectiveClientFacing =
-      briefFlags.clientFacing ?? clientFacing;
-    const effectiveTouchesLiveAccount =
+    effectiveClientFacing = briefFlags.clientFacing ?? clientFacing;
+    effectiveTouchesLiveAccount =
       briefFlags.touchesLiveAccount === true || touchesLiveAccount;
 
     // If the team's briefs reveal the work touches a live account but routing

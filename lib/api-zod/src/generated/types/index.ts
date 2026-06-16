@@ -66,6 +66,7 @@ export * from './generationStepList';
 export * from './generationSummary';
 export * from './getDocBacklinksParams';
 export * from './getDocContentParams';
+export * from './handoffBrief';
 export * from './healthStatus';
 export * from './improvementProposal';
 export * from './integrationCoverage';

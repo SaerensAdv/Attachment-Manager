@@ -1,4 +1,5 @@
 import {
+  boolean,
   integer,
   pgTable,
   serial,
@@ -66,6 +67,13 @@ export const generationsTable = pgTable("generations", {
     () => emailThreadsTable.id,
     { onDelete: "set null" },
   ),
+  // The effective quality-gate flags resolved for this run: the agents' handoff
+  // briefs folded over routing's up-front resolution. Surfaced read-only in the
+  // archive so a reviewer can see what drove the gate (whether the Humanizer ran
+  // for client-facing text; whether the work touched a live account). Null on
+  // runs that failed before the gate resolved.
+  clientFacing: boolean("client_facing"),
+  touchesLiveAccount: boolean("touches_live_account"),
 });
 
 export type Generation = typeof generationsTable.$inferSelect;
@@ -102,6 +110,13 @@ export const generationStepsTable = pgTable("generation_steps", {
   outputTokens: integer("output_tokens"),
   charCount: integer("char_count"),
   errorMessage: text("error_message"),
+  // The internal, never-client-facing "handoff brief" this agent emitted as a
+  // side-channel: its key decisions, facts to carry forward, open questions, a
+  // note for the next teammate, and the QC-gate flags. Stored as a JSON string
+  // so the run timeline can show a per-agent audit panel without re-parsing the
+  // prose. Null when the agent emitted no (valid) brief, and for non-agent steps
+  // (deliverable / quality / approval).
+  handoffBrief: text("handoff_brief"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

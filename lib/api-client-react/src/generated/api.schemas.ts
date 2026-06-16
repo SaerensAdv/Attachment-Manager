@@ -783,11 +783,37 @@ export interface Generation {
      * @nullable
      */
   pendingEmailReply: GenerationPendingEmailReply;
+  /**
+     * The effective quality-gate flag this run resolved to (whether the output was client-facing text, which decides if the Humanizer ran). Internal audit signal. Null on runs that failed before the gate resolved.
+     * @nullable
+     */
+  clientFacing: boolean | null;
+  /**
+     * Whether this run's work touched live spend, bids or tracking, as resolved for the quality gate. Internal audit signal. Null on runs that failed before the gate resolved.
+     * @nullable
+     */
+  touchesLiveAccount: boolean | null;
 }
 
 export interface GenerationList {
   generations: GenerationSummary[];
 }
+
+/**
+ * The agent's internal "handoff brief" emitted as a side-channel: its key decisions, facts to carry forward, open questions, a note for the next teammate, and the quality-gate flags. Internal audit signal only — never part of a client-facing deliverable. Null when the agent emitted none.
+ * @nullable
+ */
+export type HandoffBrief = {
+  decisions: string[];
+  keyFacts: string[];
+  openQuestions: string[];
+  /** @nullable */
+  forNext: string | null;
+  /** @nullable */
+  clientFacing: boolean | null;
+  /** @nullable */
+  touchesLiveAccount: boolean | null;
+} | null;
 
 export interface GenerationStep {
   id: number;
@@ -806,6 +832,7 @@ export interface GenerationStep {
   charCount: number | null;
   /** @nullable */
   errorMessage: string | null;
+  handoffBrief?: HandoffBrief | null;
   createdAt: string;
 }
 

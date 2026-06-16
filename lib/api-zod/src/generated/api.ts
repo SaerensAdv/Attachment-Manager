@@ -1847,7 +1847,9 @@ export const GetGenerationResponse = zod.object({
   "subject": zod.string(),
   "inboundText": zod.string(),
   "replyBody": zod.string()
-}).nullable().describe('For a held inbound email reply (drafted autonomously, no live session), the reviewable content so a human can approve from the archive. Identity\/threading internals are intentionally omitted.')
+}).nullable().describe('For a held inbound email reply (drafted autonomously, no live session), the reviewable content so a human can approve from the archive. Identity\/threading internals are intentionally omitted.'),
+  "clientFacing": zod.boolean().nullable().describe('The effective quality-gate flag this run resolved to (whether the output was client-facing text, which decides if the Humanizer ran). Internal audit signal. Null on runs that failed before the gate resolved.'),
+  "touchesLiveAccount": zod.boolean().nullable().describe('Whether this run\'s work touched live spend, bids or tracking, as resolved for the quality gate. Internal audit signal. Null on runs that failed before the gate resolved.')
 })
 
 
@@ -1901,7 +1903,9 @@ export const SetGenerationFeedbackResponse = zod.object({
   "subject": zod.string(),
   "inboundText": zod.string(),
   "replyBody": zod.string()
-}).nullable().describe('For a held inbound email reply (drafted autonomously, no live session), the reviewable content so a human can approve from the archive. Identity\/threading internals are intentionally omitted.')
+}).nullable().describe('For a held inbound email reply (drafted autonomously, no live session), the reviewable content so a human can approve from the archive. Identity\/threading internals are intentionally omitted.'),
+  "clientFacing": zod.boolean().nullable().describe('The effective quality-gate flag this run resolved to (whether the output was client-facing text, which decides if the Humanizer ran). Internal audit signal. Null on runs that failed before the gate resolved.'),
+  "touchesLiveAccount": zod.boolean().nullable().describe('Whether this run\'s work touched live spend, bids or tracking, as resolved for the quality gate. Internal audit signal. Null on runs that failed before the gate resolved.')
 })
 
 
@@ -1942,7 +1946,9 @@ export const ApproveGenerationResponse = zod.object({
   "subject": zod.string(),
   "inboundText": zod.string(),
   "replyBody": zod.string()
-}).nullable().describe('For a held inbound email reply (drafted autonomously, no live session), the reviewable content so a human can approve from the archive. Identity\/threading internals are intentionally omitted.')
+}).nullable().describe('For a held inbound email reply (drafted autonomously, no live session), the reviewable content so a human can approve from the archive. Identity\/threading internals are intentionally omitted.'),
+  "clientFacing": zod.boolean().nullable().describe('The effective quality-gate flag this run resolved to (whether the output was client-facing text, which decides if the Humanizer ran). Internal audit signal. Null on runs that failed before the gate resolved.'),
+  "touchesLiveAccount": zod.boolean().nullable().describe('Whether this run\'s work touched live spend, bids or tracking, as resolved for the quality gate. Internal audit signal. Null on runs that failed before the gate resolved.')
 })
 
 
@@ -1987,7 +1993,9 @@ export const RequestGenerationChangesResponse = zod.object({
   "subject": zod.string(),
   "inboundText": zod.string(),
   "replyBody": zod.string()
-}).nullable().describe('For a held inbound email reply (drafted autonomously, no live session), the reviewable content so a human can approve from the archive. Identity\/threading internals are intentionally omitted.')
+}).nullable().describe('For a held inbound email reply (drafted autonomously, no live session), the reviewable content so a human can approve from the archive. Identity\/threading internals are intentionally omitted.'),
+  "clientFacing": zod.boolean().nullable().describe('The effective quality-gate flag this run resolved to (whether the output was client-facing text, which decides if the Humanizer ran). Internal audit signal. Null on runs that failed before the gate resolved.'),
+  "touchesLiveAccount": zod.boolean().nullable().describe('Whether this run\'s work touched live spend, bids or tracking, as resolved for the quality gate. Internal audit signal. Null on runs that failed before the gate resolved.')
 })
 
 
@@ -2011,6 +2019,14 @@ export const GetGenerationStepsResponse = zod.object({
   "outputTokens": zod.number().nullable(),
   "charCount": zod.number().nullable(),
   "errorMessage": zod.string().nullable(),
+  "handoffBrief": zod.object({
+  "decisions": zod.array(zod.string()),
+  "keyFacts": zod.array(zod.string()),
+  "openQuestions": zod.array(zod.string()),
+  "forNext": zod.string().nullable(),
+  "clientFacing": zod.boolean().nullable(),
+  "touchesLiveAccount": zod.boolean().nullable()
+}).nullish().describe('The agent\'s internal \"handoff brief\" emitted as a side-channel: its key decisions, facts to carry forward, open questions, a note for the next teammate, and the quality-gate flags. Internal audit signal only — never part of a client-facing deliverable. Null when the agent emitted none.'),
   "createdAt": zod.coerce.date()
 }))
 })

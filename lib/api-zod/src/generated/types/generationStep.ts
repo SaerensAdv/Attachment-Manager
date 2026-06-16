@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { HandoffBrief } from './handoffBrief';
 
 export interface GenerationStep {
   id: number;
@@ -23,5 +24,6 @@ export interface GenerationStep {
   charCount: number | null;
   /** @nullable */
   errorMessage: string | null;
+  handoffBrief?: HandoffBrief | null;
   createdAt: Date;
 }

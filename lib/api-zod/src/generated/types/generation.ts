@@ -50,4 +50,14 @@ export interface Generation {
      * @nullable
      */
   pendingEmailReply: GenerationPendingEmailReply;
+  /**
+     * The effective quality-gate flag this run resolved to (whether the output was client-facing text, which decides if the Humanizer ran). Internal audit signal. Null on runs that failed before the gate resolved.
+     * @nullable
+     */
+  clientFacing: boolean | null;
+  /**
+     * Whether this run's work touched live spend, bids or tracking, as resolved for the quality gate. Internal audit signal. Null on runs that failed before the gate resolved.
+     * @nullable
+     */
+  touchesLiveAccount: boolean | null;
 }

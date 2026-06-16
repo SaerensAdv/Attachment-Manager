@@ -516,6 +516,43 @@ describe("runGeneration — handoff briefs (integration)", () => {
     expect(briefs?.[0]?.decisions).toEqual(["Merkcampagne eerst"]);
   });
 
+  it("persists each agent's brief as JSON on its own audit step", async () => {
+    h.streamImpl = streamSequence([
+      'Lead bijdrage.\n<!-- handoff-brief {"decisions":["Merkcampagne eerst"],"keyFacts":["Budget 1500"],"openQuestions":[],"forNext":"Schrijf advertenties","clientFacing":true,"touchesLiveAccount":false} -->',
+      "Tweede bijdrage zonder brief.",
+    ]);
+
+    const { promise } = run(
+      makeCtx({
+        teamPaths: ["agents/lead.md", "agents/copy.md"],
+        memberTitles: ["Lead", "Copywriter"],
+        stages: [[0], [1]],
+      }),
+    );
+    await promise;
+
+    const steps = saveGenerationStepsMock.mock.calls[0][0] as Array<{
+      agentTitle: string;
+      handoffBrief?: string | null;
+    }>;
+
+    // The lead's brief is stored as JSON on its own step.
+    const lead = steps.find((s) => s.agentTitle === "Lead");
+    expect(lead?.handoffBrief).toBeTruthy();
+    const parsed = JSON.parse(lead!.handoffBrief as string) as {
+      decisions: string[];
+      forNext: string;
+      clientFacing: boolean;
+    };
+    expect(parsed.decisions).toEqual(["Merkcampagne eerst"]);
+    expect(parsed.forNext).toBe("Schrijf advertenties");
+    expect(parsed.clientFacing).toBe(true);
+
+    // The agent without a brief carries null (nothing to surface).
+    const copy = steps.find((s) => s.agentTitle === "Copywriter");
+    expect(copy?.handoffBrief ?? null).toBeNull();
+  });
+
   it("skips the planned Humanizer when a brief downgrades clientFacing", async () => {
     // Routing planned client-facing (so the Humanizer IS in the plan), but the
     // team's brief reveals the output is internal — the Humanizer is skipped at

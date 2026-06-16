@@ -153,7 +153,61 @@ function serializeDetail(g: Generation) {
     // content so a human can approve it from the archive.
     pendingDeliveryKind: pending.pendingDeliveryKind,
     pendingEmailReply: pending.pendingEmailReply,
+    // The effective quality-gate flags this run resolved to. Read-only audit
+    // signal so a reviewer can see what drove the gate (e.g. whether the
+    // Humanizer ran for client-facing text). Null on runs that failed before the
+    // gate resolved.
+    clientFacing: g.clientFacing ?? null,
+    touchesLiveAccount: g.touchesLiveAccount ?? null,
   };
+}
+
+/** The reviewable shape of an agent's internal handoff brief. */
+interface HandoffBriefWire {
+  decisions: string[];
+  keyFacts: string[];
+  openQuestions: string[];
+  forNext: string | null;
+  clientFacing: boolean | null;
+  touchesLiveAccount: boolean | null;
+}
+
+/**
+ * Parse the JSON handoff-brief stored on a step back into a typed object for the
+ * audit panel, tolerating bad/legacy data (returns null). This is an
+ * internal-only reliability trail; it is shown only in the run timeline and
+ * never reaches a client-facing deliverable.
+ */
+function parseHandoffBrief(value: string | null): HandoffBriefWire | null {
+  if (!value) return null;
+  let raw: unknown = null;
+  try {
+    raw = JSON.parse(value);
+  } catch {
+    return null;
+  }
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const p = raw as Record<string, unknown>;
+  const strArray = (v: unknown): string[] =>
+    Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : [];
+  const bool = (v: unknown): boolean | null =>
+    typeof v === "boolean" ? v : null;
+  const brief: HandoffBriefWire = {
+    decisions: strArray(p.decisions),
+    keyFacts: strArray(p.keyFacts),
+    openQuestions: strArray(p.openQuestions),
+    forNext: typeof p.forNext === "string" && p.forNext ? p.forNext : null,
+    clientFacing: bool(p.clientFacing),
+    touchesLiveAccount: bool(p.touchesLiveAccount),
+  };
+  const empty =
+    brief.decisions.length === 0 &&
+    brief.keyFacts.length === 0 &&
+    brief.openQuestions.length === 0 &&
+    brief.forNext === null &&
+    brief.clientFacing === null &&
+    brief.touchesLiveAccount === null;
+  return empty ? null : brief;
 }
 
 /** Wire shape for a single audit-trail step. */
@@ -170,6 +224,10 @@ function serializeStep(s: GenerationStep) {
     outputTokens: s.outputTokens ?? null,
     charCount: s.charCount ?? null,
     errorMessage: s.errorMessage ?? null,
+    // The agent's internal handoff brief (decisions / key facts / open
+    // questions / note + gate flags), parsed for the per-agent audit panel.
+    // Null for briefless agents and non-agent steps. Never client-facing.
+    handoffBrief: parseHandoffBrief(s.handoffBrief),
     createdAt: s.createdAt.toISOString(),
   };
 }

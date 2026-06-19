@@ -307,26 +307,7 @@ doc
     width: cw,
   });
 
-// --- Footer: legal line + accent bar (no IBAN — betaalgegevens weggelaten) ---
-doc.page.margins.bottom = 0;
-const fy = H - 50;
-doc
-  .font("Helvetica")
-  .fontSize(8)
-  .fillColor(FOOTER_GREY)
-  .text(
-    `${sender.legalName} · ${sender.legalForm} · BTW ${sender.vatNumber}`,
-    x,
-    fy,
-    { width: cw, align: "center", lineBreak: false },
-  );
-const bar = doc.linearGradient(0, 0, W, 0);
-bar.stop(0, PURPLE);
-bar.stop(0.62, PURPLE);
-bar.stop(1, AMBER);
-doc.save();
-doc.rect(0, H - 6, W, 6).fill(bar);
-doc.restore();
+// --- Footer weggelaten (geen legal line, geen accentbalk) ---
 
 doc.end();
 doc.on("end", () => console.log("WROTE", outPath));

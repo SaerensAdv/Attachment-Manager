@@ -855,7 +855,12 @@ describe("stripHumanizerMeta", () => {
           content: [
             {
               type: "text",
-              text: "WINNER: 2\nRATIONALE: Variant 2 heeft de sterkste hook en blijft policy-conform.",
+              text:
+                "WINNER: 2\n" +
+                "RATIONALE: Variant 2 heeft de sterkste hook en blijft policy-conform.\n" +
+                "REASONS:\n" +
+                "- Variant 1: te generiek, zwakke hook.\n" +
+                "- Variant 3: beleidsrisico door overdreven superlatief.",
             },
           ],
           usage: { input_tokens: 5, output_tokens: 5 },
@@ -903,6 +908,7 @@ describe("stripHumanizerMeta", () => {
         variant: number;
         text: string;
         winner: boolean;
+        reason: string;
       }>;
       expect(liveCands).toHaveLength(3);
       expect(liveCands.map((c) => c.text)).toEqual([
@@ -913,18 +919,40 @@ describe("stripHumanizerMeta", () => {
       expect(liveCands.filter((c) => c.winner)).toHaveLength(1);
       expect(liveCands.find((c) => c.winner)?.variant).toBe(2);
 
+      // Each losing variation carries its own reason; the winner carries none.
+      expect(liveCands.find((c) => c.variant === 1)?.reason).toContain(
+        "zwakke hook",
+      );
+      expect(liveCands.find((c) => c.variant === 3)?.reason).toContain(
+        "beleidsrisico",
+      );
+      expect(liveCands.find((c) => c.winner)?.reason).toBe("");
+
       // The same snapshot is persisted on the run so the archive can show it.
       const persisted = JSON.parse(
         String(saved.fanoutCandidates),
       ) as {
         rationale: string;
-        candidates: Array<{ variant: number; text: string; winner: boolean }>;
+        candidates: Array<{
+          variant: number;
+          text: string;
+          winner: boolean;
+          reason: string;
+        }>;
       };
       expect(persisted.candidates).toHaveLength(3);
       expect(persisted.candidates.find((c) => c.winner)?.text).toBe(
         "Candidate angle two.",
       );
       expect(persisted.rationale).toContain("sterkste hook");
+      // The per-loser reasons survive the persist round-trip.
+      expect(persisted.candidates.find((c) => c.variant === 1)?.reason).toContain(
+        "te generiek",
+      );
+      expect(persisted.candidates.find((c) => c.variant === 3)?.reason).toContain(
+        "superlatief",
+      );
+      expect(persisted.candidates.find((c) => c.winner)?.reason).toBe("");
     });
 
     it("does not persist fan-out candidates for a non-opted run", async () => {

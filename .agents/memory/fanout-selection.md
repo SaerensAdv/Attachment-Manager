@@ -29,6 +29,14 @@ as before, so non-opted workflows are byte-for-byte unchanged.
 - Rationale is appended to the archived markdown AFTER the deliverable snapshot
   (`## Fan-out — interne selectie`), so it is audit-only and never feeds the
   deliverable.
+- Per-loser reasons: the selection contract adds a `REASONS:` block (lines like
+  `- Variant 2: weaker hook`) parsed into a map keyed by 1-based variant number;
+  attached as a `reason` field on each non-winner candidate snapshot (winner +
+  single/abort/fail branches get `""`). RATIONALE regex must stop before
+  `REASONS:` (non-greedy). The `reason` field flows through the whole chain:
+  candidate snapshot → persisted JSON → `parseFanoutCandidates` → openapi.yaml
+  candidate schema → generated client types → GenerationPanel/History display.
+  Missing reason is best-effort (empty string), never breaks display.
 
 **Invariants (must not regress):**
 - Best-effort: a candidate or selection failure NEVER discards team work or

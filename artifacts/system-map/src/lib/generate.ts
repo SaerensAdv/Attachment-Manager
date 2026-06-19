@@ -112,6 +112,8 @@ export interface FanoutCandidate {
   text: string;
   status: string;
   winner: boolean;
+  // Brief reason this variation lost (empty for the winner / when not captured).
+  reason?: string;
 }
 
 /**

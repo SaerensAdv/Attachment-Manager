@@ -750,6 +750,14 @@ export default function GenerationPanel({
                             </span>
                           )}
                         </div>
+                        {!c.winner && c.reason && (
+                          <p
+                            data-testid={`fanout-reason-${c.variant}`}
+                            className="mb-2 font-['Inter'] text-xs italic text-muted-foreground"
+                          >
+                            Waarom afgevallen: {c.reason}
+                          </p>
+                        )}
                         <article className="prose prose-sm max-w-none font-['Inter'] prose-headings:font-['Playfair_Display'] prose-headings:font-bold prose-strong:text-foreground prose-a:text-accent">
                           <ReactMarkdown remarkPlugins={[remarkGfm]}>
                             {c.text}

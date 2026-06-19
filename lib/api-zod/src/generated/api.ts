@@ -1857,7 +1857,8 @@ export const GetGenerationResponse = zod.object({
   "variant": zod.number(),
   "text": zod.string(),
   "status": zod.string(),
-  "winner": zod.boolean()
+  "winner": zod.boolean(),
+  "reason": zod.string().optional().describe('Brief reason this variation lost (e.g. \"weaker hook\"). Empty for the winner and when no per-variant reason was captured.')
 }))
 }).nullable().describe('For a fan-out lead step, every usable creative variation that was generated plus the selector\'s rationale, with the winning variant flagged. Lets the archive show the alternatives, not just the auto-chosen winner. Null for runs that did not fan out.')
 })
@@ -1922,7 +1923,8 @@ export const SetGenerationFeedbackResponse = zod.object({
   "variant": zod.number(),
   "text": zod.string(),
   "status": zod.string(),
-  "winner": zod.boolean()
+  "winner": zod.boolean(),
+  "reason": zod.string().optional().describe('Brief reason this variation lost (e.g. \"weaker hook\"). Empty for the winner and when no per-variant reason was captured.')
 }))
 }).nullable().describe('For a fan-out lead step, every usable creative variation that was generated plus the selector\'s rationale, with the winning variant flagged. Lets the archive show the alternatives, not just the auto-chosen winner. Null for runs that did not fan out.')
 })
@@ -1974,7 +1976,8 @@ export const ApproveGenerationResponse = zod.object({
   "variant": zod.number(),
   "text": zod.string(),
   "status": zod.string(),
-  "winner": zod.boolean()
+  "winner": zod.boolean(),
+  "reason": zod.string().optional().describe('Brief reason this variation lost (e.g. \"weaker hook\"). Empty for the winner and when no per-variant reason was captured.')
 }))
 }).nullable().describe('For a fan-out lead step, every usable creative variation that was generated plus the selector\'s rationale, with the winning variant flagged. Lets the archive show the alternatives, not just the auto-chosen winner. Null for runs that did not fan out.')
 })
@@ -2030,7 +2033,8 @@ export const RequestGenerationChangesResponse = zod.object({
   "variant": zod.number(),
   "text": zod.string(),
   "status": zod.string(),
-  "winner": zod.boolean()
+  "winner": zod.boolean(),
+  "reason": zod.string().optional().describe('Brief reason this variation lost (e.g. \"weaker hook\"). Empty for the winner and when no per-variant reason was captured.')
 }))
 }).nullable().describe('For a fan-out lead step, every usable creative variation that was generated plus the selector\'s rationale, with the winning variant flagged. Lets the archive show the alternatives, not just the auto-chosen winner. Null for runs that did not fan out.')
 })

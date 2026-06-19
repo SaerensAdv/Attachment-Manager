@@ -133,6 +133,8 @@ interface FanoutCandidate {
   text: string;
   status: string;
   winner: boolean;
+  // Per-loser note: why this variation lost (empty for the winner / when absent).
+  reason: string;
 }
 
 /**
@@ -157,6 +159,7 @@ function parseFanoutCandidates(value: string | null): {
         text: typeof c.text === "string" ? c.text : "",
         status: typeof c.status === "string" ? c.status : "completed",
         winner: c.winner === true,
+        reason: typeof c.reason === "string" ? c.reason : "",
       }))
       .filter((c) => c.text.trim().length > 0);
     if (candidates.length === 0) return null;

@@ -763,6 +763,9 @@ export async function runGeneration(
       text: string;
       status: string;
       winner: boolean;
+      // Per-loser note: a brief reason this variation lost (e.g. "weaker hook").
+      // Empty for the winner and whenever no per-variant reason was captured.
+      reason: string;
     }[];
   } | null = null;
   // Step-order cursor for any steps recorded DURING the team loop that sit after
@@ -1459,6 +1462,11 @@ export async function runGeneration(
       // usable candidate there is nothing to rank, so skip the model call.
       let winner = usable[0];
       let rationale = "";
+      // Per-loser notes keyed by 1-based variant number (matches `usable`
+      // ordering). Populated only by the selection model; empty for the
+      // single-usable / abort / fail branches, so a missing reason never breaks
+      // the display.
+      const loserReasons = new Map<number, string>();
       let selStatus = "completed";
       let selIn: number | null = null;
       let selOut: number | null = null;
@@ -1481,7 +1489,10 @@ export async function runGeneration(
           "",
           "Antwoord in EXACT dit formaat, niets anders:",
           "WINNER: <nummer van de gekozen variant>",
-          "RATIONALE: <2 tot 4 zinnen die uitleggen waarom deze variant wint en kort waarom de anderen afvallen>",
+          "RATIONALE: <2 tot 4 zinnen die uitleggen waarom deze variant wint>",
+          "REASONS:",
+          "- Variant <nummer>: <korte reden van max 1 zin waarom net deze variant afvalt (bv. zwakkere hook, beleidsrisico, te generiek)>",
+          "Geef één REASONS-regel per niet-winnende variant; laat de winnende variant weg.",
         ].join("\n");
         const selUser = [
           "## Brief / oorspronkelijke opdracht",
@@ -1509,7 +1520,23 @@ export async function runGeneration(
             .map((b) => (b.type === "text" ? b.text : ""))
             .join("");
           const wm = selText.match(/WINNER:\s*(\d+)/i);
-          const rm = selText.match(/RATIONALE:\s*([\s\S]+)/i);
+          const rm = selText.match(
+            /RATIONALE:\s*([\s\S]+?)(?:\n\s*REASONS:|$)/i,
+          );
+          // Capture the per-loser notes from the REASONS block (lines like
+          // "- Variant 2: zwakkere hook"). Tolerant of any leading marker and
+          // of `:`, `-` or `–` separators; ignored when absent.
+          const reasonsBlock = selText.match(/REASONS:\s*([\s\S]+)/i)?.[1] ?? "";
+          const reasonRe = /variant\s*(\d+)\s*[:\-–]\s*(.+)/gi;
+          for (
+            let rMatch = reasonRe.exec(reasonsBlock);
+            rMatch !== null;
+            rMatch = reasonRe.exec(reasonsBlock)
+          ) {
+            const vn = Number.parseInt(rMatch[1], 10);
+            const note = rMatch[2].trim();
+            if (vn >= 1 && note) loserReasons.set(vn, note);
+          }
           const picked = wm ? Number.parseInt(wm[1], 10) - 1 : -1;
           if (picked >= 0 && picked < usable.length) {
             winner = usable[picked];
@@ -1564,12 +1591,18 @@ export async function runGeneration(
       // run/archive view can show the alternatives, not just the auto-chosen
       // winner. Captured even when the rationale is empty (e.g. selection
       // aborted) so the variations themselves are never lost.
-      const candidateSnapshot = usable.map((c, n) => ({
-        variant: n + 1,
-        text: c.text.trim(),
-        status: c.status,
-        winner: c === winner,
-      }));
+      const candidateSnapshot = usable.map((c, n) => {
+        const isWinner = c === winner;
+        return {
+          variant: n + 1,
+          text: c.text.trim(),
+          status: c.status,
+          winner: isWinner,
+          // Per-loser note: why this variation lost. Only losers carry one, and
+          // only when the selector supplied it for this variant.
+          reason: isWinner ? "" : (loserReasons.get(n + 1) ?? ""),
+        };
+      });
       fanoutSelection = {
         rationale: rationale.trim(),
         candidates: candidateSnapshot,

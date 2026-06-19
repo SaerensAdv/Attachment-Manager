@@ -17,5 +17,7 @@ export type GenerationFanoutCandidates = {
   text: string;
   status: string;
   winner: boolean;
+  /** Brief reason this variation lost (e.g. "weaker hook"). Empty for the winner and when no per-variant reason was captured. */
+  reason?: string;
 }[];
 } | null;

@@ -341,3 +341,9 @@ id = "9VCGA5if8B9SiA1kis0q8"
 uri = "file://.local/outputs/Google-Ads-audit---Car-Audio-Limburg.pdf"
 type = "pdf"
 title = "Google Ads-audit — Car Audio Limburg.pdf"
+
+[[outputs]]
+id = "IBDRFWT8Kxb-vUofof_10"
+uri = "file://outputs/proforma-LCS-2026-06-19.pdf"
+type = "pdf"
+title = "Proforma — LCS (19 juni 2026)"

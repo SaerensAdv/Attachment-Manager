@@ -1,0 +1,79 @@
+{
+  "name": "Axel Saerens",
+  "headline": "Account Strategist · Google Ads & Conversion-Tracking Specialist",
+  "contact": {
+    "location": "Belgium · open to relocating to Dublin",
+    "email": "ax.saerens@gmail.com",
+    "website": "saerensadvertising.com"
+  },
+  "summary": "Account Strategist who already sold and managed the Belgian and Dutch SMB market at Google Customer Solutions — hitting quota every quarter and earning a Sales Captain promotion — before building a Google Ads agency from zero. Combines deep platform and conversion-tracking expertise with consultative selling to grow advertiser revenue and own a portfolio end to end.",
+  "roles": [
+    {
+      "title": "Founder & Google Ads Consultant",
+      "company": "Saerens Advertising · Belgium",
+      "dates": "Sep 2024 – Present",
+      "bullets": [
+        "Acquired, onboarded and managed 10+ SMB clients across Belgium and the Netherlands — entirely through inbound and referral, with zero acquisition spend.",
+        "Ran 5+ Google Ads and 3+ Meta Ads accounts simultaneously across e-commerce, home services, automotive, B2B distribution, real estate and SaaS.",
+        "Cut one client's monthly ad spend by €14k while holding conversion value flat, through account restructuring and a negative-keyword strategy.",
+        "Built and managed a 5-account MCC for one client; scaled another from 1 to 5 domains across Belgium and France to expand lead generation.",
+        "Won most retainers by first fixing broken tracking / Consent Mode, then upselling into full management; shipped two SaaS products solo (ConsentEase.io, Abonnement.website)."
+      ]
+    },
+    {
+      "title": "Account Strategist",
+      "company": "Google Customer Solutions (via Teleperformance) · Lisbon, Portugal",
+      "dates": "Mar 2023 – Sep 2024",
+      "bullets": [
+        "Front-line seller for the Belgian and Dutch SMB market, running regular phone consultations and sales pitches across a managed portfolio.",
+        "Hit quarterly revenue and productivity targets every single quarter.",
+        "Promoted to Sales Captain — designed and delivered conversion-tracking training for the entire Dutch market team, lifting market-wide performance."
+      ]
+    },
+    {
+      "title": "Technical Support Specialist",
+      "company": "Google Technical Solutions (via Teleperformance) · Lisbon, Portugal",
+      "dates": "Aug 2022 – Mar 2023",
+      "bullets": [
+        "Supported advertisers on basic and advanced conversion tracking, dataLayer, and Consent Mode implementation.",
+        "Became the team's go-to specialist for Consent Mode and tracking troubleshooting."
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "Advertising",
+      "items": "Google Ads (Search, Shopping, PMax, Display, Demand Gen, YouTube), Meta Ads"
+    },
+    {
+      "category": "Tracking & Analytics",
+      "items": "GTM, GA4, Conversions API, Consent Mode, Looker Studio"
+    },
+    {
+      "category": "Technical & Tools",
+      "items": "Conversion-tracking implementation, Channable feeds, website design & development, AI workflow automation (ClickUp, n8n)"
+    },
+    {
+      "category": "Languages",
+      "items": "Dutch (native), English (fluent)"
+    }
+  ],
+  "education": [
+    {
+      "degree": "Secondary Diploma — Accountancy & IT",
+      "location": "Belgium",
+      "note": "Self-taught across Google Ads, conversion tracking, full-stack web development and SaaS product building."
+    }
+  ],
+  "spacing": {
+    "nameFontSize": 23,
+    "headlineFontSize": 11,
+    "bodyFontSize": 10.5,
+    "smallFontSize": 9,
+    "sectionFontSize": 10.5,
+    "lineHeight": 13.739999999999998,
+    "sectionGap": 12.600000000000001,
+    "roleGap": 9.2,
+    "bulletGap": 4
+  }
+}

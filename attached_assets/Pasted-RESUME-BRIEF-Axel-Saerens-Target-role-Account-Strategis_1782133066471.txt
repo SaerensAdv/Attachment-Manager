@@ -1,0 +1,49 @@
+RESUME BRIEF: Axel Saerens
+Target role: Account Strategist, Google Customer Solutions (GCS), Dublin, Ireland
+Compensation: €76,000-€78,000 + 35% bonus target + equity + benefits
+Languages: Dutch (native), English (fluent). French: do NOT mention.
+PROFESSIONAL TIMELINE
+1. Google Technical Solutions (via Teleperformance, Lisbon, Portugal) | ~7-8 months
+Provided technical support to advertisers on tracking implementation: basic and advanced conversion tracking, datalayers, consent mode setup
+Became the go-to person for consent mode/tracking issues within the team
+2. Google Customer Solutions, Account Strategist (via Teleperformance, Lisbon, Portugal) | ~16-17 months
+Front-line seller for Belgian and Dutch SMB market
+Managed a portfolio of small businesses, conducting regular phone consultations and sales pitches
+Consistently hit quarterly revenue and productivity targets (every quarter)
+Promoted to Sales Captain: designed and delivered conversion tracking training for the entire Dutch market team, contributing to market-wide overperformance
+Combined deep technical platform knowledge with consultative selling approach
+Total tenure at Google/TP: ~24-25 months (including training period)
+Left: September 2024
+3. Saerens Advertising, Founder (Belgium) | September 2024 to present (~21 months)
+Independently acquired, onboarded, and managed 10+ SMB clients across Belgium and Netherlands without any marketing spend (all inbound/referral)
+Managed 5+ Google Ads accounts and 3+ Meta Ads accounts simultaneously
+Verticals served: e-commerce, home services, automotive, beauty, B2B trade/distribution, events, real estate, cleaning, locksmith services, SaaS
+Services: Google Ads management (Search, Shopping, PMax, Display, Demand Gen, YouTube), Meta Ads, website design/development, tracking implementation (GTM, GA4, Conversions API, consent mode), Looker Studio reporting, Channable product feed management, strategic consulting
+Key achievements (anonymized, no client names or exact KPIs):
+Reduced one client's monthly ad spend by €14k while maintaining the same conversion value through account restructuring and negative keyword strategy
+Scaled one client from 1 website to 5 domains across Belgium and France, expanding their lead generation across multiple markets
+Managed a client relationship for 2+ years with consistent monthly lead growth through ongoing optimization
+Built and managed an MCC with 5 Google Ads accounts for a single client, restructuring all campaigns and implementing tracking across each
+Maintained a 12+ month engagement managing 3 domains for one client, delivering consistent monthly sales
+Entry point for most clients: fixing broken tracking/consent mode setups, then converting the technical fix into a full management retainer (consultative upselling)
+Provided strategic overflow support to 2 independent agencies (tracking, strategy, reporting)
+Built 8+ websites from scratch or full redesign for clients
+Developed 2 SaaS products independently:
+ConsentEase.io: a consent management/cookie banner platform solving GDPR/consent mode compliance
+Abonnement.website: a subscription-based website platform for SMBs
+KEY STRENGTHS TO EMPHASIZE (mapped to job description)
+Exact role match: Already performed the Account Strategist role at GCS for the same market (Belgium/Netherlands)
+Technical + commercial hybrid: Rare combination of deep Google Ads platform expertise (from Technical Solutions) with proven sales execution
+Quota achievement: Hit targets every single quarter at GCS
+Leadership/training: Sales Captain role, training peers on conversion tracking
+Entrepreneurial drive: Built a business from scratch, proving ability to "own a portfolio" and "move with velocity"
+Consultative selling: Acquired all clients through expertise-led conversations, wrote proposals with hybrid pricing models, conducted discovery calls
+AI era readiness: Already using AI tools and automation workflows (ClickUp Brain, n8n, automated reporting) to operate efficiently at scale
+SMB empathy: As a business owner himself, deeply understands the challenges and goals of small business clients
+EDUCATION
+Bachelor's degree (confirm exact degree/institution with Axel)
+TONE NOTES FOR RESUME
+No specific client names or exact revenue KPIs
+Frame the entrepreneurial period as a strength (went deeper into the craft, not a departure from the path)
+Story arc: Technical foundations → Sales execution → Entrepreneurial ownership → Return to Google with all three combined
+Emphasize: results-driven, autonomous, data-first decision making, relationship building through expertise

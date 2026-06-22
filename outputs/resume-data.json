@@ -55,8 +55,17 @@
     },
     {
       "category": "Languages",
-      "items": "Dutch (native), English (fluent)"
+      "items": "Dutch (native), English (fluent), French (conversational)"
     }
+  ],
+  "strengths": [
+    "Consultative selling",
+    "Relationship building",
+    "Coaching & enablement",
+    "Stakeholder communication",
+    "Autonomous ownership",
+    "Data-driven decisions",
+    "Adaptability"
   ],
   "education": [
     {
@@ -71,9 +80,9 @@
     "bodyFontSize": 10.5,
     "smallFontSize": 9,
     "sectionFontSize": 10.5,
-    "lineHeight": 13.739999999999998,
-    "sectionGap": 12.600000000000001,
-    "roleGap": 9.2,
-    "bulletGap": 4
+    "lineHeight": 12.599999999999998,
+    "sectionGap": 9.200000000000001,
+    "roleGap": 6.799999999999999,
+    "bulletGap": 2.8999999999999995
   }
 }

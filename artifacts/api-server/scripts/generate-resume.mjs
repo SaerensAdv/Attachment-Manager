@@ -21,6 +21,8 @@ const AMBER = "#F4A425";
 const INK = "#1A1A22";
 const MUTED = "#6B6B72";
 const HAIR = "#E4E2EE";
+const PANEL = "#F5F5F8";
+const WHITE = "#FFFFFF";
 
 // --- Page geometry (US Letter, per resume-maker skill) ---
 const PAGE_W = 612;
@@ -101,8 +103,17 @@ function getResumeData() {
       },
       {
         category: "Languages",
-        items: "Dutch (native), English (fluent)",
+        items: "Dutch (native), English (fluent), French (conversational)",
       },
+    ],
+    strengths: [
+      "Consultative selling",
+      "Relationship building",
+      "Coaching & enablement",
+      "Stakeholder communication",
+      "Autonomous ownership",
+      "Data-driven decisions",
+      "Adaptability",
     ],
     education: [
       {
@@ -131,19 +142,32 @@ const setDraw = (doc, hex) => doc.setDrawColor(...hexToRgb(hex));
 function renderPDF(doc, data, sp) {
   let y = MARGIN;
 
+  // Brand monogram
+  const mSize = 30;
+  setFill(doc, INDIGO);
+  doc.roundedRect(MARGIN, MARGIN, mSize, mSize, 6, 6, "F");
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(13);
+  setText(doc, WHITE);
+  doc.text("AS", MARGIN + mSize / 2, MARGIN + mSize / 2 + 4.7, { align: "center" });
+  setFill(doc, AMBER);
+  doc.rect(MARGIN, MARGIN + mSize + 2.5, mSize, 2.5, "F");
+
+  const xName = MARGIN + mSize + 14;
+
   // Name
   y += sp.nameFontSize * 0.86;
   doc.setFont("helvetica", "bold");
   doc.setFontSize(sp.nameFontSize);
   setText(doc, INDIGO);
-  doc.text(data.name, MARGIN, y);
+  doc.text(data.name, xName, y);
 
   // Headline
   y += sp.lineHeight + 1;
   doc.setFont("helvetica", "normal");
   doc.setFontSize(sp.headlineFontSize);
   setText(doc, PURPLE);
-  doc.text(data.headline, MARGIN, y);
+  doc.text(data.headline, xName, y);
 
   // Contact line
   y += sp.lineHeight - 1;
@@ -152,7 +176,7 @@ function renderPDF(doc, data, sp) {
   const contact = [data.contact.location, data.contact.email, data.contact.website]
     .filter(Boolean)
     .join("    |    ");
-  doc.text(contact, MARGIN, y);
+  doc.text(contact, xName, y);
 
   // Purple -> amber accent rule
   y += 8;
@@ -182,9 +206,12 @@ function renderPDF(doc, data, sp) {
     setText(doc, INDIGO);
     doc.text(title.toUpperCase(), MARGIN, y);
     y += 4.5;
+    doc.setLineWidth(1.2);
+    setDraw(doc, PURPLE);
+    doc.line(MARGIN, y, MARGIN + 46, y);
     doc.setLineWidth(0.6);
     setDraw(doc, HAIR);
-    doc.line(MARGIN, y, MARGIN + CONTENT_W, y);
+    doc.line(MARGIN + 46, y, MARGIN + CONTENT_W, y);
   }
 
   // Bullet helper
@@ -204,6 +231,38 @@ function renderPDF(doc, data, sp) {
       if (i < lines.length - 1) y += sp.lineHeight;
     }
   }
+
+  // Chips helper (soft-skill strengths)
+  function chips(items) {
+    const padX = 7;
+    const gapX = 6;
+    const gapY = 6;
+    const h = 15;
+    const r = 4;
+    let rowTop = y + 7;
+    let cx = MARGIN;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(sp.smallFontSize);
+    doc.setLineWidth(0.5);
+    items.forEach((label) => {
+      const w = doc.getTextWidth(label) + padX * 2;
+      if (cx + w > MARGIN + CONTENT_W) {
+        rowTop += h + gapY;
+        cx = MARGIN;
+      }
+      setFill(doc, PANEL);
+      setDraw(doc, HAIR);
+      doc.roundedRect(cx, rowTop, w, h, r, r, "FD");
+      setText(doc, INK);
+      doc.text(label, cx + padX, rowTop + 10.4);
+      cx += w + gapX;
+    });
+    y = rowTop + h;
+  }
+
+  // Core strengths
+  sectionHeader("Core strengths");
+  chips(data.strengths);
 
   // Experience
   sectionHeader("Experience");
@@ -341,6 +400,21 @@ function buildDocx(data) {
     });
 
   const tabRight = ptToTwip(CONTENT_W);
+
+  // Core strengths
+  children.push(sectionHeader("Core strengths"));
+  children.push(
+    new Paragraph({
+      spacing: { after: ptToTwip(2) },
+      children: [
+        new TextRun({
+          text: data.strengths.join("    ·    "),
+          size: ptToHalfPt(10.5),
+          color: "1A1A22",
+        }),
+      ],
+    }),
+  );
 
   // Experience
   children.push(sectionHeader("Experience"));

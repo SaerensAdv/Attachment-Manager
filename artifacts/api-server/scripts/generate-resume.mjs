@@ -50,7 +50,9 @@ function getResumeData() {
     headline: "Account Strategist · Google Ads & Conversion-Tracking Specialist",
     contact: {
       location: "Belgium · open to relocating to Dublin",
+      phone: "+32 486 43 09 71",
       email: "ax.saerens@gmail.com",
+      linkedin: "linkedin.com/in/srnsa",
       website: "saerensadvertising.com",
     },
     summary:
@@ -115,6 +117,16 @@ function getResumeData() {
       "Data-driven decisions",
       "Adaptability",
     ],
+    certifications: [
+      {
+        category: "Google Ads",
+        items: "Search, Display, Video, Shopping, Measurement, Apps, Demand Gen, AI-Powered Performance (Performance Max)",
+      },
+      {
+        category: "Analytics",
+        items: "Google Analytics (GA4) Certification",
+      },
+    ],
     education: [
       {
         degree: "Secondary Diploma — Accountancy & IT",
@@ -169,14 +181,20 @@ function renderPDF(doc, data, sp) {
   setText(doc, PURPLE);
   doc.text(data.headline, xName, y);
 
-  // Contact line
+  // Contact lines
   y += sp.lineHeight - 1;
   doc.setFontSize(sp.smallFontSize);
   setText(doc, MUTED);
-  const contact = [data.contact.location, data.contact.email, data.contact.website]
+  const contact1 = [data.contact.location, data.contact.phone, data.contact.email]
     .filter(Boolean)
     .join("    |    ");
-  doc.text(contact, xName, y);
+  doc.text(contact1, xName, y);
+  y += sp.lineHeight - 2;
+  setText(doc, MUTED);
+  const contact2 = [data.contact.linkedin, data.contact.website]
+    .filter(Boolean)
+    .join("    |    ");
+  doc.text(contact2, xName, y);
 
   // Purple -> amber accent rule
   y += 8;
@@ -287,9 +305,8 @@ function renderPDF(doc, data, sp) {
     role.bullets.forEach((b) => bullet(b));
   });
 
-  // Skills
-  sectionHeader("Skills");
-  data.skills.forEach((row) => {
+  // Skills + Certifications (shared labeled-row renderer)
+  function labeledRow(row) {
     y += sp.bulletGap + sp.lineHeight;
     doc.setFont("helvetica", "bold");
     doc.setFontSize(sp.bodyFontSize);
@@ -305,7 +322,13 @@ function renderPDF(doc, data, sp) {
       doc.text(lines[i], indent, y);
       if (i < lines.length - 1) y += sp.lineHeight;
     }
-  });
+  }
+
+  sectionHeader("Skills");
+  data.skills.forEach(labeledRow);
+
+  sectionHeader("Certifications");
+  data.certifications.forEach(labeledRow);
 
   // Education
   sectionHeader("Education");
@@ -367,11 +390,17 @@ function buildDocx(data) {
       border: { bottom: { style: BorderStyle.SINGLE, size: 12, color: "716BEB", space: 4 } },
       children: [
         new TextRun({
-          text: [data.contact.location, data.contact.email, data.contact.website]
+          text: [data.contact.location, data.contact.phone, data.contact.email]
             .filter(Boolean)
             .join("    |    "),
           size: ptToHalfPt(9),
           color: "6B6B72",
+        }),
+        new TextRun({
+          text: [data.contact.linkedin, data.contact.website].filter(Boolean).join("    |    "),
+          size: ptToHalfPt(9),
+          color: "6B6B72",
+          break: 1,
         }),
       ],
     }),
@@ -460,6 +489,20 @@ function buildDocx(data) {
     );
   });
 
+  // Certifications
+  children.push(sectionHeader("Certifications"));
+  data.certifications.forEach((row) => {
+    children.push(
+      new Paragraph({
+        spacing: { after: ptToTwip(2) },
+        children: [
+          new TextRun({ text: row.category + ":  ", bold: true, size: ptToHalfPt(10.5), color: "29274E" }),
+          new TextRun({ text: row.items, size: ptToHalfPt(10.5), color: "1A1A22" }),
+        ],
+      }),
+    );
+  });
+
   // Education
   children.push(sectionHeader("Education"));
   data.education.forEach((ed) => {
@@ -518,10 +561,10 @@ async function main() {
   // Compress if overflow.
   let guard = 0;
   while (finalY > TARGET_Y && guard < 40) {
-    spacing.lineHeight = Math.max(11.5, spacing.lineHeight - 0.3);
-    spacing.sectionGap = Math.max(6, spacing.sectionGap - 0.6);
-    spacing.roleGap = Math.max(4, spacing.roleGap - 0.4);
-    spacing.bulletGap = Math.max(2, spacing.bulletGap - 0.2);
+    spacing.lineHeight = Math.max(11, spacing.lineHeight - 0.3);
+    spacing.sectionGap = Math.max(5, spacing.sectionGap - 0.6);
+    spacing.roleGap = Math.max(3.5, spacing.roleGap - 0.4);
+    spacing.bulletGap = Math.max(1.8, spacing.bulletGap - 0.2);
     finalY = renderPDF(new jsPDF({ unit: "pt", format: "letter" }), data, spacing);
     guard++;
   }

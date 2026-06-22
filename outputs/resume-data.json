@@ -3,7 +3,9 @@
   "headline": "Account Strategist · Google Ads & Conversion-Tracking Specialist",
   "contact": {
     "location": "Belgium · open to relocating to Dublin",
+    "phone": "+32 486 43 09 71",
     "email": "ax.saerens@gmail.com",
+    "linkedin": "linkedin.com/in/srnsa",
     "website": "saerensadvertising.com"
   },
   "summary": "Account Strategist who already sold and managed the Belgian and Dutch SMB market at Google Customer Solutions — hitting quota every quarter and earning a Sales Captain promotion — before building a Google Ads agency from zero. Combines deep platform and conversion-tracking expertise with consultative selling to grow advertiser revenue and own a portfolio end to end.",
@@ -67,6 +69,16 @@
     "Data-driven decisions",
     "Adaptability"
   ],
+  "certifications": [
+    {
+      "category": "Google Ads",
+      "items": "Search, Display, Video, Shopping, Measurement, Apps, Demand Gen, AI-Powered Performance (Performance Max)"
+    },
+    {
+      "category": "Analytics",
+      "items": "Google Analytics (GA4) Certification"
+    }
+  ],
   "education": [
     {
       "degree": "Secondary Diploma — Accountancy & IT",
@@ -80,9 +92,9 @@
     "bodyFontSize": 10.5,
     "smallFontSize": 9,
     "sectionFontSize": 10.5,
-    "lineHeight": 12.599999999999998,
-    "sectionGap": 9.200000000000001,
-    "roleGap": 6.799999999999999,
-    "bulletGap": 2.8999999999999995
+    "lineHeight": 11.519999999999994,
+    "sectionGap": 7.600000000000002,
+    "roleGap": 5.799999999999997,
+    "bulletGap": 2.3499999999999988
   }
 }

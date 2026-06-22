@@ -352,10 +352,10 @@ title = "Proforma — LCS (19 juni 2026)"
 id = "7Wv6zyR5Q2cjKPOpbJKxy"
 uri = "file://outputs/Axel-Saerens-resume.pdf"
 type = "pdf"
-title = "Axel Saerens — Resume (PDF, v2)"
+title = "Axel Saerens — Resume (PDF, final)"
 
 [[outputs]]
 id = "kRqMeNsakc55rQXEfYeCP"
 uri = "file://outputs/Axel-Saerens-resume.docx"
 type = "word_document"
-title = "Axel Saerens — Resume (Word / DOCX, v2)"
+title = "Axel Saerens — Resume (Word / DOCX, final)"

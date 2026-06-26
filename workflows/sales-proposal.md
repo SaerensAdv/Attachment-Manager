@@ -28,7 +28,7 @@ When a new lead or prospect comes in, when a pitch or proposal is requested, or 
 
 ## Required output
 
-Use `templates/proposal.md`, following `knowledge/tone-of-voice.md`. Must include:
+Use `templates/proposal.md`, following `knowledge/agency-foundations.md`. Must include:
 
 - Prospect summary (who they are and what they need)
 - Fit assessment (honest — why Saerens is or isn't a good fit)

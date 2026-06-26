@@ -104,7 +104,7 @@ export const HealthCheckResponse = zod.object({
 export const GetDocGraphResponse = zod.object({
   "nodes": zod.array(zod.object({
   "id": zod.string().describe('Stable identifier, equal to the path relative to the docs root.'),
-  "path": zod.string().describe('Path relative to the docs root (e.g. knowledge\/tone-of-voice.md).'),
+  "path": zod.string().describe('Path relative to the docs root (e.g. knowledge\/agency-foundations.md).'),
   "title": zod.string().describe('The document\'s first heading, or the filename if none.'),
   "category": zod.string().describe('One of core, agent, client, workflow, template, knowledge.'),
   "summary": zod.string().nullable().describe('First paragraph of the document, if any.'),

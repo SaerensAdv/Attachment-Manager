@@ -22,7 +22,7 @@
 [Services, scope, and framing. Pricing only from provided inputs — never invent fees. Mark any pricing gap as [AAN TE VULLEN: prijs].]
 
 ## 5. Realistic expectations
-[What success could look like and on what timeline, framed honestly per `knowledge/agency-principles.md`. No guarantees.]
+[What success could look like and on what timeline, framed honestly per `knowledge/agency-foundations.md`. No guarantees.]
 
 ## 6. Open questions / missing inputs
 [What is needed before this can go out — pricing, commitments, access.]

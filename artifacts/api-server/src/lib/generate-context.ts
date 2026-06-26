@@ -5,9 +5,7 @@ const GLOBAL_RULES_PATH = "AGENTS.md";
 
 // Knowledge files that always belong in the quality bar, regardless of agent.
 export const ALWAYS_KNOWLEDGE = [
-  "knowledge/agency-principles.md",
-  "knowledge/tone-of-voice.md",
-  "knowledge/naming-conventions.md",
+  "knowledge/agency-foundations.md",
 ];
 
 const REFERENCE_RE = /\b(?:templates|knowledge)\/[A-Za-z0-9_-]+\.md\b/g;

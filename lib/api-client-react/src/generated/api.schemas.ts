@@ -54,7 +54,7 @@ export interface HealthStatus {
 export interface DocNode {
   /** Stable identifier, equal to the path relative to the docs root. */
   id: string;
-  /** Path relative to the docs root (e.g. knowledge/tone-of-voice.md). */
+  /** Path relative to the docs root (e.g. knowledge/agency-foundations.md). */
   path: string;
   /** The document's first heading, or the filename if none. */
   title: string;

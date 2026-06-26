@@ -12,8 +12,8 @@ A client wants to improve conversion rate through structured testing: building a
 
 1. Review the client context, goal, and funnel (`clients/<client>.md`): where conversions happen and where they leak.
 2. Confirm measurement is trustworthy first — a test on broken tracking is worthless (see `workflows/measurement-audit.md`).
-3. Gather evidence for where to test: analytics, the funnel, and page-quality findings (with the Landing Page / Web Design Specialist where relevant), per `knowledge/landing-page-standards.md`.
-4. Form a clear **hypothesis** per test following `knowledge/experimentation-standards.md`: the change, the expected effect, the audience, and the single primary metric.
+3. Gather evidence for where to test: analytics, the funnel, and page-quality findings (with the Landing Page / Web Design Specialist where relevant), per `knowledge/seo-web-content.md`.
+4. Form a clear **hypothesis** per test following `knowledge/measurement-reporting.md`: the change, the expected effect, the audience, and the single primary metric.
 5. Prioritize tests by expected impact, confidence, and effort; design each test (variants, audience split, duration, minimum sample) honestly — no peeking, no underpowered tests.
 6. For a result read: report the outcome against the hypothesis honestly, including inconclusive or negative results, and the recommended next step.
 7. Prepare the human approval summary; flag what needs build, design, or tracking work before launch.
@@ -27,7 +27,7 @@ A client wants to improve conversion rate through structured testing: building a
 
 ## Required output
 
-Follow `templates/task-output.md` and `knowledge/experimentation-standards.md`. Must include:
+Follow `templates/task-output.md` and `knowledge/measurement-reporting.md`. Must include:
 
 - The conversion goal and where in the funnel the test sits
 - Hypothesis (change -> expected effect -> primary metric)

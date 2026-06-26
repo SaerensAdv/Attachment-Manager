@@ -13,11 +13,11 @@ A client wants to launch paid social, add Meta to an existing Google Ads program
 1. Understand the business, offer, and creative assets available.
 2. Review the client context (`clients/<client>.md`).
 3. Confirm the objective and the client's world (e-commerce or lead generation).
-4. Define campaign objectives and structure (prospecting / retargeting / catalog) per `knowledge/meta-ads-standards.md`.
+4. Define campaign objectives and structure (prospecting / retargeting / catalog) per `knowledge/paid-social-creative.md`.
 5. Define audiences (broad/Advantage+, interests, lookalikes, custom audiences) and exclusions.
 6. Recommend placements and the budget split.
 7. Define creative direction (formats, hooks, angles) and hand ad copy to the Copywriter.
-8. Define the conversion event and confirm Pixel / Conversions API tracking (`knowledge/analytics-standards.md`).
+8. Define the conversion event and confirm Pixel / Conversions API tracking (`knowledge/measurement-reporting.md`).
 9. Prepare the human approval summary (budget, go-live, tracking).
 
 ## Agents involved

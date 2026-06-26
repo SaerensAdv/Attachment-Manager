@@ -13,7 +13,7 @@ When onboarding a new client, before launching a new campaign or landing page, w
 1. Identify the client, business type (lead gen or e-commerce), and primary goal (`clients/<client>.md`).
 2. List the conversion actions that matter and their value.
 3. Review the current setup: GA4, Google Ads conversions, Meta Pixel / Conversions API, and tag-manager structure.
-4. Check data integrity per `knowledge/analytics-standards.md`: duplicate conversions, missing events, attribution settings, and consent/cookie basics.
+4. Check data integrity per `knowledge/measurement-reporting.md`: duplicate conversions, missing events, attribution settings, and consent/cookie basics.
 5. Define the measurement plan (events and KPIs) so Optimization and Reporting use the same definitions.
 6. Write a recommended tracking spec: events, parameters, and where each fires.
 7. Note dependencies — what the Web Developer or a human must implement.
@@ -28,7 +28,7 @@ When onboarding a new client, before launching a new campaign or landing page, w
 
 ## Required output
 
-Follow `templates/task-output.md` and `knowledge/analytics-standards.md`. Must include:
+Follow `templates/task-output.md` and `knowledge/measurement-reporting.md`. Must include:
 
 - Measurement plan (events and KPIs that matter)
 - Tracking review (current setup, gaps, issues)

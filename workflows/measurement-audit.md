@@ -13,7 +13,7 @@ Onboarding a live account, before the first monthly report or weekly optimizatio
 ## Steps
 
 1. Review the client context and what counts as a real conversion for them (`clients/<client>.md`).
-2. Establish the measurement baseline against `knowledge/analytics-standards.md`: which conversion actions *should* exist for this client's world (e-commerce vs lead generation), and what value each should carry.
+2. Establish the measurement baseline against `knowledge/measurement-reporting.md`: which conversion actions *should* exist for this client's world (e-commerce vs lead generation), and what value each should carry.
 3. Read the live, read-only account data and the automatic signals already computed (spend-without-conversions, CPA outliers). Treat **spend without any conversions** as a tracking-failure suspect first, not a performance problem.
 4. Check each conversion action: is it defined, firing, firing **only once**, and assigned a meaningful value? Are GA4 and Google Ads aligned on what a conversion is? Are phone calls tracked where calls matter?
 5. Look for the common failure modes: missing tag after a site change, duplicate counting, test/internal traffic polluting data, primary conversions set to low-value or pageview-style actions, and consent/privacy handling that silently drops data.

@@ -55,10 +55,10 @@ Workflows without a marker keep markdown as their result, exactly as before. The
 
 There is a family of **Replit build-prompt** deliverables — each converts the team's work into one paste-ready prompt for the Replit Agent, grounded in its artifact-type knowledge node, and none of them puts anything live:
 
-- `replit-prompt` — a website / landing page (`workflows/web-build.md`, `knowledge/replit-prompting.md`).
-- `slide-deck-prompt` — a presentation / slide deck (`workflows/slide-deck.md`, `knowledge/replit-slide-decks.md`).
-- `animated-video-prompt` — a short animated video (`workflows/animated-video.md`, `knowledge/replit-animated-videos.md`).
-- `data-app-prompt` — an interactive dashboard / data app (`workflows/data-app.md`, `knowledge/replit-data-apps.md`).
+- `replit-prompt` — a website / landing page (`workflows/web-build.md`, `knowledge/replit-builds.md`).
+- `slide-deck-prompt` — a presentation / slide deck (`workflows/slide-deck.md`, `knowledge/replit-builds.md`).
+- `animated-video-prompt` — a short animated video (`workflows/animated-video.md`, `knowledge/replit-builds.md`).
+- `data-app-prompt` — an interactive dashboard / data app (`workflows/data-app.md`, `knowledge/replit-builds.md`).
 
 They share one builder (`buildBuildPrompt`) so the rules (no emoji, preserve `[AAN TE VULLEN: …]` placeholders, lose no team decision, never invent data, nothing goes live) stay identical; only the artifact wording, the Replit app type, the knowledge node, and the section skeleton differ per kind. Other deliverables (`google-ads-csv`, `negative-keywords-csv`, `monthly-report-email`) are bulk-import or action artifacts handled the same way.
 
@@ -219,13 +219,13 @@ The brain-vs-executor split keeps control in one place:
 
 Founder-priority automations, in order: **monthly reports** (shipped — generated, held for approval, then emailed), **search-term checks for negative keywords**, and **ad copy generation**.
 
-Some data sources cannot be reached from the cloud at all. **Screaming Frog SEO Spider** is a licensed *desktop* crawler, so its technical crawl follows the brain-vs-executor split in a semi-automatic shape ("Model B"): the agency runs the crawl on their own machine and pushes the export to the brain, which stores the **latest** crawl per client and reads it during runs (never starting a crawl itself, never inventing numbers). The intake contract and the agent guidance live in `knowledge/screaming-frog-crawl-intake.md`.
+Some data sources cannot be reached from the cloud at all. **Screaming Frog SEO Spider** is a licensed *desktop* crawler, so its technical crawl follows the brain-vs-executor split in a semi-automatic shape ("Model B"): the agency runs the crawl on their own machine and pushes the export to the brain, which stores the **latest** crawl per client and reads it during runs (never starting a crawl itself, never inventing numbers). The intake contract and the agent guidance live in `knowledge/seo-web-content.md`.
 
 ### ClickUp as the work-management & approval layer
 
 Axel already runs the agency in ClickUp, so it is the natural surface for *tasks, assignment, statuses, and human approval* — the visible layer on top of the brain. The intent: the app creates a task per deliverable, assigns the responsible agent, posts the generated draft back, and a human moves the task to `Approved`; that approval (delivered via webhook) is what lets the executor act. ClickUp does **not** become a second brain — agent definitions, knowledge, and dossiers stay in this repo.
 
-ClickUp also offers AI teammates ("Super Agents") that can be assigned tasks directly. That is appealing but gated behind a per-seat, all-or-nothing AI add-on, so the recommended default is a hybrid: app-as-brain, ClickUp-as-layer, agents represented by a custom field or a single bot user rather than a paid seat each. The full analysis and the platform/API details live in `knowledge/clickup-platform.md`, `knowledge/clickup-api.md`, `knowledge/clickup-webhooks.md`, and `knowledge/clickup-ai-agents.md`.
+ClickUp also offers AI teammates ("Super Agents") that can be assigned tasks directly. That is appealing but gated behind a per-seat, all-or-nothing AI add-on, so the recommended default is a hybrid: app-as-brain, ClickUp-as-layer, agents represented by a custom field or a single bot user rather than a paid seat each. The full analysis and the platform/API details live in `knowledge/clickup.md`, `knowledge/clickup.md`, `knowledge/clickup.md`, and `knowledge/clickup.md`.
 
 ## Design rules
 

@@ -16,7 +16,7 @@ Onboarding a client with SEO in scope, a prospect requesting an SEO review, or a
 2. Confirm the client's world (e-commerce or lead generation) and priority services/products and locations.
 3. Gather organic performance data for the review period (impressions, clicks, positions, organic conversions).
 4. Run keyword and intent research; map priority topics to page types.
-5. Review technical SEO against `knowledge/seo-standards.md` (indexation, crawl, Core Web Vitals, mobile, structured data).
+5. Review technical SEO against `knowledge/seo-web-content.md` (indexation, crawl, Core Web Vitals, mobile, structured data).
 6. Review on-page SEO (titles, metas, headings, internal links, content gaps).
 7. Review local SEO where relevant (Google Business Profile, NAP, local pages).
 8. Review off-page authority honestly (links, mentions).
@@ -32,7 +32,7 @@ Onboarding a client with SEO in scope, a prospect requesting an SEO review, or a
 
 ## Required output
 
-Follow the output structure in `knowledge/seo-standards.md`; see also `templates/audit-report.md` for the shared audit shape. Must include:
+Follow the output structure in `knowledge/seo-web-content.md`; see also `templates/audit-report.md` for the shared audit shape. Must include:
 
 - Organic health summary
 - Keyword & intent map

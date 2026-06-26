@@ -35,14 +35,14 @@ structure).
    file (`clients/<client>.md`) for tone, real proof points, and brand restrictions.
 2. Read the injected **live ad-group structure** — keyword themes and landing page
    per ad group drive message match.
-3. Write RSA copy **per ad group** following `knowledge/ad-copy-standards.md`:
+3. Write RSA copy **per ad group** following `knowledge/google-ads-standards.md`:
    default to the full asset count (up to 15 headlines, 4 descriptions), the main
    keyword in a headline, distinct angles (not reworded twins), benefit + clear CTA.
 4. Respect Google Ads **character limits** (headline <= 30, description <= 90, each
    display path <= 15) and **policy** (no unverifiable superlatives, no excessive
    punctuation, no competitor trademarks, no emojis).
 5. Make the copy **review-ready for compliance**: check claims and policy against
-   `knowledge/google-ads-policy.md` so the automatic QA gate and human approval find no surprises.
+   `knowledge/google-ads-standards.md` so the automatic QA gate and human approval find no surprises.
 6. The deliverable layer converts the approved copy + the real structure into one
    **Google Ads Editor CSV** for the user to review and import.
 
@@ -56,7 +56,7 @@ structure).
 
 The team's markdown (copy per ad group, with character counts and policy flags),
 then the **CSV deliverable**: one row per ad group, columns exactly as in
-`knowledge/ad-copy-standards.md` (`Campaign, Ad group, Ad type, Headline 1-15,
+`knowledge/google-ads-standards.md` (`Campaign, Ad group, Ad type, Headline 1-15,
 Description 1-4, Path 1, Path 2, Final URL`). Nothing goes live automatically —
 the human reviews and imports the file via Google Ads Editor.
 

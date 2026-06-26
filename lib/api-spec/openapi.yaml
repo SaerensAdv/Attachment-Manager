@@ -1765,7 +1765,7 @@ components:
           description: Stable identifier, equal to the path relative to the docs root.
         path:
           type: string
-          description: Path relative to the docs root (e.g. knowledge/tone-of-voice.md).
+          description: Path relative to the docs root (e.g. knowledge/agency-foundations.md).
         title:
           type: string
           description: The document's first heading, or the filename if none.

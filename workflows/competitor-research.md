@@ -19,8 +19,8 @@ Onboarding a new client, preparing a pitch or audit, entering a new market or se
 
 ## Saerens emphasis
 
-- **Public and ethical only.** Use sources anyone can access; never anything from a competitor's account. Follow `knowledge/competitive-research-standards.md` for sources and their limits.
-- **Belgian reality.** Account for NL/FR language and regional market differences (`knowledge/belgian-market-context.md`).
+- **Public and ethical only.** Use sources anyone can access; never anything from a competitor's account. Follow `knowledge/market-competitive-research.md` for sources and their limits.
+- **Belgian reality.** Account for NL/FR language and regional market differences (`knowledge/market-competitive-research.md`).
 - **Honest gaps.** State clearly what could not be verified rather than inventing competitor data.
 
 ## Agents involved

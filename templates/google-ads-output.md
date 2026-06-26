@@ -14,7 +14,7 @@
 [Campaigns and how they relate. For audits/optimization: the current structure and issues with it.]
 
 ## 4. Campaign naming
-[Names per `knowledge/naming-conventions.md`.]
+[Names per `knowledge/agency-foundations.md`.]
 
 ## 5. Ad groups
 [Ad groups and their themes.]
@@ -32,7 +32,7 @@
 [Sitelinks, callouts, structured snippets, images/feeds, etc.]
 
 ## 10. Tracking checklist
-[Conversion actions and measurement to verify before launch — see `knowledge/analytics-standards.md`.]
+[Conversion actions and measurement to verify before launch — see `knowledge/measurement-reporting.md`.]
 
 ## 11. Findings & recommendations (audit / optimization)
 [Prioritized findings with expected impact and effort. Label hypotheses vs data-backed conclusions.]

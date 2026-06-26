@@ -14,9 +14,9 @@ Before launching a campaign that points to a key page, when a campaign's traffic
 2. Confirm the page's primary goal and conversion action.
 3. Gather current conversion data if available (conversion rate, bounce, form completion, device split).
 4. Check message match between the traffic source intent and the page.
-5. Review conversion essentials per `knowledge/landing-page-standards.md` (value prop, above-the-fold, CTA, trust, form/checkout friction).
-6. Recommend page structure and section order for the goal; where a redesign is on the table, use the Replit Canvas to sketch and compare directions (`knowledge/replit-canvas.md`).
-7. Note copy and layout changes (hand copy to the Copywriter); assess whether the page content is genuinely helpful and people-first per `knowledge/helpful-content-standards.md`, not just CTA-pushing.
+5. Review conversion essentials per `knowledge/seo-web-content.md` (value prop, above-the-fold, CTA, trust, form/checkout friction).
+6. Recommend page structure and section order for the goal; where a redesign is on the table, use the Replit Canvas to sketch and compare directions (`knowledge/replit-builds.md`).
+7. Note copy and layout changes (hand copy to the Copywriter); assess whether the page content is genuinely helpful and people-first per `knowledge/seo-web-content.md`, not just CTA-pushing.
 8. Review technical/UX basics (mobile, speed, accessibility).
 9. Propose A/B test hypotheses, labeled as hypotheses.
 10. Prioritize recommendations by impact and effort.
@@ -30,7 +30,7 @@ Before launching a campaign that points to a key page, when a campaign's traffic
 
 ## Required output
 
-Follow the output structure in `knowledge/landing-page-standards.md`. Must include:
+Follow the output structure in `knowledge/seo-web-content.md`. Must include:
 
 - Summary of how well the page serves its goal
 - Message match assessment

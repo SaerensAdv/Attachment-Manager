@@ -21,7 +21,7 @@
 [A light read from `workflows/competitor-research.md`: who the main rivals are and one or two early observations. Sourced and dated.]
 
 ## 4. Belgian-market notes
-[Language(s), regional considerations, and sector seasonality from `knowledge/belgian-market-context.md` that will shape the plan.]
+[Language(s), regional considerations, and sector seasonality from `knowledge/market-competitive-research.md` that will shape the plan.]
 
 ## 5. Open questions for the human
 [What must be confirmed before work begins — budget, access, goals, tracking, pricing. Be specific.]

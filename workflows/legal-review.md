@@ -12,7 +12,7 @@ A client or the agency needs a contract, retainer, SOW, NDA, or DPA drafted or r
 
 1. Review the client context and the document's purpose (`clients/<client>.md`): the parties, the scope, and what must be protected.
 2. Confirm the document type and the key terms that are actually agreed (scope, fees/term, responsibilities, data handling) — never invent commercial terms.
-3. Draft or review against the agreed terms and `knowledge/agency-principles.md` (honesty, transparency, no overpromising); keep the language plain and fair to both sides.
+3. Draft or review against the agreed terms and `knowledge/agency-foundations.md` (honesty, transparency, no overpromising); keep the language plain and fair to both sides.
 4. For anything touching personal data, check GDPR basics: lawful basis, data processed, retention, sub-processors, and consent wording.
 5. Identify and clearly flag risks, gaps, and anything that needs a qualified human or lawyer to decide — do not paper over uncertainty.
 6. Prepare the human approval summary; state explicitly that this is a draft for review, not legal advice.

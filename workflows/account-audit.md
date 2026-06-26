@@ -14,7 +14,7 @@ Onboarding a new client, a prospect requesting an audit, or a scheduled review o
 
 1. Review the client context and goals (`clients/<client>.md`). For a **new client**, first align with the client on what matters most to them; for an **existing account**, plan a complete review of everything currently active and everything tested before.
 2. Gather account-level performance data for the review period.
-3. **Check conversion tracking first** — which conversions are measured, and whether they are measured correctly (`knowledge/analytics-standards.md`). Nothing else can be trusted until this is sound. For a dedicated, standalone tracking health check, use `workflows/measurement-audit.md`.
+3. **Check conversion tracking first** — which conversions are measured, and whether they are measured correctly (`knowledge/measurement-reporting.md`). Nothing else can be trusted until this is sound. For a dedicated, standalone tracking health check, use `workflows/measurement-audit.md`.
 4. Review account structure and settings against `knowledge/google-ads-standards.md`.
 5. Review campaigns, ad groups, keywords, and search terms for **wasted spend and gaps** (commonly missing negative keywords).
 6. Review what has been **tested in the past** so recommendations build on history instead of repeating failed tests.
@@ -50,7 +50,7 @@ flowchart TD
 
 ## Required output
 
-Use `templates/google-ads-output.md` (audit variant), or `templates/audit-report.md` for a standalone audit deliverable. When the audit is presented as a slide deck, follow the Saerens deck layout standard (`knowledge/saerens-deck-layout.md`). Must include:
+Use `templates/google-ads-output.md` (audit variant), or `templates/audit-report.md` for a standalone audit deliverable. When the audit is presented as a slide deck, follow the Saerens deck layout standard (`knowledge/saerens-brand.md`). Must include:
 
 - Overall account health summary
 - Tracking & measurement findings

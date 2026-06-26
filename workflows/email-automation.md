@@ -10,12 +10,12 @@ A client wants email marketing or automation: a welcome/onboarding sequence, a l
 
 ## Steps
 
-1. Review the client context, audience, and goals (`clients/<client>.md`) and the brand voice (`knowledge/tone-of-voice.md`).
+1. Review the client context, audience, and goals (`clients/<client>.md`) and the brand voice (`knowledge/agency-foundations.md`).
 2. Confirm the program goal and trigger: what event starts the flow (new lead, purchase, sign-up, inactivity) and the action each message should drive.
 3. Map the audience and segments — who receives what, based on data the client actually has; never invent contact data.
 4. Design the flow: the sequence of messages, timing/delays, and branch logic, plus where leads are written back to the client's CRM or list.
 5. Draft each message (subject, preview, body, CTA) in the Saerens voice — honest and useful, respecting consent and unsubscribe rules.
-6. Define the measurement: which opens/clicks/conversions matter and how success is judged, aligned with `knowledge/analytics-standards.md`.
+6. Define the measurement: which opens/clicks/conversions matter and how success is judged, aligned with `knowledge/measurement-reporting.md`.
 7. Prepare the human approval summary; flag anything (claims, offers, data access, CRM/tool setup) that needs confirmation before activation.
 
 ## Agents involved
@@ -27,7 +27,7 @@ A client wants email marketing or automation: a welcome/onboarding sequence, a l
 
 ## Required output
 
-Follow `templates/task-output.md` and `knowledge/tone-of-voice.md`. Must include:
+Follow `templates/task-output.md` and `knowledge/agency-foundations.md`. Must include:
 
 - Program goal and trigger
 - Audience segments and the data they rely on

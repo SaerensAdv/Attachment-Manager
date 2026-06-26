@@ -1,6 +1,6 @@
 # Template: Ad Creative Output
 
-> Output format for paid-ad **creative packages** (Meta / Google Display & Demand Gen). Deliver multiple distinct angles. Use the sections relevant to the task; keep the order. Never invent offers, prices, or claims — mark unknowns as **[AAN TE VULLEN: …]**. Respect `knowledge/ad-creative-standards.md`.
+> Output format for paid-ad **creative packages** (Meta / Google Display & Demand Gen). Deliver multiple distinct angles. Use the sections relevant to the task; keep the order. Never invent offers, prices, or claims — mark unknowns as **[AAN TE VULLEN: …]**. Respect `knowledge/paid-social-creative.md`.
 
 ## 1. Brief recap
 - Client: [name]

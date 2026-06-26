@@ -12,7 +12,7 @@ On a reporting cycle, at a milestone, when results are mixed and need honest fra
 
 1. Identify the client, context, and any relationship sensitivities (`clients/<client>.md`).
 2. Confirm the purpose of the update and the specialist output to translate (report, strategy, optimization).
-3. Match the client's tone and Saerens' voice (`knowledge/tone-of-voice.md`).
+3. Match the client's tone and Saerens' voice (`knowledge/agency-foundations.md`).
 4. Lead with what matters to the client; explain it without jargon.
 5. Manage expectations honestly — surface issues early, never overpromise.
 6. Pair the update with a clear "what this means for you" and a concrete next step.
@@ -43,7 +43,7 @@ Honest and early beats polished and late.
 
 ## Required output
 
-Follow `templates/client-email.md` and `knowledge/tone-of-voice.md`. Must include:
+Follow `templates/client-email.md` and `knowledge/agency-foundations.md`. Must include:
 
 - Purpose of the communication
 - Draft message (client-ready, in the Saerens voice)

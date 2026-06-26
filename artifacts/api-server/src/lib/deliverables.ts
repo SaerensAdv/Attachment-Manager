@@ -260,7 +260,7 @@ const RSA_CSV_HEADER =
 
 function buildAdCopyCsvPrompt(ctx: DeliverableContext): DeliverablePrompt {
   const system = [
-    "You are the deliverable editor of Saerens Advertising's AI team. Your job is NOT to invent new offers or claims, but to convert the team's approved Responsive Search Ad (RSA) copy into ONE Google Ads Editor-compatible CSV the user can review and bulk-import. Follow knowledge/ad-copy-standards.md.",
+    "You are the deliverable editor of Saerens Advertising's AI team. Your job is NOT to invent new offers or claims, but to convert the team's approved Responsive Search Ad (RSA) copy into ONE Google Ads Editor-compatible CSV the user can review and bulk-import. Follow knowledge/google-ads-standards.md.",
     "",
     "## What you receive",
     "- The client context (brand, audience, tone).",
@@ -345,7 +345,7 @@ interface BuildPromptSpec {
   artifactNL: string;
   /** Replit app type the user picks when starting the project. */
   replitAppType: string;
-  /** Knowledge node that grounds this artifact type, e.g. "knowledge/replit-slide-decks.md". */
+  /** Knowledge node that grounds this artifact type, e.g. "knowledge/replit-builds.md". */
   knowledgeRef: string;
   /** Ordered, numbered "## Wat je teruggeeft" section lines. */
   sections: string[];
@@ -433,7 +433,7 @@ function buildReplitPrompt(ctx: DeliverableContext): DeliverablePrompt {
   return buildBuildPrompt(ctx, {
     artifactNL: "de website of landingspagina",
     replitAppType: "Web App",
-    knowledgeRef: "knowledge/replit-prompting.md",
+    knowledgeRef: "knowledge/replit-builds.md",
     brand: "client",
     sections: [
       "1. **Doel & context** — wat moet er gebouwd worden, voor welke klant/business, en het doel van de pagina (de gewenste actie/conversie).",
@@ -454,7 +454,7 @@ function buildSlideDeckPrompt(ctx: DeliverableContext): DeliverablePrompt {
   return buildBuildPrompt(ctx, {
     artifactNL: "de presentatie (slide deck)",
     replitAppType: "Slides",
-    knowledgeRef: "knowledge/replit-slide-decks.md",
+    knowledgeRef: "knowledge/replit-builds.md",
     brand: "agency",
     sections: [
       "1. **Doel & doelgroep** — wat de presentatie moet bereiken en voor wie (de zaal).",
@@ -472,7 +472,7 @@ function buildAnimatedVideoPrompt(ctx: DeliverableContext): DeliverablePrompt {
   return buildBuildPrompt(ctx, {
     artifactNL: "de geanimeerde video",
     replitAppType: "Animation",
-    knowledgeRef: "knowledge/replit-animated-videos.md",
+    knowledgeRef: "knowledge/replit-builds.md",
     brand: "client+signature",
     sections: [
       "1. **Doel & lengte** — waar de video voor dient en een richtduur (explainers/promo's werken best op ~30–60s).",
@@ -490,7 +490,7 @@ function buildDataAppPrompt(ctx: DeliverableContext): DeliverablePrompt {
   return buildBuildPrompt(ctx, {
     artifactNL: "het interactieve dashboard (data-app)",
     replitAppType: "Data Visualization",
-    knowledgeRef: "knowledge/replit-data-apps.md",
+    knowledgeRef: "knowledge/replit-builds.md",
     brand: "agency",
     sections: [
       "1. **Doel** — welke beslissing het dashboard ondersteunt en wat het moet tonen/volgen.",
@@ -507,7 +507,7 @@ function buildDataAppPrompt(ctx: DeliverableContext): DeliverablePrompt {
 
 function buildAuditReportPrompt(ctx: DeliverableContext): DeliverablePrompt {
   const system = [
-    "Je bent de eindredacteur van het AI-team van Saerens Advertising. Je taak is NIET om nieuwe bevindingen of cijfers te bedenken, maar om het werk dat het team net leverde om te zetten in één helder, klantklaar audit-rapport dat Saerens aan de klant of prospect kan voorleggen. Volg de structuur van templates/audit-report.md en de toon van knowledge/tone-of-voice.md.",
+    "Je bent de eindredacteur van het AI-team van Saerens Advertising. Je taak is NIET om nieuwe bevindingen of cijfers te bedenken, maar om het werk dat het team net leverde om te zetten in één helder, klantklaar audit-rapport dat Saerens aan de klant of prospect kan voorleggen. Volg de structuur van templates/audit-report.md en de toon van knowledge/agency-foundations.md.",
     "",
     "## Wat je krijgt",
     "- De klantcontext (merk, doelen, sector).",

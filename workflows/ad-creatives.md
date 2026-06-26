@@ -14,7 +14,7 @@ A client needs new ad creatives for Meta (Facebook & Instagram) or Google (Displ
 
 1. Confirm the **offer**, audience, primary benefit, and call to action.
 2. Review the client context (`clients/<client>.md`) for tone, real proof points, and brand restrictions.
-3. Confirm the **platform, placement, and format** (e.g. Meta Feed 4:5) per `knowledge/ad-creative-standards.md`.
+3. Confirm the **platform, placement, and format** (e.g. Meta Feed 4:5) per `knowledge/paid-social-creative.md`.
 4. Set the **creative direction** — which angles and funnel stage (with the Meta Ads Strategist for paid social, where relevant).
 5. Write **multiple distinct angles** (default: pain point / curiosity / social proof), each with on-image text + primary text + headline + description within platform limits.
 6. Define the **visual direction** per angle (background, imagery, brand colours / logo) for media production.

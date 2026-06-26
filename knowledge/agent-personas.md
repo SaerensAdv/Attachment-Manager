@@ -15,7 +15,7 @@ Personas make the team:
 
 There are two distinct voices, and they must not be confused:
 
-1. **The Saerens client-facing voice** (`knowledge/tone-of-voice.md`) — confident, transparent, honest, data-driven, no surprises. This governs **all client-facing output**: emails, reports, ad copy framing. It is non-negotiable and identical across every agent.
+1. **The Saerens client-facing voice** (`knowledge/agency-foundations.md`) — confident, transparent, honest, data-driven, no surprises. This governs **all client-facing output**: emails, reports, ad copy framing. It is non-negotiable and identical across every agent.
 2. **The agent's personality** — how the agent *thinks and communicates internally*, its flavor and working style. It colours *how* work is produced and how the agent talks within the team.
 
 > An agent's personality shapes **how** it works, never **what** the standards require. When producing client-facing output, every agent speaks in the unified Saerens voice — the personality stays "backstage".
@@ -57,7 +57,7 @@ Personas are meant to deepen, not stay frozen:
 
 ## Relationship to other files
 
-- `knowledge/tone-of-voice.md` — the **client-facing** voice (shared, fixed). Personas never override it.
-- `knowledge/agency-principles.md` — the culture every persona must fit.
+- `knowledge/agency-foundations.md` — the **client-facing** voice (shared, fixed). Personas never override it.
+- `knowledge/agency-foundations.md` — the culture every persona must fit.
 - `agents/<agent>.md` — where each individual persona lives, in its `## Character & personality` section.
 - `clients/<client>.md` — a client may have its *own* tone for copy; that governs the client's output, the agent's persona stays backstage.

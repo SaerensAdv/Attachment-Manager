@@ -10,11 +10,11 @@ A client needs new organic content: an SEO blog article or content series, copy 
 
 ## Steps
 
-1. Review the client context, audience, and goals (`clients/<client>.md`) and the brand voice (`knowledge/tone-of-voice.md`).
+1. Review the client context, audience, and goals (`clients/<client>.md`) and the brand voice (`knowledge/agency-foundations.md`).
 2. Confirm the content goal and format (rank for a topic, support a service page, nurture a list, social reach) and the single primary action it should drive.
-3. Research the topic and search intent with the SEO Specialist: the target query / topic cluster, what already ranks, and the gap Saerens can fill — per `knowledge/seo-standards.md`.
+3. Research the topic and search intent with the SEO Specialist: the target query / topic cluster, what already ranks, and the gap Saerens can fill — per `knowledge/seo-web-content.md`.
 4. Map the piece to a page type and place it in the site's topic structure (internal links, related content).
-5. Write to the **helpful-content** bar (`knowledge/helpful-content-standards.md`): real expertise, specific and useful, written for people first — never thin keyword filler. Never invent facts or figures.
+5. Write to the **helpful-content** bar (`knowledge/seo-web-content.md`): real expertise, specific and useful, written for people first — never thin keyword filler. Never invent facts or figures.
 6. Optimize on-page without over-optimizing: title, meta description, headings, and natural use of the target topic.
 7. Prepare the human approval summary; flag any claims, facts, or figures that need confirmation before publishing.
 
@@ -26,7 +26,7 @@ A client needs new organic content: an SEO blog article or content series, copy 
 
 ## Required output
 
-Follow `templates/task-output.md`, `knowledge/tone-of-voice.md`, and `knowledge/helpful-content-standards.md`. Must include:
+Follow `templates/task-output.md`, `knowledge/agency-foundations.md`, and `knowledge/seo-web-content.md`. Must include:
 
 - Content goal, audience, and format
 - Target topic / search intent and where it fits the site structure

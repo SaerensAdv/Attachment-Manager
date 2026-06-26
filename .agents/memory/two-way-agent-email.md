@@ -102,3 +102,17 @@ BIMI (one domain logo) — the in-email portrait is the free, controllable path.
   bundler). The one-liner `esbuild --packages=external` does NOT work: `@workspace/brand`'s
   dev entry is extensionless TS that Node can't load — must bundle workspace pkgs (mirror
   `build.mjs` externals + pino plugin → needs `outdir`, not `outfile`).
+
+## Inbound is blocked by the Replit Gmail connector's fixed scope set
+The Replit-managed `google-mail` connector grants only `gmail.send`, `gmail.labels`, and
+`gmail.addons.current.*` (contextual add-on) scopes — NOT `gmail.readonly`/`gmail.modify`.
+So mailbox reads (`users.messages.list`, thread fetches) return 403 "insufficient authentication
+scopes" no matter how often the connection is re-authorized — **re-auth does not broaden a
+connector's fixed scope set.** Verified live: labels list = 200, messages list = 403.
+**Consequence:** the Phase-2 inbound poller (full-mailbox read) CANNOT be powered by the connector.
+Outbound send + labels work. To actually run inbound you need a SEPARATE Google OAuth client
+carrying `gmail.readonly` (mirror the `lib/google-oauth.ts` readonly-refresh-token pattern used for
+Ads reporting) and point the read calls at that token; keep sending on the connector.
+**How to verify quickly:** probe `GET /gmail/v1/users/me/messages?maxResults=1` — 200 = read ok,
+403 = scope missing. The poller's own read-scope probe already self-disables on 403, so the feature
+fails closed (no errors, just "staat uit").

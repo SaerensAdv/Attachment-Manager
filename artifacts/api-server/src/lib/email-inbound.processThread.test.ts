@@ -275,6 +275,33 @@ describe("processThread — inbound client reply", () => {
     expect(runGenerationMock).not.toHaveBeenCalled();
   });
 
+  it("aborts an empty inbound message after claiming, without drafting", async () => {
+    // A claimed message whose body and snippet are both empty: extractText
+    // yields "" so the flow stops before building a prompt or running the team.
+    wireGmail({
+      full: jsonResponse({
+        id: "m-new",
+        snippet: "",
+        payload: {
+          headers: [
+            { name: "From", value: `Jan Klant <${WHITELIST}>` },
+            { name: "Message-ID", value: "<inbound@mail.gmail.com>" },
+          ],
+          mimeType: "text/plain",
+          body: { data: "" },
+        },
+      }),
+    });
+
+    await processThread(makeThread());
+
+    // The claim happened (the message looked genuine), but the empty body stops
+    // the flow before any drafting.
+    expect(claimInboundMock).toHaveBeenCalledWith(9, "m-new");
+    expect(resolveGenerationContextMock).not.toHaveBeenCalled();
+    expect(runGenerationMock).not.toHaveBeenCalled();
+  });
+
   it("does nothing when the client has no reportEmail (nothing can be whitelisted)", async () => {
     clientStoreMocks.getClientRow.mockResolvedValue({ id: 4, reportEmail: null });
     wireGmail();

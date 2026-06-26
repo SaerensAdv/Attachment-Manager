@@ -74,7 +74,7 @@ export function parseEmailAddress(value: string | null): string | null {
 }
 
 /** Decode a Gmail base64url body part into UTF-8 text. */
-function decodeBody(data: string | undefined): string {
+export function decodeBody(data: string | undefined): string {
   if (!data) return "";
   try {
     return Buffer.from(data.replace(/-/g, "+").replace(/_/g, "/"), "base64").toString(
@@ -86,7 +86,7 @@ function decodeBody(data: string | undefined): string {
 }
 
 /** Strip tags from an HTML body as a last-resort fallback for the text. */
-function htmlToText(html: string): string {
+export function htmlToText(html: string): string {
   return html
     .replace(/<style[\s\S]*?<\/style>/gi, " ")
     .replace(/<script[\s\S]*?<\/script>/gi, " ")
@@ -102,7 +102,7 @@ function htmlToText(html: string): string {
 }
 
 /** Recursively find the best body text in a message payload (prefer text/plain). */
-function extractText(msg: GmailMessage): string {
+export function extractText(msg: GmailMessage): string {
   let plain = "";
   let html = "";
   const walk = (part: GmailPart | undefined): void => {

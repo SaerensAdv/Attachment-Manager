@@ -3,7 +3,14 @@ import {
   parseEmailAddress,
   replySubject,
   inboundSkipReason,
+  decodeBody,
+  htmlToText,
+  extractText,
 } from "./email-inbound";
+
+/** Encode text to the Gmail base64url body shape decodeBody expects. */
+const b64url = (s: string) =>
+  Buffer.from(s, "utf-8").toString("base64").replace(/\+/g, "-").replace(/\//g, "_");
 
 describe("parseEmailAddress", () => {
   it("extracts the address from a Name <addr> header", () => {
@@ -146,5 +153,98 @@ describe("inboundSkipReason", () => {
         message: msg({ headers: [{ name: "Subject", value: "x" }] }),
       }),
     ).toBe("no-from");
+  });
+});
+
+describe("decodeBody", () => {
+  it("decodes a Gmail base64url body into UTF-8 text", () => {
+    expect(decodeBody(b64url("Hallo, café & co"))).toBe("Hallo, café & co");
+  });
+  it("returns an empty string for missing data", () => {
+    expect(decodeBody(undefined)).toBe("");
+    expect(decodeBody("")).toBe("");
+  });
+});
+
+describe("htmlToText", () => {
+  it("strips tags and decodes basic entities into readable text", () => {
+    const html =
+      "<p>Beste team,</p><div>Kan het budget &amp; de bieding omhoog?</div>";
+    expect(htmlToText(html)).toBe("Beste team,\n Kan het budget & de bieding omhoog?");
+  });
+  it("drops style and script blocks entirely", () => {
+    const html =
+      "<style>p{color:red}</style><script>alert(1)</script><p>Echte tekst</p>";
+    expect(htmlToText(html)).toBe("Echte tekst");
+  });
+  it("collapses &nbsp; and excess blank lines", () => {
+    const html = "<p>Regel een</p>\n\n\n<p>Regel&nbsp;twee</p>";
+    expect(htmlToText(html)).toBe("Regel een\n\n Regel twee");
+  });
+});
+
+describe("extractText", () => {
+  /** Build a minimal GmailMessage with the given payload + snippet. */
+  const message = (payload: unknown, snippet?: string) =>
+    ({ id: "m1", snippet, payload } as Parameters<typeof extractText>[0]);
+
+  it("prefers a text/plain part over the HTML alternative", () => {
+    const msg = message({
+      mimeType: "multipart/alternative",
+      parts: [
+        { mimeType: "text/plain", body: { data: b64url("Platte tekst wint") } },
+        {
+          mimeType: "text/html",
+          body: { data: b64url("<p>HTML moet verliezen</p>") },
+        },
+      ],
+    });
+    expect(extractText(msg)).toBe("Platte tekst wint");
+  });
+
+  it("strips an HTML-only message to readable text", () => {
+    const msg = message({
+      mimeType: "text/html",
+      body: { data: b64url("<p>Hallo</p><div>Tot snel</div>") },
+    });
+    expect(extractText(msg)).toBe("Hallo\n Tot snel");
+  });
+
+  it("walks a nested multipart payload recursively to find the plain part", () => {
+    const msg = message({
+      mimeType: "multipart/mixed",
+      parts: [
+        {
+          mimeType: "multipart/alternative",
+          parts: [
+            {
+              mimeType: "text/plain",
+              body: { data: b64url("Diep genest bericht") },
+            },
+            {
+              mimeType: "text/html",
+              body: { data: b64url("<p>genegeerd</p>") },
+            },
+          ],
+        },
+        { mimeType: "application/pdf", body: { data: b64url("%PDF-bytes") } },
+      ],
+    });
+    expect(extractText(msg)).toBe("Diep genest bericht");
+  });
+
+  it("falls back to the Gmail snippet when the body is empty", () => {
+    const msg = message(
+      { mimeType: "text/plain", body: { data: "" } },
+      "Korte samenvatting van Gmail",
+    );
+    expect(extractText(msg)).toBe("Korte samenvatting van Gmail");
+  });
+
+  it("yields an empty string for a fully empty message (so the flow can abort)", () => {
+    expect(extractText(message(undefined))).toBe("");
+    expect(extractText(message({ mimeType: "text/plain", body: { data: "" } }))).toBe(
+      "",
+    );
   });
 });

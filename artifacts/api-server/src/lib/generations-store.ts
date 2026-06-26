@@ -7,8 +7,29 @@ import {
   type InsertGeneration,
   type InsertGenerationStep,
 } from "@workspace/db";
-import { and, asc, desc, eq, isNotNull } from "drizzle-orm";
+import { and, asc, desc, eq, isNotNull, sql } from "drizzle-orm";
 import { estimateCostEur } from "./model-pricing";
+
+/** Coerce a SQL aggregate value (node-postgres returns bigint/numeric as text) to a number. */
+function toNum(value: unknown): number {
+  if (value === null || value === undefined) return 0;
+  const n = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(n) ? n : 0;
+}
+
+/** Coerce a SQL AVG result to a rounded integer, preserving null when there were no rows to average. */
+function toRoundedOrNull(value: unknown): number | null {
+  if (value === null || value === undefined) return null;
+  const n = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(n) ? Math.round(n) : null;
+}
+
+/** Coerce a SQL timestamp result (Date or text) to an ISO string, or null. */
+function toIsoOrNull(value: unknown): string | null {
+  if (value === null || value === undefined) return null;
+  const d = value instanceof Date ? value : new Date(value as string);
+  return Number.isNaN(d.getTime()) ? null : d.toISOString();
+}
 
 /** Persist a finished generation. Returns the stored row. */
 export async function saveGeneration(
@@ -69,45 +90,53 @@ export interface AgentStats {
  * step rows, which are the only source of true per-agent measurement.
  */
 export async function getAgentStats(agentPath: string): Promise<AgentStats> {
-  const all = await db.select().from(generationsTable);
-  const led = all.filter((g) => g.leadAgentPath === agentPath);
-  const participated = all.filter((g) => agentInRun(g, agentPath));
+  // "Participated" = led the run OR is listed in the run's team_paths JSON array.
+  // The `is json array` guard makes the jsonb cast safe against malformed data
+  // (such a row simply can't match via the team branch), mirroring the JS
+  // try/catch that previously tolerated bad JSON. The `?` operator tests whether
+  // the agent path exists as an element of the JSON array.
+  const led = eq(generationsTable.leadAgentPath, agentPath);
+  const participates = sql`(${generationsTable.leadAgentPath} = ${agentPath} or (${generationsTable.teamPaths} is json array and ${generationsTable.teamPaths}::jsonb ? ${agentPath}))`;
 
-  const approved = led.filter((g) => g.feedbackVerdict === "approved").length;
-  const rejected = led.filter((g) => g.feedbackVerdict === "rejected").length;
-  const pending = led.length - approved - rejected;
+  // Run-level KPIs in one aggregate pass. Approval counts are scoped to runs the
+  // agent *led*; participation and last-active span any run it took part in.
+  const [genAgg] = await db
+    .select({
+      runsLed: sql<number>`count(*) filter (where ${led})::int`,
+      runsParticipated: sql<number>`count(*) filter (where ${participates})::int`,
+      approved: sql<number>`count(*) filter (where ${led} and ${generationsTable.feedbackVerdict} = 'approved')::int`,
+      rejected: sql<number>`count(*) filter (where ${led} and ${generationsTable.feedbackVerdict} = 'rejected')::int`,
+      lastActiveAt: sql<Date | null>`max(${generationsTable.createdAt}) filter (where ${participates})`,
+    })
+    .from(generationsTable);
 
-  const lastActiveAt = participated.reduce<Date | null>(
-    (max, g) => (!max || g.createdAt > max ? g.createdAt : max),
-    null,
-  );
-
-  const steps = await db
-    .select()
+  // Timing/token figures come from the agent's own step rows (the only source of
+  // true per-agent measurement). AVG ignores NULL durations, matching the prior
+  // filter; we round in JS so half-values match Math.round exactly.
+  const [stepAgg] = await db
+    .select({
+      avgDurationMs: sql<number | null>`avg(${generationStepsTable.durationMs})`,
+      totalOutputTokens: sql<number>`coalesce(sum(${generationStepsTable.outputTokens}), 0)`,
+      stepCount: sql<number>`count(*)::int`,
+    })
     .from(generationStepsTable)
     .where(eq(generationStepsTable.agentPath, agentPath));
-  const durations = steps
-    .map((s) => s.durationMs)
-    .filter((n): n is number => typeof n === "number");
-  const avgDurationMs = durations.length
-    ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length)
-    : null;
-  const totalOutputTokens = steps.reduce(
-    (a, s) => a + (s.outputTokens ?? 0),
-    0,
-  );
+
+  const runsLed = toNum(genAgg?.runsLed);
+  const approved = toNum(genAgg?.approved);
+  const rejected = toNum(genAgg?.rejected);
 
   return {
     agentPath,
-    runsLed: led.length,
-    runsParticipated: participated.length,
+    runsLed,
+    runsParticipated: toNum(genAgg?.runsParticipated),
     approved,
     rejected,
-    pending,
-    lastActiveAt: lastActiveAt ? lastActiveAt.toISOString() : null,
-    avgDurationMs,
-    totalOutputTokens,
-    stepCount: steps.length,
+    pending: runsLed - approved - rejected,
+    lastActiveAt: toIsoOrNull(genAgg?.lastActiveAt),
+    avgDurationMs: toRoundedOrNull(stepAgg?.avgDurationMs),
+    totalOutputTokens: toNum(stepAgg?.totalOutputTokens),
+    stepCount: toNum(stepAgg?.stepCount),
   };
 }
 
@@ -147,109 +176,128 @@ export interface TeamStats {
  * never shows up as an "agent").
  */
 export async function getTeamStats(): Promise<TeamStats> {
-  const [runs, steps] = await Promise.all([
-    db.select().from(generationsTable),
-    db.select().from(generationStepsTable),
-  ]);
+  // Run-level KPIs in a single aggregate pass over the generations table.
+  const [runAgg] = await db
+    .select({
+      totalRuns: sql<number>`count(*)::int`,
+      completed: sql<number>`count(*) filter (where ${generationsTable.status} = 'completed')::int`,
+      partial: sql<number>`count(*) filter (where ${generationsTable.status} = 'partial')::int`,
+      approved: sql<number>`count(*) filter (where ${generationsTable.feedbackVerdict} = 'approved')::int`,
+      rejected: sql<number>`count(*) filter (where ${generationsTable.feedbackVerdict} = 'rejected')::int`,
+      avgDurationMs: sql<number | null>`avg(${generationsTable.durationMs})`,
+    })
+    .from(generationsTable);
 
-  const completed = runs.filter((g) => g.status === "completed").length;
-  const partial = runs.filter((g) => g.status === "partial").length;
-  const approved = runs.filter((g) => g.feedbackVerdict === "approved").length;
-  const rejected = runs.filter((g) => g.feedbackVerdict === "rejected").length;
-  const pending = runs.length - approved - rejected;
   // Token totals come from the step trail (the only place input/output are split
   // out). Includes every step — agent steps *and* the deliverable — because the
   // cost estimate must reflect all LLM usage, not just per-agent work.
-  const totalInputTokens = steps.reduce((a, s) => a + (s.inputTokens ?? 0), 0);
-  const totalOutputTokens = steps.reduce((a, s) => a + (s.outputTokens ?? 0), 0);
-  const totalTokens = totalInputTokens + totalOutputTokens;
-  const estimatedCostEur = estimateCostEur(totalInputTokens, totalOutputTokens);
-  const runDurations = runs
-    .map((g) => g.durationMs)
-    .filter((n): n is number => typeof n === "number");
-  const avgDurationMs = runDurations.length
-    ? Math.round(runDurations.reduce((a, b) => a + b, 0) / runDurations.length)
-    : null;
+  const [tokenAgg] = await db
+    .select({
+      totalInputTokens: sql<number>`coalesce(sum(${generationStepsTable.inputTokens}), 0)`,
+      totalOutputTokens: sql<number>`coalesce(sum(${generationStepsTable.outputTokens}), 0)`,
+    })
+    .from(generationStepsTable);
 
-  // Build the leaderboard keyed by agent path. runsLed/runsParticipated and
-  // last-active come from the run rows; tokens/duration from the agent's own
-  // step rows (the only true per-agent measurement), excluding the deliverable.
-  const board = new Map<string, AgentLeaderboardEntry & { _durations: number[] }>();
-  const ensure = (agentPath: string) => {
-    let e = board.get(agentPath);
-    if (!e) {
-      e = {
-        agentPath,
-        runsLed: 0,
-        runsParticipated: 0,
-        totalInputTokens: 0,
-        totalOutputTokens: 0,
-        estimatedCostEur: 0,
-        avgDurationMs: null,
-        lastActiveAt: null,
-        _durations: [],
-      };
-      board.set(agentPath, e);
-    }
-    return e;
-  };
+  const totalRuns = toNum(runAgg?.totalRuns);
+  const approved = toNum(runAgg?.approved);
+  const rejected = toNum(runAgg?.rejected);
+  const totalInputTokens = toNum(tokenAgg?.totalInputTokens);
+  const totalOutputTokens = toNum(tokenAgg?.totalOutputTokens);
 
-  for (const g of runs) {
-    const members = new Set<string>();
-    if (g.leadAgentPath) members.add(g.leadAgentPath);
-    try {
-      const arr = JSON.parse(g.teamPaths);
-      if (Array.isArray(arr))
-        for (const p of arr) if (typeof p === "string") members.add(p);
-    } catch {
-      /* tolerate bad data */
-    }
-    for (const p of members) {
-      if (!p.startsWith("agents/")) continue;
-      const e = ensure(p);
-      e.runsParticipated += 1;
-      if (g.leadAgentPath === p) e.runsLed += 1;
-      const at = g.createdAt.toISOString();
-      if (!e.lastActiveAt || at > e.lastActiveAt) e.lastActiveAt = at;
-    }
-  }
-
-  for (const s of steps) {
-    if (s.role === "deliverable") continue;
-    if (!s.agentPath.startsWith("agents/")) continue;
-    const e = ensure(s.agentPath);
-    e.totalInputTokens += s.inputTokens ?? 0;
-    e.totalOutputTokens += s.outputTokens ?? 0;
-    if (typeof s.durationMs === "number") e._durations.push(s.durationMs);
-  }
-
-  const leaderboard: AgentLeaderboardEntry[] = [...board.values()]
-    .map(({ _durations, ...rest }) => ({
-      ...rest,
-      estimatedCostEur: estimateCostEur(
-        rest.totalInputTokens,
-        rest.totalOutputTokens,
-      ),
-      avgDurationMs: _durations.length
-        ? Math.round(_durations.reduce((a, b) => a + b, 0) / _durations.length)
-        : null,
-    }))
-    .sort((a, b) => b.runsParticipated - a.runsParticipated);
+  const leaderboard = await getLeaderboard();
 
   return {
-    totalRuns: runs.length,
-    completed,
-    partial,
+    totalRuns,
+    completed: toNum(runAgg?.completed),
+    partial: toNum(runAgg?.partial),
     approved,
     rejected,
-    pending,
-    totalTokens,
+    pending: totalRuns - approved - rejected,
+    totalTokens: totalInputTokens + totalOutputTokens,
     totalInputTokens,
     totalOutputTokens,
-    estimatedCostEur,
-    avgDurationMs,
+    estimatedCostEur: estimateCostEur(totalInputTokens, totalOutputTokens),
+    avgDurationMs: toRoundedOrNull(runAgg?.avgDurationMs),
     leaderboard,
   };
+}
+
+/**
+ * Build the per-agent leaderboard via SQL aggregation. The membership CTE
+ * expands each run into (lead) + (every team_paths element); the `is json array`
+ * guard makes the jsonb cast safe against malformed data (mirroring the old
+ * JS try/catch). Run-level counts use COUNT(DISTINCT) so an agent that is both
+ * the lead and a listed team member is counted once for participation. The step
+ * CTE aggregates tokens/duration from the agent's own steps (deliverable
+ * pseudo-step excluded), and a FULL OUTER JOIN unions agents seen only in runs
+ * with agents seen only in steps — exactly the union the previous in-memory map
+ * built. Only real agents (paths under `agents/`) are included.
+ */
+async function getLeaderboard(): Promise<AgentLeaderboardEntry[]> {
+  const result = await db.execute<{
+    agent_path: string;
+    runs_led: number;
+    runs_participated: number;
+    last_active_at: Date | string | null;
+    total_input_tokens: number | string;
+    total_output_tokens: number | string;
+    avg_duration_ms: number | string | null;
+  }>(sql`
+    with membership as (
+      select g.id as gen_id, g.lead_agent_path as agent_path, g.created_at, true as is_lead
+      from ${generationsTable} g
+      union
+      select g.id as gen_id, elem as agent_path, g.created_at, false as is_lead
+      from ${generationsTable} g,
+        lateral jsonb_array_elements_text(
+          case when g.team_paths is json array then g.team_paths::jsonb else '[]'::jsonb end
+        ) as elem
+    ),
+    mem_agg as (
+      select agent_path,
+        count(distinct gen_id)::int as runs_participated,
+        (count(distinct gen_id) filter (where is_lead))::int as runs_led,
+        max(created_at) as last_active_at
+      from membership
+      where agent_path like 'agents/%'
+      group by agent_path
+    ),
+    step_agg as (
+      select agent_path,
+        coalesce(sum(input_tokens), 0) as total_input_tokens,
+        coalesce(sum(output_tokens), 0) as total_output_tokens,
+        avg(duration_ms) as avg_duration_ms
+      from ${generationStepsTable}
+      where role <> 'deliverable' and agent_path like 'agents/%'
+      group by agent_path
+    )
+    select
+      coalesce(m.agent_path, s.agent_path) as agent_path,
+      coalesce(m.runs_led, 0) as runs_led,
+      coalesce(m.runs_participated, 0) as runs_participated,
+      m.last_active_at,
+      coalesce(s.total_input_tokens, 0) as total_input_tokens,
+      coalesce(s.total_output_tokens, 0) as total_output_tokens,
+      s.avg_duration_ms
+    from mem_agg m
+    full outer join step_agg s on m.agent_path = s.agent_path
+    order by runs_participated desc, agent_path asc
+  `);
+
+  return result.rows.map((r) => {
+    const totalInputTokens = toNum(r.total_input_tokens);
+    const totalOutputTokens = toNum(r.total_output_tokens);
+    return {
+      agentPath: r.agent_path,
+      runsLed: toNum(r.runs_led),
+      runsParticipated: toNum(r.runs_participated),
+      totalInputTokens,
+      totalOutputTokens,
+      estimatedCostEur: estimateCostEur(totalInputTokens, totalOutputTokens),
+      avgDurationMs: toRoundedOrNull(r.avg_duration_ms),
+      lastActiveAt: toIsoOrNull(r.last_active_at),
+    };
+  });
 }
 
 /** Recent runs an agent took part in (lead or member), newest first. */

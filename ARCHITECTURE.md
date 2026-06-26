@@ -1,6 +1,6 @@
 # ARCHITECTURE
 
-This document explains how the pieces of the Saerens Advertising AI team fit together. In this version everything is documentation, but the structure is designed so a future app (see `ROADMAP.md`) can use it directly.
+This document explains how the pieces of the Saerens Advertising AI team fit together. The root markdown is the **brain** (configuration); the app in `artifacts/` + `lib/` is the **engine** that reads it at runtime. The brain is kept clean and separate so the engine — and a human — can load the right agent, client context, and workflow directly. See `ROADMAP.md` for what is shipped versus outstanding.
 
 ## The five-layer model
 
@@ -142,7 +142,7 @@ saerens-ai-team/
 │   ├── proposal.md
 │   └── task-output.md
 │
-└── knowledge/           # Agency standards (the quality bar)
+├── knowledge/           # Agency standards (the quality bar)
     ├── agency-principles.md
     ├── tone-of-voice.md
     ├── belgian-market-context.md
@@ -175,6 +175,24 @@ saerens-ai-team/
     ├── clickup-api.md
     ├── clickup-ai-agents.md
     └── clickup-webhooks.md
+│
+├── artifacts/           # The running app (the engine that reads the brain)
+│   ├── api-server/      # Express API: orchestrator, generation engine, deliverables,
+│   │                    #   live integrations, scheduler, email, client DB, billing
+│   ├── system-map/      # React "Operations Atlas": the Kaart (doc-graph view),
+│   │                    #   generation command bar, doc reader, clients, team, dashboard
+│   ├── audit-car-audio-*/         # slide-deck artifacts
+│   └── saerens-audit-deck-template/
+│
+├── lib/                 # Shared workspace libraries
+│   ├── api-spec/        # OpenAPI spec (source for codegen)
+│   ├── api-zod/         # Zod schemas generated from the spec
+│   ├── api-client-react/# React Query hooks for the frontend
+│   ├── brand/           # Saerens brand tokens
+│   ├── db/              # Drizzle schema + client
+│   └── integrations-anthropic-ai/  # AI access via the Replit proxy
+│
+└── deck-templates/      # Deck source kept out of the 7-artifact cap (uncounted)
 ```
 
 ## Request flow (today)
@@ -186,20 +204,20 @@ saerens-ai-team/
 5. A closing **quality gate** runs automatically after the team finishes: the **QA & Compliance Reviewer** always checks claims, policy, and live-spend safety, and the **Humanizer** adds a final natural-voice pass when the output is client-facing. These two are cross-cutting steps, not channel specialists, so individual workflows do not list them as team members.
 6. The output is reviewed by a human before it is used in real work.
 
-## Request flow (future, Phase 2+)
+## How the app runs it (shipped)
 
-A small app will assemble layers 1–5 automatically (an "agent loader" + "prompt builder"), send them to an AI model, and return the formatted output. The documentation in this repo is the configuration that app will read — which is why the structure is kept clean now.
+The request flow above is no longer manual: the **API server** (`artifacts/api-server`) is the engine. It assembles layers 1–5 from the root markdown at runtime (an agent loader + prompt builder), retrieves supporting docs via hybrid BM25 + embedding search, calls the AI model through the Replit proxy, streams the run over SSE, applies the closing quality gate, and — when the workflow declares one — turns the result into a typed **deliverable**. Every run is archived with per-step records for an audit trail. The **Operations Atlas** frontend (`artifacts/system-map`) is the human surface: the Kaart (doc-graph view), the generation command bar, the doc reader, the client register, the team page, and the dashboard. The root markdown remains the configuration the engine reads — which is why the structure is kept clean.
 
 ## Execution layer (brain vs. executor)
 
-Today everything is still done by hand. The target split keeps control in one place:
+The brain-vs-executor split keeps control in one place:
 
 - **The app is the brain and source of truth.** It holds the agents, knowledge, client dossiers and live account data, and it *decides* what should happen.
 - **An executor only carries out actions** — pulls data, performs the approved change, and writes the result back. It holds no strategy of its own.
-- The intended executor is **n8n, self-hosted**. Its Community Edition is free for commercial use with unlimited runs (only n8n *Cloud* is paid), so cost is not a blocker; an equivalent executor or the built-in scheduler (`pg-boss`, see `ROADMAP.md`) can fill the same role.
-- Two safety categories carry over from `ROADMAP.md`: **read-only/reporting** may run end-to-end automatically; **proposing/acting** (anything touching the ad account or the client) always needs human approval before the executor writes.
+- The executor is the **in-app scheduler** (a `croner` tick that fires due runs, with a compare-and-set guard against double-firing) plus the deliverable/email layer. n8n was evaluated and **dropped** in favour of keeping the executor in-process; 24/7 operation needs a Reserved VM deployment.
+- Two safety categories hold: **read-only/reporting** may run end-to-end automatically; **proposing/acting** (anything touching the ad account or the client) always needs human approval before anything is sent or written. The monthly-report email, for example, is held in an approval queue and only delivered after a human approves.
 
-First automations to target (founder priority): **monthly reports, search-term checks for negative keywords, and ad copy generation.**
+Founder-priority automations, in order: **monthly reports** (shipped — generated, held for approval, then emailed), **search-term checks for negative keywords**, and **ad copy generation**.
 
 Some data sources cannot be reached from the cloud at all. **Screaming Frog SEO Spider** is a licensed *desktop* crawler, so its technical crawl follows the brain-vs-executor split in a semi-automatic shape ("Model B"): the agency runs the crawl on their own machine and pushes the export to the brain, which stores the **latest** crawl per client and reads it during runs (never starting a crawl itself, never inventing numbers). The intake contract and the agent guidance live in `knowledge/screaming-frog-crawl-intake.md`.
 

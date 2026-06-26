@@ -1,45 +1,58 @@
 # Saerens Advertising — AI Team
 
-The documentation-first foundation ("AI brain") for Saerens Advertising's internal AI agent system: structured markdown defining agent roles, client context, workflows, output templates, and agency standards. No app yet — see `ROADMAP.md` for later phases.
+A documentation-first **AI brain** for Saerens Advertising (a Belgian, Google Partner Google Ads agency) **and** the running application built on top of it. The markdown in `agents/`, `workflows/`, `knowledge/`, `templates/` and `clients/` defines the AI team; the app reads that markdown at runtime to assemble prompts, route work, and produce reviewable deliverables. The docs are the configuration; the app is the engine.
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
+Each artifact runs as its own Replit workflow (managed for you — no need to start them by hand). Useful commands:
+
+- `pnpm --filter @workspace/api-server run dev` — build + run the API server ("the brain")
+- `pnpm --filter @workspace/system-map run dev` — run the Operations Atlas frontend (Vite)
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
+- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec (run after changing the spec or after a merge)
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+- Required env: `DATABASE_URL` — Postgres connection string. Live integrations and AI use Replit-managed secrets/connectors (see `environment-secrets` and `integrations` skills).
 
 ## Stack
 
 - pnpm workspaces, Node.js 24, TypeScript 5.9
-- API: Express 5
-- DB: PostgreSQL + Drizzle ORM
-- Validation: Zod (`zod/v4`), `drizzle-zod`
-- API codegen: Orval (from OpenAPI spec)
-- Build: esbuild (CJS bundle)
+- **API ("brain"):** Express 5, Pino logging, Helmet + express-rate-limit, esbuild (CJS bundle)
+- **Frontend ("Operations Atlas"):** React + Vite, Dagre graph layout, CodeMirror, Mermaid, Shiki
+- **AI:** Anthropic SDK via the Replit AI integrations proxy (`@workspace/integrations-anthropic-ai`)
+- **DB:** PostgreSQL + Drizzle ORM; Zod (`zod/v4`) + `drizzle-zod` validation
+- **Retrieval:** Orama (BM25) fused with local Transformers.js embeddings (RRF); embeddings persisted in a self-bootstrapped pgvector table
+- **Deliverables:** pdfkit / jspdf / docx (PDFs, invoices, reports), sharp (images), object storage (`@google-cloud/storage`)
+- **Scheduling:** in-app `croner` tick (n8n was dropped)
+- **API codegen:** Orval (from OpenAPI spec). **Tests:** Vitest + supertest
 
 ## Where things live
 
-- `README.md` — what the AI team system is and how docs are organized
-- `AGENTS.md` — the constitution: global agent rules, hierarchy, current + future agents
-- `ROADMAP.md` — phased plan (documentation-first → tool integrations)
-- `ARCHITECTURE.md` — the five-layer model and folder map
-- `agents/` — one role file per AI agent
-- `clients/` — client context (template + example); kept separate from agent files
-- `workflows/` — repeatable agency processes
-- `templates/` — reusable structured output formats
-- `knowledge/` — agency standards (principles, tone, Google Ads, analytics, reporting, naming)
-- The pnpm workspace scaffold (`artifacts/`, `lib/`) is unused by this documentation deliverable.
+This is a pnpm monorepo. The root markdown is the AI brain; `artifacts/` and `lib/` are the running app.
+
+- `README.md` — what the AI team system is and how the docs are organized
+- `AGENTS.md` — the constitution: global agent rules + the agency organisation (departments/owners)
+- `ARCHITECTURE.md` — the layer model, folder/artifact map, and runtime flow
+- `ROADMAP.md` — what is shipped and what remains (plus longer-term direction notes)
+- `agents/` (24), `workflows/` (27), `knowledge/` (32), `templates/` (10), `clients/` — the brain, read at runtime
+- `artifacts/api-server` — the API ("brain"): orchestrator + generation engine, SSE streaming, deliverables, live integrations, scheduler, email, client DB, billing
+- `artifacts/system-map` — the React frontend ("Operations Atlas" / the Kaart): doc-graph view, generation command bar, doc reader, client register, team page, dashboard, planning, history
+- `artifacts/audit-car-audio-*`, `artifacts/saerens-audit-deck-template` — slide-deck artifacts
+- `artifacts/mockup-sandbox` — design/canvas preview sandbox
+- `lib/` — shared workspace libraries: `api-spec` (OpenAPI), `api-zod`, `api-client-react`, `brand`, `db` (Drizzle schema), `integrations-anthropic-ai`
+- `deck-templates/` (repo root, outside `artifacts/`) — uncounted deck source kept out of the 7-artifact cap
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- **The app is the brain; the markdown is its configuration.** Agents, workflows, knowledge and client dossiers live as root markdown and are read at runtime — no app restart needed to change an agent. This keeps roles, client data, and processes editable in one place.
+- **Read-only live integrations only.** Google Ads, GA4, Search Console, PageSpeed, Places, Business Profile, competitor ads (SerpApi), Bing Webmaster and the Screaming Frog crawl intake all pull data; nothing writes to a live account. Anything that would touch live spend or the client goes through a **human approval** checkpoint.
+- **Deliverable layer on top of markdown.** A workflow opts into a typed end product via an HTML-comment marker (`<!-- deliverable: kind -->`); the team's markdown is always preserved even if the deliverable step fails (best-effort).
+- **In-app scheduler instead of n8n.** A 60s `croner` tick fires due runs with a compare-and-set guard against double-firing; 24/7 operation needs a Reserved VM deployment.
+- **Every run is archived.** The generation engine persists runs + per-step records (status = worst step) on every exit path for an audit trail; autonomous runs are gated behind `AUTONOMOUS_TRIGGER_SECRET`.
 
 ## Product
 
-A documentation foundation that defines specialized AI agents for Saerens Advertising (a Belgian Google Ads agency). Each agent has a role, responsibilities, limits, required input, and a structured output format. Work is produced by combining: global rules + agent + client context + workflow + the user's request. MVP agents: Orchestrator, Google Ads Strategist, Setup Specialist, Optimization Specialist, Reporting Specialist, Copywriter.
+An AI agency team for Saerens Advertising: specialized agents (Orchestrator, Google Ads strategist/setup/optimization, Reporting, Copywriter, SEO, Meta, web/landing, analytics, client success, sales, QA & compliance, humanizer, and more) organised into departments. A request is answered by combining global rules + the routed agent + client dossier + workflow + the user's ask into structured markdown, then optionally turned into a concrete deliverable (Replit build prompt, Google Ads / negative-keyword CSV, monthly report email, branded PDF, invoice/proposal). Live read-only account data enriches the work; the human is the single quality-control gate.
 
 ## User preferences
 
@@ -55,8 +68,13 @@ A documentation foundation that defines specialized AI agents for Saerens Advert
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- **Changing the OpenAPI spec or a shared lib requires codegen/build.** Run `pnpm --filter @workspace/api-spec run codegen` after spec changes; composite project refs need built `dist` (`tsc -b`) or `api-server` typecheck fails (TS6305) — especially after a task merge.
+- **The api-server dev build is bundled (`dist/`).** Route changes need a restart of the `API Server` workflow to take effect; `tsx watch` does not reload them.
+- **Two schemas are self-bootstrapped outside Drizzle** (the pgvector embeddings table and `crawl_snapshots`); `pnpm db push` does not manage them. They are best-effort with in-memory/no-op fallbacks.
+- **Container `curl` egress is blocked** (returns HTTP 000); test outbound calls via the code-execution sandbox `fetch()` or workspace `node`, not `curl`.
+- **Decks live within a 7-artifact cap.** Template source stays in repo-root `deck-templates/` (uncounted); generated decks reuse a shared demo artifact slot.
 
 ## Pointers
 
 - See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details
+- See `ARCHITECTURE.md` for the runtime flow and `ROADMAP.md` for what is shipped vs. outstanding

@@ -40,6 +40,8 @@ The app loads global rules + agent instructions + client context + workflow + us
 
 **Answers:** *Can we reliably generate useful output from structured context?*
 
+**Status:** shipped, then superseded by the Orchestrator (Phase 3). The app loads the layers and generates output via the API server's generation engine; manual agent selection is still available but routing is the default.
+
 ---
 
 ## Phase 3 — Orchestrator mode
@@ -52,6 +54,8 @@ The Orchestrator decides the relevant client, workflow, agent, and missing infor
 
 **Answers:** *Can the system route work intelligently?*
 
+**Status:** shipped. The Orchestrator routes each request to the right client, workflow and specialist(s), asks for missing input, and hands off; a closing quality gate (QA & Compliance Reviewer, plus the Humanizer on client-facing work) runs automatically.
+
 ---
 
 ## Phase 4 — Memory and reusable outputs
@@ -63,6 +67,8 @@ Add storage for:
 - Common questions
 
 **Answers:** *Can the AI team learn from agency work over time?*
+
+**Status:** partially shipped. Every run is archived with per-step records (audit trail), embeddings are persisted in pgvector (no recompute on restart), and the learning loop (review → proposals → apply) is in place. Outcome memory — tying past recommendations to their measured results per client — is still outstanding.
 
 ---
 
@@ -83,31 +89,33 @@ At this stage agents move from *"here is what I recommend"* to *"here is the tas
 
 **Answers:** *Can the system safely act, not just advise?*
 
+**Status:** largely shipped, read-only. Live read-only intake is in place for Google Ads, GA4, Search Console, PageSpeed, Places, Business Profile, competitor ads (SerpApi), Bing Webmaster, the Screaming Frog crawl intake, and Gmail (read inbound + send approved reports). ClickUp is researched (see the knowledge nodes) but not yet integrated. Writing/mutating ad accounts is intentionally still out of scope — everything that acts goes through human approval first.
+
 ---
 
 ## Phase 6 — Controlled automations (triggers)
 
-Once the dossiers are richly filled (briefing, website intake, live Google Ads, later Search Console), the app's workflows can be triggered automatically instead of by hand. The brain still lives in the app; n8n only triggers and executes. The whole point of this phase is to add automation **without losing control**.
+Once the dossiers are richly filled (briefing, website intake, live Google Ads, later Search Console), the app's workflows can be triggered automatically instead of by hand. The brain still lives in the app; the executor (the in-app scheduler) only triggers and runs. The whole point of this phase is to add automation **without losing control**.
 
 **Goal:** run the right workflow at the right moment, safely.
 
 ### Two categories — this split is the safety valve
 
-1. **Read-only / reporting** — nothing changes in the ad account or reaches the client, so it may run fully automatically end-to-end. No approval needed.
-2. **Proposing / acting** — the agent produces a *proposal*; a human approves; only then does n8n execute the change. Never auto-write. Anything that touches the ad account or the client falls here.
+1. **Read-only / reporting** — nothing changes in the ad account, so the *generation* may run fully automatically end-to-end. If the output stays internal it needs no approval; if it **reaches the client** (e.g. a report email), delivery is still held for human approval even though the data pull was read-only.
+2. **Proposing / acting** — the agent produces a *proposal*; a human approves; only then does the executor carry out the change. Never auto-write. Anything that touches the ad account or the client falls here.
 
 ### Automation backlog (to prioritize later)
 
 | Automation | Trigger | Category | Status / notes |
 | :--- | :--- | :--- | :--- |
-| Monthly Google Ads report | Monthly (schedule) | Read-only | Closest to ready — `monthly-reporting.md` + `account-audit.md` + live Ads data exist; needs trigger + delivery. |
+| Monthly Google Ads report | Monthly (schedule) | Generate read-only, deliver on approval | **Shipped.** The in-app scheduler generates the report on schedule (read-only); the email to the client is held in an approval queue and only sent after a human approves. |
 | Weekly search-term audit → negative keywords | Weekly (schedule) | Proposing/acting | Founder priority. Needs an SOP defining when a term is wasteful + an approval gate before the executor writes negatives. |
 | Ad copy generation | On request / schedule | Proposing/acting | Founder priority. Agent drafts ad copy from the dossier + `tone-of-voice.md` standards; generation is read-only, but a human approves before anything goes live. |
 | Incoming client email handling | Email received (event) | Proposing/acting | Sensitive — human-in-the-loop required. `client-email.md` + client agents exist. Still to be discussed. |
 | Monthly skill-refresh digest per agent | Monthly (schedule) | Proposing/acting | Self-initiated upkeep: each agent scans vetted, field-specific sources for what's new and returns proposals **with source + date**. Reuses the existing learning loop (one digest, per-item human approve/reject, non-destructive append). Guardrails against low-quality input: a pre-approved source whitelist per field (e.g. official Google Ads / Meta / GA4 changelogs), source+date mandatory, and dedupe against what the agent already knows. Default monthly; cadence can differ per role (fast-moving fields more often, stable roles softer or off). |
 | _…more to be added_ | | | |
 
-> **Today everything is still done by hand** — there are no automations yet. The founder's first three priorities are, in order, the **monthly report**, **search-term → negative-keyword checks**, and **ad copy generation** (the rows above). On tooling: **self-hosted n8n is free** (Community Edition — unlimited runs, commercial use allowed); only n8n *Cloud* is paid, so the executor choice is not cost-blocked. `pg-boss` remains the in-app scheduler fallback.
+> **Status:** the executor is now in-app. A `croner` tick fires due scheduled runs (with a compare-and-set guard against double-firing), and the **monthly report** automation is shipped — generated, held in an approval queue, and emailed only after a human approves. n8n was evaluated and **dropped** in favour of keeping the executor in-process (`pg-boss` was not needed). Still outstanding from the founder's first three: **search-term → negative-keyword checks** and **ad copy generation** (the rows above). 24/7 scheduled operation requires a Reserved VM deployment.
 
 ### New building block this phase needs
 
@@ -123,20 +131,19 @@ Open topics to discuss: which workflows/templates/knowledge are missing, whether
 
 These are not a phase of their own — they are open-source, free building blocks that make the existing phases more robust, cheaper, and easier to extend. Ordered by recommended sequence (cheap robustness first, larger refactors last). What is already in place is noted so we don't rebuild it.
 
-Already in place: lexical retrieval (Orama / BM25), local multilingual semantic embeddings (Transformers.js, no API key), Drizzle + Postgres, Zod validation, Pino logging, Vitest.
+Already in place: lexical retrieval (Orama / BM25), local multilingual semantic embeddings (Transformers.js, no API key), hybrid RRF fusion, persistent embeddings (pgvector), Drizzle + Postgres, Zod validation (incl. env validation at boot), Pino logging, Vitest + supertest, Helmet + express-rate-limit, and an in-app `croner` scheduler.
 
-### A. Cheap robustness wins (do first)
-- **`supertest`** (on top of Vitest) — true end-to-end tests of the Express routes. First targets: the optimistic-locking `409` conflict on `PUT /clients/:id` and the partial-persist path in generation (the two gaps flagged in review).
-- **`express-rate-limit` + `helmet`** — rate-limit the expensive `/api/generate` and `/api/route` (they cost LLM calls) and add standard security headers.
-- **Zod env validation at boot** — fail fast with a clear message when a Google Ads secret has the wrong shape, instead of failing deep inside an API call.
+### A. Cheap robustness wins (do first) — **shipped**
+- **`supertest`** (on top of Vitest) — *shipped.* End-to-end tests of the Express routes, including the optimistic-locking `409` conflict on `PUT /clients/:id` and the partial-persist path in generation.
+- **`express-rate-limit` + `helmet`** — *shipped.* Rate-limiting on the expensive LLM routes plus standard security headers.
+- **Zod env validation at boot** — *shipped.* Boot fails fast with a clear message when a required secret has the wrong shape, before the app/db import graph loads.
 
-### B. Smarter retrieval (build blocks already exist)
-Today lexical (`retrieval.ts`) and semantic (`semantic.ts`) run separately, and embeddings live in memory (recomputed on every cold start).
-- **Hybrid fusion (Reciprocal Rank Fusion)** — merge BM25 + embedding rankings into one. No new dependency; meaningfully better doc selection for agent context.
-- **`pgvector` + Drizzle vector column** — persist embeddings in the existing Postgres. No recompute on restart, survives redeploys, and becomes the foundation for Phase 4 (memory / reusable outputs). This is the "vector upgrade path" the code already references.
+### B. Smarter retrieval — **shipped**
+- **Hybrid fusion (Reciprocal Rank Fusion)** — *shipped.* BM25 + embedding rankings are fused into one; degrades to lexical-only when the semantic side is empty.
+- **`pgvector` + vector column** — *shipped.* Embeddings persist in a self-bootstrapped pgvector table (outside the Drizzle schema), so they survive restarts and redeploys; in-memory fallback never regresses.
 
-### C. Phase 6 enabler — job scheduling
-- **`pg-boss`** — a Postgres-backed job queue / scheduler that runs on the database we already have (no Redis, no extra infra). This is the missing building block for Phase 6 automations (monthly report, weekly audits). Keeps the principle intact: the brain stays in the app; the scheduler only triggers.
+### C. Phase 6 enabler — job scheduling — **shipped (different choice)**
+- **In-app `croner` scheduler** — *shipped* in place of `pg-boss`. A 60s tick fires due runs with a compare-and-set guard against double-firing; no Redis, no extra infra. The brain stays in the app; the scheduler only triggers. 24/7 operation needs a Reserved VM.
 
 ### D. Larger but valuable refactor
 - **Vercel AI SDK (`ai`)** — provider-agnostic, works with the Anthropic-via-Replit proxy through a custom base URL. `generateObject` + Zod gives guaranteed-valid Orchestrator routing (no brittle JSON parsing); `streamText` replaces the hand-rolled SSE layer. Medium effort, hardens the two core flows (routing + generation).

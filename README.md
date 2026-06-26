@@ -1,6 +1,6 @@
 # Saerens Advertising — AI Team
 
-This repository contains the **documentation-first foundation** for the internal AI agent system of **Saerens Advertising**, a Belgian, Google Partner–certified advertising agency specializing in Google Ads, analytics, conversion tracking, web design and SEO.
+This repository is the **AI brain** for **Saerens Advertising**, a Belgian, Google Partner–certified advertising agency specializing in Google Ads, analytics, conversion tracking, web design and SEO — together with the **application** that runs on top of it.
 
 The main principle is that each AI agent should behave like a **specialized agency team member**, not a generic chatbot. Agents have:
 
@@ -13,11 +13,14 @@ The main principle is that each AI agent should behave like a **specialized agen
 - Access to client context (`clients/`)
 - Access to workflow instructions (`workflows/`)
 
-## What this is (and is not)
+## What this is
 
-This version is **documentation only** — the "brain" of the AI team. There is no app, UI, agent selector, or model integration yet. The goal of this stage is to define the team clearly so that any future interface (or human) can load the right agent profile, client context, and workflow and produce consistent, agency-standard output.
+There are two halves, kept deliberately separate:
 
-The system does **not** execute campaigns, make live changes, or connect to external tools (Google Ads, GA4, ClickUp, Meta, Slack). Those are explicitly future phases — see `ROADMAP.md`.
+1. **The brain (documentation).** The root markdown — `agents/`, `workflows/`, `knowledge/`, `templates/`, `clients/`, plus `AGENTS.md` — defines who the agents are, how they behave, and the agency's quality bar. This is the configuration.
+2. **The app (`artifacts/` + `lib/`).** A running system that reads that markdown at runtime: an Express API ("the brain" engine) that routes requests, assembles prompts, calls the AI model, and produces reviewable deliverables, plus a React "Operations Atlas" frontend to see and drive it all. See `ARCHITECTURE.md`.
+
+The app connects to **read-only** live data sources (Google Ads, GA4, Search Console, PageSpeed, Places, Business Profile, competitor ads, Bing Webmaster, Gmail, and a Screaming Frog crawl intake) to enrich its work. It does **not** make live changes to ad accounts on its own — anything that would touch live spend or reach a client passes through a **human approval** step first. See `ROADMAP.md` for what is shipped and what remains.
 
 ## The core idea
 
@@ -32,47 +35,39 @@ Global rules (AGENTS.md)
 = Structured, reviewable output (templates/)
 ```
 
-This keeps agent roles, client data, and processes separate and reusable. See `ARCHITECTURE.md` for the full picture.
+On top of that structured markdown, a workflow can declare a **deliverable** — the concrete end product the work becomes (a Replit build prompt, a Google Ads / negative-keyword CSV, a monthly report email, a branded PDF, an invoice or proposal). This keeps agent roles, client data, and processes separate and reusable. See `ARCHITECTURE.md` for the full picture.
 
 ## How the docs are organized
 
 | Folder / file | Purpose |
 |---|---|
 | `README.md` | This file — what the system is and how it's organized |
-| `AGENTS.md` | The constitution: global rules, hierarchy, current and future agents |
-| `ROADMAP.md` | The phased plan from documentation-first to tool integrations |
-| `ARCHITECTURE.md` | How the layers combine and how the folders fit together |
-| `agents/` | One role file per AI agent (role, responsibilities, limits, input, output) |
+| `AGENTS.md` | The constitution: global rules and the agency organisation (departments + owners) |
+| `ROADMAP.md` | What is shipped and what remains, plus longer-term direction notes |
+| `ARCHITECTURE.md` | How the layers combine, the folder/artifact map, and the runtime flow |
+| `agents/` | One role file per AI agent (role, character, responsibilities, limits, input, output) |
 | `clients/` | A reusable client template plus example client context files |
-| `workflows/` | Repeatable agency processes (campaign setup, audit, reporting, email) |
+| `workflows/` | Repeatable agency processes (campaign setup, audit, reporting, email, …) |
 | `templates/` | Reusable structured output formats |
-| `knowledge/` | Agency standards: principles, tone of voice, agent personas, Google Ads, Meta Ads, SEO, landing page/conversion, analytics, reporting, naming |
+| `knowledge/` | Agency standards: principles, tone of voice, agent personas, Google Ads, Meta Ads, SEO, landing page/conversion, analytics, reporting, naming, and more |
+| `artifacts/` | The running app: the API server, the Operations Atlas frontend, and slide-deck artifacts |
+| `lib/` | Shared workspace libraries (OpenAPI spec, Zod schemas, React client, brand, DB schema, AI integration) |
 
-## Current MVP agents
+## The team
 
-Each agent is also a distinct team member with its own character (names are proposed starting points — rename freely; see `knowledge/agent-personas.md`):
+The team has grown well beyond the original MVP — `AGENTS.md` (`## Agency organisation`) is the source of truth for the current agents, their departments, and department owners. Each agent is a distinct team member with its own character (see `knowledge/agent-personas.md`); the Orchestrator routes each request to the right specialist and prepares clean briefs.
 
-- **Orchestrator** *(Lotte)* — routes requests to the right specialist and prepares clean briefs
-- **Google Ads Strategist** *(Daan)* — defines campaign strategy and account structure
-- **Google Ads Setup Specialist** *(Senne)* — turns approved strategy into campaign-ready setups
-- **Google Ads Optimization Specialist** *(Femke)* — improves live accounts (search terms, bids, budgets, CPA/ROAS)
-- **Reporting Specialist** *(Bram)* — turns performance data into clear client reports
-- **Copywriter** *(Marie)* — writes ads, headlines, and on-brand copy
-- **SEO Specialist** *(Thomas)* — improves organic visibility (technical, on-page, local, off-page SEO)
-- **Meta Ads Strategist** *(Sarah)* — defines paid social strategy and structure on Facebook & Instagram
-- **Landing Page / Web Design Specialist** *(Elias)* — reviews and improves landing pages for conversion
+## How it works (today)
 
-## How to use it (today)
+1. A request enters the API, where the **Orchestrator** decides the client, workflow, agent(s), and what (if anything) is missing.
+2. The chosen specialist agent receives the combined context (global rules + agent + client dossier + workflow + request) and follows its workflow, using the matching template and the `knowledge/` standards.
+3. Live read-only account data is pulled in where relevant to ground the work.
+4. A closing quality gate runs automatically (QA & Compliance Reviewer always; Humanizer when the output is client-facing).
+5. If the workflow declares one, the result is turned into a concrete **deliverable**.
+6. A human reviews before anything is used in real work; anything touching live spend or the client is held for approval.
 
-1. Pick the relevant **client** file in `clients/`.
-2. Pick the relevant **workflow** in `workflows/`.
-3. Pick the relevant **agent** in `agents/`.
-4. Combine global rules + agent + client + workflow + your request.
-5. Produce output using the matching **template** in `templates/`.
-6. Review as a human before anything is used in real work.
+## The bar
 
-## The MVP bar
+> Saerens Advertising can select a client, a workflow, and an agent (or just describe the request and let the Orchestrator route it), and receive consistent, high-quality, agency-standard output that a human reviews and uses in real work.
 
-> Saerens Advertising can use this structured foundation to select a client, a workflow, and an agent, provide a request, and receive consistent, high-quality, agency-standard output that a human can review and use in real work.
-
-Not "the AI does everything automatically" — but "the AI produces work like a trained specialist who understands how we work."
+Not "the AI does everything automatically" — but "the AI produces work like a trained specialist who understands how we work," with the human as the single quality-control gate.

@@ -1141,3 +1141,152 @@ describe("stripHumanizerMeta", () => {
     expect(out).toBe("De definitieve tekst.");
   });
 });
+
+/**
+ * Safety net for the human-approval checkpoint that lives in the deliverable
+ * executor (`runReportEmailAction` / `runEmailReplyAction`). The engine DRAFTS
+ * the monthly-report and inbound-reply e-mails and HOLDS them — nothing is sent
+ * automatically. These tests pin that contract so a future change can't silently
+ * start auto-sending unapproved client e-mail or reorder the "approval required"
+ * vs terminal "done" signals the approval UI keys off.
+ */
+describe("runGeneration — held client e-mails awaiting approval", () => {
+  /** Index of the first streamed event matching the predicate (or -1). */
+  const eventIndex = (
+    sink: Mock,
+    pred: (e: Record<string, unknown>) => boolean,
+  ): number =>
+    sink.mock.calls.findIndex((c) => pred(c[0] as Record<string, unknown>));
+
+  // A clean, client-safe team draft: no "[AAN TE VULLEN]" placeholders and no
+  // internal-only headings, so it survives the client-facing sanitiser and the
+  // draft can actually be held (rather than refused for being empty).
+  const CLEAN_REPORT =
+    "Beste klant,\n\n" +
+    "De campagnes presteerden vorige maand stabiel: de kosten daalden licht " +
+    "terwijl het aantal conversies gelijk bleef. We hebben de biedingen op de " +
+    "best presterende zoekwoorden verhoogd en twee zwakke advertenties " +
+    "vervangen. Volgende maand richten we ons op de landingspagina's.\n\n" +
+    "Met vriendelijke groeten,\nHet team";
+
+  it("HOLDS the monthly report for approval (pending payload, nothing sent) and signals approval_required before done", async () => {
+    // A linked client with a report recipient, but no live Ads account (so the
+    // run-start live fetch is skipped and the draft path is exercised directly).
+    clientStoreMocks.dbClientIdFromPath.mockReturnValue(1);
+    clientStoreMocks.getClientRow.mockResolvedValue({
+      reportEmail: "klant@example.com",
+    } as unknown as never);
+    h.streamImpl = streamSequence([CLEAN_REPORT]);
+
+    const { sink, promise } = run(
+      makeCtx({ deliverableKind: "monthly-report-email" }),
+    );
+    const result = await promise;
+
+    // The run completes, but the e-mail is HELD: approvalStatus is pending and
+    // the snapshot needed to send later is captured — nothing went out.
+    expect(result.status).toBe("completed");
+    expect(result.approvalStatus).toBe("pending");
+    expect(sendEmailMock).not.toHaveBeenCalled();
+
+    // The held payload is archived (pending) so a human can release it later.
+    const saved = saveGenerationMock.mock.calls[0][0];
+    expect(saved.approvalStatus).toBe("pending");
+    expect(saved.pendingDelivery).toBeTruthy();
+    const payload = JSON.parse(String(saved.pendingDelivery)) as {
+      recipient: string;
+      clientReport: string;
+    };
+    expect(payload.recipient).toBe("klant@example.com");
+    expect(payload.clientReport).toContain("De campagnes presteerden");
+
+    // The approval-required signal MUST arrive before the terminal done, and the
+    // done event flags that approval is pending (the UI keys off both).
+    const approvalIdx = eventIndex(sink, (e) => e.type === "approval_required");
+    const doneIdx = eventIndex(sink, (e) => e.done === true);
+    expect(approvalIdx).toBeGreaterThanOrEqual(0);
+    expect(doneIdx).toBeGreaterThanOrEqual(0);
+    expect(approvalIdx).toBeLessThan(doneIdx);
+    expect(
+      (sink.mock.calls[doneIdx][0] as Record<string, unknown>).approvalRequired,
+    ).toBe(true);
+  });
+
+  it("HOLDS an inbound reply for approval (threaded pending payload, nothing sent) and signals approval_required before done", async () => {
+    h.streamImpl = streamSequence([CLEAN_REPORT]);
+
+    const { sink, promise } = run(
+      makeCtx({
+        deliverableKind: "email-reply",
+        emailReply: {
+          emailThreadId: 7,
+          gmailThreadId: "gmail-thread-1",
+          recipient: "klant@example.com",
+          subject: "Re: Vraag over de campagnes",
+          inReplyTo: "<msg-1@example.com>",
+          references: "<msg-1@example.com>",
+          inboundText: "Kunnen jullie de resultaten van vorige maand toelichten?",
+        },
+      }),
+    );
+    const result = await promise;
+
+    expect(result.status).toBe("completed");
+    expect(result.approvalStatus).toBe("pending");
+    expect(sendEmailMock).not.toHaveBeenCalled();
+
+    // The held reply snapshot keeps the threading headers so an approved reply
+    // lands back in the original Gmail conversation.
+    const saved = saveGenerationMock.mock.calls[0][0];
+    expect(saved.approvalStatus).toBe("pending");
+    const payload = JSON.parse(String(saved.pendingDelivery)) as {
+      kind: string;
+      threadId: string;
+      emailThreadId: number;
+      replyBody: string;
+    };
+    expect(payload.kind).toBe("email-reply");
+    expect(payload.threadId).toBe("gmail-thread-1");
+    expect(payload.emailThreadId).toBe(7);
+    expect(payload.replyBody).toContain("De campagnes presteerden");
+
+    const approvalIdx = eventIndex(sink, (e) => e.type === "approval_required");
+    const doneIdx = eventIndex(sink, (e) => e.done === true);
+    expect(approvalIdx).toBeGreaterThanOrEqual(0);
+    expect(approvalIdx).toBeLessThan(doneIdx);
+  });
+
+  it("marks the run partial when the report draft fails, but still archives the team markdown and sends nothing", async () => {
+    // No linked recipient (dbClientIdFromPath → null by default), so the draft
+    // step throws "geen rapport-ontvanger" — a real drafting failure.
+    h.streamImpl = streamSequence([CLEAN_REPORT]);
+
+    const { sink, promise } = run(
+      makeCtx({ deliverableKind: "monthly-report-email" }),
+    );
+    const result = await promise;
+
+    // Best-effort: the failure degrades the run to partial but never loses the
+    // team's work, and absolutely nothing is sent or held.
+    expect(result.status).toBe("partial");
+    expect(result.approvalStatus).toBeNull();
+    expect(sendEmailMock).not.toHaveBeenCalled();
+
+    const saved = saveGenerationMock.mock.calls[0][0];
+    expect(saved.status).toBe("partial");
+    expect(String(saved.finalMarkdown)).toContain("De campagnes presteerden");
+    // Nothing was held for approval.
+    expect(saved.approvalStatus ?? null).toBeNull();
+    expect(saved.pendingDelivery ?? null).toBeNull();
+
+    // The failure surfaces as a deliverable_error (not a thrown run error) and
+    // the run still ends with a done event (best-effort, no surfaced error).
+    expect(sink).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "deliverable_error" }),
+    );
+    expect(sink).toHaveBeenCalledWith(expect.objectContaining({ done: true }));
+    expect(sink).not.toHaveBeenCalledWith(
+      expect.objectContaining({ error: expect.anything() }),
+    );
+  });
+});

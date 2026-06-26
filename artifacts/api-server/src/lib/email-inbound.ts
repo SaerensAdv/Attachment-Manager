@@ -319,10 +319,10 @@ export async function processThread(thread: EmailThread): Promise<void> {
 // periodically so a later reconnect (with read scope) auto-recovers the poller.
 let scopeState: "unknown" | "ok" | "blocked" = "unknown";
 let blockedTicks = 0;
-const REPROBE_AFTER_TICKS = 30; // ~30 min at the 60s interval.
+export const REPROBE_AFTER_TICKS = 30; // ~30 min at the 60s interval.
 let polling = false;
 
-async function pollInbound(): Promise<void> {
+export async function pollInbound(): Promise<void> {
   if (polling) return;
   polling = true;
   try {

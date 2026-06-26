@@ -13,6 +13,7 @@ import {
   ThumbsDown,
   MailCheck,
   AlertTriangle,
+  FileText,
 } from "lucide-react";
 
 /**
@@ -130,7 +131,7 @@ export default function ApprovalPanel({
           <p className="font-['Inter'] text-sm text-foreground">
             {isReply
               ? "Antwoord goedgekeurd en in de conversatie verzonden naar de klant."
-              : "Goedgekeurd en verzonden naar de klant."}
+              : "Concept staat klaar in je Gmail (map Concepten) — controleer het en verstuur het zelf naar de klant."}
           </p>
         </div>
       </div>
@@ -184,10 +185,11 @@ export default function ApprovalPanel({
           </>
         ) : (
           <>
-            Dit maandrapport is opgesteld maar nog niet verzonden. Keur het goed
-            om het{recipient ? ` naar ${recipient}` : " naar de klant"} te
-            sturen, of vraag wijzigingen om het tegen te houden en opnieuw te
-            genereren.
+            Dit maandrapport is opgesteld maar nog niet verstuurd. Keur het goed
+            om er een concept van te maken in je Gmail; daar controleer en
+            verstuur je het zelf
+            {recipient ? ` naar ${recipient}` : " naar de klant"}, of vraag
+            wijzigingen om het tegen te houden en opnieuw te genereren.
           </>
         )}
       </p>
@@ -252,10 +254,12 @@ export default function ApprovalPanel({
         >
           {approveMut.isPending ? (
             <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
+          ) : isReply ? (
             <Send className="w-4 h-4" />
+          ) : (
+            <FileText className="w-4 h-4" />
           )}
-          Goedkeuren & versturen
+          {isReply ? "Goedkeuren & versturen" : "Concept in Gmail klaarzetten"}
         </button>
         <button
           type="button"

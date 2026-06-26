@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { ReplitConnectors } from "@replit/connectors-sdk";
+import { getGmailAccessToken } from "./gmail-oauth";
 
 /**
  * Email sending via the Replit Gmail connector (integration: google-mail).
@@ -23,6 +24,12 @@ import { ReplitConnectors } from "@replit/connectors-sdk";
  *
  * Never cache the client: tokens expire, so a fresh ReplitConnectors() is made
  * per send.
+ *
+ * Drafts are different: `createGmailDraft` does NOT use the connector (the Replit
+ * Gmail connector cannot create drafts) but a dedicated Gmail OAuth client
+ * (`gmail-oauth.ts`, scope `gmail.modify`). It builds the identical MIME and
+ * POSTs it to users.drafts.create so the monthly report can be staged in the
+ * agency mailbox for a human to review and send by hand.
  */
 
 export interface EmailAttachment {
@@ -301,5 +308,60 @@ export async function sendEmail(
     id: json?.id ?? "",
     threadId: json?.threadId ?? "",
     messageId,
+  };
+}
+
+export interface CreateDraftResult {
+  /** The Gmail draft id (users.drafts resource id). */
+  draftId: string;
+  /** The Message-ID header value we stamped on the draft message. */
+  messageId: string;
+  /** The Gmail threadId the draft message belongs to. */
+  threadId: string;
+}
+
+/**
+ * Create a Gmail DRAFT (optionally with attachments) in the agency mailbox via a
+ * dedicated Gmail OAuth client — NOT the connector, which cannot create drafts.
+ * Builds the same raw MIME as `sendEmail` and POSTs it to users.drafts.create.
+ * Returns the draft id, the Message-ID we stamped, and the threadId. Throws on a
+ * non-2xx response so the caller can keep the held snapshot pending and retry.
+ */
+export async function createGmailDraft(
+  input: SendEmailInput,
+): Promise<CreateDraftResult> {
+  const accessToken = await getGmailAccessToken();
+  const { mime, messageId } = buildMime(input);
+  const raw = toBase64Url(mime);
+
+  const message: Record<string, unknown> = { raw };
+  if (input.threadId) message.threadId = sanitizeHeaderValue(input.threadId);
+
+  const res = await fetch(
+    "https://gmail.googleapis.com/gmail/v1/users/me/drafts",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({ message }),
+    },
+  );
+
+  if (!res.ok) {
+    const detail = await res.text().catch(() => "");
+    throw new Error(
+      `Gmail kon het concept niet aanmaken (HTTP ${res.status}). ${detail.slice(0, 400)}`,
+    );
+  }
+
+  const json = (await res.json().catch(() => null)) as
+    | { id?: string; message?: { id?: string; threadId?: string } }
+    | null;
+  return {
+    draftId: json?.id ?? "",
+    messageId,
+    threadId: json?.message?.threadId ?? "",
   };
 }

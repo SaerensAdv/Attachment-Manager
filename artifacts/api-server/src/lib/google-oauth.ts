@@ -86,9 +86,14 @@ export function readReadonlyOAuthConfig(): ReadonlyOAuthConfig {
   return { clientId, clientSecret, refreshToken };
 }
 
-/** Exchange the offline refresh token for a short-lived access token. */
-export async function getReadonlyAccessToken(
-  cfg: ReadonlyOAuthConfig = readReadonlyOAuthConfig(),
+/**
+ * Exchange any offline refresh token (+ the OAuth client it was minted on) for a
+ * short-lived access token. Shared by the read-only data sources and the Gmail
+ * draft flow — the exchange is identical; only the config differs (the scopes are
+ * baked into the refresh token, not requested here).
+ */
+export async function exchangeRefreshToken(
+  cfg: ReadonlyOAuthConfig,
 ): Promise<string> {
   const body = new URLSearchParams({
     grant_type: "refresh_token",
@@ -130,4 +135,11 @@ export async function getReadonlyAccessToken(
   }
 
   return json.access_token;
+}
+
+/** Exchange the read-only refresh token for a short-lived access token. */
+export async function getReadonlyAccessToken(
+  cfg: ReadonlyOAuthConfig = readReadonlyOAuthConfig(),
+): Promise<string> {
+  return exchangeRefreshToken(cfg);
 }

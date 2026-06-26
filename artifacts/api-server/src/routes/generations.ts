@@ -16,7 +16,7 @@ import {
   appendGenerationStep,
 } from "../lib/generations-store";
 import {
-  deliverMonthlyReport,
+  draftMonthlyReport,
   parseReportDeliveryPayload,
 } from "../lib/monthly-report-email";
 import {
@@ -380,11 +380,15 @@ router.post("/generations/:id/approve", async (req, res) => {
     kind === "email-reply"
       ? {
           unreadable: "Het bewaarde antwoord is onleesbaar; genereer opnieuw.",
-          sentTitle: "Antwoord goedgekeurd & verzonden",
+          doneTitle: "Antwoord goedgekeurd & verzonden",
+          failVerb: "Versturen",
+          failTail: "Antwoord blijft in afwachting.",
         }
       : {
           unreadable: "Het bewaarde rapport is onleesbaar; genereer opnieuw.",
-          sentTitle: "Maandrapport goedgekeurd & verzonden",
+          doneTitle: "Maandrapport — concept klaargezet in Gmail",
+          failVerb: "Concept aanmaken",
+          failTail: "Concept blijft in afwachting.",
         };
 
   const report =
@@ -398,19 +402,23 @@ router.post("/generations/:id/approve", async (req, res) => {
     return;
   }
 
-  // Claim is held; send now. On failure revert to pending so the draft can be
-  // retried, then only clear the held snapshot once it is actually out.
+  // Claim is held; act now. The inbound reply is SENT in-thread; the monthly
+  // report is NOT sent — it is placed as a Gmail DRAFT under the agency mailbox
+  // so the owner does the final send from Gmail himself. On failure revert to
+  // pending so it can be retried; clear the held snapshot only once it succeeds.
   let sendResult: SendEmailResult | null = null;
   try {
     if (reply) {
       sendResult = await deliverEmailReply(reply);
     } else if (report) {
-      sendResult = await deliverMonthlyReport(report);
+      // Draft only: leave sendResult null, so no outbound thread is recorded —
+      // the report is sent later, by hand in Gmail, outside the app's knowledge.
+      await draftMonthlyReport(report);
     }
   } catch (err) {
-    // Send failed: release the claim back to pending with the snapshot intact so
-    // the owner can retry. Best-effort — even if the revert itself fails the
-    // worst case is a stuck "approved" draft, never an unapproved send.
+    // Failed: release the claim back to pending with the snapshot intact so the
+    // owner can retry. Best-effort — even if the revert itself fails the worst
+    // case is a stuck "approved" draft, never an unapproved send.
     try {
       await revertGenerationApprovalToPending(id);
     } catch {
@@ -418,7 +426,7 @@ router.post("/generations/:id/approve", async (req, res) => {
     }
     const message = err instanceof Error ? err.message : String(err);
     res.status(502).json({
-      error: `Versturen mislukt: ${message}. Concept blijft in afwachting.`,
+      error: `${labels.failVerb} mislukt: ${message}. ${labels.failTail}`,
     });
     return;
   }
@@ -429,7 +437,7 @@ router.post("/generations/:id/approve", async (req, res) => {
   });
   await appendGenerationStep(id, {
     agentPath: row.workflowPath,
-    agentTitle: labels.sentTitle,
+    agentTitle: labels.doneTitle,
     role: "deliverable",
     status: "completed",
     durationMs: null,

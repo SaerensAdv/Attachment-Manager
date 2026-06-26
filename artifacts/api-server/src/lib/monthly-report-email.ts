@@ -1,17 +1,22 @@
 import sharp from "sharp";
 import { renderReportPdf } from "./report-pdf";
-import { sendEmail, type InlineImage, type SendEmailResult } from "./email";
+import {
+  createGmailDraft,
+  type CreateDraftResult,
+  type InlineImage,
+  type SendEmailInput,
+} from "./email";
 import type { GoogleAdsMetrics } from "./google-ads";
 import { loadPortraitBytes } from "./portraits";
 import { SAERENS_LOGO_CID, saerensLogoInlineImage } from "./brand-logo";
 
 /**
- * Building and sending the client-facing monthly report e-mail lives here, apart
- * from the generation engine, because the send is gated behind a human approval
+ * Building the client-facing monthly report e-mail lives here, apart from the
+ * generation engine, because delivery is gated behind a human approval
  * checkpoint. The engine drafts the report + cover e-mail and HOLDS a
- * `ReportDeliveryPayload` snapshot on the run; the approval route later renders
- * the PDF and sends it via `deliverMonthlyReport`. Keeping the assembly here
- * means the held draft and the actual send share one implementation.
+ * `ReportDeliveryPayload` snapshot on the run; after approval the route renders
+ * the PDF and places the e-mail as a Gmail DRAFT (under the agency mailbox) via
+ * `draftMonthlyReport`, so the owner does the final send from Gmail himself.
  */
 
 /**
@@ -314,14 +319,14 @@ export function buildBrandedEmail(args: {
 }
 
 /**
- * Render the held report to a branded PDF + HTML cover and e-mail it to the
- * client's report recipient. Called only after a human approves the held draft;
- * throws on a bad recipient (header injection) or a send failure so the caller
- * can keep the draft pending and surface the error.
+ * Assemble the report e-mail from the held snapshot: render the branded PDF,
+ * build the email-client-safe HTML cover, embed the SA logo (+ the Head's
+ * portrait when available) and set From (the responsible Head) / Cc (the owner) /
+ * subject. Kept separate so the draft path uses exactly the same assembled mail.
  */
-export async function deliverMonthlyReport(
+async function buildReportEmailInput(
   payload: ReportDeliveryPayload,
-): Promise<SendEmailResult> {
+): Promise<SendEmailInput> {
   const pdf = await renderReportPdf(payload.clientReport, {
     clientName: payload.clientName,
     subtitle: `Maandrapport — ${payload.periodLabel}`,
@@ -352,10 +357,7 @@ export async function deliverMonthlyReport(
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "")}.pdf`;
 
-  // Send FROM the responsible Head with the owner in CC. Returns the Gmail
-  // thread + Message-ID so the caller can persist the conversation for Phase 2
-  // (inbound replies routed back to this Head).
-  return sendEmail({
+  return {
     to: payload.recipient,
     subject: payload.subject,
     html,
@@ -364,5 +366,22 @@ export async function deliverMonthlyReport(
     cc: payload.cc,
     attachments: [{ filename, mimeType: "application/pdf", content: pdf }],
     inlineImages,
-  });
+  };
+}
+
+/**
+ * Render the held report and place it as a Gmail DRAFT in the agency mailbox
+ * (axel@…) instead of sending it: the owner reviews and does the final send from
+ * Gmail himself. Called only after a human approves the held draft; throws on a
+ * bad recipient (header injection) or a draft-API failure so the caller can keep
+ * the snapshot pending and surface the error.
+ *
+ * Note: because the real send happens later, by hand in Gmail, the app does not
+ * learn the sent Message-ID/threadId, so the monthly report is not tracked for
+ * inbound-reply threading (unlike the in-thread reply path).
+ */
+export async function draftMonthlyReport(
+  payload: ReportDeliveryPayload,
+): Promise<CreateDraftResult> {
+  return createGmailDraft(await buildReportEmailInput(payload));
 }

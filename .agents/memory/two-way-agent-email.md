@@ -11,9 +11,12 @@ roster (no per-Head config). Resolver: `lib/email-identity.ts` maps a run's
 title), address, signature}`. Address alias is derived from the **department id**
 (`AGENT_EMAIL_DOMAIN`); owner is `OWNER_EMAIL`.
 
-**Phase 1 (outbound):** the monthly report sends FROM the responsible Head alias
-with the owner on Cc, and a generic roster-derived signature replaces the old
-hardcoded footer. Still held by the approval checkpoint — nothing auto-sends.
+**Phase 1 (outbound):** the monthly report is built FROM the responsible Head
+alias with the owner on Cc, and a generic roster-derived signature replaces the
+old hardcoded footer. Held by the approval checkpoint; on approve it is NOT sent
+but placed as a Gmail DRAFT in the agency mailbox (`draftMonthlyReport` →
+`createGmailDraft`) so the owner does the final send from Gmail himself. The
+email-reply path still sends in-thread on approve.
 
 **Phase 2 (inbound):** a sibling interval in the scheduler (`startInboundPoller`,
 same 60s tick as the run scheduler) polls open `email_threads`, routes each reply
@@ -112,10 +115,20 @@ connector's fixed scope set.** Verified live: labels list = 200, messages list =
 **Consequence:** the Phase-2 inbound poller (full-mailbox read) CANNOT be powered by the connector.
 The SAME wall blocks `drafts.create` (needs `gmail.compose`/modify; the connector's
 `gmail.addons.current.action.compose` is add-on-context only, not REST compose) — verified
-`drafts.list` = 403. So "create a Gmail draft instead of sending" also requires the separate OAuth.
-Outbound send + labels work. To actually run inbound (or draft-create) you need a SEPARATE Google OAuth client
-carrying `gmail.readonly` (mirror the `lib/google-oauth.ts` readonly-refresh-token pattern used for
-Ads reporting) and point the read calls at that token; keep sending on the connector.
-**How to verify quickly:** probe `GET /gmail/v1/users/me/messages?maxResults=1` — 200 = read ok,
-403 = scope missing. The poller's own read-scope probe already self-disables on 403, so the feature
-fails closed (no errors, just "staat uit").
+`drafts.list` = 403. Both inbound read AND draft-create need a SEPARATE Google OAuth client; keep
+outbound send on the connector.
+
+**Draft-create is implemented** (`lib/gmail-oauth.ts`): reuses the SAME OAuth client (id+secret) as the
+Ads/readonly sources but a DEDICATED refresh token `GOOGLE_OAUTH_GMAIL_REFRESH_TOKEN`, consented as the
+agency mailbox with `gmail.modify`; the token exchange is shared from `google-oauth.ts` via
+`exchangeRefreshToken`. `createGmailDraft` POSTs the same `buildMime` MIME to `users.drafts.create` with
+a Bearer token (NOT the connector). **Durable tradeoff:** the report draft path intentionally does NOT
+record an outbound `email_thread` (`recordOutboundThread` skipped because `sendResult` stays null) — the
+real send happens later by hand in Gmail, so the app never learns the sent threadId and a manually-sent
+monthly report is NOT tracked for Phase-2 inbound-reply routing. The email-reply path still sends AND
+records the thread. **Why:** persisting a draft's thread would be a lie (it isn't sent yet) and the
+human send may produce different sent-message state the app can't see.
+**How to verify quickly:** probe `GET /gmail/v1/users/me/messages?maxResults=1` (read) or
+`drafts.list`/`drafts.create` — 200 = ok, 403 = scope missing. process.env is NOT exposed in the
+code_execution sandbox; test via workspace `node`/`tsx`. The inbound poller's read-scope probe
+self-disables on 403 (fails closed).

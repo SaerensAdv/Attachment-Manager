@@ -1,9 +1,12 @@
 import express, { type Express } from "express";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import pinoHttp from "pino-http";
 import router from "./routes";
+import { authMiddleware } from "./middlewares/authMiddleware";
+import { requireAuth } from "./middlewares/requireAuth";
 import { logger } from "./lib/logger";
 
 const app: Express = express();
@@ -37,7 +40,11 @@ app.use(
     crossOriginResourcePolicy: { policy: "cross-origin" },
   }),
 );
-app.use(cors());
+// The web artifact authenticates with a session cookie, which the browser only
+// sends (and the server only accepts back) when credentials are allowed and the
+// origin is reflected rather than wildcarded.
+app.use(cors({ credentials: true, origin: true }));
+app.use(cookieParser());
 
 // Rate-limit the two expensive, LLM-backed endpoints so a runaway client or an
 // accidental retry loop can't burn tokens unbounded. All traffic reaches us via
@@ -75,6 +82,12 @@ app.use(
 app.use("/api/clients", express.json({ limit: "25mb" }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Load any session onto req.user, then gate every protected route. The gate
+// rejects unauthenticated callers but leaves the health check, the auth flow and
+// the secret-gated webhooks open (see requireAuth).
+app.use(authMiddleware);
+app.use("/api", requireAuth);
 
 app.use("/api", router);
 

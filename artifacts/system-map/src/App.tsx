@@ -15,6 +15,7 @@ import Planning from "@/pages/Planning";
 import TabNav from "@/components/TabNav";
 import CommandPalette from "@/components/CommandPalette";
 import SmoothScroll from "@/components/SmoothScroll";
+import AuthGate from "@/components/AuthGate";
 import { pageTransition } from "@/lib/motion";
 
 const queryClient = new QueryClient();
@@ -64,13 +65,15 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-          <SmoothScroll>
-            <TabNav />
-            <CommandPalette />
-            <AnimatedRoutes />
-          </SmoothScroll>
-        </WouterRouter>
+        <AuthGate>
+          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+            <SmoothScroll>
+              <TabNav />
+              <CommandPalette />
+              <AnimatedRoutes />
+            </SmoothScroll>
+          </WouterRouter>
+        </AuthGate>
         <Toaster />
       </TooltipProvider>
     </QueryClientProvider>

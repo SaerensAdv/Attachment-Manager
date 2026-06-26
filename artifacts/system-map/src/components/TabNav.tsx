@@ -9,7 +9,9 @@ import {
   BarChart3,
   CalendarClock,
   Bug,
+  LogOut,
 } from "lucide-react";
+import { useAuth } from "@workspace/replit-auth-web";
 
 const tabs = [
   { href: "/", label: "Kaart", icon: Map },
@@ -25,6 +27,7 @@ const tabs = [
 export default function TabNav() {
   const [location] = useLocation();
   const reduce = useReducedMotion();
+  const { logout } = useAuth();
 
   return (
     <div className="fixed top-3 sm:top-5 left-1/2 -translate-x-1/2 z-50 pointer-events-auto max-w-[calc(100vw-1rem)]">
@@ -67,6 +70,19 @@ export default function TabNav() {
             </Link>
           );
         })}
+        <button
+          type="button"
+          onClick={logout}
+          aria-label="Uitloggen"
+          title="Uitloggen"
+          className="relative flex items-center gap-0 lg:gap-2 px-3 lg:px-4 py-2.5 lg:py-2 font-['Space_Mono'] text-[11px] uppercase tracking-widest transition-colors border-l border-foreground/20 text-foreground/60 hover:text-foreground hover:bg-foreground/5"
+          data-testid="button-logout"
+        >
+          <span className="relative z-10 flex items-center gap-2">
+            <LogOut className="w-3.5 h-3.5 shrink-0" />
+            <span className="hidden lg:inline">Uitloggen</span>
+          </span>
+        </button>
       </div>
     </div>
   );

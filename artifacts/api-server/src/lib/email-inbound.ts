@@ -200,8 +200,12 @@ export function inboundSkipReason(args: {
   return null;
 }
 
-/** Process one open conversation: detect a new client reply and draft an answer. */
-async function processThread(thread: EmailThread): Promise<void> {
+/**
+ * Process one open conversation: detect a new client reply and draft an answer.
+ * Exported for focused engine-level testing of the resolve -> route -> claim ->
+ * draft flow (the whitelist + exactly-once guards).
+ */
+export async function processThread(thread: EmailThread): Promise<void> {
   const whitelistEmail = await clientReportEmail(thread.clientPath);
   if (!whitelistEmail) return; // No recipient configured: nothing can be whitelisted.
 

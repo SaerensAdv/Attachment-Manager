@@ -110,7 +110,10 @@ So mailbox reads (`users.messages.list`, thread fetches) return 403 "insufficien
 scopes" no matter how often the connection is re-authorized — **re-auth does not broaden a
 connector's fixed scope set.** Verified live: labels list = 200, messages list = 403.
 **Consequence:** the Phase-2 inbound poller (full-mailbox read) CANNOT be powered by the connector.
-Outbound send + labels work. To actually run inbound you need a SEPARATE Google OAuth client
+The SAME wall blocks `drafts.create` (needs `gmail.compose`/modify; the connector's
+`gmail.addons.current.action.compose` is add-on-context only, not REST compose) — verified
+`drafts.list` = 403. So "create a Gmail draft instead of sending" also requires the separate OAuth.
+Outbound send + labels work. To actually run inbound (or draft-create) you need a SEPARATE Google OAuth client
 carrying `gmail.readonly` (mirror the `lib/google-oauth.ts` readonly-refresh-token pattern used for
 Ads reporting) and point the read calls at that token; keep sending on the connector.
 **How to verify quickly:** probe `GET /gmail/v1/users/me/messages?maxResults=1` — 200 = read ok,

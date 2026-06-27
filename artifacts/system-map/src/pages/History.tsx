@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearch } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -161,6 +161,9 @@ export default function History() {
   const [verdict, setVerdict] = useState<"approved" | "rejected" | null>(null);
   const [note, setNote] = useState("");
   const [savedVerdict, setSavedVerdict] = useState<string | null>(null);
+  // Generation ids for which we already auto-started the learning loop this
+  // session, so a repeated verdict save never re-runs the (paid) model.
+  const autoProposedRef = useRef<Set<number>>(new Set());
 
   const proposalsQuery = useGetProposals(selected ?? 0, {
     query: {
@@ -247,6 +250,23 @@ export default function History() {
             queryKey: getGetGenerationQueryKey(selected),
           });
           setSavedVerdict(verdict);
+          // Kick off the learning loop automatically once a verdict is saved,
+          // so the user no longer has to click "Stel verbeteringen voor". We
+          // only do this when the proposals list has actually loaded and is
+          // empty, and we have not auto-started it before, to avoid duplicate
+          // drafts or redundant (paid) model calls on a repeated save or while
+          // the list is still loading (it defaults to []).
+          if (
+            proposalsQuery.isSuccess &&
+            proposals.length === 0 &&
+            !autoProposedRef.current.has(selected)
+          ) {
+            autoProposedRef.current.add(selected);
+            createProposalsMut.mutate(
+              { id: selected },
+              { onSuccess: refetchProposals },
+            );
+          }
         },
       },
     );
@@ -805,13 +825,15 @@ export default function History() {
                           ) : (
                             <Lightbulb className="w-4 h-4" />
                           )}
-                          Stel verbeteringen voor
+                          {proposals.length > 0
+                            ? "Opnieuw voorstellen"
+                            : "Stel verbeteringen voor"}
                         </button>
                       </div>
                       <p className="text-sm text-muted-foreground mb-5 font-['Inter'] max-w-2xl">
-                        Op basis van je oordeel stelt het systeem concrete
-                        documentaanpassingen voor. Jij bevestigt elke aanpassing
-                        apart voor ze wordt toegepast.
+                        Zodra je een oordeel bewaart, stelt het systeem
+                        automatisch concrete documentaanpassingen voor. Jij
+                        bevestigt elke aanpassing apart voor ze wordt toegepast.
                       </p>
 
                       {createProposalsMut.isError && (

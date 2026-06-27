@@ -22,6 +22,18 @@ the human is the sole QA gate, and every correction becomes a durable doc improv
 - **Proposing requires a saved verdict.** `POST /generations/:id/proposals` 400s when
   the generation has no `feedbackVerdict`. The UI disables "Stel verbeteringen voor"
   until the verdict is saved.
+- **Generation may be automated; APPLY must always stay human-gated.** This is the hard
+  invariant for all proactivity work (auto-on-save trigger, future periodic digest):
+  drafting/proposing proposals can be triggered by the system, but a proposal is only
+  ever written to docs/restrictions via an explicit human accept. **Why:** the user
+  explicitly values the gate; automate the tedious detection, never the decision.
+- **Auto-trigger on verdict save is frontend-only + guarded.** History.tsx auto-fires
+  the existing proposals mutation in the feedback `onSuccess`, but only when
+  `proposalsQuery.isSuccess && proposals.length === 0` and a per-session
+  `autoProposedRef` set hasn't seen that id — else a still-loading list (defaults `[]`)
+  or a repeated save makes redundant (paid) model calls + duplicate rows. The backend
+  has NO proposal-level dedup; before building the periodic digest, move idempotency
+  server-side (generate-only-if-none / DB lock).
 - **Decisions are an atomic compare-and-set, not read-then-write.** accept/reject claim
   the row with `UPDATE ... WHERE id=? AND status='pending'` (see
   `claimProposalStatus`); 0 rows updated → 409. A plain read→check-pending→update lets

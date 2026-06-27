@@ -333,6 +333,118 @@ describe("GraphViewer service-line lens", () => {
   });
 });
 
+// ---------------------------------------------------------------------------
+// Zoom level-of-detail (LOD). The doc graph is dense (~800 edges); drawn all at
+// once the overview collapses into a hairball. So each edge class fades in with
+// zoom (routing always on → flow → reference → mention) and non-anchor node
+// labels fade out far out, while core docs and the central hub stay labelled at
+// every zoom. This is exactly the kind of thresholded logic that breaks
+// silently in a refactor — an off-by-one in a fade range turns the overview
+// into either an unreadable hairball or a blank set of marks. The `initialScale`
+// prop is the seam that drives the same `scale` state onTransformed feeds at
+// runtime. A node's label <text> existing tells us its label is drawn at the
+// given zoom; counting static edges by arrowhead marker tells us which classes
+// survive the cull.
+// ---------------------------------------------------------------------------
+
+const labelDrawn = (root: HTMLElement, title: string) =>
+  Array.from(root.querySelectorAll("text")).some((t) => t.textContent === title);
+
+describe("GraphViewer zoom level-of-detail", () => {
+  it("far out, draws only the routing skeleton and culls the dense edge classes", () => {
+    // One of every relationship class, each between two real nodes.
+    const nodes = [
+      node("orchestrator"),
+      node("agent-a"),
+      node("wf-a", "workflow"),
+      node("wf-b", "workflow"),
+      node("doc-a", "knowledge"),
+      node("doc-b", "knowledge"),
+    ];
+    const edges = [
+      edge("orchestrator", "agent-a", "routing"),
+      edge("wf-a", "wf-b", "flow"),
+      edge("doc-a", "doc-b", "reference"),
+      edge("agent-a", "doc-a", "mention"),
+    ];
+
+    const { container } = render(
+      <GraphViewer {...baseProps} nodes={nodes} edges={edges} initialScale={0.3} />,
+    );
+
+    // The routing backbone never fades (LOD [0,0]); everything denser is gone.
+    expect(staticEdges(container, "routing").length).toBe(1);
+    expect(staticEdges(container, "flow").length).toBe(0);
+    expect(staticEdges(container, "reference").length).toBe(0);
+    expect(staticEdges(container, "mention").length).toBe(0);
+  });
+
+  it("zooming in reveals the fuller wiring (flow / reference / mention)", () => {
+    const nodes = [
+      node("orchestrator"),
+      node("agent-a"),
+      node("wf-a", "workflow"),
+      node("wf-b", "workflow"),
+      node("doc-a", "knowledge"),
+      node("doc-b", "knowledge"),
+    ];
+    const edges = [
+      edge("orchestrator", "agent-a", "routing"),
+      edge("wf-a", "wf-b", "flow"),
+      edge("doc-a", "doc-b", "reference"),
+      edge("agent-a", "doc-a", "mention"),
+    ];
+
+    const { container } = render(
+      <GraphViewer {...baseProps} nodes={nodes} edges={edges} initialScale={1.4} />,
+    );
+
+    // Close in, every class is fully drawn — the inverse of the overview above.
+    expect(staticEdges(container, "routing").length).toBe(1);
+    expect(staticEdges(container, "flow").length).toBe(1);
+    expect(staticEdges(container, "reference").length).toBe(1);
+    expect(staticEdges(container, "mention").length).toBe(1);
+  });
+
+  it("far out, fades non-anchor labels but keeps core docs and the central hub labelled", () => {
+    // hub is the most-connected node (it touches every other), so it is the
+    // central anchor; a core doc is anchored by category; plain is neither.
+    const nodes = [
+      node("hub"),
+      node("spoke-1"),
+      node("spoke-2"),
+      node("plain"),
+      node("readme", "core"),
+    ];
+    const edges = [
+      edge("hub", "spoke-1", "routing"),
+      edge("hub", "spoke-2", "routing"),
+      edge("hub", "plain", "routing"),
+      edge("hub", "readme", "routing"),
+    ];
+
+    const { container } = render(
+      <GraphViewer {...baseProps} nodes={nodes} edges={edges} initialScale={0.3} />,
+    );
+
+    // Anchors stay legible to orient from: the central hub and the core doc.
+    expect(labelDrawn(container, "hub")).toBe(true);
+    expect(labelDrawn(container, "readme")).toBe(true);
+
+    // Ordinary plates read as unlabelled schematic marks far out.
+    expect(labelDrawn(container, "spoke-1")).toBe(false);
+    expect(labelDrawn(container, "spoke-2")).toBe(false);
+    expect(labelDrawn(container, "plain")).toBe(false);
+
+    // Zoomed in, those same ordinary plates regain their labels.
+    const { container: close } = render(
+      <GraphViewer {...baseProps} nodes={nodes} edges={edges} initialScale={1.4} />,
+    );
+    expect(labelDrawn(close, "spoke-1")).toBe(true);
+    expect(labelDrawn(close, "plain")).toBe(true);
+  });
+});
+
 describe("GraphViewer search highlighting", () => {
   it("lights nodes whose title matches the query and dims the rest", () => {
     const nodes = [node("alpha-one"), node("alpha-two"), node("beta")];

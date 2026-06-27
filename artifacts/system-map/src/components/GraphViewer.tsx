@@ -59,6 +59,11 @@ interface GraphViewerProps {
   // the bottom of the viewport. The spotlight framing reserves this region so
   // the live-run rings/pulses/hand-off line are never hidden behind the panel.
   frameBottomInset?: number;
+  // Initial viewport zoom. Seeds both the TransformWrapper and the local `scale`
+  // state so the level-of-detail (edge/label fade) starts in agreement with the
+  // viewport. The runtime keeps `scale` in sync via onTransformed thereafter;
+  // this is also the seam tests use to exercise the LOD ramps at a given zoom.
+  initialScale?: number;
 }
 export default function GraphViewer({
   nodes,
@@ -77,6 +82,7 @@ export default function GraphViewer({
   spotlightNonce,
   frameBottomInset,
   lensNodeIds,
+  initialScale = 1,
 }: GraphViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const transformRef = useRef<ReactZoomPanPinchRef | null>(null);
@@ -88,7 +94,7 @@ export default function GraphViewer({
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
   // Current viewport zoom level, kept in sync via onTransformed so labels can be
   // shown only when zoomed in close enough to read them.
-  const [scale, setScale] = useState(1);
+  const [scale, setScale] = useState(initialScale);
   // Live reference to the simulation node objects (mutated in place by d3), so
   // focusing can read current positions without retriggering on every tick.
   const simNodesRef = useRef<SimNode[]>([]);
@@ -559,7 +565,7 @@ export default function GraphViewer({
 
       <TransformWrapper
         ref={transformRef}
-        initialScale={1}
+        initialScale={initialScale}
         minScale={0.1}
         maxScale={4}
         centerOnInit

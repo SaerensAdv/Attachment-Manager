@@ -611,6 +611,125 @@ describe("GraphViewer live-run spotlight framing", () => {
     expect(docked.scale).toBeLessThanOrEqual(open.scale);
   });
 
+  // Helpers for the mid-run follow-up framing tests: list every spotlight frame
+  // so far, and its vertical centre (frame.y + CY*scale) — the lower this value,
+  // the higher the team sits in the viewport (further above the docked panel).
+  const spotlights = (onFramed: ReturnType<typeof vi.fn>): Frame[] =>
+    onFramed.mock.calls.map(([f]) => f as Frame).filter((f) => f.kind === "spotlight");
+  const verticalCentre = (f: Frame) => f.y + CY * f.scale;
+
+  it("re-frames as the panel grows mid-run, but ignores tiny inset jitter", async () => {
+    const onFramed = vi.fn();
+    // A live run keeps the spotlight active (involvedNodeIds non-empty), so the
+    // follow-up inset effect stays armed as the GenerationPanel grows.
+    const { rerender } = render(
+      <GraphViewer
+        {...baseProps}
+        nodes={solo}
+        edges={[]}
+        involvedNodeIds={new Set(["solo"])}
+        spotlightNodeIds={["solo"]}
+        spotlightNonce={1}
+        frameBottomInset={0}
+        onFramed={onFramed}
+      />,
+    );
+
+    // The run begins: one spotlight frames the team in the full viewport.
+    await waitFor(() => expect(spotlights(onFramed).length).toBe(1));
+    const initial = spotlights(onFramed)[0];
+
+    // A tiny growth (≤ the 48px threshold) is jitter — it must NOT re-frame, so
+    // the camera doesn't twitch on every few-pixel panel reflow.
+    rerender(
+      <GraphViewer
+        {...baseProps}
+        nodes={solo}
+        edges={[]}
+        involvedNodeIds={new Set(["solo"])}
+        spotlightNodeIds={["solo"]}
+        spotlightNonce={1}
+        frameBottomInset={20}
+        onFramed={onFramed}
+      />,
+    );
+    await act(() => new Promise((r) => setTimeout(r, 0)));
+    expect(spotlights(onFramed).length).toBe(1);
+
+    // A meaningful growth (panel expanding toward its capped max) re-frames once
+    // more, lifting the team further above the now-taller panel.
+    rerender(
+      <GraphViewer
+        {...baseProps}
+        nodes={solo}
+        edges={[]}
+        involvedNodeIds={new Set(["solo"])}
+        spotlightNodeIds={["solo"]}
+        spotlightNonce={1}
+        frameBottomInset={200}
+        onFramed={onFramed}
+      />,
+    );
+    await waitFor(() => expect(spotlights(onFramed).length).toBe(2));
+
+    // The re-frame reserves the larger inset: the team's vertical centre rises
+    // (smaller value) so it stays clear of the grown panel.
+    const reframed = spotlights(onFramed)[1];
+    expect(verticalCentre(reframed)).toBeLessThan(verticalCentre(initial));
+    expect(verticalCentre(reframed)).toBeCloseTo((H - 200) / 2, 3);
+  });
+
+  it("stops tracking the panel once the run ends", async () => {
+    const onFramed = vi.fn();
+    const { rerender } = render(
+      <GraphViewer
+        {...baseProps}
+        nodes={solo}
+        edges={[]}
+        involvedNodeIds={new Set(["solo"])}
+        spotlightNodeIds={["solo"]}
+        spotlightNonce={1}
+        frameBottomInset={0}
+        onFramed={onFramed}
+      />,
+    );
+
+    await waitFor(() => expect(spotlights(onFramed).length).toBe(1));
+
+    // The run ends: involvedNodeIds empties, which disarms the follow-up framing
+    // (spotlightActiveRef / lastFramedInsetRef reset).
+    rerender(
+      <GraphViewer
+        {...baseProps}
+        nodes={solo}
+        edges={[]}
+        involvedNodeIds={new Set()}
+        spotlightNodeIds={["solo"]}
+        spotlightNonce={1}
+        frameBottomInset={0}
+        onFramed={onFramed}
+      />,
+    );
+    await act(() => new Promise((r) => setTimeout(r, 0)));
+
+    // A later panel inset change (e.g. a new request being composed) must NOT
+    // re-frame the now-idle map — even though it clears the 48px threshold.
+    rerender(
+      <GraphViewer
+        {...baseProps}
+        nodes={solo}
+        edges={[]}
+        involvedNodeIds={new Set()}
+        spotlightNodeIds={["solo"]}
+        spotlightNonce={1}
+        frameBottomInset={300}
+        onFramed={onFramed}
+      />,
+    );
+    await act(() => new Promise((r) => setTimeout(r, 0)));
+    expect(spotlights(onFramed).length).toBe(1);
+  });
+
   it("does not spotlight without a nonce", async () => {
     const onFramed = vi.fn();
     render(

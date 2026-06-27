@@ -63,6 +63,18 @@ interface GraphViewerProps {
   // viewport. The runtime keeps `scale` in sync via onTransformed thereafter;
   // this is also the seam tests use to exercise the LOD ramps at a given zoom.
   initialScale?: number;
+  // Test/diagnostic seam: invoked whenever the viewport is programmatically
+  // framed — the one-time auto-fit overview ("fit") and the live-run spotlight
+  // ("spotlight") — with the exact transform handed to the pan/zoom backend.
+  // Lets tests assert the framing math (and that the spotlight reserves the
+  // docked panel's bottom inset, lifting the team above it) without standing up
+  // a real pan/zoom backend. Unused by the app.
+  onFramed?: (frame: {
+    kind: "fit" | "spotlight";
+    x: number;
+    y: number;
+    scale: number;
+  }) => void;
 }
 export default function GraphViewer({
   nodes,
@@ -82,6 +94,7 @@ export default function GraphViewer({
   frameBottomInset,
   lensNodeIds,
   initialScale = 1,
+  onFramed,
 }: GraphViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const transformRef = useRef<ReactZoomPanPinchRef | null>(null);
@@ -271,7 +284,7 @@ export default function GraphViewer({
     const positioned = simNodesRef.current.filter(
       (n) => n.x !== undefined && n.y !== undefined,
     );
-    if (!api || !positioned.length) return;
+    if (!positioned.length) return;
 
     const xs = positioned.map((n) => n.x as number);
     const ys = positioned.map((n) => n.y as number);
@@ -294,8 +307,9 @@ export default function GraphViewer({
     const centerY = (minY + maxY) / 2;
     const x = dimensions.width / 2 - centerX * clampedScale;
     const y = dimensions.height / 2 - centerY * clampedScale;
-    api.setTransform(x, y, clampedScale, reducedMotion ? 0 : 600, "easeOut");
-  }, [dimensions.width, dimensions.height, reducedMotion]);
+    onFramed?.({ kind: "fit", x, y, scale: clampedScale });
+    api?.setTransform(x, y, clampedScale, reducedMotion ? 0 : 600, "easeOut");
+  }, [dimensions.width, dimensions.height, reducedMotion, onFramed]);
 
   // Pan/zoom so a specific subset of nodes (e.g. the routed team) is framed.
   // Used to spotlight the involved agents when a run begins, with a tighter
@@ -307,7 +321,7 @@ export default function GraphViewer({
       const positioned = simNodesRef.current.filter(
         (n) => wanted.has(n.id) && n.x !== undefined && n.y !== undefined,
       );
-      if (!api || !positioned.length) return;
+      if (!positioned.length) return;
 
       const xs = positioned.map((n) => n.x as number);
       const ys = positioned.map((n) => n.y as number);
@@ -339,9 +353,10 @@ export default function GraphViewer({
       // Centre vertically within the usable band (top of viewport → top of the
       // panel) rather than the full viewport, lifting the team clear of the panel.
       const y = usableHeight / 2 - centerY * clampedScale;
-      api.setTransform(x, y, clampedScale, reducedMotion ? 0 : 700, "easeOut");
+      onFramed?.({ kind: "spotlight", x, y, scale: clampedScale });
+      api?.setTransform(x, y, clampedScale, reducedMotion ? 0 : 700, "easeOut");
     },
-    [dimensions.width, dimensions.height, reducedMotion],
+    [dimensions.width, dimensions.height, reducedMotion, onFramed],
   );
 
   // Export the current graph view (the cream paper + grid + SVG, exactly as

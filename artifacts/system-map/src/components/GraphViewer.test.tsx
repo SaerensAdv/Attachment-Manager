@@ -1,7 +1,7 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { render, fireEvent } from "@testing-library/react";
+import { render, fireEvent, waitFor, act } from "@testing-library/react";
 import type { DocNode, DocEdge, DocCategory } from "@workspace/api-client-react";
 import GraphViewer from "./GraphViewer";
 import { setMatchMedia } from "../test/setup";
@@ -457,6 +457,177 @@ describe("GraphViewer wiring reveal & label LOD", () => {
     );
     expect(labelDrawn(close, "spoke-1")).toBe(true);
     expect(labelDrawn(close, "plain")).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Viewport framing. As the real team graph grows, two automatic camera moves
+// keep it readable: (1) a one-time auto-fit that frames the whole settled
+// layout when a fresh dataset lands, and (2) a live-run spotlight that frames
+// the involved team and reserves the docked GenerationPanel's bottom inset so
+// the working agents sit ABOVE the panel, never hidden behind it. Both feed
+// `setTransform` on a pan/zoom backend that jsdom can't drive, so the component
+// exposes an `onFramed` seam reporting the exact {x,y,scale} it computes — the
+// same values handed to setTransform. A regression here (framing a half-settled
+// layout, re-fitting on every render, or forgetting the panel inset) would
+// leave the team off-screen or behind the command bar with no error.
+// ---------------------------------------------------------------------------
+
+type Frame = { kind: "fit" | "spotlight"; x: number; y: number; scale: number };
+
+describe("GraphViewer auto-fit overview framing", () => {
+  it("frames the settled layout exactly once per fresh dataset", () => {
+    const onFramed = vi.fn();
+    const { nodes, edges } = denseGraph(8, 30);
+
+    const { rerender } = render(
+      <GraphViewer
+        {...baseProps}
+        nodes={nodes}
+        edges={edges}
+        onFramed={onFramed}
+      />,
+    );
+
+    const fits = () =>
+      onFramed.mock.calls
+        .map(([f]) => f as Frame)
+        .filter((f) => f.kind === "fit");
+
+    // The auto-fit fires once, after the simulation settles.
+    expect(fits().length).toBe(1);
+
+    // It framed the SETTLED (spread-out) layout: a dense graph relaxes wider
+    // than the 800x600 test viewport, so the fit must zoom OUT (scale < 1). A
+    // collapsed / half-settled cluster would instead clamp at the 2x max — so
+    // this also guards that the fit waits for the final, fully-spread layout.
+    const fit = fits()[0];
+    expect(fit.scale).toBeLessThan(1);
+    expect(fit.scale).toBeGreaterThanOrEqual(0.1);
+
+    // Re-rendering with the SAME dataset must not re-fit — otherwise an
+    // unrelated prop change would yank the user's manual pan/zoom back to fit.
+    rerender(
+      <GraphViewer
+        {...baseProps}
+        nodes={nodes}
+        edges={edges}
+        onFramed={onFramed}
+      />,
+    );
+    expect(fits().length).toBe(1);
+
+    // A genuinely new dataset re-arms the one-time fit so the new (larger)
+    // arrangement is framed in full.
+    const next = denseGraph(10, 36);
+    rerender(
+      <GraphViewer
+        {...baseProps}
+        nodes={next.nodes}
+        edges={next.edges}
+        onFramed={onFramed}
+      />,
+    );
+    expect(fits().length).toBe(2);
+  });
+
+  it("skips the auto-fit when a node is already selected (a focus/deep-link wins)", () => {
+    const onFramed = vi.fn();
+    const { nodes, edges } = denseGraph(6, 12);
+
+    render(
+      <GraphViewer
+        {...baseProps}
+        nodes={nodes}
+        edges={edges}
+        selectedNodeId="agent-0"
+        onFramed={onFramed}
+      />,
+    );
+
+    // The selection drives its own focus; the overview auto-fit must stand down
+    // so it doesn't fight that framing.
+    expect(
+      onFramed.mock.calls.map(([f]) => f as Frame).filter((f) => f.kind === "fit")
+        .length,
+    ).toBe(0);
+  });
+});
+
+describe("GraphViewer live-run spotlight framing", () => {
+  // A single involved node is pinned to the viewport centre by forceCenter
+  // ((400,300) in the default 800x600 test viewport), so the framing math is
+  // exact and the panel-inset reserve can be asserted precisely.
+  const CX = 400;
+  const CY = 300;
+  const H = 600;
+  const solo = [node("solo")];
+
+  async function captureSpotlight(frameBottomInset: number): Promise<Frame> {
+    const onFramed = vi.fn();
+    render(
+      <GraphViewer
+        {...baseProps}
+        nodes={solo}
+        edges={[]}
+        spotlightNodeIds={["solo"]}
+        spotlightNonce={1}
+        frameBottomInset={frameBottomInset}
+        onFramed={onFramed}
+      />,
+    );
+    // The spotlight frames on the next animation frame (so freshly-filtered
+    // nodes are positioned first), so wait for that to flush.
+    await waitFor(() =>
+      expect(
+        onFramed.mock.calls.some(([f]) => (f as Frame).kind === "spotlight"),
+      ).toBe(true),
+    );
+    return onFramed.mock.calls
+      .map(([f]) => f as Frame)
+      .find((f) => f.kind === "spotlight")!;
+  }
+
+  it("frames the involved team and reserves the docked panel's bottom inset", async () => {
+    // No docked panel: the team is centred in the FULL viewport.
+    const open = await captureSpotlight(0);
+    expect(open.kind).toBe("spotlight");
+    // Horizontal centring (unaffected by the bottom inset): node centre maps to
+    // the middle of the viewport width.
+    expect(open.x + CX * open.scale).toBeCloseTo(400, 3);
+    // Vertical centre lands at the middle of the full viewport.
+    expect(open.y + CY * open.scale).toBeCloseTo(H / 2, 3);
+
+    // A tall docked panel: the SAME team must be lifted into the band ABOVE the
+    // panel — centred within (viewport height - inset), never behind it.
+    const inset = 300;
+    const docked = await captureSpotlight(inset);
+    expect(docked.x + CX * docked.scale).toBeCloseTo(400, 3);
+    expect(docked.y + CY * docked.scale).toBeCloseTo((H - inset) / 2, 3);
+
+    // The reserved band sits strictly higher than the full-viewport centre, and
+    // shrinking the usable area only zooms the framing out (never in).
+    expect((H - inset) / 2).toBeLessThan(H / 2);
+    expect(docked.scale).toBeLessThanOrEqual(open.scale);
+  });
+
+  it("does not spotlight without a nonce", async () => {
+    const onFramed = vi.fn();
+    render(
+      <GraphViewer
+        {...baseProps}
+        nodes={solo}
+        edges={[]}
+        spotlightNodeIds={["solo"]}
+        onFramed={onFramed}
+      />,
+    );
+    // Give any pending animation frame a chance to flush, then confirm nothing
+    // was spotlit (the auto-fit may still run; only spotlight is gated here).
+    await act(() => new Promise((r) => setTimeout(r, 0)));
+    expect(
+      onFramed.mock.calls.some(([f]) => (f as Frame).kind === "spotlight"),
+    ).toBe(false);
   });
 });
 

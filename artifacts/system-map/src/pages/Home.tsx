@@ -328,8 +328,14 @@ export default function Home() {
 
       {/* Document Panel — overlay pinned to the right, above the legend and the
           docked command bar. Full-width on mobile (covers the legend so it never
-          overflows), fixed 32rem from md up. */}
-      <div className={`absolute right-0 top-0 z-30 h-full w-[min(32rem,100vw)] p-4 pt-16 sm:p-6 sm:pt-20 transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${selectedNodePath ? 'translate-x-0 pointer-events-auto' : 'translate-x-[110%] pointer-events-none'}`}>
+          overflows), fixed 32rem from sm up. On mobile its height stops above the
+          command-bar dock (reusing the measured dockHeight) so the command bar
+          stays reachable while a doc is open; from sm up the panel is only 32rem
+          wide so the centred command bar is reachable beside it. */}
+      <div
+        style={{ "--dock-h": `${dockHeight}px` } as React.CSSProperties}
+        className={`absolute right-0 top-0 z-30 h-[calc(100dvh-var(--dock-h))] sm:h-full w-[min(32rem,100vw)] p-4 pt-16 sm:p-6 sm:pt-20 transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${selectedNodePath ? 'translate-x-0 pointer-events-auto' : 'translate-x-[110%] pointer-events-none'}`}
+      >
         {selectedNodePath && (
           <DocPanel 
             path={selectedNodePath} 

@@ -1,6 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, AlertOctagon, AlertTriangle, Info, CheckCircle2 } from "lucide-react";
+import { AlertOctagon, AlertTriangle, Info, CheckCircle2 } from "lucide-react";
 import Reveal from "@/components/Reveal";
+import { Skeleton } from "@/components/ui/skeleton";
+
+// Brutalist skeleton block: sharp corners and a foreground tint so loading
+// states match the editorial theme instead of a stray rounded grey box.
+const SK = "rounded-none bg-foreground/10";
 
 type Severity = "error" | "warning" | "info";
 
@@ -79,12 +84,45 @@ export default function Controle() {
 
   if (isLoading) {
     return (
-      <div className="min-h-[100dvh] w-full flex items-center justify-center bg-background text-foreground font-['Inter']">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="w-6 h-6 animate-spin text-accent" />
-          <p className="font-['Space_Mono'] text-[10px] uppercase tracking-widest text-muted-foreground">
-            Controle uitvoeren...
-          </p>
+      <div className="min-h-[100dvh] w-full bg-background text-foreground font-['Inter']">
+        <div
+          className="mx-auto max-w-5xl px-4 sm:px-6 pt-20 pb-16"
+          aria-busy="true"
+          data-testid="controle-loading"
+        >
+          {/* Masthead */}
+          <header className="border-b-2 border-foreground pb-5 mb-10 space-y-3">
+            <Skeleton className={`${SK} h-3 w-56`} />
+            <Skeleton className={`${SK} h-10 w-64`} />
+            <Skeleton className={`${SK} h-3 w-full max-w-xl`} />
+          </header>
+          {/* Count cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-10">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div
+                key={i}
+                className="border border-foreground bg-card p-5 flex items-center gap-4 shadow-[4px_4px_0px_hsl(var(--foreground))]"
+              >
+                <Skeleton className={`${SK} h-6 w-6`} />
+                <div className="space-y-2">
+                  <Skeleton className={`${SK} h-8 w-12`} />
+                  <Skeleton className={`${SK} h-2.5 w-20`} />
+                </div>
+              </div>
+            ))}
+          </div>
+          {/* Issue rows */}
+          <div className="flex flex-col">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div
+                key={i}
+                className="border-l-2 border-foreground/20 px-4 py-4 border-b border-foreground/20 space-y-2.5"
+              >
+                <Skeleton className={`${SK} h-2.5 w-32`} />
+                <Skeleton className={`${SK} h-3 w-full max-w-md`} />
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );

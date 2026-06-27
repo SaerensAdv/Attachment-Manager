@@ -34,11 +34,18 @@ export default function CommandBar({ gen }: { gen: GenerationController }) {
     request,
     setRequest,
     routing,
+    isStreaming,
     canRoute,
     handleRoute,
     hasActiveFlow,
     resetFlow,
   } = gen;
+
+  // While a task is in flight (routing or the team is streaming) the command bar
+  // locks: the client picker, prompt and send button are disabled so a stray
+  // click or keystroke can't silently discard a running task. The "Stop persen"
+  // button in the GenerationPanel above is the deliberate way to interrupt.
+  const isRunning = routing || isStreaming;
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -61,12 +68,21 @@ export default function CommandBar({ gen }: { gen: GenerationController }) {
         <div className="self-stretch flex items-center">
           <Select
             value={clientPath || NO_CLIENT}
+            disabled={isRunning}
             onValueChange={(v) => {
               setClientPath(v === NO_CLIENT ? "" : v);
               if (hasActiveFlow) resetFlow();
             }}
           >
-            <SelectTrigger data-testid="select-client" className={selectTriggerClass}>
+            <SelectTrigger
+              data-testid="select-client"
+              title={
+                isRunning
+                  ? "Stop de lopende taak om van klant te wisselen"
+                  : undefined
+              }
+              className={`${selectTriggerClass} disabled:opacity-50 disabled:cursor-not-allowed`}
+            >
               <SelectValue placeholder="Kies klant" />
             </SelectTrigger>
             <SelectContent className={selectContentClass}>
@@ -85,6 +101,7 @@ export default function CommandBar({ gen }: { gen: GenerationController }) {
         <textarea
           ref={textareaRef}
           value={request}
+          disabled={isRunning}
           onChange={(e) => {
             setRequest(e.target.value);
             if (hasActiveFlow) resetFlow();
@@ -96,15 +113,19 @@ export default function CommandBar({ gen }: { gen: GenerationController }) {
             }
           }}
           rows={1}
-          placeholder="Beschrijf de opdracht en druk op Enter..."
+          placeholder={
+            isRunning
+              ? "Taak loopt — stop ze om een nieuwe te starten..."
+              : "Beschrijf de opdracht en druk op Enter..."
+          }
           data-testid="input-request"
-          className="flex-1 resize-none bg-transparent px-4 py-3 font-['Inter'] text-sm leading-relaxed placeholder:text-muted-foreground focus:outline-none max-h-[120px]"
+          className="flex-1 resize-none bg-transparent px-4 py-3 font-['Inter'] text-sm leading-relaxed placeholder:text-muted-foreground focus:outline-none max-h-[120px] disabled:cursor-not-allowed"
         />
 
         <button
           type="button"
           onClick={onSend}
-          disabled={!canRoute}
+          disabled={!canRoute || isRunning}
           aria-label="Versturen"
           title="Versturen"
           data-testid="button-route"

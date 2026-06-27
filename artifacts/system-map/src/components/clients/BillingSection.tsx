@@ -2,13 +2,16 @@ import { FileDown, Receipt, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { INPUT_CLASS } from "@/lib/clients-form";
+import type { ClientGroupSummary } from "@workspace/api-client-react";
 import type { ClientEditorApi } from "@/hooks/useClientEditor";
 
 /** Section XII — facturatie (snapshot preview + factuur uitgeven). */
 export default function BillingSection({
   editor,
+  groups,
 }: {
   editor: ClientEditorApi;
+  groups: ClientGroupSummary[];
 }) {
   const {
     editing,
@@ -16,6 +19,7 @@ export default function BillingSection({
     setField,
     effectiveFee,
     monthlyFee,
+    groupId,
     handleFactuurPreview,
     factuurPreviewing,
     confirmIssue,
@@ -23,6 +27,11 @@ export default function BillingSection({
     handleIssueInvoice,
     issuingInvoice,
   } = editor;
+  // Name of the kapstok the fee falls back to, so the source line can name it.
+  const billingGroupName =
+    groupId != null
+      ? (groups.find((g) => g.id === groupId)?.name ?? null)
+      : null;
   return (
     <>
                   {/* Section XII — facturatie (existing clients only) */}
@@ -131,17 +140,25 @@ export default function BillingSection({
                         </div>
                       </div>
 
-                      <div className="flex flex-col gap-1 border border-foreground/30 bg-foreground/5 p-3">
+                      <div className="flex flex-col gap-1.5 border border-foreground/30 bg-foreground/5 p-3">
                         <span className="font-['Space_Mono'] text-[10px] uppercase tracking-widest text-muted-foreground">
                           Factureerbare fee
                         </span>
                         {effectiveFee != null ? (
-                          <span className="font-['Playfair_Display'] font-black text-lg">
-                            € {effectiveFee.toLocaleString("nl-BE")} / maand
-                            <span className="font-['Space_Mono'] text-[10px] font-normal uppercase tracking-wider text-muted-foreground ml-2">
-                              {monthlyFee != null ? "klant-fiche" : "groep"}
+                          <>
+                            <span className="font-['Playfair_Display'] font-black text-lg leading-none">
+                              € {effectiveFee.toLocaleString("nl-BE")} / maand
                             </span>
-                          </span>
+                            <span className="inline-flex w-fit items-center border border-foreground/25 px-1.5 py-0.5 font-['Space_Mono'] text-[9px] uppercase tracking-wider text-muted-foreground">
+                              {monthlyFee != null
+                                ? "Bron: deze fiche"
+                                : `Bron: kapstok${billingGroupName ? ` «${billingGroupName}»` : ""}`}
+                            </span>
+                            <span className="font-['Inter'] text-[11px] leading-snug text-muted-foreground">
+                              De fiche-fee heeft voorrang op de kapstok-fee. Staat
+                              de fiche-fee leeg, dan factureren we de kapstok-fee.
+                            </span>
+                          </>
                         ) : (
                           <span className="font-['Inter'] text-sm text-muted-foreground">
                             Nog geen fee ingesteld op de fiche of de groep.

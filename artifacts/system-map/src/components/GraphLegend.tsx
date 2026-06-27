@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, Aperture } from "lucide-react";
 import type { DocCategory } from "@workspace/api-client-react";
 import { Checkbox } from "@/components/ui/checkbox";
 
@@ -92,10 +92,22 @@ export default function GraphLegend({
           restores the full map. Single-select; the Orchestrator and Quality
           hubs stay visible in every line. */}
       {lines.length > 0 && (
-        <div className="flex flex-col gap-3 pt-2 mt-1 border-t border-foreground/10">
-          <div className="flex items-center justify-between w-full font-['Space_Mono'] text-[10px] uppercase tracking-[0.3em] text-muted-foreground border-b border-foreground/20 pb-2 mb-1">
-            <span>Service-lijn</span>
+        <div className="flex flex-col gap-3 pt-3 mt-1 border-t border-foreground/10">
+          <div className="flex items-center gap-2 w-full font-['Space_Mono'] text-[10px] uppercase tracking-[0.3em] text-muted-foreground border-b border-foreground/20 pb-2 mb-1">
+            <Aperture className="w-3.5 h-3.5 text-accent shrink-0" />
+            <span>Service-lijn lens</span>
+            {selectedLine !== null && (
+              <span
+                className="ml-auto font-['Space_Mono'] text-[9px] uppercase tracking-widest text-accent border border-accent/50 px-1.5 py-0.5"
+                data-testid="badge-lens-active"
+              >
+                Actief
+              </span>
+            )}
           </div>
+          <p className="font-['Inter'] text-[11px] text-muted-foreground leading-snug -mt-1">
+            Licht één service-lijn uit met haar team, workflows en kennis. Orchestrator en Quality blijven altijd zichtbaar.
+          </p>
           <div className="space-y-1">
             <button
               type="button"
@@ -135,9 +147,6 @@ export default function GraphLegend({
               );
             })}
           </div>
-          <p className="font-['Inter'] text-[11px] text-muted-foreground leading-snug">
-            Licht één service-lijn uit met haar team, workflows en kennis. Orchestrator en Quality blijven altijd zichtbaar.
-          </p>
         </div>
       )}
     </div>

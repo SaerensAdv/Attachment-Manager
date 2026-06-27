@@ -64,7 +64,7 @@ export default function ClientEditor({
         <BriefingSection editor={editor} />
         <CurrentStateSection editor={editor} />
         <LiveIntegrations editor={editor} />
-        <BillingSection editor={editor} />
+        <BillingSection editor={editor} groups={groups} />
         <OfferteSection editor={editor} />
         <DeckSection editor={editor} />
         <EditorActions editor={editor} />

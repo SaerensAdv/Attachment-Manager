@@ -3,9 +3,14 @@ import {
   useGetClientsRevenue,
   type LeaderboardEntry,
 } from "@workspace/api-client-react";
-import { Loader2, BarChart3, ArrowUpRight, Euro, Target } from "lucide-react";
+import { BarChart3, ArrowUpRight, Euro, Target } from "lucide-react";
 import { Link } from "wouter";
 import Reveal from "@/components/Reveal";
+import { Skeleton } from "@/components/ui/skeleton";
+
+// Brutalist skeleton block: sharp corners and a foreground tint so loading
+// states match the editorial theme instead of a stray rounded grey box.
+const SK = "rounded-none bg-foreground/10";
 
 // Compact, human-readable duration (e.g. "1m 12s", "8s").
 function formatDuration(ms: number | null): string {
@@ -99,12 +104,41 @@ function RevenueOverview() {
 
   if (isLoading) {
     return (
-      <div className="border-2 border-foreground bg-card shadow-[3px_3px_0px_hsl(var(--foreground))] px-6 py-10 mb-12 flex items-center justify-center gap-3">
-        <Loader2 className="w-5 h-5 animate-spin text-accent" />
-        <span className="font-['Space_Mono'] text-[10px] uppercase tracking-widest text-muted-foreground">
-          Omzet laden...
-        </span>
-      </div>
+      <section className="mb-14" aria-busy="true" data-testid="revenue-loading">
+        <div className="flex items-center gap-2 mb-4">
+          <Euro className="w-4 h-4 text-accent" />
+          <h2 className="font-['Playfair_Display'] font-black text-2xl uppercase tracking-tight">
+            Maandelijkse omzet
+          </h2>
+        </div>
+        {/* Thermometer card */}
+        <div className="border-2 border-foreground bg-card shadow-[3px_3px_0px_hsl(var(--foreground))] px-6 py-6">
+          <div className="flex flex-wrap items-end justify-between gap-4 mb-5">
+            <div className="space-y-3">
+              <Skeleton className={`${SK} h-2.5 w-24`} />
+              <Skeleton className={`${SK} h-12 w-48`} />
+              <Skeleton className={`${SK} h-3 w-28`} />
+            </div>
+            <div className="space-y-2 text-right">
+              <Skeleton className={`${SK} h-10 w-20 ml-auto`} />
+              <Skeleton className={`${SK} h-2.5 w-14 ml-auto`} />
+            </div>
+          </div>
+          <Skeleton className={`${SK} h-5 w-full`} />
+        </div>
+        {/* Breakdown rows */}
+        <div className="mt-8 border-2 border-foreground bg-card shadow-[3px_3px_0px_hsl(var(--foreground))] divide-y divide-foreground/15">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-4 px-4 py-3.5">
+              <Skeleton className={`${SK} h-3 w-3`} />
+              <div className="flex-1 space-y-2">
+                <Skeleton className={`${SK} h-3 w-40`} />
+                <Skeleton className={`${SK} h-2 w-full`} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
     );
   }
 
@@ -313,11 +347,49 @@ function TeamActivity() {
 
   if (isLoading) {
     return (
-      <div className="border-2 border-foreground bg-card shadow-[3px_3px_0px_hsl(var(--foreground))] px-6 py-10 flex items-center justify-center gap-3">
-        <Loader2 className="w-5 h-5 animate-spin text-accent" />
-        <span className="font-['Space_Mono'] text-[10px] uppercase tracking-widest text-muted-foreground">
-          Teamcijfers laden...
-        </span>
+      <div aria-busy="true" data-testid="team-loading">
+        <div className="flex items-center gap-2 mb-4">
+          <BarChart3 className="w-4 h-4 text-accent" />
+          <h2 className="font-['Playfair_Display'] font-black text-2xl uppercase tracking-tight">
+            Team-activiteit
+          </h2>
+        </div>
+        {/* Stat cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div
+              key={i}
+              className="border-2 border-foreground bg-card px-5 py-5 shadow-[3px_3px_0px_hsl(var(--foreground))] space-y-3"
+            >
+              <Skeleton className={`${SK} h-2.5 w-20`} />
+              <Skeleton className={`${SK} h-9 w-24`} />
+              <Skeleton className={`${SK} h-2.5 w-28`} />
+            </div>
+          ))}
+        </div>
+        {/* Token tri-panel */}
+        <div className="border-2 border-foreground bg-card shadow-[3px_3px_0px_hsl(var(--foreground))] mb-12 grid grid-cols-3 divide-x-2 divide-foreground">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="px-5 py-4 space-y-2.5">
+              <Skeleton className={`${SK} h-2.5 w-16`} />
+              <Skeleton className={`${SK} h-7 w-20`} />
+            </div>
+          ))}
+        </div>
+        {/* Leaderboard rows */}
+        <div className="border-2 border-foreground bg-card shadow-[3px_3px_0px_hsl(var(--foreground))]">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div
+              key={i}
+              className="flex items-center gap-3 px-4 py-3 border-b border-foreground/15 last:border-b-0"
+            >
+              <Skeleton className={`${SK} h-4 w-4`} />
+              <Skeleton className="rounded-full bg-foreground/10 h-9 w-9" />
+              <Skeleton className={`${SK} h-3 w-40`} />
+              <Skeleton className={`${SK} h-3 w-16 ml-auto`} />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }

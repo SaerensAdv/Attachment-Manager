@@ -1,4 +1,4 @@
-import { Layers, Euro, Loader2, Plus } from "lucide-react";
+import { Layers, Euro, Loader2, Plus, AlertTriangle, Info } from "lucide-react";
 import { INPUT_CLASS } from "@/lib/clients-form";
 import type { ClientGroupSummary } from "@workspace/api-client-react";
 import type { ClientEditorApi } from "@/hooks/useClientEditor";
@@ -21,6 +21,11 @@ export default function GroupFeeFields({
     monthlyFee,
     setMonthlyFee,
   } = editor;
+  // The kapstok the open fiche is assigned to (if any) and its own fee, so we
+  // can explain how the fiche-fee and the group-fee interact.
+  const assignedGroup =
+    groupId != null ? (groups.find((g) => g.id === groupId) ?? null) : null;
+  const groupFee = assignedGroup?.monthlyFee ?? null;
   return (
     <>
                   {/* Klantgroep (kapstok) — overkoepelend dossier */}
@@ -96,7 +101,7 @@ export default function GroupFeeFields({
                         htmlFor="client-monthly-fee"
                         className="font-['Space_Mono'] text-[10px] uppercase tracking-widest"
                       >
-                        Maandelijkse fee
+                        Maandelijkse fee — deze fiche
                       </label>
                     </div>
                     <p className="font-['Inter'] text-xs text-muted-foreground">
@@ -133,6 +138,39 @@ export default function GroupFeeFields({
                         / maand
                       </span>
                     </div>
+                    {assignedGroup &&
+                      groupFee != null &&
+                      (monthlyFee != null ? (
+                        <div className="flex items-start gap-2 border border-[hsl(var(--cat-workflow))]/50 bg-[hsl(var(--cat-workflow))]/10 p-2.5">
+                          <AlertTriangle
+                            className="w-3.5 h-3.5 shrink-0 mt-0.5"
+                            style={{ color: "hsl(var(--cat-workflow))" }}
+                          />
+                          <p className="font-['Inter'] text-[11px] leading-snug text-foreground">
+                            Zowel deze fiche als de groep{" "}
+                            <span className="font-semibold">
+                              «{assignedGroup.name}»
+                            </span>{" "}
+                            (€ {groupFee.toLocaleString("nl-BE")}) heeft een fee.
+                            Een factuur gebruikt de fiche-fee (voorrang), maar het
+                            dashboard telt{" "}
+                            <span className="font-semibold">beide</span> op. Zet de
+                            fee op één niveau om dubbel tellen te vermijden.
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="flex items-start gap-2 border border-accent/40 bg-accent/5 p-2.5">
+                          <Info className="w-3.5 h-3.5 shrink-0 mt-0.5 text-accent" />
+                          <p className="font-['Inter'] text-[11px] leading-snug text-muted-foreground">
+                            Geen fiche-fee ingevuld: facturatie en omzet gebruiken
+                            de kapstok-fee van{" "}
+                            <span className="font-semibold text-foreground">
+                              «{assignedGroup.name}»
+                            </span>{" "}
+                            (€ {groupFee.toLocaleString("nl-BE")} / maand).
+                          </p>
+                        </div>
+                      ))}
                   </div>
     </>
   );

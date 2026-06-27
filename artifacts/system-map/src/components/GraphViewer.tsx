@@ -18,7 +18,6 @@ import {
   getCategoryColor,
   PLATE,
   plateWidth,
-  EDGE_LOD,
   LABEL_LOD,
   lodFactor,
   type SimNode,
@@ -622,33 +621,35 @@ export default function GraphViewer({
                 const activeNode = hoveredNodeId ?? selectedNodeId;
                 const isEdgeHighlighted = activeNode && (source.id === activeNode || target.id === activeNode);
                 const isEdgeDimmed = activeNode && !isEdgeHighlighted;
+                const isRouting = edge.kind === "routing";
 
-                // Level-of-detail: in the organic overview the dense flow /
-                // reference / mention classes fade with zoom so only the routing
-                // skeleton survives far out; hovering an endpoint always reveals
-                // its wiring regardless of zoom.
-                const [lodStart, lodEnd] = EDGE_LOD[edge.kind] ?? EDGE_LOD.mention;
-                const lodBase = lodFactor(scale, lodStart, lodEnd);
                 // During a live run, wiring between two involved team members is
-                // always revealed (not gated by zoom) so the working team's
-                // structure reads even at the spotlight's far framings.
+                // revealed so the working team's structure reads at any framing.
                 const runEdge =
                   runActive &&
                   involvedNodeIds!.has(source.id) &&
                   involvedNodeIds!.has(target.id);
-                // In lens mode only wiring fully inside the lit cluster is drawn,
-                // so the chosen service line reads as a clean group; edges leaving
-                // the cluster are culled unless a hover/selection reveals them.
+                // In lens mode only wiring fully inside the lit cluster counts as
+                // revealed, so the chosen service line reads as a clean group.
                 const lensEdge =
                   lensActive &&
                   lensNodeIds!.has(source.id) &&
                   lensNodeIds!.has(target.id);
-                if (lensActive && !lensEdge && !isEdgeHighlighted && !isEdgeDimmed)
-                  return null;
-                const lod = runEdge || lensEdge ? 1 : lodBase;
-                // Cull edges that have faded out entirely (and aren't revealed by
-                // a hover) — keeps the overview clean and the DOM light.
-                if (!isEdgeHighlighted && !isEdgeDimmed && lod <= 0.01) return null;
+
+                // The dense flow / reference / mention wiring is shown strictly on
+                // demand — it is no longer faded in by zoom. Drawn as an ambient
+                // layer it painted hundreds of crossing lines every frame (the
+                // zoom lag) and an unreadable hairball. It now appears only when a
+                // hover/selection reveals an endpoint's own wiring, during a live
+                // run between two involved members, or inside an active
+                // service-line lens. The routing skeleton is the single always-on
+                // backbone.
+                const revealed = isRouting || isEdgeHighlighted || runEdge || lensEdge;
+                if (!revealed) return null;
+                // In lens mode anything outside the lit cluster (including the
+                // backbone) is culled unless a hover/selection reveals it, so the
+                // lens reads as an isolated group.
+                if (lensActive && !lensEdge && !isEdgeHighlighted) return null;
 
                 // Schematic wiring trimmed to each plate's border. A straight
                 // wire keeps the dense web legible instead of a tangle of
@@ -679,7 +680,7 @@ export default function GraphViewer({
                   d = `M ${x1} ${y1} L ${x2} ${y2}`;
                 }
 
-                const opacity = isEdgeDimmed ? 0.06 : isEdgeHighlighted ? 0.95 : style.opacity * lod;
+                const opacity = isEdgeDimmed ? 0.06 : isEdgeHighlighted ? 0.95 : style.opacity;
                 const width = isEdgeHighlighted ? style.width + 0.75 : style.width;
 
                 // Living-pipeline beads are the dominant repaint cost at high
@@ -723,7 +724,7 @@ export default function GraphViewer({
                         strokeWidth={width + 0.5}
                         strokeDasharray="0,16"
                         strokeLinecap="round"
-                        opacity={isEdgeHighlighted ? 1 : 0.8 * lod}
+                        opacity={isEdgeHighlighted ? 1 : 0.8}
                         className="atlas-flow-line"
                       />
                     )}

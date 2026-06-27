@@ -2,18 +2,12 @@ import * as d3 from "d3-force";
 import type { DocNode } from "@workspace/api-client-react";
 
 // Level-of-detail. The doc graph is dense (~800 edges): drawn all at once the
-// overview collapses into an unreadable hairball. Each edge class instead fades
-// in as the viewport zooms, so far out only the orchestrator routing skeleton
-// remains and the structural backbone reads cleanly; zooming in progressively
-// reveals the fuller wiring (flow → reference → mention). Tuples are
-// [fadeStart, fadeEnd] in viewport scale: at/below start the class is hidden,
-// at/above end it is fully drawn. routing is the true backbone and never fades.
-export const EDGE_LOD: Record<string, [number, number]> = {
-  routing: [0, 0],
-  flow: [0.5, 0.95],
-  reference: [0.75, 1.1],
-  mention: [1.0, 1.35],
-};
+// overview collapses into an unreadable, laggy hairball. The dense flow /
+// reference / mention wiring is therefore no longer faded in by zoom at all — it
+// is shown strictly on demand (hover/selection of an endpoint, a live run, or a
+// service-line lens; see GraphViewer). Only the routing skeleton is always
+// drawn. Non-anchor node *labels* are the one thing that still fades with zoom
+// (LABEL_LOD), so the overview reads as clean schematic marks up close annotated.
 
 // Non-anchor node labels fade with the same idea: far out the plates read as
 // clean schematic marks; up close every plate is annotated. [fadeStart, fadeEnd]

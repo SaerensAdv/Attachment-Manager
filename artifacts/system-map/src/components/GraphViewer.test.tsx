@@ -69,7 +69,7 @@ const baseProps = {
 };
 
 describe("GraphViewer living-pipeline bead cap", () => {
-  it("caps ambient beads to the routing skeleton even with a dense flow layer", () => {
+  it("draws only the routing skeleton ambiently (no flow hairball) and caps beads to it", () => {
     const routingCount = 6;
     const flowCount = 40;
     const { nodes, edges } = denseGraph(routingCount, flowCount);
@@ -82,30 +82,31 @@ describe("GraphViewer living-pipeline bead cap", () => {
     const routingDrawn = staticEdges(container, "routing").length;
     const flowDrawn = staticEdges(container, "flow").length;
 
-    // The flow layer is fully drawn (visible) at the default zoom, so the cap is
-    // meaningful: these edges exist in the DOM but must NOT each carry a bead.
-    expect(flowDrawn).toBe(flowCount);
+    // The dense flow layer is no longer drawn as an ambient layer at any zoom —
+    // drawn all at once it was the laggy, unreadable hairball. Only the routing
+    // skeleton stays on by default; flow wiring is shown strictly on demand.
+    expect(flowDrawn).toBe(0);
     expect(routingDrawn).toBe(routingCount);
 
-    // Beads stay bounded to the routing-edge count, NOT routing + flow. This is
+    // Beads stay bounded to the routing-edge count, never routing + flow. This is
     // the exact regression: re-attaching a bead per flow edge would make this
     // equal routingCount + flowCount and bring the stutter back.
     expect(beadCount).toBe(routingCount);
     expect(beadCount).toBeLessThan(routingCount + flowCount);
   });
 
-  it("reveals a bead on a flow edge when one of its endpoints is selected (at any zoom)", () => {
+  it("reveals a flow edge and its bead only when an endpoint is selected (at any zoom)", () => {
     const nodes = [node("a"), node("b", "workflow")];
     const edges = [edge("a", "b", "flow")];
 
-    // No selection: a lone flow edge gets no ambient bead.
+    // No selection: the flow edge is not drawn at all (so it has no bead).
     const { container, rerender } = render(
       <GraphViewer {...baseProps} nodes={nodes} edges={edges} />,
     );
-    expect(staticEdges(container, "flow").length).toBe(1);
+    expect(staticEdges(container, "flow").length).toBe(0);
     expect(beads(container).length).toBe(0);
 
-    // Selecting an endpoint reveals the bead on its flow wiring.
+    // Selecting an endpoint reveals its flow wiring and the wiring's bead.
     rerender(
       <GraphViewer
         {...baseProps}
@@ -114,10 +115,11 @@ describe("GraphViewer living-pipeline bead cap", () => {
         selectedNodeId="a"
       />,
     );
+    expect(staticEdges(container, "flow").length).toBe(1);
     expect(beads(container).length).toBe(1);
   });
 
-  it("forces a flow edge between two involved nodes visible + animated during a live run", () => {
+  it("reveals + animates only the flow edge between two involved nodes during a live run", () => {
     // Two flow edges share node a; only a<->b is between two involved nodes.
     const nodes = [node("a"), node("b", "workflow"), node("c", "workflow")];
     const edges = [edge("a", "b", "flow"), edge("a", "c", "flow")];
@@ -131,8 +133,9 @@ describe("GraphViewer living-pipeline bead cap", () => {
       />,
     );
 
-    // Both flow edges are drawn, but only the involved a<->b pair is animated.
-    expect(staticEdges(container, "flow").length).toBe(2);
+    // Only the involved a<->b pair is revealed and animated; a<->c (c is not
+    // involved, nothing is hovered) stays hidden — wiring is on-demand only.
+    expect(staticEdges(container, "flow").length).toBe(1);
     expect(beads(container).length).toBe(1);
   });
 
@@ -305,8 +308,8 @@ describe("GraphViewer service-line lens", () => {
     expect(nodeOpacity(container, "b")).toBe("1");
     expect(nodeOpacity(container, "c")).toBe("0.2");
 
-    // Only the wholly-internal a->b edge is drawn; b->c (leaving the cluster)
-    // is culled. Without the lens both flow edges would be visible at scale 1.
+    // Only the wholly-internal a->b edge is revealed; b->c (leaving the
+    // cluster) is culled.
     expect(staticEdges(container, "flow").length).toBe(1);
   });
 
@@ -327,31 +330,33 @@ describe("GraphViewer service-line lens", () => {
     expect(nodeOpacity(container, "a")).toBe("0.2");
     expect(nodeOpacity(container, "b")).toBe("0.2");
 
-    // With the lens inactive its edge-culling no longer applies, so the wiring
-    // it would have hidden (b->c) is drawn again.
-    expect(staticEdges(container, "flow").length).toBe(2);
+    // A run reveals only wiring between two involved nodes; the single involved
+    // node (c) has no such edge and nothing is hovered, so no flow wiring is
+    // drawn (it is shown strictly on demand, never ambiently).
+    expect(staticEdges(container, "flow").length).toBe(0);
   });
 });
 
 // ---------------------------------------------------------------------------
 // Zoom level-of-detail (LOD). The doc graph is dense (~800 edges); drawn all at
 // once the overview collapses into a hairball. So each edge class fades in with
-// zoom (routing always on → flow → reference → mention) and non-anchor node
-// labels fade out far out, while core docs and the central hub stay labelled at
-// every zoom. This is exactly the kind of thresholded logic that breaks
-// silently in a refactor — an off-by-one in a fade range turns the overview
-// into either an unreadable hairball or a blank set of marks. The `initialScale`
-// prop is the seam that drives the same `scale` state onTransformed feeds at
-// runtime. A node's label <text> existing tells us its label is drawn at the
-// given zoom; counting static edges by arrowhead marker tells us which classes
-// survive the cull.
+// zoom: the dense flow / reference / mention wiring is NOT revealed by zoom at
+// all anymore (drawn all at once it was the laggy, unreadable hairball) — only
+// the routing skeleton is drawn ambiently, and the dense wiring appears strictly
+// on demand (hover/selection, live run, lens). Non-anchor node labels are the
+// one thing that still fades with zoom, while core docs and the central hub stay
+// labelled at every zoom. This is exactly the kind of thresholded logic that
+// breaks silently in a refactor. The `initialScale` prop is the seam that drives
+// the same `scale` state onTransformed feeds at runtime. A node's label <text>
+// existing tells us its label is drawn at the given zoom; counting static edges
+// by arrowhead marker tells us which classes survive the cull.
 // ---------------------------------------------------------------------------
 
 const labelDrawn = (root: HTMLElement, title: string) =>
   Array.from(root.querySelectorAll("text")).some((t) => t.textContent === title);
 
-describe("GraphViewer zoom level-of-detail", () => {
-  it("far out, draws only the routing skeleton and culls the dense edge classes", () => {
+describe("GraphViewer wiring reveal & label LOD", () => {
+  it("draws only the routing skeleton ambiently (dense classes culled) regardless of zoom", () => {
     // One of every relationship class, each between two real nodes.
     const nodes = [
       node("orchestrator"),
@@ -368,18 +373,21 @@ describe("GraphViewer zoom level-of-detail", () => {
       edge("agent-a", "doc-a", "mention"),
     ];
 
-    const { container } = render(
-      <GraphViewer {...baseProps} nodes={nodes} edges={edges} initialScale={0.3} />,
-    );
-
-    // The routing backbone never fades (LOD [0,0]); everything denser is gone.
-    expect(staticEdges(container, "routing").length).toBe(1);
-    expect(staticEdges(container, "flow").length).toBe(0);
-    expect(staticEdges(container, "reference").length).toBe(0);
-    expect(staticEdges(container, "mention").length).toBe(0);
+    // Far out AND zoomed in: only the always-on routing backbone is drawn; the
+    // dense classes are never faded in by zoom (that was the laggy hairball).
+    for (const initialScale of [0.3, 1.4]) {
+      const { container, unmount } = render(
+        <GraphViewer {...baseProps} nodes={nodes} edges={edges} initialScale={initialScale} />,
+      );
+      expect(staticEdges(container, "routing").length).toBe(1);
+      expect(staticEdges(container, "flow").length).toBe(0);
+      expect(staticEdges(container, "reference").length).toBe(0);
+      expect(staticEdges(container, "mention").length).toBe(0);
+      unmount();
+    }
   });
 
-  it("zooming in reveals the fuller wiring (flow / reference / mention)", () => {
+  it("reveals a node's own dense wiring on selection (the on-demand replacement for zoom reveal)", () => {
     const nodes = [
       node("orchestrator"),
       node("agent-a"),
@@ -395,15 +403,22 @@ describe("GraphViewer zoom level-of-detail", () => {
       edge("agent-a", "doc-a", "mention"),
     ];
 
+    // Selecting wf-a reveals only the wiring touching it (the wf-a<->wf-b flow
+    // edge), at any zoom — not the unrelated reference / mention edges.
     const { container } = render(
-      <GraphViewer {...baseProps} nodes={nodes} edges={edges} initialScale={1.4} />,
+      <GraphViewer
+        {...baseProps}
+        nodes={nodes}
+        edges={edges}
+        initialScale={1.4}
+        selectedNodeId="wf-a"
+      />,
     );
 
-    // Close in, every class is fully drawn — the inverse of the overview above.
     expect(staticEdges(container, "routing").length).toBe(1);
     expect(staticEdges(container, "flow").length).toBe(1);
-    expect(staticEdges(container, "reference").length).toBe(1);
-    expect(staticEdges(container, "mention").length).toBe(1);
+    expect(staticEdges(container, "reference").length).toBe(0);
+    expect(staticEdges(container, "mention").length).toBe(0);
   });
 
   it("far out, fades non-anchor labels but keeps core docs and the central hub labelled", () => {

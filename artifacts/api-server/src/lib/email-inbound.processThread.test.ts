@@ -18,17 +18,15 @@ import type { EmailThread } from "@workspace/db";
  * lost claim (a duplicate inbound) is never double-drafted.
  */
 
-// The Gmail REST client: every gmailGet builds a `new ReplitConnectors()` and
-// calls `.proxy(service, path)`. A single dispatcher routes by URL so one mock
-// serves both the metadata (thread) fetch and the full-message fetch.
-const gmailProxy = vi.hoisted(() => vi.fn());
-vi.mock("@replit/connectors-sdk", () => ({
-  ReplitConnectors: class {
-    proxy(service: string, path: string, init?: unknown) {
-      return gmailProxy(service, path, init);
-    }
-  },
+// The Gmail REST client: gmailGet now calls the Gmail API directly with an OAuth
+// access token (getGmailAccessToken) via the global fetch, so we stub the token
+// helper and fetch. A single dispatcher routes by URL so one mock serves both
+// the metadata (thread) fetch and the full-message fetch.
+const gmailFetch = vi.hoisted(() => vi.fn());
+vi.mock("./gmail-oauth", () => ({
+  getGmailAccessToken: vi.fn(async () => "test-access-token"),
 }));
+vi.stubGlobal("fetch", gmailFetch);
 
 // The atomic claim is the exactly-once gate: tests script its true/false.
 const claimInboundMock = vi.hoisted(() => vi.fn());
@@ -142,15 +140,16 @@ function wireGmail(opts: {
   meta?: Response;
   full?: Response;
 } = {}) {
-  gmailProxy.mockImplementation((_service: string, path: string) => {
-    if (path.includes("/threads/")) return Promise.resolve(opts.meta ?? metaResponse());
-    if (path.includes("/messages/")) return Promise.resolve(opts.full ?? fullResponse());
+  gmailFetch.mockImplementation((url: string) => {
+    const u = String(url);
+    if (u.includes("/threads/")) return Promise.resolve(opts.meta ?? metaResponse());
+    if (u.includes("/messages/")) return Promise.resolve(opts.full ?? fullResponse());
     return Promise.resolve(jsonResponse({}, { ok: false, status: 404 }));
   });
 }
 
 beforeEach(() => {
-  gmailProxy.mockReset();
+  gmailFetch.mockReset();
   claimInboundMock.mockReset();
   clientStoreMocks.getClientRow.mockReset();
   clientStoreMocks.dbClientIdFromPath.mockReset();
@@ -185,11 +184,11 @@ describe("processThread — inbound client reply", () => {
     await processThread(makeThread());
 
     // The conversation is resolved by its Gmail threadId (the stable key).
-    const threadFetch = gmailProxy.mock.calls.find((c) =>
-      String(c[1]).includes("/threads/"),
+    const threadFetch = gmailFetch.mock.calls.find((c) =>
+      String(c[0]).includes("/threads/"),
     );
     expect(threadFetch).toBeTruthy();
-    expect(String(threadFetch![1])).toContain(
+    expect(String(threadFetch![0])).toContain(
       encodeURIComponent("gmail-thread-123"),
     );
 
@@ -243,7 +242,7 @@ describe("processThread — inbound client reply", () => {
     expect(runGenerationMock).not.toHaveBeenCalled();
     // Only the metadata fetch happened — never the full-message fetch.
     expect(
-      gmailProxy.mock.calls.some((c) => String(c[1]).includes("/messages/")),
+      gmailFetch.mock.calls.some((c) => String(c[0]).includes("/messages/")),
     ).toBe(false);
   });
 
@@ -261,7 +260,7 @@ describe("processThread — inbound client reply", () => {
     expect(runGenerationMock).not.toHaveBeenCalled();
     // The full message is never fetched once the claim is lost.
     expect(
-      gmailProxy.mock.calls.some((c) => String(c[1]).includes("/messages/")),
+      gmailFetch.mock.calls.some((c) => String(c[0]).includes("/messages/")),
     ).toBe(false);
   });
 
@@ -309,7 +308,7 @@ describe("processThread — inbound client reply", () => {
     await processThread(makeThread());
 
     // Without a recipient there is no whitelist, so Gmail is never even queried.
-    expect(gmailProxy).not.toHaveBeenCalled();
+    expect(gmailFetch).not.toHaveBeenCalled();
     expect(claimInboundMock).not.toHaveBeenCalled();
     expect(runGenerationMock).not.toHaveBeenCalled();
   });

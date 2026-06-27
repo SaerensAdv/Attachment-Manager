@@ -54,6 +54,7 @@ import type {
   Generation,
   GenerationList,
   GenerationStepList,
+  GetAlertsParams,
   GetDocBacklinksParams,
   GetDocContentParams,
   HandleBrowserLoginCallbackParams,
@@ -69,9 +70,12 @@ import type {
   ScheduleInput,
   ScheduleList,
   ScheduleUpdate,
+  SystemAlert,
+  SystemAlertList,
   TeamMember,
   TeamRoster,
   TeamStats,
+  TodoOverview,
   UpdatePersonaRequest,
   UploadPortraitRequest,
   ValidationReport
@@ -4393,6 +4397,237 @@ export const useRejectProposal = <TError = ErrorType<ErrorResponse>,
       > => {
       return useMutation(getRejectProposalMutationOptions(options));
     }
+
+export const getGetAlertsUrl = (params?: GetAlertsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/alerts?${stringifiedParams}` : `/api/alerts`
+}
+
+/**
+ * @summary List system alerts (silent background failures)
+ */
+export const getAlerts = async (params?: GetAlertsParams, options?: RequestInit): Promise<SystemAlertList> => {
+
+  return customFetch<SystemAlertList>(getGetAlertsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAlertsQueryKey = (params?: GetAlertsParams,) => {
+    return [
+    `/api/alerts`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetAlertsQueryOptions = <TData = Awaited<ReturnType<typeof getAlerts>>, TError = ErrorType<unknown>>(params?: GetAlertsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAlerts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAlertsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAlerts>>> = ({ signal }) => getAlerts(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAlerts>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAlertsQueryResult = NonNullable<Awaited<ReturnType<typeof getAlerts>>>
+export type GetAlertsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List system alerts (silent background failures)
+ */
+
+export function useGetAlerts<TData = Awaited<ReturnType<typeof getAlerts>>, TError = ErrorType<unknown>>(
+ params?: GetAlertsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAlerts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAlertsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getResolveAlertUrl = (id: number,) => {
+
+
+
+
+  return `/api/alerts/${id}/resolve`
+}
+
+/**
+ * @summary Mark a system alert as resolved
+ */
+export const resolveAlert = async (id: number, options?: RequestInit): Promise<SystemAlert> => {
+
+  return customFetch<SystemAlert>(getResolveAlertUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getResolveAlertMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resolveAlert>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof resolveAlert>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['resolveAlert'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof resolveAlert>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  resolveAlert(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ResolveAlertMutationResult = NonNullable<Awaited<ReturnType<typeof resolveAlert>>>
+
+    export type ResolveAlertMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Mark a system alert as resolved
+ */
+export const useResolveAlert = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resolveAlert>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof resolveAlert>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getResolveAlertMutationOptions(options));
+    }
+
+export const getGetTodoOverviewUrl = () => {
+
+
+
+
+  return `/api/todo`
+}
+
+/**
+ * @summary Everything waiting on the operator (proposals, approvals, alerts)
+ */
+export const getTodoOverview = async ( options?: RequestInit): Promise<TodoOverview> => {
+
+  return customFetch<TodoOverview>(getGetTodoOverviewUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetTodoOverviewQueryKey = () => {
+    return [
+    `/api/todo`
+    ] as const;
+    }
+
+
+export const getGetTodoOverviewQueryOptions = <TData = Awaited<ReturnType<typeof getTodoOverview>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTodoOverview>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetTodoOverviewQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getTodoOverview>>> = ({ signal }) => getTodoOverview({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTodoOverview>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetTodoOverviewQueryResult = NonNullable<Awaited<ReturnType<typeof getTodoOverview>>>
+export type GetTodoOverviewQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Everything waiting on the operator (proposals, approvals, alerts)
+ */
+
+export function useGetTodoOverview<TData = Awaited<ReturnType<typeof getTodoOverview>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTodoOverview>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetTodoOverviewQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getGetSchedulesUrl = () => {
 

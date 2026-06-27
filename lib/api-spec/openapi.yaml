@@ -18,6 +18,8 @@ tags:
     description: Saved AI team generations (archive/history)
   - name: proposals
     description: Doc improvement proposals from the learning loop
+  - name: alerts
+    description: System alerts for silent background failures
   - name: Auth
     description: Browser and mobile authentication endpoints.
 paths:
@@ -1556,6 +1558,61 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /alerts:
+    get:
+      operationId: getAlerts
+      tags: [alerts]
+      summary: List system alerts (silent background failures)
+      parameters:
+        - name: unresolvedOnly
+          in: query
+          required: false
+          schema:
+            type: boolean
+          description: When true, only open (unresolved) alerts are returned.
+      responses:
+        "200":
+          description: The system alerts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SystemAlertList"
+  /alerts/{id}/resolve:
+    post:
+      operationId: resolveAlert
+      tags: [alerts]
+      summary: Mark a system alert as resolved
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: The resolved alert
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SystemAlert"
+        "404":
+          description: Alert not found or already resolved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /todo:
+    get:
+      operationId: getTodoOverview
+      tags: [alerts]
+      summary: Everything waiting on the operator (proposals, approvals, alerts)
+      responses:
+        "200":
+          description: The aggregated to-do overview
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TodoOverview"
   /schedules:
     get:
       operationId: getSchedules
@@ -3303,6 +3360,90 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ImprovementProposal"
+    SystemAlert:
+      type: object
+      required:
+        - id
+        - source
+        - severity
+        - message
+        - occurrences
+        - firstSeenAt
+        - lastSeenAt
+        - resolvedAt
+      properties:
+        id:
+          type: integer
+        source:
+          type: string
+          description: "Where it came from, e.g. scheduler, email-inbound, generation."
+        severity:
+          type: string
+          description: "error or warn."
+        message:
+          type: string
+        context:
+          type: ["object", "null"]
+          additionalProperties: true
+        occurrences:
+          type: integer
+          description: How many times this same alert has fired while open.
+        firstSeenAt:
+          type: string
+          format: date-time
+        lastSeenAt:
+          type: string
+          format: date-time
+        resolvedAt:
+          type: ["string", "null"]
+          format: date-time
+    SystemAlertList:
+      type: object
+      required: [alerts]
+      properties:
+        alerts:
+          type: array
+          items:
+            $ref: "#/components/schemas/SystemAlert"
+    PendingApproval:
+      type: object
+      required:
+        - generationId
+        - workflowTitle
+        - kind
+        - createdAt
+      properties:
+        generationId:
+          type: integer
+        clientName:
+          type: ["string", "null"]
+        workflowTitle:
+          type: string
+        kind:
+          type: ["string", "null"]
+          description: The held deliverable's kind, parsed from the snapshot.
+        createdAt:
+          type: string
+          format: date-time
+    TodoOverview:
+      type: object
+      required:
+        - pendingProposals
+        - pendingApprovals
+        - unresolvedAlerts
+      properties:
+        pendingProposals:
+          type: array
+          items:
+            $ref: "#/components/schemas/ImprovementProposal"
+        pendingApprovals:
+          type: array
+          items:
+            $ref: "#/components/schemas/PendingApproval"
+        unresolvedAlerts:
+          type: array
+          items:
+            $ref: "#/components/schemas/SystemAlert"
     Schedule:
       type: object
       required:

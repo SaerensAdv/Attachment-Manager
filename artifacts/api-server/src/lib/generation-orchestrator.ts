@@ -37,6 +37,7 @@ import {
   extractHandoffBrief,
   resolveBriefGateFlags,
 } from "./generation-text";
+import { recordAlert } from "./alerts-store";
 
 /**
  * The three calendar periods a monthly report compares: the report month (the
@@ -295,6 +296,26 @@ export async function runGeneration(
         );
       }
       persisted = true;
+      // Surface non-interactive run failures the operator never sees live. A
+      // "user" run is watched in the browser (errors stream over SSE), so only
+      // scheduled/inbound/autonomous failures become a durable alert. Deduped on
+      // the run id so re-archival can't double-record. Best-effort.
+      if (runStatus === "failed" && triggerSource !== "user") {
+        void recordAlert({
+          source: "generation",
+          severity: "error",
+          message: `Automatische run mislukte${
+            clientName ? ` voor ${clientName}` : ""
+          } (${workflowTitle}).`,
+          context: {
+            key: `generation:${row.id}`,
+            generationId: row.id,
+            triggerSource,
+            workflow: workflowTitle,
+            client: clientName ?? null,
+          },
+        });
+      }
       return true;
     } catch (err) {
       console.error(

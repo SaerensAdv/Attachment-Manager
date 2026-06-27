@@ -133,6 +133,14 @@ would be dead on arrival). A draft and its eventually-sent message share the sam
 recording it at draft time is accurate for routing even though the human sends by hand later. Safe with
 the poller because it skips DRAFT/SENT/owner/non-whitelisted messages, so an unsent draft creates a
 watched-but-idle open thread that cannot self-trigger; it only activates once the client replies.
+
+**Inbound READ is now implemented the same way.** `gmailGet` (the mailbox-read client used by the
+poller / `processThread`) calls the Gmail REST API directly with `getGmailAccessToken()` (the dedicated
+`gmail.modify` refresh token) + the global `fetch` — NOT the `@replit/connectors-sdk` proxy (read-blocked).
+**Test consequence (was a regression source):** unit tests must mock `./gmail-oauth` (`getGmailAccessToken`)
+and stub the global `fetch` (route by URL), and assert on `fetch`'s FIRST arg (the URL). Do NOT mock the
+connector proxy — that mock is dead and silently makes `gmailGet` throw early, so the whole flow dies before
+claim/resolve/run and the assertions fail confusingly.
 **How to verify quickly:** probe `GET /gmail/v1/users/me/messages?maxResults=1` (read) or
 `drafts.list`/`drafts.create` — 200 = ok, 403 = scope missing. process.env is NOT exposed in the
 code_execution sandbox; test via workspace `node`/`tsx`. The inbound poller's read-scope probe

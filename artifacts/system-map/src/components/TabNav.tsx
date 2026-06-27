@@ -9,9 +9,14 @@ import {
   BarChart3,
   CalendarClock,
   Bug,
+  ListChecks,
   LogOut,
 } from "lucide-react";
 import { useAuth } from "@workspace/replit-auth-web";
+import {
+  useGetTodoOverview,
+  getGetTodoOverviewQueryKey,
+} from "@workspace/api-client-react";
 
 const tabs = [
   { href: "/", label: "Kaart", icon: Map },
@@ -20,6 +25,7 @@ const tabs = [
   { href: "/clients", label: "Klanten", icon: Users },
   { href: "/crawl", label: "Crawl", icon: Bug },
   { href: "/history", label: "Archief", icon: Archive },
+  { href: "/todo", label: "Te doen", icon: ListChecks },
   { href: "/planning", label: "Planning", icon: CalendarClock },
   { href: "/controle", label: "Controle", icon: ShieldCheck },
 ];
@@ -28,6 +34,19 @@ export default function TabNav() {
   const [location] = useLocation();
   const reduce = useReducedMotion();
   const { logout } = useAuth();
+  // Lightweight badge so open work is visible from anywhere. Best-effort: a
+  // failed/loading fetch simply shows no badge, never blocking navigation.
+  const { data: todo } = useGetTodoOverview({
+    query: {
+      queryKey: getGetTodoOverviewQueryKey(),
+      refetchInterval: 60_000,
+    },
+  });
+  const todoCount = todo
+    ? todo.unresolvedAlerts.length +
+      todo.pendingApprovals.length +
+      todo.pendingProposals.length
+    : 0;
 
   return (
     <div className="fixed top-3 sm:top-5 left-1/2 -translate-x-1/2 z-50 pointer-events-auto max-w-[calc(100vw-1rem)]">
@@ -40,11 +59,12 @@ export default function TabNav() {
         {tabs.map(({ href, label, icon: Icon }) => {
           const active =
             href === "/" ? location === "/" : location.startsWith(href);
+          const badge = href === "/todo" && todoCount > 0 ? todoCount : 0;
           return (
             <Link
               key={href}
               href={href}
-              aria-label={label}
+              aria-label={badge ? `${label} (${badge} openstaand)` : label}
               title={label}
               className={`relative flex items-center gap-0 lg:gap-2 px-3 lg:px-4 py-2.5 lg:py-2 font-['Space_Mono'] text-[11px] uppercase tracking-widest transition-colors border-r border-foreground/20 last:border-r-0 ${
                 active
@@ -66,6 +86,18 @@ export default function TabNav() {
               <span className="relative z-10 flex items-center gap-2">
                 <Icon className="w-3.5 h-3.5 shrink-0" />
                 <span className="hidden lg:inline">{label}</span>
+                {badge > 0 && (
+                  <span
+                    data-testid="badge-todo-count"
+                    className={`inline-flex items-center justify-center min-w-[1.1rem] h-[1.1rem] px-1 font-['Space_Mono'] text-[9px] leading-none border ${
+                      active
+                        ? "bg-background text-foreground border-background"
+                        : "bg-accent text-accent-foreground border-accent"
+                    }`}
+                  >
+                    {badge > 99 ? "99+" : badge}
+                  </span>
+                )}
               </span>
             </Link>
           );

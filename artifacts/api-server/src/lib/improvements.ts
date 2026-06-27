@@ -14,6 +14,8 @@ import {
   isDbClientPath,
   dbClientIdFromPath,
 } from "./clients-store";
+import { listAcceptedProposals } from "./proposals-store";
+import { logger } from "./logger";
 
 /** Heading for the non-destructive, agent-managed "learned rules" section. */
 const MANAGED_SECTION = "## Geleerde regels (uit reviews)";
@@ -228,4 +230,57 @@ export async function applyProposal(
     return;
   }
   applyToFile(proposal.targetPath, proposal.proposedText);
+}
+
+/**
+ * Re-apply every accepted KNOWLEDGE (file-based) learned rule onto the on-disk
+ * docs. Meant to run once at startup.
+ *
+ * Why: a redeploy rebuilds knowledge/*.md from the repo, wiping the
+ * non-destructive "Geleerde regels" bullets the learning loop appended at
+ * runtime. Client-target rules live in the DB (clients.restrictions) and already
+ * survive; only file-target rules need replaying. `applyToFile` is idempotent
+ * (it skips a bullet that's already present), so running this on every boot is
+ * safe and converges each doc to "repo content + every accepted rule".
+ *
+ * Best-effort by contract: a single bad proposal (e.g. its target doc was later
+ * removed from the repo) must never block startup, so every proposal is applied
+ * inside its own try/catch and a DB read failure degrades to a no-op. Returns a
+ * small summary for the startup log line.
+ */
+export async function reapplyAcceptedFileProposals(): Promise<{
+  applied: number;
+  skipped: number;
+}> {
+  let proposals: ImprovementProposal[];
+  try {
+    proposals = await listAcceptedProposals();
+  } catch (err) {
+    logger.warn(
+      { err },
+      "Geleerde regels herstellen overgeslagen: voorstellen niet leesbaar",
+    );
+    return { applied: 0, skipped: 0 };
+  }
+
+  let applied = 0;
+  let skipped = 0;
+  for (const proposal of proposals) {
+    // Only file-based knowledge rules are lost on redeploy; client rules persist
+    // in the DB. The isDbClientPath guard is belt-and-suspenders next to the
+    // targetType check.
+    if (proposal.targetType !== "knowledge") continue;
+    if (isDbClientPath(proposal.targetPath)) continue;
+    try {
+      applyToFile(proposal.targetPath, proposal.proposedText);
+      applied++;
+    } catch (err) {
+      skipped++;
+      logger.warn(
+        { err, targetPath: proposal.targetPath, proposalId: proposal.id },
+        "Geleerde regel niet hersteld: doeldocument ontbreekt of is onleesbaar",
+      );
+    }
+  }
+  return { applied, skipped };
 }

@@ -3,6 +3,7 @@ import { logger } from "./logger";
 import { resolveGenerationContext, runGeneration } from "./generate-engine";
 import { claim, listDue, markRun } from "./schedules-store";
 import { startInboundPoller } from "./email-inbound";
+import { recordAlert } from "./alerts-store";
 import type { Schedule as ScheduleRow } from "@workspace/db";
 
 const TICK_INTERVAL_MS = 60_000;
@@ -60,6 +61,16 @@ async function fire(schedule: ScheduleRow): Promise<void> {
       { scheduleId: schedule.id, error: resolved.error },
       "Scheduled run could not resolve its context",
     );
+    void recordAlert({
+      source: "scheduler",
+      severity: "error",
+      message: `Geplande run kon zijn context niet opbouwen (planning #${schedule.id}).`,
+      context: {
+        key: `schedule:${schedule.id}`,
+        scheduleId: schedule.id,
+        error: String(resolved.error ?? "onbekende fout").slice(0, 500),
+      },
+    });
     await markRun(schedule.id, { lastGenerationId: null, lastStatus: "failed" });
     return;
   }
@@ -112,6 +123,19 @@ async function tick(): Promise<void> {
           { err, scheduleId: schedule.id },
           "Scheduled run threw unexpectedly",
         );
+        void recordAlert({
+          source: "scheduler",
+          severity: "error",
+          message: `Geplande run mislukte (planning #${schedule.id}).`,
+          context: {
+            key: `schedule:${schedule.id}`,
+            scheduleId: schedule.id,
+            error: (err instanceof Error ? err.message : String(err)).slice(
+              0,
+              500,
+            ),
+          },
+        });
         await markRun(schedule.id, {
           lastGenerationId: null,
           lastStatus: "failed",
@@ -120,6 +144,15 @@ async function tick(): Promise<void> {
     }
   } catch (err) {
     logger.error({ err }, "Scheduler tick failed");
+    void recordAlert({
+      source: "scheduler",
+      severity: "error",
+      message: "Planner-tik mislukte (geplande runs zijn mogelijk overgeslagen).",
+      context: {
+        key: "scheduler-tick",
+        error: (err instanceof Error ? err.message : String(err)).slice(0, 500),
+      },
+    });
   } finally {
     ticking = false;
   }

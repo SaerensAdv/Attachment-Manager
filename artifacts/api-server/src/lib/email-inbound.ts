@@ -1,6 +1,6 @@
-import { ReplitConnectors } from "@replit/connectors-sdk";
 import type { EmailThread } from "@workspace/db";
 import { logger } from "./logger";
+import { getGmailAccessToken } from "./gmail-oauth";
 import {
   resolveGenerationContext,
   runGeneration,
@@ -9,10 +9,11 @@ import {
 import { listOpenThreads, claimInbound } from "./email-threads-store";
 import { getClientRow, dbClientIdFromPath } from "./clients-store";
 import { ownerEmail } from "./email-identity";
+import { recordAlert } from "./alerts-store";
 
 /**
  * Phase 2 inbound side of two-way agent email. A periodic poller reads the
- * agency mailbox (via the same Gmail connector used for sending) and, for each
+ * agency mailbox (via the dedicated agency-mailbox OAuth token) and, for each
  * open conversation, looks at the newest message. When that message is a genuine
  * inbound reply from the client, it routes it to the responsible department Head
  * and runs the team to DRAFT a reply — which is then held for human approval by
@@ -120,10 +121,19 @@ export function extractText(msg: GmailMessage): string {
   return text.trim() || (msg.snippet ?? "").trim();
 }
 
-/** A single GET against the Gmail REST API via the connector. */
+/**
+ * A single GET against the Gmail REST API. Uses the dedicated agency-mailbox
+ * OAuth token (`GOOGLE_OAUTH_GMAIL_REFRESH_TOKEN`, scope `gmail.modify`, which
+ * includes read) — NOT the Replit `google-mail` connector. That connector only
+ * carries send/labels scopes and 403s on every mailbox read, so inbound replies
+ * are read with the same token that already sends and drafts in that mailbox.
+ */
 async function gmailGet(path: string): Promise<Response> {
-  const connectors = new ReplitConnectors();
-  return connectors.proxy("google-mail", path, { method: "GET" });
+  const accessToken = await getGmailAccessToken();
+  return fetch(`https://gmail.googleapis.com${path}`, {
+    method: "GET",
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
 }
 
 /**
@@ -316,7 +326,7 @@ export async function processThread(thread: EmailThread): Promise<void> {
 }
 
 // Scope state machine: probe lazily, disable on insufficient scope, and re-probe
-// periodically so a later reconnect (with read scope) auto-recovers the poller.
+// periodically so a later token refresh (with read scope) auto-recovers the poller.
 let scopeState: "unknown" | "ok" | "blocked" = "unknown";
 let blockedTicks = 0;
 export const REPROBE_AFTER_TICKS = 30; // ~30 min at the 60s interval.
@@ -340,7 +350,7 @@ export async function pollInbound(): Promise<void> {
       }
       if (scopeState === "blocked") {
         logger.warn(
-          "Gmail leesrechten ontbreken: tweerichtings-e-mail (inkomende antwoorden) staat uit. Verbind de Gmail-integratie opnieuw met leesrechten om dit te activeren.",
+          "Gmail-leesrechten ontbreken op het mailbox-token: tweerichtings-e-mail (inkomende antwoorden) staat uit. Vernieuw GOOGLE_OAUTH_GMAIL_REFRESH_TOKEN met scope gmail.modify om dit te activeren.",
         );
         return;
       }
@@ -352,10 +362,32 @@ export async function pollInbound(): Promise<void> {
         await processThread(thread);
       } catch (err) {
         logger.error({ err, threadId: thread.id }, "Verwerken inkomende e-mail mislukte");
+        void recordAlert({
+          source: "email-inbound",
+          severity: "error",
+          message: `Verwerken van een inkomende e-mail mislukte (gesprek #${thread.id}).`,
+          context: {
+            key: `thread:${thread.id}`,
+            threadId: thread.id,
+            error: (err instanceof Error ? err.message : String(err)).slice(
+              0,
+              500,
+            ),
+          },
+        });
       }
     }
   } catch (err) {
     logger.error({ err }, "Inbound e-mail poller tick mislukte");
+    void recordAlert({
+      source: "email-inbound",
+      severity: "error",
+      message: "Inkomende-e-mailpoller mislukte (antwoorden worden mogelijk niet opgepikt).",
+      context: {
+        key: "inbound-tick",
+        error: (err instanceof Error ? err.message : String(err)).slice(0, 500),
+      },
+    });
   } finally {
     polling = false;
   }

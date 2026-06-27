@@ -12,6 +12,7 @@ import CrawlUpload from "@/pages/CrawlUpload";
 import History from "@/pages/History";
 import Controle from "@/pages/Controle";
 import Planning from "@/pages/Planning";
+import Todo from "@/pages/Todo";
 import TabNav from "@/components/TabNav";
 import CommandPalette from "@/components/CommandPalette";
 import SmoothScroll from "@/components/SmoothScroll";
@@ -33,6 +34,7 @@ function Router() {
       <Route path="/clients" component={Clients} />
       <Route path="/crawl" component={CrawlUpload} />
       <Route path="/history" component={History} />
+      <Route path="/todo" component={Todo} />
       <Route path="/planning" component={Planning} />
       <Route path="/controle" component={Controle} />
       <Route component={NotFound} />

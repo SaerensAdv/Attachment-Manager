@@ -1029,6 +1029,51 @@ export interface ProposalList {
   proposals: ImprovementProposal[];
 }
 
+/**
+ * @nullable
+ */
+export type SystemAlertContext = { [key: string]: unknown } | null;
+
+export interface SystemAlert {
+  id: number;
+  /** Where it came from, e.g. scheduler, email-inbound, generation. */
+  source: string;
+  /** error or warn. */
+  severity: string;
+  message: string;
+  /** @nullable */
+  context?: SystemAlertContext;
+  /** How many times this same alert has fired while open. */
+  occurrences: number;
+  firstSeenAt: string;
+  lastSeenAt: string;
+  /** @nullable */
+  resolvedAt: string | null;
+}
+
+export interface SystemAlertList {
+  alerts: SystemAlert[];
+}
+
+export interface PendingApproval {
+  generationId: number;
+  /** @nullable */
+  clientName?: string | null;
+  workflowTitle: string;
+  /**
+     * The held deliverable's kind, parsed from the snapshot.
+     * @nullable
+     */
+  kind: string | null;
+  createdAt: string;
+}
+
+export interface TodoOverview {
+  pendingProposals: ImprovementProposal[];
+  pendingApprovals: PendingApproval[];
+  unresolvedAlerts: SystemAlert[];
+}
+
 export interface Schedule {
   id: number;
   name: string;
@@ -1120,5 +1165,12 @@ path: string;
 
 export type DeleteClientGroup200 = {
   ok: boolean;
+};
+
+export type GetAlertsParams = {
+/**
+ * When true, only open (unresolved) alerts are returned.
+ */
+unresolvedOnly?: boolean;
 };
 

@@ -317,6 +317,34 @@ export async function listGenerations(): Promise<Generation[]> {
     .orderBy(desc(generationsTable.createdAt));
 }
 
+/**
+ * Runs holding a client-facing deliverable that awaits human approval
+ * (approval_status = 'pending'), newest first. Lightweight projection (no
+ * finalMarkdown) for the "Te doen" overview; `pendingDelivery` is the held JSON
+ * snapshot whose `kind` the overview parses tolerantly to label the item.
+ */
+export async function listPendingApprovals(): Promise<
+  {
+    id: number;
+    clientName: string | null;
+    workflowTitle: string;
+    pendingDelivery: string | null;
+    createdAt: Date;
+  }[]
+> {
+  return db
+    .select({
+      id: generationsTable.id,
+      clientName: generationsTable.clientName,
+      workflowTitle: generationsTable.workflowTitle,
+      pendingDelivery: generationsTable.pendingDelivery,
+      createdAt: generationsTable.createdAt,
+    })
+    .from(generationsTable)
+    .where(eq(generationsTable.approvalStatus, "pending"))
+    .orderBy(desc(generationsTable.createdAt));
+}
+
 /** A single generation by id, or null. */
 export async function getGeneration(id: number): Promise<Generation | null> {
   const [row] = await db

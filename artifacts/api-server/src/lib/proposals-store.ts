@@ -25,6 +25,32 @@ export async function listProposalsForGeneration(
     .orderBy(desc(improvementProposalsTable.createdAt));
 }
 
+/**
+ * Every accepted proposal, oldest first. Used at startup to replay the durable
+ * file-based "learned rules" onto the docs after a redeploy rebuilds them from
+ * the repo. Oldest-first so rules are re-appended in their original order.
+ */
+export async function listAcceptedProposals(): Promise<ImprovementProposal[]> {
+  return db
+    .select()
+    .from(improvementProposalsTable)
+    .where(eq(improvementProposalsTable.status, "accepted"))
+    .orderBy(improvementProposalsTable.createdAt);
+}
+
+/**
+ * Every PENDING proposal across all generations, newest first. Feeds the
+ * "Te doen" overview so the operator sees learned-rule suggestions waiting on a
+ * decision without opening each archived run.
+ */
+export async function listPendingProposals(): Promise<ImprovementProposal[]> {
+  return db
+    .select()
+    .from(improvementProposalsTable)
+    .where(eq(improvementProposalsTable.status, "pending"))
+    .orderBy(desc(improvementProposalsTable.createdAt));
+}
+
 /** A single proposal by id, or null. */
 export async function getProposal(
   id: number,

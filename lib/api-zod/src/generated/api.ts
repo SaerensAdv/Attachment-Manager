@@ -2241,6 +2241,85 @@ export const RejectProposalResponse = zod.object({
 
 
 /**
+ * @summary List system alerts (silent background failures)
+ */
+export const GetAlertsQueryParams = zod.object({
+  "unresolvedOnly": zod.coerce.boolean().optional().describe('When true, only open (unresolved) alerts are returned.')
+})
+
+export const GetAlertsResponse = zod.object({
+  "alerts": zod.array(zod.object({
+  "id": zod.number(),
+  "source": zod.string().describe('Where it came from, e.g. scheduler, email-inbound, generation.'),
+  "severity": zod.string().describe('error or warn.'),
+  "message": zod.string(),
+  "context": zod.record(zod.string(), zod.unknown()).nullish(),
+  "occurrences": zod.number().describe('How many times this same alert has fired while open.'),
+  "firstSeenAt": zod.coerce.date(),
+  "lastSeenAt": zod.coerce.date(),
+  "resolvedAt": zod.coerce.date().nullable()
+}))
+})
+
+
+/**
+ * @summary Mark a system alert as resolved
+ */
+export const ResolveAlertParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ResolveAlertResponse = zod.object({
+  "id": zod.number(),
+  "source": zod.string().describe('Where it came from, e.g. scheduler, email-inbound, generation.'),
+  "severity": zod.string().describe('error or warn.'),
+  "message": zod.string(),
+  "context": zod.record(zod.string(), zod.unknown()).nullish(),
+  "occurrences": zod.number().describe('How many times this same alert has fired while open.'),
+  "firstSeenAt": zod.coerce.date(),
+  "lastSeenAt": zod.coerce.date(),
+  "resolvedAt": zod.coerce.date().nullable()
+})
+
+
+/**
+ * @summary Everything waiting on the operator (proposals, approvals, alerts)
+ */
+export const GetTodoOverviewResponse = zod.object({
+  "pendingProposals": zod.array(zod.object({
+  "id": zod.number(),
+  "generationId": zod.number(),
+  "targetType": zod.string().describe('knowledge (an agency-wide standard) or client (this client only).'),
+  "targetPath": zod.string(),
+  "targetLabel": zod.string(),
+  "rationale": zod.string(),
+  "proposedText": zod.string(),
+  "status": zod.string().describe('pending, accepted, or rejected.'),
+  "createdAt": zod.coerce.date(),
+  "decidedAt": zod.coerce.date().nullable()
+})),
+  "pendingApprovals": zod.array(zod.object({
+  "generationId": zod.number(),
+  "clientName": zod.string().nullish(),
+  "workflowTitle": zod.string(),
+  "kind": zod.string().nullable().describe('The held deliverable\'s kind, parsed from the snapshot.'),
+  "createdAt": zod.coerce.date()
+})),
+  "unresolvedAlerts": zod.array(zod.object({
+  "id": zod.number(),
+  "source": zod.string().describe('Where it came from, e.g. scheduler, email-inbound, generation.'),
+  "severity": zod.string().describe('error or warn.'),
+  "message": zod.string(),
+  "context": zod.record(zod.string(), zod.unknown()).nullish(),
+  "occurrences": zod.number().describe('How many times this same alert has fired while open.'),
+  "firstSeenAt": zod.coerce.date(),
+  "lastSeenAt": zod.coerce.date(),
+  "resolvedAt": zod.coerce.date().nullable()
+}))
+})
+
+
+/**
  * @summary List all schedules
  */
 export const GetSchedulesResponse = zod.object({

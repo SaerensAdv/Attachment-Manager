@@ -12,7 +12,7 @@ import type { Generation } from "@workspace/db";
  *
  * The store and the two e-mail collaborators are mocked by module path
  * (consistent with generate-engine.test.ts): the store's atomic
- * claim/revert/approve, the reply sender (`deliverEmailReply`) and the report
+ * claim/revert/approve, the reply drafter (`draftEmailReply`) and the report
  * drafter (`draftMonthlyReport`) are spies the test drives, while the pure
  * payload parsers (`parse*Payload`, `pendingDeliveryKind`) stay REAL so the
  * route's snapshot round-trip is exercised faithfully. We assert the send/draft
@@ -37,9 +37,9 @@ const storeMocks = vi.hoisted(() => ({
 }));
 vi.mock("../lib/generations-store", () => storeMocks);
 
-// The two senders are the collaborators under test: spy them, keep the pure
-// payload parsers + discriminator real (importActual) so the held snapshot is
-// parsed exactly as in production before the send.
+// The two draft writers are the collaborators under test: spy them, keep the
+// pure payload parsers + discriminator real (importActual) so the held snapshot
+// is parsed exactly as in production before the draft is staged.
 const draftMonthlyReportMock = vi.hoisted(() => vi.fn());
 vi.mock("../lib/monthly-report-email", async (importOriginal) => {
   const actual =
@@ -47,14 +47,14 @@ vi.mock("../lib/monthly-report-email", async (importOriginal) => {
   return { ...actual, draftMonthlyReport: draftMonthlyReportMock };
 });
 
-const deliverEmailReplyMock = vi.hoisted(() => vi.fn());
+const draftEmailReplyMock = vi.hoisted(() => vi.fn());
 vi.mock("../lib/email-reply", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../lib/email-reply")>();
-  return { ...actual, deliverEmailReply: deliverEmailReplyMock };
+  return { ...actual, draftEmailReply: draftEmailReplyMock };
 });
 
-// Thread bookkeeping after a successful send is best-effort; stub it so the
-// route's post-send call is observable without a DB.
+// Thread bookkeeping after a successful draft is best-effort; stub it so the
+// route's post-draft call is observable without a DB.
 const threadMocks = vi.hoisted(() => ({
   recordOutboundThread: vi.fn(),
   linkGenerationThread: vi.fn(),
@@ -149,7 +149,7 @@ const replyPayload = {
 beforeEach(() => {
   for (const m of Object.values(storeMocks)) m.mockReset();
   draftMonthlyReportMock.mockReset();
-  deliverEmailReplyMock.mockReset();
+  draftEmailReplyMock.mockReset();
   threadMocks.recordOutboundThread.mockReset();
   threadMocks.linkGenerationThread.mockReset();
   // Default: the approval-write + audit-step calls succeed and reflect state.
@@ -175,6 +175,10 @@ describe("POST /generations/:id/approve — monthly report", () => {
     storeMocks.setGenerationApproval.mockResolvedValue(
       makeGeneration({ approvalStatus: "approved", pendingDelivery: null }),
     );
+    threadMocks.recordOutboundThread.mockResolvedValue({ id: 55 });
+    threadMocks.linkGenerationThread.mockResolvedValue(
+      makeGeneration({ approvalStatus: "approved", emailThreadId: 55 }),
+    );
 
     const res = await request(makeApp()).post("/api/generations/7/approve");
 
@@ -198,14 +202,18 @@ describe("POST /generations/:id/approve — monthly report", () => {
     // It never reverts to pending on the happy path.
     expect(storeMocks.revertGenerationApprovalToPending).not.toHaveBeenCalled();
 
-    // A "concept klaargezet" audit step is appended. No outbound thread is
-    // recorded: the report is sent later by hand in Gmail, outside the app.
+    // A "concept klaargezet" audit step is appended, and the conversation is
+    // registered from the DRAFT's threadId (Gmail keeps it when the owner sends
+    // the draft) so an inbound client reply can later be routed back to its Head.
     expect(storeMocks.appendGenerationStep).toHaveBeenCalledTimes(1);
     expect(storeMocks.appendGenerationStep.mock.calls[0][1]).toMatchObject({
       agentTitle: "Maandrapport — concept klaargezet in Gmail",
       status: "completed",
     });
-    expect(threadMocks.recordOutboundThread).not.toHaveBeenCalled();
+    expect(threadMocks.recordOutboundThread).toHaveBeenCalledTimes(1);
+    expect(threadMocks.recordOutboundThread.mock.calls[0][0]).toMatchObject({
+      gmailThreadId: "gmail-thread-new",
+    });
 
     expect(res.body.approvalStatus).toBe("approved");
   });
@@ -261,7 +269,7 @@ describe("POST /generations/:id/approve — monthly report", () => {
 });
 
 describe("POST /generations/:id/approve — inbound reply", () => {
-  it("sends the held reply in-thread using the snapshotted threading headers", async () => {
+  it("drafts the held reply in-thread using the snapshotted threading headers", async () => {
     storeMocks.claimGenerationApprovalForSend.mockResolvedValue(
       makeGeneration({
         workflowPath: "workflows/email-reply.md",
@@ -269,8 +277,8 @@ describe("POST /generations/:id/approve — inbound reply", () => {
         pendingDelivery: JSON.stringify(replyPayload),
       }),
     );
-    deliverEmailReplyMock.mockResolvedValue({
-      id: "msg-2",
+    draftEmailReplyMock.mockResolvedValue({
+      draftId: "draft-2",
       threadId: "gmail-thread-123",
       messageId: "<stamped-reply@saerens>",
     });
@@ -285,23 +293,30 @@ describe("POST /generations/:id/approve — inbound reply", () => {
     const res = await request(makeApp()).post("/api/generations/7/approve");
 
     expect(res.status).toBe(200);
-    // The reply path is taken (not the report), sent once, in the original
+    // The reply path is taken (not the report), drafted once, in the original
     // Gmail conversation using the FROZEN threading headers.
     expect(draftMonthlyReportMock).not.toHaveBeenCalled();
-    expect(deliverEmailReplyMock).toHaveBeenCalledTimes(1);
-    const sent = deliverEmailReplyMock.mock.calls[0][0];
-    expect(sent.recipient).toBe(replyPayload.recipient);
-    expect(sent.replyBody).toBe(replyPayload.replyBody);
-    expect(sent.threadId).toBe(replyPayload.threadId);
-    expect(sent.inReplyTo).toBe(replyPayload.inReplyTo);
-    expect(sent.references).toBe(replyPayload.references);
+    expect(draftEmailReplyMock).toHaveBeenCalledTimes(1);
+    const staged = draftEmailReplyMock.mock.calls[0][0];
+    expect(staged.recipient).toBe(replyPayload.recipient);
+    expect(staged.replyBody).toBe(replyPayload.replyBody);
+    expect(staged.threadId).toBe(replyPayload.threadId);
+    expect(staged.inReplyTo).toBe(replyPayload.inReplyTo);
+    expect(staged.references).toBe(replyPayload.references);
+
+    // The conversation is advanced from the draft's threadId so the next inbound
+    // reply still threads correctly even though the owner sends by hand.
+    expect(threadMocks.recordOutboundThread).toHaveBeenCalledTimes(1);
+    expect(threadMocks.recordOutboundThread.mock.calls[0][0]).toMatchObject({
+      gmailThreadId: "gmail-thread-123",
+    });
 
     expect(storeMocks.setGenerationApproval).toHaveBeenCalledWith(7, {
       status: "approved",
       clearPending: true,
     });
     expect(storeMocks.appendGenerationStep.mock.calls[0][1]).toMatchObject({
-      agentTitle: "Antwoord goedgekeurd & verzonden",
+      agentTitle: "Antwoord — concept klaargezet in Gmail",
       status: "completed",
     });
   });
@@ -330,7 +345,7 @@ describe("POST /generations/:id/request-changes", () => {
     expect(res.status).toBe(200);
     // Nothing is sent on the reject path.
     expect(draftMonthlyReportMock).not.toHaveBeenCalled();
-    expect(deliverEmailReplyMock).not.toHaveBeenCalled();
+    expect(draftEmailReplyMock).not.toHaveBeenCalled();
     // The held draft is cleared (clearPending) so the stale snapshot can never
     // be released afterward, and the reviewer note is recorded.
     expect(storeMocks.setGenerationApproval).toHaveBeenCalledWith(7, {

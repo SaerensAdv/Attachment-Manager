@@ -9,7 +9,6 @@ import {
 } from "@workspace/api-client-react";
 import {
   Loader2,
-  Send,
   ThumbsDown,
   MailCheck,
   AlertTriangle,
@@ -130,7 +129,7 @@ export default function ApprovalPanel({
           </p>
           <p className="font-['Inter'] text-sm text-foreground">
             {isReply
-              ? "Antwoord goedgekeurd en in de conversatie verzonden naar de klant."
+              ? "Antwoord staat als concept klaar in je Gmail, in dezelfde conversatie — controleer het en verstuur het zelf naar de klant."
               : "Concept staat klaar in je Gmail (map Concepten) — controleer het en verstuur het zelf naar de klant."}
           </p>
         </div>
@@ -178,10 +177,11 @@ export default function ApprovalPanel({
         {isReply ? (
           <>
             Dit antwoord op de klant is opgesteld maar nog niet verzonden. Keur
-            het goed om het in dezelfde e-mailconversatie
-            {sentToRecipient ? ` naar ${sentToRecipient}` : " naar de klant"} te
-            sturen, of vraag wijzigingen om het tegen te houden en opnieuw te
-            genereren.
+            het goed om er een concept van te maken in je Gmail, in dezelfde
+            e-mailconversatie
+            {sentToRecipient ? ` naar ${sentToRecipient}` : " naar de klant"};
+            daar controleer en verstuur je het zelf, of vraag wijzigingen om het
+            tegen te houden en opnieuw te genereren.
           </>
         ) : (
           <>
@@ -254,12 +254,10 @@ export default function ApprovalPanel({
         >
           {approveMut.isPending ? (
             <Loader2 className="w-4 h-4 animate-spin" />
-          ) : isReply ? (
-            <Send className="w-4 h-4" />
           ) : (
             <FileText className="w-4 h-4" />
           )}
-          {isReply ? "Goedkeuren & versturen" : "Concept in Gmail klaarzetten"}
+          Concept in Gmail klaarzetten
         </button>
         <button
           type="button"

@@ -20,11 +20,11 @@ import {
   parseReportDeliveryPayload,
 } from "../lib/monthly-report-email";
 import {
-  deliverEmailReply,
+  draftEmailReply,
   parseEmailReplyPayload,
   pendingDeliveryKind,
 } from "../lib/email-reply";
-import type { SendEmailResult } from "../lib/email";
+import type { CreateDraftResult } from "../lib/email";
 import {
   recordOutboundThread,
   linkGenerationThread,
@@ -337,10 +337,12 @@ router.put("/generations/:id/feedback", async (req, res) => {
 });
 
 /**
- * Approve a held client-facing report: render the PDF + cover e-mail from the
- * snapshot taken at run time and send it to the client. The send only happens
- * here, after a human signs off — nothing reaches the client unattended. If the
- * send fails the draft stays pending so it can be retried.
+ * Approve a held client-facing draft: render the PDF + e-mail from the snapshot
+ * taken at run time and stage it as a Gmail DRAFT under the agency mailbox (both
+ * the monthly report and an in-thread client reply). Nothing is sent here — the
+ * owner does the final send from Gmail himself; this only happens after a human
+ * signs off. If the draft API fails the held draft stays pending so it can be
+ * retried.
  */
 router.post("/generations/:id/approve", async (req, res) => {
   const id = parseId(req.params.id);
@@ -380,9 +382,9 @@ router.post("/generations/:id/approve", async (req, res) => {
     kind === "email-reply"
       ? {
           unreadable: "Het bewaarde antwoord is onleesbaar; genereer opnieuw.",
-          doneTitle: "Antwoord goedgekeurd & verzonden",
-          failVerb: "Versturen",
-          failTail: "Antwoord blijft in afwachting.",
+          doneTitle: "Antwoord — concept klaargezet in Gmail",
+          failVerb: "Concept aanmaken",
+          failTail: "Concept blijft in afwachting.",
         }
       : {
           unreadable: "Het bewaarde rapport is onleesbaar; genereer opnieuw.",
@@ -402,18 +404,16 @@ router.post("/generations/:id/approve", async (req, res) => {
     return;
   }
 
-  // Claim is held; act now. The inbound reply is SENT in-thread; the monthly
-  // report is NOT sent — it is placed as a Gmail DRAFT under the agency mailbox
-  // so the owner does the final send from Gmail himself. On failure revert to
+  // Claim is held; act now. Both the in-thread client reply and the monthly
+  // report are placed as Gmail DRAFTS under the agency mailbox — nothing is sent
+  // here; the owner does the final send from Gmail himself. On failure revert to
   // pending so it can be retried; clear the held snapshot only once it succeeds.
-  let sendResult: SendEmailResult | null = null;
+  let draftResult: CreateDraftResult | null = null;
   try {
     if (reply) {
-      sendResult = await deliverEmailReply(reply);
+      draftResult = await draftEmailReply(reply);
     } else if (report) {
-      // Draft only: leave sendResult null, so no outbound thread is recorded —
-      // the report is sent later, by hand in Gmail, outside the app's knowledge.
-      await draftMonthlyReport(report);
+      draftResult = await draftMonthlyReport(report);
     }
   } catch (err) {
     // Failed: release the claim back to pending with the snapshot intact so the
@@ -447,20 +447,22 @@ router.post("/generations/:id/approve", async (req, res) => {
     errorMessage: null,
   });
 
-  // Best-effort: record/advance the e-mail conversation so an inbound reply can
-  // be routed back to this Head and threaded correctly. The mail is already
-  // sent, so a bookkeeping failure must never turn into an error here.
-  if (sendResult?.threadId) {
+  // Best-effort: record/advance the e-mail conversation from the DRAFT's
+  // threadId. Gmail keeps that threadId when the owner sends the draft, so the
+  // conversation is tracked from now on and an inbound client reply can be
+  // routed back to this Head and threaded correctly. A bookkeeping failure must
+  // never turn into an error here.
+  if (draftResult?.threadId) {
     try {
       const headAgentPath =
         reply?.headAgentPath ?? report?.headAgentPath ?? row.leadAgentPath;
       const subject = reply?.subject ?? report?.subject ?? "";
       const thread = await recordOutboundThread({
-        gmailThreadId: sendResult.threadId,
+        gmailThreadId: draftResult.threadId,
         clientPath: row.clientPath,
         headAgentPath,
         subject,
-        lastMessageIdHeader: sendResult.messageId || null,
+        lastMessageIdHeader: draftResult.messageId || null,
       });
       const linked = await linkGenerationThread(id, thread.id);
       if (linked) updated = linked;

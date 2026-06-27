@@ -1,4 +1,4 @@
-import { sendEmail, type SendEmailResult } from "./email";
+import { createGmailDraft, type CreateDraftResult } from "./email";
 import {
   escapeHtml,
   headerLogo,
@@ -11,8 +11,8 @@ import { SAERENS_LOGO_CID, saerensLogoInlineImage } from "./brand-logo";
  * The second kind of human-gated client email: a REPLY drafted by the team in
  * response to an inbound client message (Phase 2). It shares the exact same
  * approval checkpoint as the monthly report — nothing reaches the client until
- * the owner approves — but carries the threading headers needed to land the
- * reply in the original Gmail conversation.
+ * the owner approves — but carries the threading headers needed to stage the
+ * reply as a Gmail draft in the original conversation.
  *
  * `pendingDelivery` on a generation is therefore a small tagged union: a held
  * draft with `kind: "email-reply"` is an EmailReplyPayload; anything else (no
@@ -150,14 +150,17 @@ export function buildReplyEmail(args: {
 }
 
 /**
- * Send a team-drafted reply to the client, in-thread. Called only after a human
- * approves the held draft; throws on a bad recipient or a send failure so the
- * caller can keep the draft pending and surface the error. Returns the Gmail
- * thread + Message-ID so the conversation's threading chain can be advanced.
+ * Stage a team-drafted reply as a Gmail DRAFT in the original conversation
+ * (threaded via threadId + In-Reply-To/References) instead of sending it: the
+ * owner reviews it in the app, then does the final send from Gmail himself.
+ * Called only after a human approves the held draft; throws on a bad recipient
+ * or a draft-API failure so the caller can keep the held draft pending and
+ * surface the error. Returns the draft's Gmail thread + Message-ID so the
+ * conversation can be tracked for the next inbound reply.
  */
-export async function deliverEmailReply(
+export async function draftEmailReply(
   payload: EmailReplyPayload,
-): Promise<SendEmailResult> {
+): Promise<CreateDraftResult> {
   // Always embed the SA logo (header lockup); embed the Head's portrait when
   // available (footer signature). Both best-effort: a missing portrait -> the
   // signature renders text-only.
@@ -170,7 +173,7 @@ export async function deliverEmailReply(
     portraitCid: portrait?.cid,
     logoCid: SAERENS_LOGO_CID,
   });
-  return sendEmail({
+  return createGmailDraft({
     to: payload.recipient,
     subject: payload.subject,
     html,

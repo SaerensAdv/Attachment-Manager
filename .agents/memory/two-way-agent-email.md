@@ -1,6 +1,6 @@
 ---
 name: Two-way agent email (Head identity, inbound replies)
-description: How department-Heads get an email identity, send monthly reports as themselves, and how inbound client replies are routed → drafted → approved → sent in-thread.
+description: How department-Heads get an email identity, send monthly reports as themselves, and how inbound client replies are routed → drafted → approved → staged as an in-thread Gmail draft.
 ---
 
 # Two-way agent email
@@ -16,13 +16,15 @@ alias with the owner on Cc, and a generic roster-derived signature replaces the
 old hardcoded footer. Held by the approval checkpoint; on approve it is NOT sent
 but placed as a Gmail DRAFT in the agency mailbox (`draftMonthlyReport` →
 `createGmailDraft`) so the owner does the final send from Gmail himself. The
-email-reply path still sends in-thread on approve.
+email-reply path is now ALSO draft-on-approve (`draftEmailReply`, same pattern).
 
 **Phase 2 (inbound):** a sibling interval in the scheduler (`startInboundPoller`,
 same 60s tick as the run scheduler) polls open `email_threads`, routes each reply
 to its Head **by Gmail threadId**, runs the team scoped to that Head with the
 inbound text as the request, and produces an `email-reply` held delivery that goes
-through the SAME approval queue, then sends in-thread on approve.
+through the SAME approval queue, then on approve is staged as an in-thread Gmail
+DRAFT (`draftEmailReply` → `createGmailDraft` with the threadId) — the owner does
+the final send from Gmail himself.
 
 ## Hard invariants (do not regress)
 - **Never send to a client without owner approval.** Reuse the existing checkpoint;
@@ -53,9 +55,9 @@ through the SAME approval queue, then sends in-thread on approve.
 ## Wiring / shape
 - `email_threads`: `gmailThreadId` unique, `clientPath`, `headAgentPath`, `subject`,
   `lastProcessedMessageId`, `lastMessageIdHeader`, `status`; generations carry a
-  nullable `emailThreadId`. Thread row recorded on the approved send.
+  nullable `emailThreadId`. Thread row recorded from the DRAFT's threadId on approve.
 - `pendingDelivery` is a tagged union: **kind absent ⇒ monthly-report** (backward
-  compat); `kind:"email-reply"` dispatches `deliverEmailReply`. Both share `/approve`.
+  compat); `kind:"email-reply"` dispatches `draftEmailReply`. Both share `/approve`.
 - `email.ts` transport self-generates a `Message-ID`, sanitizes ALL headers, and
   threads via `inReplyTo`/`references`/`threadId`; send result returns
   `{id, threadId, messageId}`.
@@ -77,8 +79,8 @@ the user's request — header = company brand, footer = personal signature.
   so a baked-in constant is the robust source for a fixed brand asset. Source = the 72×72
   transparent indigo "SA" monogram (downscaled from `higgsfield-tests/saerens-logo.png`);
   transparent bg sits cleanly on the `#0A0A0B` header and ties into the `#716BEB` accent.
-- **Logo is ALWAYS embedded; portrait is best-effort.** `deliverMonthlyReport` /
-  `deliverEmailReply` build `inlineImages = portrait ? [logo, portrait] : [logo]` and always
+- **Logo is ALWAYS embedded; portrait is best-effort.** `draftMonthlyReport` /
+  `draftEmailReply` build `inlineImages = portrait ? [logo, portrait] : [logo]` and always
   pass `logoCid`. Header helper `headerLogo(logoCid)` (renders nothing if no cid);
   `signatureBand` (56px footer portrait) is the only portrait site now. `headerAvatar` was
   removed.
@@ -122,12 +124,15 @@ outbound send on the connector.
 Ads/readonly sources but a DEDICATED refresh token `GOOGLE_OAUTH_GMAIL_REFRESH_TOKEN`, consented as the
 agency mailbox with `gmail.modify`; the token exchange is shared from `google-oauth.ts` via
 `exchangeRefreshToken`. `createGmailDraft` POSTs the same `buildMime` MIME to `users.drafts.create` with
-a Bearer token (NOT the connector). **Durable tradeoff:** the report draft path intentionally does NOT
-record an outbound `email_thread` (`recordOutboundThread` skipped because `sendResult` stays null) — the
-real send happens later by hand in Gmail, so the app never learns the sent threadId and a manually-sent
-monthly report is NOT tracked for Phase-2 inbound-reply routing. The email-reply path still sends AND
-records the thread. **Why:** persisting a draft's thread would be a lie (it isn't sent yet) and the
-human send may produce different sent-message state the app can't see.
+a Bearer token (NOT the connector). **Durable decision (reversed an earlier tradeoff):** BOTH the
+report and the reply draft paths now record/advance the `email_thread` from the **draft's returned
+threadId** (`recordOutboundThread(draftResult.threadId)` on approve). **Why:** `recordOutboundThread`
+is the ONLY creator of `email_threads` rows and the inbound poller only watches those rows, so NOT
+recording would mean Phase-2 inbound detection never starts for new clients (the reply-draft feature
+would be dead on arrival). A draft and its eventually-sent message share the same Gmail threadId, so
+recording it at draft time is accurate for routing even though the human sends by hand later. Safe with
+the poller because it skips DRAFT/SENT/owner/non-whitelisted messages, so an unsent draft creates a
+watched-but-idle open thread that cannot self-trigger; it only activates once the client replies.
 **How to verify quickly:** probe `GET /gmail/v1/users/me/messages?maxResults=1` (read) or
 `drafts.list`/`drafts.create` — 200 = ok, 403 = scope missing. process.env is NOT exposed in the
 code_execution sandbox; test via workspace `node`/`tsx`. The inbound poller's read-scope probe

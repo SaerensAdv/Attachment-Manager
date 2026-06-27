@@ -30,10 +30,10 @@ router.post("/intake", async (req, res) => {
   const clientPath = asString(body.clientPath);
   const request = asString(body.request);
 
-  if (!agentPath || !clientPath || !request) {
+  if (!agentPath || !request) {
     res
       .status(400)
-      .json({ error: "agentPath, clientPath en request zijn verplicht." });
+      .json({ error: "agentPath en request zijn verplicht." });
     return;
   }
 
@@ -44,10 +44,14 @@ router.post("/intake", async (req, res) => {
     res.status(400).json({ error: "Onbekende of ongeldige agent." });
     return;
   }
-  const client = getDocFile(clientPath, clientDocs);
-  if (!client || client.category !== "client") {
-    res.status(400).json({ error: "Onbekende of ongeldige klant." });
-    return;
+  // The client is OPTIONAL (internal/agency-general work). Validate only when a
+  // client is provided; a present-but-invalid client is still an error.
+  if (clientPath) {
+    const client = getDocFile(clientPath, clientDocs);
+    if (!client || client.category !== "client") {
+      res.status(400).json({ error: "Onbekende of ongeldige klant." });
+      return;
+    }
   }
   if (workflowPath) {
     const workflow = getDocFile(workflowPath);
@@ -60,7 +64,7 @@ router.post("/intake", async (req, res) => {
   const system = buildIntakePrompt({
     agentPath,
     workflowPath,
-    clientPath,
+    clientPath: clientPath ?? "",
     extraDocs: clientDocs,
   });
 

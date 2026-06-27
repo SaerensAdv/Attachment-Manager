@@ -212,7 +212,9 @@ export function useGeneration(
     !!routeError ||
     !!streamError;
 
-  const canRoute = !!clientPath && request.trim().length > 0 && !routing;
+  // The client is OPTIONAL: an empty clientPath means internal/agency-general
+  // work, so routing only needs a non-empty request.
+  const canRoute = request.trim().length > 0 && !routing;
 
   const handleRoute = async () => {
     if (!canRoute) return;
@@ -271,7 +273,7 @@ export function useGeneration(
   // After routing (and on agent/workflow override) detect missing essential
   // inputs. Best-effort: failures fall back to no extra fields.
   useEffect(() => {
-    if (!isRouted || !agentPath || !clientPath) return;
+    if (!isRouted || !agentPath) return;
     const controller = new AbortController();
     intakeAbortRef.current = controller;
     setIntakeLoading(true);
@@ -331,7 +333,6 @@ export function useGeneration(
 
   const canGenerate =
     isRouted &&
-    !!clientPath &&
     !!workflowPath &&
     !!agentPath &&
     teamPaths.length > 0 &&

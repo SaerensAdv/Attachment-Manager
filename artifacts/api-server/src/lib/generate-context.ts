@@ -200,7 +200,17 @@ export async function buildGenerationContext(
 
   pushDoc("Globale regels", globalRules);
   pushDoc("Jouw rol (agent)", agent);
-  pushDoc("Klantcontext", client);
+  if (client) {
+    pushDoc("Klantcontext", client);
+  } else {
+    // The client is OPTIONAL. When none is selected the absence is INTENTIONAL
+    // (internal/agency-general work for Saerens Advertising itself), so we say so
+    // explicitly — otherwise the agent might treat the missing context as a gap
+    // and start guessing about or asking for a client.
+    blocks.push(
+      "## Klantcontext\n\nEr is geen specifieke klant geselecteerd. Dit is intern/algemeen werk voor het bureau zelf (Saerens Advertising). Werk op basis van de opdracht en de algemene bureaucontext; verzin geen klant en vraag er niet naar.",
+    );
+  }
   pushDoc("Workflow", workflow);
 
   if (templateDocs.length > 0) {

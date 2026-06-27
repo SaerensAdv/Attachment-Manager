@@ -25,7 +25,8 @@ export const ROUTING_SCHEMA_HINT = `{
  * and must return a structured routing decision as JSON only.
  */
 export function buildRoutingPrompt(params: {
-  clientTitle: string;
+  /** The selected client's title, or null for internal/agency-general work. */
+  clientTitle: string | null;
   workflows: DocNode[];
   agents: DocNode[];
 }): string {
@@ -38,7 +39,9 @@ export function buildRoutingPrompt(params: {
   return [
     "Je bent Lotte, de Orchestrator van het AI-team van Saerens Advertising (een Belgisch Google Ads-bureau).",
     "Je taak: lees de opdracht van de gebruiker en bepaal welke workflow en welke primaire specialist-agent de opdracht moeten uitvoeren.",
-    `De opdracht betreft de klant: ${clientTitle}.`,
+    clientTitle
+      ? `De opdracht betreft de klant: ${clientTitle}.`
+      : "Er is geen specifieke klant geselecteerd: behandel dit als intern/algemeen werk voor het bureau zelf (Saerens Advertising). Vraag NIET om een klant te kiezen — werk gewoon op basis van de opdracht.",
     "",
     "## Routing-gids van de Orchestrator",
     orchestrator ? orchestrator.content.trim() : "(niet beschikbaar)",

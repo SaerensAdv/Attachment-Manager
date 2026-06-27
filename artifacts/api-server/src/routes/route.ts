@@ -26,16 +26,23 @@ router.post("/route", async (req, res) => {
   const clientPath = asString(body.clientPath);
   const request = asString(body.request);
 
-  if (!clientPath || !request) {
-    res.status(400).json({ error: "clientPath en request zijn verplicht." });
+  if (!request) {
+    res.status(400).json({ error: "request is verplicht." });
     return;
   }
 
-  const clientDocs = await loadClientDocs();
-  const client = getDocFile(clientPath, clientDocs);
-  if (!client || client.category !== "client") {
-    res.status(400).json({ error: "Onbekende of ongeldige klant." });
-    return;
+  // The client is OPTIONAL: an empty clientPath means internal/agency-general
+  // work. Only validate when a client IS provided — a present-but-invalid client
+  // is still an error.
+  let clientTitle: string | null = null;
+  if (clientPath) {
+    const clientDocs = await loadClientDocs();
+    const client = getDocFile(clientPath, clientDocs);
+    if (!client || client.category !== "client") {
+      res.status(400).json({ error: "Onbekende of ongeldige klant." });
+      return;
+    }
+    clientTitle = client.title;
   }
 
   const graph = getDocGraph();
@@ -45,7 +52,7 @@ router.post("/route", async (req, res) => {
   );
 
   const system = buildRoutingPrompt({
-    clientTitle: client.title,
+    clientTitle,
     workflows,
     agents,
   });

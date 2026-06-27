@@ -16,6 +16,11 @@ const selectContentClass =
 const selectItemClass =
   "rounded-none font-['Inter'] focus:bg-foreground focus:text-background";
 
+// The client picker is optional: an opdracht can run without a client (internal/
+// agency-general work). Radix Select forbids an empty-string item value, so we
+// represent "no client" with a sentinel and map it to/from the empty clientPath.
+const NO_CLIENT = "__none__";
+
 /**
  * ChatGPT-style command bar docked at the bottom-center of the Kaart: a client
  * picker, a prompt input, and a send button. Submitting runs the Orchestrator
@@ -55,9 +60,9 @@ export default function CommandBar({ gen }: { gen: GenerationController }) {
       <div className="flex items-end bg-card border border-foreground shadow-[4px_4px_0px_hsl(var(--foreground))]">
         <div className="self-stretch flex items-center">
           <Select
-            value={clientPath}
+            value={clientPath || NO_CLIENT}
             onValueChange={(v) => {
-              setClientPath(v);
+              setClientPath(v === NO_CLIENT ? "" : v);
               if (hasActiveFlow) resetFlow();
             }}
           >
@@ -65,6 +70,9 @@ export default function CommandBar({ gen }: { gen: GenerationController }) {
               <SelectValue placeholder="Kies klant" />
             </SelectTrigger>
             <SelectContent className={selectContentClass}>
+              <SelectItem value={NO_CLIENT} className={selectItemClass}>
+                Geen klant
+              </SelectItem>
               {clients.map((c) => (
                 <SelectItem key={c.path} value={c.path} className={selectItemClass}>
                   {c.title}

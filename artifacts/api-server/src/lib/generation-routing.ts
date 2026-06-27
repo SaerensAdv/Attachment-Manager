@@ -44,12 +44,12 @@ export async function resolveGenerationContext(
   const workflowPath = asString(b.workflowPath);
   const request = asString(b.request);
 
-  if (!agentPath || !clientPath || !workflowPath || !request) {
+  if (!agentPath || !workflowPath || !request) {
     return {
       ok: false,
       status: 400,
       error:
-        "agentPath, clientPath, workflowPath en request zijn allemaal verplicht.",
+        "agentPath, workflowPath en request zijn allemaal verplicht.",
     };
   }
 
@@ -74,7 +74,9 @@ export async function resolveGenerationContext(
   }
 
   const clientDocs = await loadClientDocs();
-  if (!isValidDoc(clientPath, "client", clientDocs)) {
+  // The client is OPTIONAL: an empty clientPath means internal/agency-general
+  // work. Validate only when a client is provided.
+  if (clientPath && !isValidDoc(clientPath, "client", clientDocs)) {
     return { ok: false, status: 400, error: "Onbekende of ongeldige klant." };
   }
   if (!isValidDoc(workflowPath, "workflow")) {
@@ -82,8 +84,10 @@ export async function resolveGenerationContext(
   }
 
   const memberTitles = teamPaths.map((p) => getDocFile(p)?.title ?? "Teamlid");
-  const clientDoc = getDocFile(clientPath, clientDocs);
-  const clientName = (clientDoc?.title ?? clientPath).replace(/^Client:\s*/i, "");
+  const clientDoc = clientPath ? getDocFile(clientPath, clientDocs) : null;
+  const clientName = clientDoc
+    ? clientDoc.title.replace(/^Client:\s*/i, "")
+    : "";
   const clientContent = clientDoc?.content ?? "";
   const workflowDoc = getDocFile(workflowPath);
   const workflowTitle = (workflowDoc?.title ?? workflowPath).replace(
@@ -118,7 +122,7 @@ export async function resolveGenerationContext(
     ctx: {
       teamPaths,
       memberTitles,
-      clientPath,
+      clientPath: clientPath ?? "",
       clientName,
       clientContent,
       workflowPath,

@@ -74,6 +74,30 @@ describe("buildGenerationContext QC framing", () => {
   });
 });
 
+describe("buildGenerationContext optional client", () => {
+  it("states the absence is intentional internal work when no client is set", async () => {
+    const { systemPrompt } = await buildGenerationContext({
+      agentPath: "agents/humanizer.md",
+      clientPath: "",
+      workflowPath: "workflows/wf.md",
+    });
+    expect(systemPrompt).toContain("Er is geen specifieke klant geselecteerd");
+    expect(systemPrompt).toContain("intern/algemeen werk");
+    // The client's own profile must not leak in when none is selected.
+    expect(systemPrompt).not.toContain("client context");
+  });
+
+  it("includes the real client context when a client is set", async () => {
+    const { systemPrompt } = await buildGenerationContext({
+      agentPath: "agents/humanizer.md",
+      clientPath: "clients/acme.md",
+      workflowPath: "workflows/wf.md",
+    });
+    expect(systemPrompt).toContain("client context");
+    expect(systemPrompt).not.toContain("Er is geen specifieke klant geselecteerd");
+  });
+});
+
 import {
   renderHandoffSummary,
   HANDOFF_BRIEF_INSTRUCTION,

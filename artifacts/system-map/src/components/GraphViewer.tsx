@@ -1,12 +1,11 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import * as d3 from "d3-force";
-import { toPng, toSvg } from "html-to-image";
 import {
   TransformWrapper,
   TransformComponent,
   type ReactZoomPanPinchRef,
 } from "react-zoom-pan-pinch";
-import { Maximize2, Plus, Minus, Download, Image as ImageIcon } from "lucide-react";
+import { Maximize2, Plus, Minus } from "lucide-react";
 import type {
   DocNode,
   DocEdge,
@@ -118,9 +117,6 @@ export default function GraphViewer({
   // Honour the user's reduced-motion preference: skip the pan/zoom easing and
   // the per-node CSS transitions so layout switches land instantly.
   const [reducedMotion, setReducedMotion] = useState(false);
-  // True while an export render is in flight, so the button can be disabled and
-  // the controls overlay won't be captured mid-click.
-  const [isExporting, setIsExporting] = useState(false);
   // Live bottom inset (the docked panel + command bar height) read at framing
   // time so the spotlight keeps the team above the panel as it grows/shrinks.
   const frameBottomInsetRef = useRef(0);
@@ -357,39 +353,6 @@ export default function GraphViewer({
       api?.setTransform(x, y, clampedScale, reducedMotion ? 0 : 700, "easeOut");
     },
     [dimensions.width, dimensions.height, reducedMotion, onFramed],
-  );
-
-  // Export the current graph view (the cream paper + grid + SVG, exactly as
-  // panned/zoomed) to an image. The control overlays carry data-export-ignore
-  // so they are filtered out, and the cream theme background is forced so the
-  // image is never transparent.
-  const exportImage = useCallback(
-    async (format: "png" | "svg") => {
-      const el = containerRef.current;
-      if (!el || isExporting) return;
-      setIsExporting(true);
-      try {
-        const cream = getComputedStyle(el).backgroundColor || "#F4F4F0";
-        const options = {
-          backgroundColor: cream,
-          cacheBust: true,
-          pixelRatio: 2,
-          filter: (node: HTMLElement) =>
-            !(node instanceof HTMLElement && node.dataset.exportIgnore === "true"),
-        };
-        const dataUrl =
-          format === "png" ? await toPng(el, options) : await toSvg(el, options);
-        const link = document.createElement("a");
-        link.download = `saerens-systeemkaart.${format}`;
-        link.href = dataUrl;
-        link.click();
-      } catch (err) {
-        console.error("Kaart exporteren mislukt", err);
-      } finally {
-        setIsExporting(false);
-      }
-    },
-    [isExporting],
   );
 
   // Focus when a node is selected, or when search requests a focus (nonce bump).
@@ -1005,39 +968,8 @@ export default function GraphViewer({
         </TransformComponent>
       </TransformWrapper>
 
-      {/* Export — placed bottom-left so it balances the navigation controls
-          without overlapping the legend/panel overlays. */}
-      <div data-export-ignore="true" className="absolute bottom-6 left-6 z-20 flex flex-col gap-3 items-start">
-        {/* Export controls: PNG (priority) + SVG. */}
-        <div className="flex rounded-none bg-card border border-foreground shadow-[4px_4px_0px_hsl(var(--foreground))] overflow-hidden">
-          <button
-            type="button"
-            onClick={() => exportImage("png")}
-            disabled={isExporting}
-            title="Exporteer kaart als PNG"
-            aria-label="Exporteer kaart als PNG"
-            className="flex items-center gap-2 px-3 h-10 font-['Space_Mono'] text-[11px] uppercase tracking-wider text-foreground hover:bg-foreground hover:text-background transition-colors disabled:opacity-50 disabled:pointer-events-none"
-          >
-            <Download className="w-4 h-4" />
-            {isExporting ? "Bezig..." : "Exporteer kaart"}
-          </button>
-          <div className="w-px bg-foreground" />
-          <button
-            type="button"
-            onClick={() => exportImage("svg")}
-            disabled={isExporting}
-            title="Exporteer kaart als SVG"
-            aria-label="Exporteer kaart als SVG"
-            className="flex items-center gap-2 px-3 h-10 font-['Space_Mono'] text-[11px] uppercase tracking-wider text-foreground hover:bg-foreground hover:text-background transition-colors disabled:opacity-50 disabled:pointer-events-none"
-          >
-            <ImageIcon className="w-4 h-4" />
-            SVG
-          </button>
-        </div>
-      </div>
-
       {/* Navigation controls: fit-to-view (reset overview) + zoom in/out. */}
-      <div data-export-ignore="true" className="absolute bottom-6 right-6 z-20 flex flex-col gap-2">
+      <div className="absolute bottom-6 right-6 z-20 flex flex-col gap-2">
         <button
           type="button"
           onClick={fitView}

@@ -1,20 +1,6 @@
 import * as d3 from "d3-force";
 import type { DocNode } from "@workspace/api-client-react";
 
-// The architecture flows top-to-bottom through these layers. The "Gelaagd"
-// (dagre) layout ranks nodes by this order so the structural backbone reads as
-// a clean hierarchy; edges crossing layers are oriented downward so dagre keeps
-// the ranks aligned with the layer order rather than with arbitrary link
-// direction. Categories not listed here fall to the bottom rank.
-export const LAYER_ORDER = ["core", "agent", "client", "workflow", "template", "knowledge"];
-
-export const layerRank = (category: string) => {
-  const i = LAYER_ORDER.indexOf(category);
-  return i === -1 ? LAYER_ORDER.length : i;
-};
-
-export type LayoutMode = "organic" | "layered";
-
 // Level-of-detail. The doc graph is dense (~800 edges): drawn all at once the
 // overview collapses into an unreadable hairball. Each edge class instead fades
 // in as the viewport zooms, so far out only the orchestrator routing skeleton

@@ -1,20 +1,18 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import * as d3 from "d3-force";
-import dagre from "@dagrejs/dagre";
 import { toPng, toSvg } from "html-to-image";
 import {
   TransformWrapper,
   TransformComponent,
   type ReactZoomPanPinchRef,
 } from "react-zoom-pan-pinch";
-import { Maximize2, Plus, Minus, Download, Image as ImageIcon, Network, Workflow } from "lucide-react";
+import { Maximize2, Plus, Minus, Download, Image as ImageIcon } from "lucide-react";
 import type {
   DocNode,
   DocEdge,
   DocCategory,
 } from "@workspace/api-client-react";
 import {
-  layerRank,
   safeId,
   edgeStyleFor,
   getCategoryColor,
@@ -23,7 +21,6 @@ import {
   EDGE_LOD,
   LABEL_LOD,
   lodFactor,
-  type LayoutMode,
   type SimNode,
   type SimEdge,
 } from "./graph-viewer-utils";
@@ -100,9 +97,6 @@ export default function GraphViewer({
   // Bumped when the simulation cools down, so the auto-fit waits for the final
   // (now larger, spread-out) layout instead of framing a half-settled one.
   const [settleNonce, setSettleNonce] = useState(0);
-  // Which layout engine positions the nodes: "organic" (d3-force, default) or
-  // "layered" (dagre hierarchical). Switching recomputes all positions.
-  const [layoutMode, setLayoutMode] = useState<LayoutMode>("organic");
   // Honour the user's reduced-motion preference: skip the pan/zoom easing and
   // the per-node CSS transitions so layout switches land instantly.
   const [reducedMotion, setReducedMotion] = useState(false);
@@ -200,68 +194,6 @@ export default function GraphViewer({
     }
     const degreeOf = (n: SimNode) => degree.get(n.id) ?? 0;
 
-    // ---- Layered (dagre) layout -------------------------------------------
-    // Build a directed graph, size each node to its seal, and rank by the
-    // architecture layer order. Cross-layer edges are oriented downward (low
-    // rank -> high rank) so dagre's ranking follows the layer order; same-layer
-    // edges keep their direction. Rendering still uses the original edge
-    // direction (and arrowheads) — dagre only supplies x/y positions.
-    if (layoutMode === "layered") {
-      const byId = new Map(simNodesData.map((n) => [n.id, n]));
-      const g = new dagre.graphlib.Graph({ multigraph: true });
-      g.setGraph({
-        rankdir: "TB",
-        nodesep: 70,
-        ranksep: 150,
-        marginx: 60,
-        marginy: 60,
-        ranker: "network-simplex",
-      });
-      g.setDefaultEdgeLabel(() => ({}));
-
-      for (const n of simNodesData) {
-        // Size each box to its plate so neighbouring plates + labels don't collide.
-        g.setNode(n.id, { width: plateWidth(n.title) + 48, height: PLATE.height + 56 });
-      }
-
-      simEdgesData.forEach((e, i) => {
-        const s = byId.get(e.source as string);
-        const t = byId.get(e.target as string);
-        if (!s || !t) return;
-        let from = s.id;
-        let to = t.id;
-        // Orient cross-layer edges downward so ranks follow the layer order.
-        if (layerRank(s.category) > layerRank(t.category)) {
-          from = t.id;
-          to = s.id;
-        }
-        g.setEdge(from, to, {}, `e${i}`);
-      });
-
-      dagre.layout(g);
-
-      for (const n of simNodesData) {
-        const gn = g.node(n.id);
-        if (gn && typeof gn.x === "number" && typeof gn.y === "number") {
-          n.x = gn.x;
-          n.y = gn.y;
-        }
-      }
-      // Resolve edge endpoints to node objects so the renderer (which reads
-      // edge.source.x/.y) works identically to the d3-force path.
-      for (const e of simEdgesData) {
-        const s = byId.get(e.source as string);
-        const t = byId.get(e.target as string);
-        if (s) e.source = s;
-        if (t) e.target = t;
-      }
-
-      setSimNodes([...simNodesData]);
-      setSimEdges([...simEdgesData]);
-      setSettleNonce((n) => n + 1);
-      return;
-    }
-
     // ---- Organic (d3-force) layout ----------------------------------------
     const simulation = d3.forceSimulation<SimNode>(simNodesData)
       // Longer links give connected nodes breathing room; hubs get extra so
@@ -314,7 +246,7 @@ export default function GraphViewer({
     return () => {
       simulation.stop();
     };
-  }, [nodes, edges, dimensions.width, dimensions.height, layoutMode]);
+  }, [nodes, edges, dimensions.width, dimensions.height]);
 
   // Smoothly pan/zoom the viewport so the given node sits in the center.
   const focusOnNode = useCallback((nodeId: string) => {
@@ -688,10 +620,9 @@ export default function GraphViewer({
                 // Level-of-detail: in the organic overview the dense flow /
                 // reference / mention classes fade with zoom so only the routing
                 // skeleton survives far out; hovering an endpoint always reveals
-                // its wiring regardless of zoom. The layered view keeps full
-                // wiring (its cross-layer edges ARE the structure dagre draws).
+                // its wiring regardless of zoom.
                 const [lodStart, lodEnd] = EDGE_LOD[edge.kind] ?? EDGE_LOD.mention;
-                const lodBase = layoutMode === "organic" ? lodFactor(scale, lodStart, lodEnd) : 1;
+                const lodBase = lodFactor(scale, lodStart, lodEnd);
                 // During a live run, wiring between two involved team members is
                 // always revealed (not gated by zoom) so the working team's
                 // structure reads even at the spotlight's far framings.
@@ -713,23 +644,15 @@ export default function GraphViewer({
                 // a hover) — keeps the overview clean and the DOM light.
                 if (!isEdgeHighlighted && !isEdgeDimmed && lod <= 0.01) return null;
 
-                // Schematic wiring trimmed to each plate's border. In the layered
-                // view it routes at right angles (drop, across the mid-line, in);
-                // in the organic view a straight wire keeps the dense web legible
-                // instead of a tangle of overlapping elbows.
+                // Schematic wiring trimmed to each plate's border. A straight
+                // wire keeps the dense web legible instead of a tangle of
+                // overlapping elbows.
                 const sx = source.x;
                 const sy = source.y;
                 const tx = target.x;
                 const ty = target.y;
                 let d: string;
-                if (layoutMode === "layered") {
-                  const halfH = PLATE.height / 2;
-                  const dir = ty >= sy ? 1 : -1;
-                  const y1 = sy + dir * (halfH + 2);
-                  const y2 = ty - dir * (halfH + 9);
-                  const midY = (y1 + y2) / 2;
-                  d = `M ${sx} ${y1} L ${sx} ${midY} L ${tx} ${midY} L ${tx} ${y2}`;
-                } else {
+                {
                   const dx = tx - sx;
                   const dy = ty - sy;
                   const len = Math.hypot(dx, dy) || 1;
@@ -1060,46 +983,9 @@ export default function GraphViewer({
         </TransformComponent>
       </TransformWrapper>
 
-      {/* Layout toggle + export — placed bottom-left so it balances the
-          navigation controls without overlapping the legend/panel overlays. */}
+      {/* Export — placed bottom-left so it balances the navigation controls
+          without overlapping the legend/panel overlays. */}
       <div data-export-ignore="true" className="absolute bottom-6 left-6 z-20 flex flex-col gap-3 items-start">
-        {/* Segmented control: organic (d3-force) vs layered (dagre). */}
-        <div
-          role="group"
-          aria-label="Lay-out kiezen"
-          className="flex rounded-none bg-card border border-foreground shadow-[4px_4px_0px_hsl(var(--foreground))] overflow-hidden"
-        >
-          <button
-            type="button"
-            onClick={() => setLayoutMode("organic")}
-            aria-pressed={layoutMode === "organic"}
-            title="Organische lay-out"
-            className={`flex items-center gap-2 px-3 h-10 font-['Space_Mono'] text-[11px] uppercase tracking-wider transition-colors ${
-              layoutMode === "organic"
-                ? "bg-foreground text-background"
-                : "text-foreground hover:bg-foreground/10"
-            }`}
-          >
-            <Network className="w-4 h-4" />
-            Organisch
-          </button>
-          <div className="w-px bg-foreground" />
-          <button
-            type="button"
-            onClick={() => setLayoutMode("layered")}
-            aria-pressed={layoutMode === "layered"}
-            title="Gelaagde lay-out"
-            className={`flex items-center gap-2 px-3 h-10 font-['Space_Mono'] text-[11px] uppercase tracking-wider transition-colors ${
-              layoutMode === "layered"
-                ? "bg-foreground text-background"
-                : "text-foreground hover:bg-foreground/10"
-            }`}
-          >
-            <Workflow className="w-4 h-4" />
-            Gelaagd
-          </button>
-        </div>
-
         {/* Export controls: PNG (priority) + SVG. */}
         <div className="flex rounded-none bg-card border border-foreground shadow-[4px_4px_0px_hsl(var(--foreground))] overflow-hidden">
           <button

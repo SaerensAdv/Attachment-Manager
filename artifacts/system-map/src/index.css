@@ -186,6 +186,14 @@
   animation: atlas-flow 0.9s linear infinite;
 }
 
+/* While the user is actively zooming/panning the Kaart, pause the streaming
+   bead animations so the interaction itself stays smooth; they resume the
+   moment the view is idle. Toggled via a class on the map container. */
+.atlas-interacting .atlas-flow-line,
+.atlas-interacting .atlas-handoff-line {
+  animation-play-state: paused;
+}
+
 /* Live-run active agent — a soft accent halo that breathes around the node that
    is writing right now. */
 @keyframes atlas-node-pulse {

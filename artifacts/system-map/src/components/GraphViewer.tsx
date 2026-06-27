@@ -129,6 +129,35 @@ export default function GraphViewer({
     return () => mq.removeEventListener("change", update);
   }, []);
 
+  // Pause the ambient living-pipeline beads while the user is actively zooming
+  // or panning, so the interaction itself stays smooth, then resume once the
+  // view is idle. Toggled as a CSS class straight on the container (no React
+  // re-render of this heavy component) and debounced so rapid wheel ticks don't
+  // flicker the animation back on between steps.
+  const interactionTimer = useRef<number | null>(null);
+  const markInteracting = useCallback((active: boolean) => {
+    const el = containerRef.current;
+    if (!el) return;
+    if (active) {
+      if (interactionTimer.current !== null) {
+        clearTimeout(interactionTimer.current);
+        interactionTimer.current = null;
+      }
+      el.classList.add("atlas-interacting");
+    } else {
+      if (interactionTimer.current !== null) clearTimeout(interactionTimer.current);
+      interactionTimer.current = window.setTimeout(() => {
+        containerRef.current?.classList.remove("atlas-interacting");
+        interactionTimer.current = null;
+      }, 220);
+    }
+  }, []);
+  useEffect(() => {
+    return () => {
+      if (interactionTimer.current !== null) clearTimeout(interactionTimer.current);
+    };
+  }, []);
+
   // Update dimensions on resize
   useEffect(() => {
     if (!containerRef.current) return;
@@ -604,6 +633,14 @@ export default function GraphViewer({
         centerOnInit
         limitToBounds={false}
         onTransformed={(_ref, state) => setScale(state.scale)}
+        onZoomStart={() => markInteracting(true)}
+        onZoomStop={() => markInteracting(false)}
+        onWheelStart={() => markInteracting(true)}
+        onWheelStop={() => markInteracting(false)}
+        onPanningStart={() => markInteracting(true)}
+        onPanningStop={() => markInteracting(false)}
+        onPinchingStart={() => markInteracting(true)}
+        onPinchingStop={() => markInteracting(false)}
       >
         <TransformComponent wrapperClass="!w-full !h-full" contentClass="!w-full !h-full">
           <svg width={dimensions.width} height={dimensions.height} className="overflow-visible">
@@ -716,6 +753,22 @@ export default function GraphViewer({
                 const opacity = isEdgeDimmed ? 0.06 : isEdgeHighlighted ? 0.95 : style.opacity * lod;
                 const width = isEdgeHighlighted ? style.width + 0.75 : style.width;
 
+                // Living-pipeline beads are the dominant repaint cost at high
+                // zoom: with the full flow layer faded in, every routing/flow
+                // edge carried an always-on dash animation, so hundreds repaint
+                // the whole SVG each frame. Cap the ambient motion to the routing
+                // skeleton only (few, always visible). Flow edges get the bead
+                // solely when a hover/selection reveals them or a live run forces
+                // them visible — so the motion still reads where it matters
+                // (skeleton, hover/selection, live runs) but never animates on
+                // hundreds of edges at once. The static edge line above is
+                // unchanged at every zoom.
+                const isPipelineEdge = edge.kind === "routing" || edge.kind === "flow";
+                const showBead =
+                  isPipelineEdge &&
+                  !isEdgeDimmed &&
+                  (edge.kind === "routing" || isEdgeHighlighted || runEdge);
+
                 return (
                   <g key={`edge-${i}`} className={reducedMotion ? "" : "transition-opacity duration-300"}>
                     {isEdgeHighlighted && (
@@ -730,9 +783,11 @@ export default function GraphViewer({
                       markerEnd={`url(#${style.marker})`}
                       strokeLinecap="round"
                     />
-                    {/* Living pipeline: light beads streaming source -> target
-                        along the structural routing/flow edges. */}
-                    {(edge.kind === "routing" || edge.kind === "flow") && !isEdgeDimmed && (
+                    {/* Living pipeline: light beads streaming source -> target.
+                        Capped to the routing skeleton plus any hovered/selected or
+                        live-run edge (see showBead) so the motion never runs on
+                        hundreds of paths at once. */}
+                    {showBead && (
                       <path
                         d={d}
                         stroke="hsl(var(--card))"

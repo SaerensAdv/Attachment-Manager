@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { render } from "@testing-library/react";
+import { render, fireEvent } from "@testing-library/react";
 import type { DocNode, DocEdge, DocCategory } from "@workspace/api-client-react";
 import GraphViewer from "./GraphViewer";
 import { setMatchMedia } from "../test/setup";
@@ -206,5 +206,166 @@ describe("reduced-motion stylesheet coverage", () => {
     for (const cls of animated) {
       expect(block.includes(`.${cls}`)).toBe(true);
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Interaction "lit vs dimmed" coverage. The Kaart's legibility rests on a
+// single derived signal — `isNodeDimmed` — that drives each node group's
+// opacity (lit = 1, dimmed = 0.2). It fans out from four sources that are easy
+// to silently break in a refactor: hover (node + neighbours), selection,
+// the service-line lens, and search. A dimmed node still renders its label at
+// the default zoom, so we can locate any node by its label text and read the
+// opacity its dim/lit state resolved to.
+// ---------------------------------------------------------------------------
+
+// At the default scale (1) every label is fully drawn (LOD ramp tops out at
+// 1.0), so each node — lit or dimmed — has a <text> we can find it by. A node's
+// outer <g> (the one carrying the dim opacity) is that label's direct parent.
+function nodeGroup(root: HTMLElement, title: string): SVGGElement {
+  const label = Array.from(root.querySelectorAll("text")).find(
+    (t) => t.textContent === title,
+  );
+  if (!label) throw new Error(`no node label rendered for "${title}"`);
+  return label.parentElement as unknown as SVGGElement;
+}
+
+// The opacity a node's dim/lit state resolved to ("1" lit, "0.2" dimmed).
+const nodeOpacity = (root: HTMLElement, title: string) =>
+  nodeGroup(root, title).style.opacity;
+
+describe("GraphViewer hover / selection highlighting", () => {
+  it("lights a hovered node and its neighbours while dimming the rest", () => {
+    // hub <-> n1 are wired; n2 is unconnected (not a neighbour of hub).
+    const nodes = [node("hub"), node("n1"), node("n2")];
+    const edges = [edge("hub", "n1", "routing")];
+
+    const { container } = render(
+      <GraphViewer {...baseProps} nodes={nodes} edges={edges} />,
+    );
+
+    // Idle: nothing is dimmed, the whole map reads at full strength.
+    expect(nodeOpacity(container, "hub")).toBe("1");
+    expect(nodeOpacity(container, "n1")).toBe("1");
+    expect(nodeOpacity(container, "n2")).toBe("1");
+
+    // Hover the hub: hub + its neighbour n1 stay lit, the unrelated n2 recedes.
+    fireEvent.mouseEnter(nodeGroup(container, "hub"));
+    expect(nodeOpacity(container, "hub")).toBe("1");
+    expect(nodeOpacity(container, "n1")).toBe("1");
+    expect(nodeOpacity(container, "n2")).toBe("0.2");
+
+    // Leaving clears the spotlight so the map returns to full strength.
+    fireEvent.mouseLeave(nodeGroup(container, "hub"));
+    expect(nodeOpacity(container, "n2")).toBe("1");
+  });
+
+  it("dims everything except the selected node and lights its wiring", () => {
+    // Selection is sharper than hover: only the selected node stays lit (even a
+    // direct neighbour recedes), but the edge touching it is highlighted.
+    const nodes = [node("hub"), node("n1"), node("n2")];
+    const edges = [edge("hub", "n1", "routing")];
+
+    const { container } = render(
+      <GraphViewer
+        {...baseProps}
+        nodes={nodes}
+        edges={edges}
+        selectedNodeId="hub"
+      />,
+    );
+
+    expect(nodeOpacity(container, "hub")).toBe("1");
+    expect(nodeOpacity(container, "n1")).toBe("0.2");
+    expect(nodeOpacity(container, "n2")).toBe("0.2");
+
+    // The routing edge touching the selection reveals its living-pipeline bead
+    // (the same hover/selection escape hatch the bead-cap suite relies on).
+    expect(beads(container).length).toBe(1);
+  });
+});
+
+describe("GraphViewer service-line lens", () => {
+  // a -> b lives entirely inside the lit cluster; b -> c leaves it.
+  const lensNodes = [node("a"), node("b", "workflow"), node("c", "workflow")];
+  const lensEdges = [edge("a", "b", "flow"), edge("b", "c", "flow")];
+
+  it("lights only the chosen cluster and culls wiring that leaves it", () => {
+    const { container } = render(
+      <GraphViewer
+        {...baseProps}
+        nodes={lensNodes}
+        edges={lensEdges}
+        lensNodeIds={new Set(["a", "b"])}
+      />,
+    );
+
+    // The lens lights its cluster (a, b) and dims everything outside it (c).
+    expect(nodeOpacity(container, "a")).toBe("1");
+    expect(nodeOpacity(container, "b")).toBe("1");
+    expect(nodeOpacity(container, "c")).toBe("0.2");
+
+    // Only the wholly-internal a->b edge is drawn; b->c (leaving the cluster)
+    // is culled. Without the lens both flow edges would be visible at scale 1.
+    expect(staticEdges(container, "flow").length).toBe(1);
+  });
+
+  it("yields to an active live run, which takes precedence over the lens", () => {
+    const { container } = render(
+      <GraphViewer
+        {...baseProps}
+        nodes={lensNodes}
+        edges={lensEdges}
+        lensNodeIds={new Set(["a", "b"])}
+        involvedNodeIds={new Set(["c"])}
+      />,
+    );
+
+    // The run spotlight wins: the involved node (c) is lit and the lens cluster
+    // (a, b) recedes — the exact inverse of the lens-only framing above.
+    expect(nodeOpacity(container, "c")).toBe("1");
+    expect(nodeOpacity(container, "a")).toBe("0.2");
+    expect(nodeOpacity(container, "b")).toBe("0.2");
+
+    // With the lens inactive its edge-culling no longer applies, so the wiring
+    // it would have hidden (b->c) is drawn again.
+    expect(staticEdges(container, "flow").length).toBe(2);
+  });
+});
+
+describe("GraphViewer search highlighting", () => {
+  it("lights nodes whose title matches the query and dims the rest", () => {
+    const nodes = [node("alpha-one"), node("alpha-two"), node("beta")];
+    const edges = [edge("alpha-one", "alpha-two", "routing")];
+
+    const { container } = render(
+      <GraphViewer
+        {...baseProps}
+        nodes={nodes}
+        edges={edges}
+        searchQuery="alpha"
+      />,
+    );
+
+    // Both matches stay lit; the non-matching node recedes.
+    expect(nodeOpacity(container, "alpha-one")).toBe("1");
+    expect(nodeOpacity(container, "alpha-two")).toBe("1");
+    expect(nodeOpacity(container, "beta")).toBe("0.2");
+  });
+
+  it("matches case-insensitively", () => {
+    const nodes = [node("Copywriter"), node("Strateeg")];
+
+    const { container } = render(
+      <GraphViewer
+        {...baseProps}
+        nodes={nodes}
+        edges={[]}
+        searchQuery="COPY"
+      />,
+    );
+
+    expect(nodeOpacity(container, "Copywriter")).toBe("1");
+    expect(nodeOpacity(container, "Strateeg")).toBe("0.2");
   });
 });

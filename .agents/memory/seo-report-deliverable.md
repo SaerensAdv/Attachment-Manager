@@ -28,6 +28,12 @@ The report is delivered as TWO PDFs: a SHORT plain-language client PDF (4 sectio
 - `render-seo-pdf.ts --recompute` re-derives the split from `final_markdown` + stored `team_titles` with `humanizerRan=false`; it is a rescue tool only and is NOT equivalent to live splitting for archived runs where the humanizer actually ran.
 - The SEO PDF KPI header band (report-pdf.ts, `reportType:"seo"`) still shows PageSpeed/LCP from the metrics snapshot — that is a headline metric, not report body, and is independent of the text split.
 
+## Internal werklijst is SENT to the owner (not drafted, never to the client)
+On approval of an SEO report, the internal werklijst PDF is sent straight to `OWNER_EMAIL` — a real send (`sendEmail`), not a Gmail draft, because the only recipient is the agency owner himself. The client report stays a Gmail draft.
+
+**Why:** the werklijst is agency+webbouwer-only technical detail; attaching it to the client mail (or CC) would leak it. Sending only to the owner is safe and matches the owner's explicit "stuur ze naar mezelf" request.
+**How to apply:** the send lives in the approve route AFTER the client draft is committed (approval flipped, pending snapshot cleared), in a best-effort block that turns a `no-owner-email` skip OR any throw into a `recordAlert` "Te doen" warning — it must NEVER revert/block the already-approved client delivery. At-most-once falls out of the approval claim: pending is cleared on success, so a retry gets 409 and can't re-send. The reusable core is `sendSeoWorklistToOwner()` (seo-report-email.ts): guards (no-worklist / no-owner) return `{status:"skipped",reason}`, it throws only on a real Gmail failure. Uses `reportType:"internal"` for the cover.
+
 ## Cadence is derived from the workflow filename
 Monthly vs quarterly is decided by `workflowPath.includes("quarterly")` in the orchestrator.
 **How to apply:** the quarterly workflow file must keep "quarterly" in its path (`workflows/seo-quarterly-reporting.md`); renaming it silently downgrades runs to monthly. Frontend quarterly preset cron is `0 9 1 1,4,7,10 *` (1st of Jan/Apr/Jul/Oct, Europe/Brussels); the Planning.tsx cron helpers must match on the month field so quarterly is not misread as monthly.

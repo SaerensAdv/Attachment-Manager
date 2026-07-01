@@ -27,7 +27,9 @@ import {
 import {
   draftSeoReport,
   parseSeoReportDeliveryPayload,
+  sendSeoWorklistToOwner,
 } from "../lib/seo-report-email";
+import { recordAlert } from "../lib/alerts-store";
 import type { CreateDraftResult } from "../lib/email";
 import {
   recordOutboundThread,
@@ -465,6 +467,37 @@ router.post("/generations/:id/approve", async (req, res) => {
     charCount: null,
     errorMessage: null,
   });
+
+  // Best-effort: for an approved SEO report, also SEND the internal "werklijst"
+  // (the technical actions) straight to the agency owner — never to the client.
+  // The client draft is already committed above, so a failure here must not
+  // revert it; it becomes a "Te doen" alert instead. Runs at most once because
+  // the pending snapshot was cleared on approval (no retry re-enters this path).
+  if (seoReport) {
+    try {
+      const wl = await sendSeoWorklistToOwner(seoReport);
+      if (wl.status === "skipped" && wl.reason === "no-owner-email") {
+        await recordAlert({
+          source: "seo-report",
+          severity: "warn",
+          message:
+            "Interne werklijst niet verstuurd: stel OWNER_EMAIL in om ze te ontvangen.",
+          context: { key: "worklist-no-owner", generationId: id },
+        });
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      await recordAlert({
+        source: "seo-report",
+        severity: "warn",
+        message: `Interne werklijst kon niet naar het bureau verstuurd worden: ${message.slice(
+          0,
+          200,
+        )}`,
+        context: { key: `worklist-send:${id}`, generationId: id },
+      });
+    }
+  }
 
   // Best-effort: record/advance the e-mail conversation from the DRAFT's
   // threadId. Gmail keeps that threadId when the owner sends the draft, so the

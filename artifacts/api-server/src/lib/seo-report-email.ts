@@ -1,14 +1,17 @@
 import { renderReportPdf } from "./report-pdf";
 import {
   createGmailDraft,
+  sendEmail,
   type CreateDraftResult,
   type SendEmailInput,
 } from "./email";
 import type { SeoReportCadence, SeoReportMetrics } from "./seo-report-data";
 import {
   buildBrandedEmail,
+  escapeHtml,
   resolveHeadPortrait,
 } from "./monthly-report-email";
+import { ownerEmail } from "./email-identity";
 import { SAERENS_LOGO_CID, saerensLogoInlineImage } from "./brand-logo";
 
 /**
@@ -210,4 +213,62 @@ export async function draftSeoReport(
   payload: SeoReportDeliveryPayload,
 ): Promise<CreateDraftResult> {
   return createGmailDraft(await buildSeoReportEmailInput(payload));
+}
+
+/**
+ * Render the internal "werklijst" (the technical actions for the agency + web
+ * developer) as its own branded PDF (reportType "internal") and SEND it straight
+ * to the agency owner (OWNER_EMAIL) — never to the client. Called alongside the
+ * client-report draft at approval time so the owner gets the technical follow-up
+ * list in his own inbox. Sent directly (not drafted) because the only recipient
+ * is the owner himself.
+ *
+ * Best-effort by contract: returns `{ status: "sent" }` on success, or
+ * `{ status: "skipped", reason }` when there is nothing to send (no worklist
+ * captured) or no owner address is configured. Throws ONLY when the Gmail send
+ * itself fails, so the caller can turn that into a "Te doen" alert without ever
+ * reverting the already-approved client delivery.
+ */
+export async function sendSeoWorklistToOwner(
+  payload: SeoReportDeliveryPayload,
+): Promise<{ status: "sent" | "skipped"; reason?: string }> {
+  const worklist = payload.internalWorklist?.trim();
+  if (!worklist) return { status: "skipped", reason: "no-worklist" };
+  const owner = ownerEmail();
+  if (!owner) return { status: "skipped", reason: "no-owner-email" };
+
+  const subtitlePrefix =
+    payload.cadence === "quarterly" ? "SEO-kwartaalrapport" : "SEO-maandrapport";
+  const pdf = await renderReportPdf(worklist, {
+    clientName: payload.clientName,
+    subtitle: `Interne werklijst — ${payload.periodLabel}`,
+    dateLabel: payload.dateLabel,
+    reportType: "internal",
+  });
+
+  const cadenceSlug = payload.cadence === "quarterly" ? "kwartaal" : "maand";
+  const slug = payload.clientName
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+  const filename = `interne-werklijst-${slug}-${cadenceSlug}.pdf`;
+
+  const safeName = escapeHtml(payload.clientName);
+  const safePeriod = escapeHtml(payload.periodLabel);
+  const html =
+    `<!doctype html><html><body style="font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.6;color:#1a1a1a;">` +
+    `<p>Interne werklijst voor <strong>${safeName}</strong> — ${safePeriod}.</p>` +
+    `<p>De technische actiepunten voor het bureau en de webbouwer staan in de bijgevoegde PDF. Deze lijst gaat niet naar de klant.</p>` +
+    `<p style="color:#666;">Automatisch verstuurd na goedkeuring van het ${escapeHtml(
+      subtitlePrefix.toLowerCase(),
+    )} — Saerens Advertising.</p>` +
+    `</body></html>`;
+
+  await sendEmail({
+    to: owner,
+    subject: `Interne werklijst — ${payload.clientName} — ${payload.periodLabel}`,
+    html,
+    attachments: [{ filename, mimeType: "application/pdf", content: pdf }],
+  });
+  return { status: "sent" };
 }

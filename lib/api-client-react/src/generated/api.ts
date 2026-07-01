@@ -20,6 +20,7 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AcceptProposalResult,
   AgentRunList,
   AgentStats,
   AuthUserEnvelope,
@@ -4269,9 +4270,9 @@ export const getAcceptProposalUrl = (id: number,) => {
 /**
  * @summary Accept and apply an improvement proposal
  */
-export const acceptProposal = async (id: number, options?: RequestInit): Promise<ImprovementProposal> => {
+export const acceptProposal = async (id: number, options?: RequestInit): Promise<AcceptProposalResult> => {
 
-  return customFetch<ImprovementProposal>(getAcceptProposalUrl(id),
+  return customFetch<AcceptProposalResult>(getAcceptProposalUrl(id),
   {
     ...options,
     method: 'POST'

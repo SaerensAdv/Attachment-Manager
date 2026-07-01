@@ -15,6 +15,7 @@ import {
   dbClientIdFromPath,
 } from "./clients-store";
 import { listAcceptedProposals } from "./proposals-store";
+import { recordAlert } from "./alerts-store";
 import { logger } from "./logger";
 
 /** Heading for the non-destructive, agent-managed "learned rules" section. */
@@ -175,10 +176,29 @@ export async function generateProposals(
   return drafts;
 }
 
+/**
+ * Result of applying a rule. `changed` is true when this call actually wrote the
+ * rule, false when it was already present (the apply is idempotent). The route
+ * uses it to tell the operator "toegevoegd" vs "stond er al".
+ */
+export interface ApplyResult {
+  changed: boolean;
+}
+
+/** Resolve + guard a doc path to an absolute .md path inside the docs root. */
+function resolveDocPath(targetPath: string): string {
+  const root = getDocsRoot();
+  const abs = resolve(root, targetPath);
+  if (!abs.startsWith(resolve(root) + "/") || !abs.endsWith(".md")) {
+    throw new Error("Ongeldig documentpad voor deze verbetering.");
+  }
+  return abs;
+}
+
 async function applyToClient(
   clientId: number,
   proposedText: string,
-): Promise<void> {
+): Promise<ApplyResult> {
   const [client] = await db
     .select()
     .from(clientsTable)
@@ -188,48 +208,79 @@ async function applyToClient(
   }
   const existing = client.restrictions?.trim() ?? "";
   const addition = proposedText.trim();
-  if (existing.includes(addition)) return;
+  if (existing.includes(addition)) return { changed: false };
   const next = existing ? `${existing}\n${addition}` : addition;
   await db
     .update(clientsTable)
     .set({ restrictions: next, updatedAt: new Date() })
     .where(eq(clientsTable.id, clientId));
+  return { changed: true };
 }
 
-function applyToFile(targetPath: string, proposedText: string): void {
-  const root = getDocsRoot();
-  const abs = resolve(root, targetPath);
-  if (!abs.startsWith(resolve(root) + "/") || !abs.endsWith(".md")) {
-    throw new Error("Ongeldig documentpad voor deze verbetering.");
-  }
+function applyToFile(targetPath: string, proposedText: string): ApplyResult {
+  const abs = resolveDocPath(targetPath);
   if (!existsSync(abs)) {
     throw new Error("Doeldocument bestaat niet meer.");
   }
   const content = readFileSync(abs, "utf8");
   const bullet = `- ${proposedText.trim()}`;
-  if (content.includes(bullet)) return;
+  if (content.includes(bullet)) return { changed: false };
   const trimmed = content.replace(/\s+$/, "");
   const next = trimmed.includes(MANAGED_SECTION)
     ? `${trimmed}\n${bullet}\n`
     : `${trimmed}\n\n${MANAGED_SECTION}\n\n${bullet}\n`;
   writeFileSync(abs, next, "utf8");
+  return { changed: true };
 }
 
 /**
  * Apply an accepted proposal non-destructively: DB clients get the rule
  * appended to their restrictions field; knowledge/file docs get it appended as
- * a bullet under a managed "Geleerde regels" section.
+ * a bullet under a managed "Geleerde regels" section. Returns whether this call
+ * actually changed anything (vs the rule already being present).
  */
 export async function applyProposal(
   proposal: ImprovementProposal,
-): Promise<void> {
+): Promise<ApplyResult> {
   if (isDbClientPath(proposal.targetPath)) {
     const id = dbClientIdFromPath(proposal.targetPath);
     if (id === null) throw new Error("Ongeldig klantpad voor deze verbetering.");
-    await applyToClient(id, proposal.proposedText);
-    return;
+    return applyToClient(id, proposal.proposedText);
   }
-  applyToFile(proposal.targetPath, proposal.proposedText);
+  return applyToFile(proposal.targetPath, proposal.proposedText);
+}
+
+/**
+ * Honest double-check that an accepted proposal's rule is *actually* present in
+ * its target right now — re-reads the on-disk doc (or the client's restrictions
+ * in the DB) instead of trusting that the apply write succeeded. Best-effort and
+ * never throws: any read error or a since-deleted target reads as not present,
+ * so the accept route can report "toegepast, niet kunnen bevestigen" rather than
+ * crash. This is what backs the operator-facing "bevestigd in het document".
+ */
+export async function verifyProposalApplied(
+  proposal: ImprovementProposal,
+): Promise<{ present: boolean }> {
+  try {
+    const needle = proposal.proposedText.trim();
+    if (!needle) return { present: false };
+    if (isDbClientPath(proposal.targetPath)) {
+      const id = dbClientIdFromPath(proposal.targetPath);
+      if (id === null) return { present: false };
+      const [client] = await db
+        .select()
+        .from(clientsTable)
+        .where(eq(clientsTable.id, id));
+      const restrictions = client?.restrictions ?? "";
+      return { present: restrictions.includes(needle) };
+    }
+    const abs = resolveDocPath(proposal.targetPath);
+    if (!existsSync(abs)) return { present: false };
+    const content = readFileSync(abs, "utf8");
+    return { present: content.includes(`- ${needle}`) };
+  } catch {
+    return { present: false };
+  }
 }
 
 /**
@@ -276,10 +327,25 @@ export async function reapplyAcceptedFileProposals(): Promise<{
       applied++;
     } catch (err) {
       skipped++;
+      const detail = err instanceof Error ? err.message : String(err);
       logger.warn(
         { err, targetPath: proposal.targetPath, proposalId: proposal.id },
         "Geleerde regel niet hersteld: doeldocument ontbreekt of is onleesbaar",
       );
+      // Surface the orphaned rule in the "Te doen" overview: an accepted rule
+      // whose target doc was later removed silently drops out of effect, which
+      // the operator otherwise never sees. Best-effort; dedup per target path.
+      await recordAlert({
+        source: "learning-loop",
+        severity: "warn",
+        message: `Geleerde regel niet toegepast: doeldocument '${proposal.targetPath}' bestaat niet meer`,
+        context: {
+          key: proposal.targetPath,
+          proposalId: proposal.id,
+          targetPath: proposal.targetPath,
+          detail,
+        },
+      });
     }
   }
   return { applied, skipped };

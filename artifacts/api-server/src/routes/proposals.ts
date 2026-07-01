@@ -4,7 +4,7 @@ import {
   claimProposalStatus,
   revertProposalToPending,
 } from "../lib/proposals-store";
-import { applyProposal } from "../lib/improvements";
+import { applyProposal, verifyProposalApplied } from "../lib/improvements";
 import { serializeProposal } from "./generations";
 
 const router: IRouter = Router();
@@ -33,18 +33,34 @@ router.post("/proposals/:id/accept", async (req, res) => {
     }
     return;
   }
+  let changed: boolean;
   try {
-    await applyProposal(claimed);
+    ({ changed } = await applyProposal(claimed));
   } catch (err) {
-    // Apply failed: undo the claim so the proposal stays actionable.
-    await revertProposalToPending(id);
+    // Apply failed: undo the claim so the proposal stays actionable. The revert
+    // itself is best-effort — even if it throws, the user must still get the
+    // actionable 502 detail rather than an opaque 500.
+    try {
+      await revertProposalToPending(id);
+    } catch {
+      // swallow — surfacing the original apply failure matters more here
+    }
     res.status(502).json({
       error: "Het toepassen van de verbetering is mislukt.",
       detail: err instanceof Error ? err.message : String(err),
     });
     return;
   }
-  res.json(serializeProposal(claimed));
+  // Honest double-check: re-read the target and confirm the rule really landed,
+  // so the UI can show "bevestigd in het document" instead of blindly trusting
+  // the write. Best-effort — a false here never fails the (already-applied)
+  // request, it just downgrades the confirmation copy.
+  const { present } = await verifyProposalApplied(claimed);
+  res.json({
+    proposal: serializeProposal(claimed),
+    changed,
+    verified: present,
+  });
 });
 
 router.post("/proposals/:id/reject", async (req, res) => {

@@ -1505,11 +1505,11 @@ paths:
             type: integer
       responses:
         "200":
-          description: The accepted proposal
+          description: The accepted proposal, with a verified apply result
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ImprovementProposal"
+                $ref: "#/components/schemas/AcceptProposalResult"
         "404":
           description: Proposal not found
           content:
@@ -3360,6 +3360,18 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ImprovementProposal"
+    AcceptProposalResult:
+      type: object
+      required: [proposal, changed, verified]
+      properties:
+        proposal:
+          $ref: "#/components/schemas/ImprovementProposal"
+        changed:
+          type: boolean
+          description: "true als de regel nu nieuw is toegevoegd; false als hij er al stond."
+        verified:
+          type: boolean
+          description: "true als een herlezing bevestigt dat de regel effectief in het doeldocument (of de klantrestricties) staat."
     SystemAlert:
       type: object
       required:

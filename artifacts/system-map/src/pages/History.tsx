@@ -113,6 +113,29 @@ function snippet(text: string, max = 120): string {
   return clean.length > max ? clean.slice(0, max).trimEnd() + "…" : clean;
 }
 
+/**
+ * Pull a human-readable Dutch message out of a failed API mutation. The
+ * generated client throws an ApiError whose `.data` is the parsed JSON error
+ * body ({ error, detail }); we prefer that over the raw "HTTP 502 ..." message
+ * so the operator sees, e.g., "Doeldocument bestaat niet meer."
+ */
+function errorDetail(err: unknown): string {
+  if (err && typeof err === "object") {
+    const data = (err as { data?: unknown }).data;
+    if (data && typeof data === "object") {
+      const d = data as Record<string, unknown>;
+      const detail = typeof d.detail === "string" ? d.detail.trim() : "";
+      const error = typeof d.error === "string" ? d.error.trim() : "";
+      if (error && detail) return `${error} ${detail}`;
+      if (detail) return detail;
+      if (error) return error;
+    }
+    const msg = (err as { message?: unknown }).message;
+    if (typeof msg === "string" && msg.trim()) return msg.trim();
+  }
+  return "Onbekende fout. Probeer het opnieuw.";
+}
+
 export default function History() {
   const queryClient = useQueryClient();
   const { data, isLoading, error } = useGetGenerations();
@@ -157,6 +180,16 @@ export default function History() {
   const createProposalsMut = useCreateProposals();
   const acceptMut = useAcceptProposal();
   const rejectMut = useRejectProposal();
+
+  // Confirmation shown after a proposal is applied, so the operator sees exactly
+  // what happened (added vs already present) and whether the change was verified
+  // in the target document. Keyed by proposal id; scoped to the open edition.
+  const [applyFeedback, setApplyFeedback] = useState<{
+    id: number;
+    changed: boolean;
+    verified: boolean;
+    targetLabel: string;
+  } | null>(null);
 
   const [verdict, setVerdict] = useState<"approved" | "rejected" | null>(null);
   const [note, setNote] = useState("");
@@ -280,10 +313,28 @@ export default function History() {
     );
   };
 
-  const handleAccept = (id: number) =>
-    acceptMut.mutate({ id }, { onSuccess: refetchProposals });
-  const handleReject = (id: number) =>
+  const handleAccept = (id: number) => {
+    const target = proposals.find((p) => p.id === id);
+    setApplyFeedback(null);
+    acceptMut.mutate(
+      { id },
+      {
+        onSuccess: (data) => {
+          setApplyFeedback({
+            id,
+            changed: data.changed,
+            verified: data.verified,
+            targetLabel: data.proposal.targetLabel ?? target?.targetLabel ?? "",
+          });
+          refetchProposals();
+        },
+      },
+    );
+  };
+  const handleReject = (id: number) => {
+    setApplyFeedback(null);
     rejectMut.mutate({ id }, { onSuccess: refetchProposals });
+  };
 
   if (isLoading) {
     return (
@@ -933,6 +984,60 @@ export default function History() {
                                       : "Afgewezen"}
                                   </span>
                                 )}
+
+                                {applyFeedback?.id === p.id && (
+                                  <div
+                                    data-testid={`apply-feedback-${p.id}`}
+                                    className={`mt-3 border-l-2 px-4 py-3 text-sm font-['Inter'] ${
+                                      applyFeedback.verified
+                                        ? "border-green-700 bg-green-700/5 text-green-800"
+                                        : "border-amber-700 bg-amber-700/5 text-amber-800"
+                                    }`}
+                                  >
+                                    <p className="flex items-center gap-2 font-['Space_Mono'] text-[9px] uppercase tracking-widest mb-1">
+                                      <Check className="w-3.5 h-3.5" />
+                                      {applyFeedback.changed
+                                        ? "Regel toegevoegd"
+                                        : "Regel stond er al"}
+                                    </p>
+                                    <p>
+                                      {applyFeedback.changed
+                                        ? `De regel is toegevoegd aan "${applyFeedback.targetLabel}".`
+                                        : `Deze regel stond al in "${applyFeedback.targetLabel}".`}{" "}
+                                      {applyFeedback.verified
+                                        ? "Bevestigd: de regel staat nu effectief in het document."
+                                        : "Let op: we konden niet automatisch bevestigen dat de regel in het document staat. Controleer het document."}
+                                    </p>
+                                  </div>
+                                )}
+
+                                {acceptMut.isError &&
+                                  acceptMut.variables?.id === p.id && (
+                                    <div
+                                      data-testid={`accept-error-${p.id}`}
+                                      className="mt-3 border-l-2 border-destructive bg-destructive/5 px-4 py-3 text-sm font-['Inter'] text-destructive"
+                                    >
+                                      <p className="flex items-center gap-2 font-['Space_Mono'] text-[9px] uppercase tracking-widest mb-1">
+                                        <AlertTriangle className="w-3.5 h-3.5" />
+                                        Toepassen mislukt
+                                      </p>
+                                      <p>{errorDetail(acceptMut.error)}</p>
+                                    </div>
+                                  )}
+
+                                {rejectMut.isError &&
+                                  rejectMut.variables?.id === p.id && (
+                                    <div
+                                      data-testid={`reject-error-${p.id}`}
+                                      className="mt-3 border-l-2 border-destructive bg-destructive/5 px-4 py-3 text-sm font-['Inter'] text-destructive"
+                                    >
+                                      <p className="flex items-center gap-2 font-['Space_Mono'] text-[9px] uppercase tracking-widest mb-1">
+                                        <AlertTriangle className="w-3.5 h-3.5" />
+                                        Afwijzen mislukt
+                                      </p>
+                                      <p>{errorDetail(rejectMut.error)}</p>
+                                    </div>
+                                  )}
                               </div>
                             );
                           })}

@@ -2206,6 +2206,7 @@ export const AcceptProposalParams = zod.object({
 })
 
 export const AcceptProposalResponse = zod.object({
+  "proposal": zod.object({
   "id": zod.number(),
   "generationId": zod.number(),
   "targetType": zod.string().describe('knowledge (an agency-wide standard) or client (this client only).'),
@@ -2216,6 +2217,9 @@ export const AcceptProposalResponse = zod.object({
   "status": zod.string().describe('pending, accepted, or rejected.'),
   "createdAt": zod.coerce.date(),
   "decidedAt": zod.coerce.date().nullable()
+}),
+  "changed": zod.boolean().describe('true als de regel nu nieuw is toegevoegd; false als hij er al stond.'),
+  "verified": zod.boolean().describe('true als een herlezing bevestigt dat de regel effectief in het doeldocument (of de klantrestricties) staat.')
 })
 
 

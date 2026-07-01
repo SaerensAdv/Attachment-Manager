@@ -1029,6 +1029,14 @@ export interface ProposalList {
   proposals: ImprovementProposal[];
 }
 
+export interface AcceptProposalResult {
+  proposal: ImprovementProposal;
+  /** true als de regel nu nieuw is toegevoegd; false als hij er al stond. */
+  changed: boolean;
+  /** true als een herlezing bevestigt dat de regel effectief in het doeldocument (of de klantrestricties) staat. */
+  verified: boolean;
+}
+
 /**
  * @nullable
  */

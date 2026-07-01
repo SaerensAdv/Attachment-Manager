@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './acceptProposalResult';
 export * from './agentRun';
 export * from './agentRunList';
 export * from './agentStats';

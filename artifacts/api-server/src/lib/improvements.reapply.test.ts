@@ -19,6 +19,13 @@ vi.mock("./proposals-store", () => ({
   listAcceptedProposals: listAcceptedProposalsMock,
 }));
 
+const recordAlertMock = vi.hoisted(() =>
+  vi.fn(async (_input: unknown) => {}),
+);
+vi.mock("./alerts-store", () => ({
+  recordAlert: recordAlertMock,
+}));
+
 const existsSyncMock = vi.hoisted(() => vi.fn((_p: string) => true));
 const readFileSyncMock = vi.hoisted(() => vi.fn((_p: string) => "# Doc\n"));
 const writeFileSyncMock = vi.hoisted(() => vi.fn());
@@ -81,6 +88,8 @@ beforeEach(() => {
   readFileSyncMock.mockReset();
   readFileSyncMock.mockReturnValue("# Doc\n");
   writeFileSyncMock.mockReset();
+  recordAlertMock.mockReset();
+  recordAlertMock.mockResolvedValue(undefined);
 });
 
 describe("reapplyAcceptedFileProposals", () => {
@@ -143,6 +152,17 @@ describe("reapplyAcceptedFileProposals", () => {
 
     expect(res).toEqual({ applied: 1, skipped: 1 });
     expect(writeFileSyncMock).toHaveBeenCalledTimes(1);
+    // The orphaned rule (its doc was removed) must surface as an alert so the
+    // operator sees it dropped out of effect, keyed by its target path.
+    expect(recordAlertMock).toHaveBeenCalledTimes(1);
+    const alert = recordAlertMock.mock.calls[0][0] as {
+      source: string;
+      severity: string;
+      context?: { key?: string };
+    };
+    expect(alert.source).toBe("learning-loop");
+    expect(alert.severity).toBe("warn");
+    expect(alert.context?.key).toBe("knowledge/gone.md");
   });
 
   it("degrades to a no-op when the proposals table is unreadable", async () => {

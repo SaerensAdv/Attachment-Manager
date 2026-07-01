@@ -1,41 +1,46 @@
 ---
 name: Triggering autonomous/long runs reliably
-description: Why HTTP-client triggers of long multi-agent runs fail in this env, and the reliable path
+description: How to fire long multi-agent runs server-side from the agent shell, and why polling too early looks like failure
 ---
 
-# Triggering long multi-agent runs (foundation/team runs)
+# Triggering long multi-agent runs (foundation/team/report runs)
 
-Long multi-agent runs (e.g. web-build with 3 agents + deliverable) routinely
-exceed the bash tool's 120s ceiling and any practical curl `--max-time`.
+Long multi-agent runs (web-build, monthly/SEO report, etc.) routinely exceed the
+bash tool's 120s ceiling and any practical curl `--max-time`. They must run
+INSIDE the api-server (which has external egress + the LLM proxy); a plain
+bash/tsx process has NO external egress in this container, so anything that
+fetches Google/Bing/PageSpeed (e.g. `fetchSeoReportSnapshot`) HANGS from the
+shell. (Internal endpoints — the LLM proxy and Postgres — ARE reachable from
+bash.)
 
-**What does NOT work reliably from the agent shell:**
-- Backgrounding curl with `nohup ... &`: the Replit bash tool tears down detached
-  child processes (and their `/tmp` redirect files) when the command returns, so
-  the request is often never even sent. No generation row appears.
-- Foreground `curl --max-time N`: the request IS sent, but when curl disconnects
-  the server logs `request aborted` for `POST /api/generate/autonomous`. Even
-  though `autonomous.ts` builds an AbortController that it never aborts, in
-  practice no archived generation appeared after the client disconnect — do not
-  trust client-disconnect to leave the server run running.
+**`POST /api/generate/autonomous` DOES survive client disconnect (corrected).**
+- The route is secret-gated (`x-trigger-secret` == `AUTONOMOUS_TRIGGER_SECRET`)
+  and auth-exempt. It runs `runGeneration(...)` with an AbortController it NEVER
+  aborts and NO `req.on('close')` wiring, so when the triggering curl is torn
+  down the server logs `request aborted` (just the HTTP layer) but the run keeps
+  going and completes to an archived row + HELD `pendingDelivery` ~run-duration
+  later (observed ~6 min for an SEO report).
+- **Why the old note said "no archived row": polling too early.** Generations
+  become visible/archived only at the END of the run; there is no in-flight row
+  and the engine doesn't log per-step LLM activity to pino. Earlier sessions gave
+  up before the run finished. Fix = be patient and poll by max-id delta.
+- So: fire the autonomous POST (a detached curl is fine even though the tool
+  reaps it after the command returns — the request is already in flight), then
+  poll `SELECT ... FROM generations WHERE id > <preTriggerMax>` every ~90s for
+  several minutes until a `completed` row with `pending_delivery` appears.
 
-**Reliable path: fire server-side via the scheduler.**
-- The scheduler (`scheduler.ts`) `fire()` calls `runGeneration(...)` entirely
-  server-side, fully decoupled from any HTTP client lifetime, and `markRun`s the
-  outcome. Tick is every 60s with an initial 5s delay; a `ticking` guard skips
-  overlapping ticks.
-- `POST /api/schedules/:id/run-now` ALSO runs synchronously in the request
-  handler (awaits `runGeneration` then responds) — so it has the SAME client
-  timeout problem as autonomous. Prefer creating an enabled schedule whose cron
-  is due now and letting the 60s tick fire it, then poll `GET /api/generations`
-  for the new archived row (compare against the pre-trigger max id).
+**Scheduler is an equivalent fallback.** `scheduler.ts` `fire()` runs
+server-side, fully client-independent; tick every 60s (+5s initial delay),
+`ticking` guard. Insert an enabled `schedules` row whose `next_run_at` is in the
+past (cron_expr must be valid croner) and it fires on the next tick, recording
+`last_generation_id`. `POST /api/schedules/:id/run-now` awaits in the request
+handler, so it has the same client-timeout caveat as autonomous.
 
-**Verifying completion:** generations only become visible via `/api/generations`
-once archived at the end of the run; there is no in-flight progress over that
-endpoint, and the engine does not log per-step LLM activity to pino (only request
-logs + a final "Scheduled run finished"). So poll by max-id delta, be patient
-(several minutes), and check the api-server log for `Scheduled run finished` /
-`Scheduled run threw`.
-
-**Why:** burned multiple attempts (Jun 2026) on backgrounded + foreground curl
-that produced zero archived rows; the scheduler is the only client-independent
-trigger.
+**Rendering a report PDF locally without Gmail:** trigger the report deliverable
+server-side (autonomous or scheduler) with the client's `report_email` temporarily
+set so the hold path builds a full payload; it stops at the approval hold (never
+sends). Then render the PDF from that generation's `pending_delivery` with a
+DB-only script (see `scripts/render-seo-pdf.ts`: getGeneration →
+parseSeoReportDeliveryPayload → renderReportPdf) — no external egress needed.
+Afterwards restore `report_email` to its original value and delete the throwaway
+generation (+ its `generation_steps`) so no held approval lingers.

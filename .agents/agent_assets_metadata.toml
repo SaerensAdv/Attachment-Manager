@@ -359,3 +359,9 @@ id = "kRqMeNsakc55rQXEfYeCP"
 uri = "file://outputs/Axel-Saerens-resume.docx"
 type = "word_document"
 title = "Axel Saerens — Resume (Word / DOCX, final)"
+
+[[outputs]]
+id = "d41N7A29MUg-JUK1iHAIc"
+uri = "file://.local/exports/seo-maandrapport-beauty-icon.pdf"
+type = "pdf"
+title = "SEO-maandrapport — Beauty Icon (juni 2026)"

@@ -46,6 +46,13 @@ export interface SeoReportDeliveryPayload {
   emailBody: string;
   /** The client-facing report markdown that becomes the attached PDF. */
   clientReport: string;
+  /**
+   * The internal "werklijst" markdown — the technical actions for the agency +
+   * web developer, captured from the team's internal section. NEVER attached to
+   * the client e-mail; rendered as a separate internal PDF. Optional and
+   * back-compatible: older held payloads simply carry none.
+   */
+  internalWorklist?: string | null;
   /** Structured SEO snapshot; drives the PDF cover + charts + KPI strip. */
   metrics: SeoReportMetrics | null;
   // Sender identity (the responsible Head) + owner CC, snapshotted at run time
@@ -91,6 +98,11 @@ export function parseSeoReportDeliveryPayload(
     dateLabel: typeof p.dateLabel === "string" ? p.dateLabel : "",
     emailBody: typeof p.emailBody === "string" ? p.emailBody : "",
     clientReport,
+    internalWorklist:
+      typeof p.internalWorklist === "string" &&
+      p.internalWorklist.trim().length > 0
+        ? p.internalWorklist
+        : null,
     metrics: (p.metrics ?? null) as SeoReportMetrics | null,
     // Carry the snapshotted sender identity through, or the held draft would
     // lose its From/Cc/signature when re-read at approval time and send from

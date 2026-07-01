@@ -7,6 +7,7 @@ import {
 } from "./deliverables";
 import {
   extractFinalReport,
+  splitReportDeliverables,
   stripHumanizerMeta,
   toClientFacingReport,
 } from "./generation-text";
@@ -390,20 +391,21 @@ export async function runSeoReportEmailAction(
       throw new Error("Het team leverde geen rapport om te versturen.");
     }
 
-    // Client-facing version: the PDF + cover email must never contain
-    // unfinished "[AAN TE VULLEN]" placeholders or internal-only sections.
-    // No fallback to the raw body — if sanitizing leaves nothing, we refuse to
-    // send rather than risk leaking internal content to the client. When the
-    // Humanizer rewrote the draft (untruncated), prefer its section as the
-    // report body over the raw specialist sections.
+    // Split the team output into the SHORT client report (PDF + cover e-mail)
+    // and the separate INTERNAL werklijst (agency + web developer only). The
+    // client report is authored by the LEAD; later members only append internal
+    // detail. `splitReportDeliverables` is the single source of truth for this
+    // split (shared with the re-render script) — it prefers the Humanizer's
+    // rewrite when it ran untruncated, else the lead's bounded section, and
+    // harvests the werklijst from the whole team body. Both outputs pass through
+    // client-facing/worklist sanitisation, so no internal content leaks to the
+    // client and no QC meta bleeds into the werklijst.
     const reportHumanized = humanizedUntruncated(dc);
-    const reportTitles = reportHumanized
-      ? [...dc.memberTitles, dc.humanizerTitle]
-      : dc.memberTitles;
-    const reportFinal = reportHumanized
-      ? stripHumanizerMeta(extractFinalReport(teamWork, reportTitles))
-      : extractFinalReport(teamWork, reportTitles);
-    const clientReport = toClientFacingReport(reportFinal);
+    const { clientReport, internalWorklist } = splitReportDeliverables(teamWork, {
+      memberTitles: dc.memberTitles,
+      humanizerTitle: dc.humanizerTitle,
+      humanizerRan: reportHumanized,
+    });
     if (!clientReport) {
       throw new Error(
         "De klantgerichte rapportversie is leeg na het verwijderen van interne/placeholder-secties; rapport niet verzonden.",
@@ -477,6 +479,7 @@ export async function runSeoReportEmailAction(
       dateLabel,
       emailBody,
       clientReport,
+      internalWorklist,
       metrics: dc.reportSeoMetrics,
       fromName: identity?.displayName,
       fromAddress: identity?.address ?? undefined,

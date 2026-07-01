@@ -23,29 +23,37 @@ These mirror the Reporting Standards in `knowledge/measurement-reporting.md`:
 
 ## Structure of a report
 
-1. **Headline** — how the site's organic period went, in one or two sentences.
-2. **Key organic results** — clicks, impressions, average position, CTR for the period and the comparison period, with the change.
-3. **Technical health** — crawl signals and what changed since last time.
-4. **Page speed / Core Web Vitals** — current-state snapshot (flag it as a state, not a delta).
-5. **Bing / other engines** — where supplied.
-6. **What drove the results** — plain-language explanation of the main movements or trend.
-7. **What's planned next** — concrete next steps for the site for the coming period.
-8. **Notes & caveats** — data gaps, one-offs, unverified data.
+The client report is **short and plain-language** — a one-glance read, not a technical to-do list. It has four sections and nothing more:
 
-Depth flexes with the period: a quiet month warrants a short update, a quarter usually warrants a fuller trend read. The sections stay the same so reports stay comparable.
+1. **Kerncijfers in één oogopslag** — clicks, impressions, average position and CTR for the period, each with the change versus the comparison period (a clear up/down trend). Average position is a real 1-based rank; page speed, if mentioned at all, is a current-state snapshot, never a trend.
+2. **Hoogtepunten van de maand** — two or three concrete wins or notable movements, in plain language (e.g. "meer mensen vonden je via lokale zoekopdrachten"). Honest: if it was a quiet month, say so plainly.
+3. **Waar we komende maand op focussen** — two or three focus points for the coming period, written for the client, NOT as technical tasks. Describe the *goal and the payoff* ("we werken aan snellere productpagina's zodat bezoekers minder afhaken"), never the implementation ("LCP naar <2,5s, title tags herschrijven").
+4. **Top zoektermen** — the handful of search terms bringing the most organic traffic, with their clicks (and position where useful).
+
+Everything technical — per-page title tags, meta descriptions, headings, FAQ/schema markup, redirects/canonicals, Core Web Vitals fixes, crawl errors, the prioritized action list — belongs in the internal werklijst, NOT in the client report (see below).
+
+Depth flexes with the period: a quiet month is a short update, a quarter a fuller trend read. The four sections stay the same so reports stay comparable.
+
+## Tone
+
+Neutral and factual, with a light, reassuring undertone. Report the real numbers plainly; where results are positive, let them speak for themselves; where they dipped, state it calmly and point to the focus for next month. No hype, no spin, no emoji, no jargon.
+
+## Interne werklijst (niet voor de klant)
+
+All the technical, implementation-level detail lives here — the working document for the agency and the web developer, **never sent to the client**. Put it under a final heading titled exactly:
+
+`## Interne werklijst (niet voor de klant)`
+
+Everything under that heading is stripped from the client report (PDF + cover email) and kept as a separate internal werklijst. It holds the concrete actions, prioritized by impact and effort: per-page title/meta/H1 rewrites, internal-linking changes, FAQ/structured data, redirects and canonicals, Core Web Vitals fixes (LCP/CLS/TBT with targets), crawl errors to resolve, and anything needing human approval before it touches the live site. Be specific here — this is where the exact tasks and technical numbers belong.
 
 ## Client-facing completeness
 
-The report that goes to the client (the PDF and its cover email) must be **complete and self-contained** — the same bar as the Ads report. It must never contain placeholder markers ("[AAN TE VULLEN]", "TODO", empty fields) or internal-only sections. If a section cannot be completed from the available data, **omit it** rather than leaving a stub. Anything needing internal follow-up or human approval goes only under a final section titled exactly:
-
-`## Interne nota's (niet voor de klant)`
-
-Everything under that heading is stripped from the client PDF and email.
+The client report (the PDF and its cover email) must be **complete and self-contained** and contain only the four sections above. It must never contain placeholder markers ("[AAN TE VULLEN]", "TODO", empty fields), internal-only sections, or technical implementation detail. If a section cannot be completed from the available data, **omit it** rather than leaving a stub.
 
 ## Quality bar
 
 - Every number traces back to real supplied data. If you can't source it, don't report it.
 - Average position is a real rank; page speed is a current-state snapshot — never present either as something it isn't.
 - No promises about future rankings or traffic.
-- End with clear, actionable next steps for the site.
-- Anything implying a live-site or tracking change carries a **human approval** note in the internal section.
+- The client report stays short, plain-language and jargon-free; the concrete work lives in the internal werklijst.
+- Anything implying a live-site or tracking change carries a **human approval** note in the internal werklijst.

@@ -19,7 +19,7 @@ The regular monthly SEO/website reporting cycle for a client with organic search
 5. Read the supplied PageSpeed / Core Web Vitals current-state signals (these are a snapshot, not a delta).
 6. Include Bing / other-engine organic signals only when supplied.
 7. Explain the main movements in plain language, tracing any dip to its likely cause.
-8. Recommend concrete next steps for the site for the coming month.
+8. Recommend next steps: for the client, describe the goal and payoff in plain language; put the concrete technical actions in the internal werklijst.
 9. Flag any data gaps or caveats (missing period, unverified property, tracking issues).
 
 ## Agents involved
@@ -30,15 +30,15 @@ The regular monthly SEO/website reporting cycle for a client with organic search
 
 ## Required output
 
-Follow `knowledge/seo-reporting.md`. Must include:
+Follow `knowledge/seo-reporting.md`. The CLIENT report is short and plain-language — four sections only:
 
-- Headline — how the site's organic month went, in one or two sentences
-- Key organic results (clicks, impressions, average position, CTR) with month-over-month change
-- Technical health summary (crawl signals) and what changed
-- Page speed / Core Web Vitals current state
-- Bing / other-engine signals, where available
-- What drove the results — plain-language explanation
-- What's planned next for the site
-- Notes & caveats (data gaps, one-offs, unverified data)
+- **Kerncijfers in één oogopslag** — clicks, impressions, average position, CTR with the month-over-month change (clear up/down trend)
+- **Hoogtepunten van de maand** — two or three concrete wins or notable movements, in plain language
+- **Waar we komende maand op focussen** — two or three focus points written for the client (the goal and payoff), NOT technical tasks
+- **Top zoektermen** — the handful of search terms bringing the most organic traffic
 
-Use only the period data actually supplied — never invent organic figures for a missing comparison period; mark it "n/a". The client-facing report must contain no placeholders and no internal-only sections. Put anything needing internal follow-up or approval under a final `## Interne nota's (niet voor de klant)` section, which is stripped from the client PDF and email.
+Tone: neutral and factual, with a light, reassuring undertone. No jargon, no technical implementation detail, no emoji.
+
+Use only the period data actually supplied — never invent organic figures for a missing comparison period; mark it "n/a". The client-facing report must contain no placeholders, no internal-only sections and no technical jargon.
+
+All technical, implementation-level detail (crawl errors, per-page title/meta/H1 rewrites, structured data, redirects/canonicals, Core Web Vitals fixes with targets, the prioritized action list, anything needing human approval) goes under a final section titled exactly `## Interne werklijst (niet voor de klant)`. Everything under that heading is stripped from the client PDF and email and kept as a separate internal werklijst for the agency and the web developer.

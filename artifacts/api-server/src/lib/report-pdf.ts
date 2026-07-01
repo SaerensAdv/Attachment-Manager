@@ -49,8 +49,10 @@ export interface ReportPdfMeta {
   subtitle: string;
   /** Generation date, already formatted for display. */
   dateLabel: string;
-  /** Which report this is; drives the cover eyebrow, KPI cards and charts. */
-  reportType?: "ads" | "seo";
+  /** Which report this is; drives the cover eyebrow, KPI cards and charts.
+   * "internal" is the agency's interne werklijst — a plain branded cover with no
+   * KPI cards or charts. */
+  reportType?: "ads" | "seo" | "internal";
   /** Live Google Ads numbers — drive the Ads cover KPI cards and the charts. */
   metrics?: GoogleAdsMetrics | null;
   /** SEO snapshot — drives the SEO cover KPI cards and the charts. */
@@ -145,6 +147,14 @@ function buildSeoCoverModel(seo: SeoReportMetrics, eyebrow: string): CoverModel 
  * and footer source line appear only when the corresponding data is available.
  */
 function coverModel(meta: ReportPdfMeta): CoverModel {
+  if (meta.reportType === "internal") {
+    return {
+      eyebrow: "INTERNE WERKLIJST",
+      cards: [],
+      secondaryLine: null,
+      footerRight: null,
+    };
+  }
   if (meta.reportType === "seo") {
     const eyebrow =
       meta.seo?.cadence === "quarterly" ? "SEO-KWARTAALRAPPORT" : "SEO-RAPPORT";

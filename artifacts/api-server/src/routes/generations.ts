@@ -24,6 +24,10 @@ import {
   parseEmailReplyPayload,
   pendingDeliveryKind,
 } from "../lib/email-reply";
+import {
+  draftSeoReport,
+  parseSeoReportDeliveryPayload,
+} from "../lib/seo-report-email";
 import type { CreateDraftResult } from "../lib/email";
 import {
   recordOutboundThread,
@@ -92,7 +96,7 @@ function serializeSummary(g: Generation) {
  * what we propose to send back.
  */
 function summarizePendingDelivery(g: Generation): {
-  pendingDeliveryKind: "monthly-report" | "email-reply" | null;
+  pendingDeliveryKind: "monthly-report" | "email-reply" | "seo-report" | null;
   pendingEmailReply: {
     recipient: string;
     subject: string;
@@ -111,7 +115,10 @@ function summarizePendingDelivery(g: Generation): {
   }
   const kind = pendingDeliveryKind(raw);
   if (kind !== "email-reply") {
-    return { pendingDeliveryKind: "monthly-report", pendingEmailReply: null };
+    // The monthly-report and SEO-report drafts both surface as a held delivery
+    // with no reviewable inline reply — the client-facing content lives in the
+    // rendered PDF, not in the run row.
+    return { pendingDeliveryKind: kind, pendingEmailReply: null };
   }
   const reply = parseEmailReplyPayload(raw);
   return {
@@ -386,17 +393,26 @@ router.post("/generations/:id/approve", async (req, res) => {
           failVerb: "Concept aanmaken",
           failTail: "Concept blijft in afwachting.",
         }
-      : {
-          unreadable: "Het bewaarde rapport is onleesbaar; genereer opnieuw.",
-          doneTitle: "Maandrapport — concept klaargezet in Gmail",
-          failVerb: "Concept aanmaken",
-          failTail: "Concept blijft in afwachting.",
-        };
+      : kind === "seo-report"
+        ? {
+            unreadable: "Het bewaarde SEO-rapport is onleesbaar; genereer opnieuw.",
+            doneTitle: "SEO-rapport — concept klaargezet in Gmail",
+            failVerb: "Concept aanmaken",
+            failTail: "Concept blijft in afwachting.",
+          }
+        : {
+            unreadable: "Het bewaarde rapport is onleesbaar; genereer opnieuw.",
+            doneTitle: "Maandrapport — concept klaargezet in Gmail",
+            failVerb: "Concept aanmaken",
+            failTail: "Concept blijft in afwachting.",
+          };
 
   const report =
     kind === "monthly-report" ? parseReportDeliveryPayload(raw) : null;
   const reply = kind === "email-reply" ? parseEmailReplyPayload(raw) : null;
-  if (!report && !reply) {
+  const seoReport =
+    kind === "seo-report" ? parseSeoReportDeliveryPayload(raw) : null;
+  if (!report && !reply && !seoReport) {
     // Unreadable snapshot: release the claim back to pending (state must not be
     // stuck "approved" with a draft we never sent).
     await revertGenerationApprovalToPending(id);
@@ -404,14 +420,17 @@ router.post("/generations/:id/approve", async (req, res) => {
     return;
   }
 
-  // Claim is held; act now. Both the in-thread client reply and the monthly
-  // report are placed as Gmail DRAFTS under the agency mailbox — nothing is sent
-  // here; the owner does the final send from Gmail himself. On failure revert to
-  // pending so it can be retried; clear the held snapshot only once it succeeds.
+  // Claim is held; act now. The in-thread client reply, the monthly Ads report
+  // and the SEO report are all placed as Gmail DRAFTS under the agency mailbox —
+  // nothing is sent here; the owner does the final send from Gmail himself. On
+  // failure revert to pending so it can be retried; clear the held snapshot only
+  // once it succeeds.
   let draftResult: CreateDraftResult | null = null;
   try {
     if (reply) {
       draftResult = await draftEmailReply(reply);
+    } else if (seoReport) {
+      draftResult = await draftSeoReport(seoReport);
     } else if (report) {
       draftResult = await draftMonthlyReport(report);
     }
@@ -455,8 +474,12 @@ router.post("/generations/:id/approve", async (req, res) => {
   if (draftResult?.threadId) {
     try {
       const headAgentPath =
-        reply?.headAgentPath ?? report?.headAgentPath ?? row.leadAgentPath;
-      const subject = reply?.subject ?? report?.subject ?? "";
+        reply?.headAgentPath ??
+        report?.headAgentPath ??
+        seoReport?.headAgentPath ??
+        row.leadAgentPath;
+      const subject =
+        reply?.subject ?? report?.subject ?? seoReport?.subject ?? "";
       const thread = await recordOutboundThread({
         gmailThreadId: draftResult.threadId,
         clientPath: row.clientPath,

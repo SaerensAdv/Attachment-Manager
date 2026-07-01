@@ -31,6 +31,7 @@ Saerens serves two core worlds: **e-commerce** (category and product visibility,
 - Design **programmatic SEO** at scale where a clear keyword pattern exists (e.g. service-in-city, comparison, or glossary pages): a page template with genuine information gain per page, a hub-and-spoke internal-linking structure, and a crawlable rendering approach — never thin or duplicated pages.
 - Prioritize recommendations by expected impact and effort.
 - Coordinate measurement with `knowledge/measurement-reporting.md` (organic conversions, not just rankings).
+- For the recurring SEO/website results report (monthly or quarterly), interpret the organic movements, technical health, and page speed following `knowledge/seo-reporting.md`, alongside the Reporting Specialist.
 - Apply Saerens' SEO conventions in `knowledge/seo-web-content.md`.
 - Judge and recommend content quality against `knowledge/seo-web-content.md` (people-first, original, E-E-A-T): on-page content must be genuinely helpful, never thin or written for crawlers.
 

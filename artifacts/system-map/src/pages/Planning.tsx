@@ -23,17 +23,21 @@ import {
 import Reveal from "@/components/Reveal";
 import { toast } from "@/hooks/use-toast";
 
-type Frequency = "daily" | "weekly" | "monthly";
+type Frequency = "daily" | "weekly" | "monthly" | "quarterly";
 
 interface Option {
   path: string;
   title: string;
 }
 
+/** The months a quarterly preset fires in: Jan/Apr/Jul/Oct (start of each quarter). */
+const QUARTERLY_MONTHS = "1,4,7,10";
+
 const FREQ_LABEL: Record<Frequency, string> = {
   daily: "Dagelijks",
   weekly: "Wekelijks (maandag)",
   monthly: "Maandelijks (1e van de maand)",
+  quarterly: "Per kwartaal (1e van jan/apr/jul/okt)",
 };
 
 /** Build a cron expression from a friendly preset + HH:MM time. */
@@ -43,6 +47,7 @@ function buildCron(freq: Frequency, time: string): string {
   const m = Number(mStr);
   if (freq === "weekly") return `${m} ${h} * * 1`;
   if (freq === "monthly") return `${m} ${h} 1 * *`;
+  if (freq === "quarterly") return `${m} ${h} 1 ${QUARTERLY_MONTHS} *`;
   return `${m} ${h} * * *`;
 }
 
@@ -50,11 +55,15 @@ function buildCron(freq: Frequency, time: string): string {
 function describeCron(cron: string): string {
   const parts = cron.trim().split(/\s+/);
   if (parts.length !== 5) return cron;
-  const [m, h, dom, , dow] = parts;
+  const [m, h, dom, mon, dow] = parts;
   const time = `${h.padStart(2, "0")}:${m.padStart(2, "0")}`;
-  if (dom === "1" && dow === "*") return `Maandelijks op de 1e om ${time}`;
-  if (dom === "*" && dow === "1") return `Wekelijks (ma) om ${time}`;
-  if (dom === "*" && dow === "*") return `Dagelijks om ${time}`;
+  if (dom === "1" && mon === QUARTERLY_MONTHS && dow === "*")
+    return `Per kwartaal op de 1e (jan/apr/jul/okt) om ${time}`;
+  if (dom === "1" && mon === "*" && dow === "*")
+    return `Maandelijks op de 1e om ${time}`;
+  if (dom === "*" && mon === "*" && dow === "1")
+    return `Wekelijks (ma) om ${time}`;
+  if (dom === "*" && mon === "*" && dow === "*") return `Dagelijks om ${time}`;
   return cron;
 }
 
@@ -62,11 +71,16 @@ function describeCron(cron: string): string {
 function parseCron(cron: string): { frequency: Frequency; time: string } | null {
   const parts = cron.trim().split(/\s+/);
   if (parts.length !== 5) return null;
-  const [m, h, dom, , dow] = parts;
+  const [m, h, dom, mon, dow] = parts;
   const time = `${h.padStart(2, "0")}:${m.padStart(2, "0")}`;
-  if (dom === "1" && dow === "*") return { frequency: "monthly", time };
-  if (dom === "*" && dow === "1") return { frequency: "weekly", time };
-  if (dom === "*" && dow === "*") return { frequency: "daily", time };
+  if (dom === "1" && mon === QUARTERLY_MONTHS && dow === "*")
+    return { frequency: "quarterly", time };
+  if (dom === "1" && mon === "*" && dow === "*")
+    return { frequency: "monthly", time };
+  if (dom === "*" && mon === "*" && dow === "1")
+    return { frequency: "weekly", time };
+  if (dom === "*" && mon === "*" && dow === "*")
+    return { frequency: "daily", time };
   return null;
 }
 
@@ -442,6 +456,7 @@ export default function Planning() {
                       <option value="daily">Dagelijks</option>
                       <option value="weekly">Wekelijks (ma)</option>
                       <option value="monthly">Maandelijks (1e)</option>
+                      <option value="quarterly">Per kwartaal (1e jan/apr/jul/okt)</option>
                     </select>
                   </div>
                   <div>

@@ -6,6 +6,10 @@ describe("pendingDeliveryKind", () => {
     expect(pendingDeliveryKind({ kind: "email-reply" })).toBe("email-reply");
   });
 
+  it("treats an explicit seo-report tag as seo-report", () => {
+    expect(pendingDeliveryKind({ kind: "seo-report" })).toBe("seo-report");
+  });
+
   it("treats anything else (incl. legacy untagged) as monthly-report", () => {
     expect(pendingDeliveryKind({ recipient: "a@b.com" })).toBe("monthly-report");
     expect(pendingDeliveryKind({ kind: "monthly-report" })).toBe("monthly-report");

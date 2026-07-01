@@ -191,21 +191,32 @@ export function signatureBand(args: {
   );
 }
 
-/** Build a Saerens-branded, email-client-safe HTML body (inline styles only). */
+/** Build a Saerens-branded, email-client-safe HTML body (inline styles only).
+ * Report-agnostic: the eyebrow line and the (optional) KPI cells are supplied by
+ * the caller so the same template serves the Ads and SEO reports. */
 export function buildBrandedEmail(args: {
   clientName: string;
+  /** Small uppercase eyebrow, e.g. "Maandrapport Google Ads" / "SEO-rapport". */
+  eyebrow: string;
   periodLabel: string;
   dateLabel: string;
   bodyText: string;
-  metrics: GoogleAdsMetrics | null;
-  /** Footer signature (Head name + role); falls back to the agency line. */
+  /** Headline KPI cells for the top strip; omitted/empty renders no strip. */
+  kpis?: { label: string; value: string }[] | null;
+  /** Footer signature (Head name + role); falls back to `fallbackSignature`. */
   signature?: string;
+  /**
+   * Agency line shown when no Head signature is set. Caller-supplied so the
+   * channel is correct per report type (e.g. "· Google Ads" vs "· SEO &
+   * website"); defaults to the plain agency name.
+   */
+  fallbackSignature?: string;
   /** Content-ID of the Head's embedded portrait (footer signature only). */
   portraitCid?: string;
   /** Content-ID of the embedded SA logo (header lockup). */
   logoCid?: string;
 }): string {
-  const { clientName, periodLabel, dateLabel, bodyText, metrics } = args;
+  const { clientName, eyebrow, periodLabel, dateLabel, bodyText, kpis } = args;
   const NEARBLACK = "#0A0A0B";
   const INDIGO = "#29274E";
   const PURPLE = "#716BEB";
@@ -227,40 +238,7 @@ export function buildBrandedEmail(args: {
     .join("");
 
   let kpiBlock = "";
-  if (metrics) {
-    const cur = metrics.currency || "EUR";
-    const eur = (n: number, d = 0): string => {
-      try {
-        return new Intl.NumberFormat("nl-BE", {
-          style: "currency",
-          currency: cur,
-          minimumFractionDigits: d,
-          maximumFractionDigits: d,
-        }).format(n);
-      } catch {
-        return `${n.toFixed(d)} ${cur}`;
-      }
-    };
-    const intf = (n: number): string =>
-      new Intl.NumberFormat("nl-BE").format(Math.round(n));
-    const kpis: { label: string; value: string }[] = [
-      { label: "Adspend", value: eur(metrics.totals.cost) },
-      { label: "Leads", value: intf(metrics.totals.conversions) },
-      {
-        label: "Cost / lead",
-        value: metrics.totals.cpa !== null ? eur(metrics.totals.cpa, 2) : "n.v.t.",
-      },
-      {
-        label: "ROAS",
-        value:
-          metrics.totals.roas !== null
-            ? `${new Intl.NumberFormat("nl-BE", {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              }).format(metrics.totals.roas)}×`
-            : "n.v.t.",
-      },
-    ];
+  if (kpis && kpis.length > 0) {
     const cells = kpis
       .map(
         (k) =>
@@ -293,7 +271,9 @@ export function buildBrandedEmail(args: {
     `</td></tr>` +
     // title
     `<tr><td style="padding:28px 32px 6px;">` +
-    `<div style="font-family:Arial,Helvetica,sans-serif;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:${PURPLE};font-weight:bold;">Maandrapport Google Ads</div>` +
+    `<div style="font-family:Arial,Helvetica,sans-serif;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:${PURPLE};font-weight:bold;">${escapeHtml(
+      eyebrow,
+    )}</div>` +
     `<div style="font-family:Arial,Helvetica,sans-serif;font-size:24px;font-weight:bold;color:${INK};margin-top:6px;">${escapeHtml(
       clientName,
     )}</div>` +
@@ -311,11 +291,54 @@ export function buildBrandedEmail(args: {
       textHtml: `Het volledige rapport vind je in de bijgevoegde PDF.<br>${
         args.signature && args.signature.trim()
           ? escapeHtml(args.signature.trim()).replace(/\n/g, "<br>")
-          : "Saerens Advertising · Google Ads"
+          : escapeHtml(
+              (args.fallbackSignature && args.fallbackSignature.trim()) ||
+                "Saerens Advertising",
+            )
       }`,
     }) +
     `</table></td></tr></table></body></html>`
   );
+}
+
+/** The four headline KPI cells for the Ads report email strip (null -> no strip). */
+function adsEmailKpis(
+  metrics: GoogleAdsMetrics | null,
+): { label: string; value: string }[] | null {
+  if (!metrics) return null;
+  const cur = metrics.currency || "EUR";
+  const eur = (n: number, d = 0): string => {
+    try {
+      return new Intl.NumberFormat("nl-BE", {
+        style: "currency",
+        currency: cur,
+        minimumFractionDigits: d,
+        maximumFractionDigits: d,
+      }).format(n);
+    } catch {
+      return `${n.toFixed(d)} ${cur}`;
+    }
+  };
+  const intf = (n: number): string =>
+    new Intl.NumberFormat("nl-BE").format(Math.round(n));
+  return [
+    { label: "Adspend", value: eur(metrics.totals.cost) },
+    { label: "Leads", value: intf(metrics.totals.conversions) },
+    {
+      label: "Cost / lead",
+      value: metrics.totals.cpa !== null ? eur(metrics.totals.cpa, 2) : "n.v.t.",
+    },
+    {
+      label: "ROAS",
+      value:
+        metrics.totals.roas !== null
+          ? `${new Intl.NumberFormat("nl-BE", {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            }).format(metrics.totals.roas)}×`
+          : "n.v.t.",
+    },
+  ];
 }
 
 /**
@@ -331,6 +354,7 @@ async function buildReportEmailInput(
     clientName: payload.clientName,
     subtitle: `Maandrapport — ${payload.periodLabel}`,
     dateLabel: payload.dateLabel,
+    reportType: "ads",
     metrics: payload.metrics,
   });
 
@@ -343,11 +367,13 @@ async function buildReportEmailInput(
 
   const html = buildBrandedEmail({
     clientName: payload.clientName,
+    eyebrow: "Maandrapport Google Ads",
     periodLabel: payload.periodLabel,
     dateLabel: payload.dateLabel,
     bodyText: payload.emailBody,
-    metrics: payload.metrics,
+    kpis: adsEmailKpis(payload.metrics),
     signature: payload.signature,
+    fallbackSignature: "Saerens Advertising · Google Ads",
     portraitCid: portrait?.cid,
     logoCid: SAERENS_LOGO_CID,
   });

@@ -46,15 +46,17 @@ export interface EmailReplyPayload {
 }
 
 /**
- * Discriminate a parsed `pendingDelivery` JSON value. A held draft is an
- * email-reply only when explicitly tagged; everything else (including legacy
- * drafts written before this union existed) is treated as a monthly report.
+ * Discriminate a parsed `pendingDelivery` JSON value. Held drafts are tagged by
+ * `kind` ("email-reply", "seo-report"); everything else (including legacy drafts
+ * written before this union existed) is treated as a monthly report.
  */
 export function pendingDeliveryKind(
   raw: unknown,
-): "monthly-report" | "email-reply" {
-  if (raw && typeof raw === "object" && (raw as Record<string, unknown>).kind === "email-reply") {
-    return "email-reply";
+): "monthly-report" | "email-reply" | "seo-report" {
+  if (raw && typeof raw === "object") {
+    const kind = (raw as Record<string, unknown>).kind;
+    if (kind === "email-reply") return "email-reply";
+    if (kind === "seo-report") return "seo-report";
   }
   return "monthly-report";
 }

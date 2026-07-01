@@ -1,6 +1,7 @@
 import PDFDocument from "pdfkit";
 import { SA_LOGO_WHITE_PNG } from "./report-assets";
 import type { GoogleAdsMetrics } from "./google-ads";
+import type { SeoReportMetrics } from "./seo-report-data";
 import {
   AMBER,
   CARD_LABEL,
@@ -44,22 +45,121 @@ import {
 
 export interface ReportPdfMeta {
   clientName: string;
-  /** e.g. "Maandrapport — vorige maand" */
+  /** e.g. "Maandrapport — vorige maand" or "SEO-maandrapport — mei 2026" */
   subtitle: string;
   /** Generation date, already formatted for display. */
   dateLabel: string;
-  /** Live account numbers — drive the cover KPI cards and the charts. */
+  /** Which report this is; drives the cover eyebrow, KPI cards and charts. */
+  reportType?: "ads" | "seo";
+  /** Live Google Ads numbers — drive the Ads cover KPI cards and the charts. */
   metrics?: GoogleAdsMetrics | null;
+  /** SEO snapshot — drives the SEO cover KPI cards and the charts. */
+  seo?: SeoReportMetrics | null;
 }
 
 // --- Cover page -------------------------------------------------------------
 
-/** Turn "Maandrapport — vorige maand" into a clean, non-duplicated subline. */
+/** Turn "<X>rapport — vorige maand" into a clean, non-duplicated subline. Strips
+ * any leading label up to the first em/en dash (Ads: "Maandrapport — …";
+ * SEO: "SEO-maandrapport — …") so only the period part remains. Hyphens inside
+ * the label (e.g. "SEO-…") are preserved because only em/en dashes separate. */
 function periodFromSubtitle(subtitle: string): string {
-  const m = /^maandrapport\s*[—–-]\s*(.*)$/i.exec(subtitle.trim());
+  const m = /^.*?[—–]\s*(.*)$/.exec(subtitle.trim());
   let p = (m ? m[1] : subtitle).trim();
-  if (p.length === 0) p = "Maandrapport";
+  if (p.length === 0) p = subtitle.trim() || "Rapport";
   return p.charAt(0).toUpperCase() + p.slice(1);
+}
+
+/**
+ * The data-driven parts of the cover: the eyebrow (which report this is), the
+ * KPI cards, an optional secondary stat strip and an optional right-aligned
+ * footer source line. Built per report type so the drawing code stays shared
+ * between the Ads and SEO reports.
+ */
+interface CoverModel {
+  eyebrow: string;
+  cards: KpiCard[];
+  secondaryLine: string | null;
+  footerRight: string | null;
+}
+
+function buildAdsCoverModel(m: GoogleAdsMetrics): CoverModel {
+  const cur = m.currency || "EUR";
+  return {
+    eyebrow: "MAANDRAPPORT GOOGLE ADS",
+    cards: [
+      { label: "KOSTEN", value: eur(m.totals.cost, cur, 0), accent: PURPLE },
+      { label: "LEADS", value: int(m.totals.conversions), accent: PURPLE },
+      {
+        label: "KOST PER LEAD",
+        value: m.totals.cpa !== null ? eur(m.totals.cpa, cur, 2) : "n.v.t.",
+        accent: AMBER,
+      },
+      {
+        label: "ROAS",
+        value: m.totals.roas !== null ? `${dec(m.totals.roas)}×` : "n.v.t.",
+        accent: AMBER,
+      },
+    ],
+    secondaryLine:
+      `Klikken ${int(m.totals.clicks)}   ·   Vertoningen ${int(
+        m.totals.impressions,
+      )}   ·   Gem. CPC ${eur(m.totals.avgCpc, cur, 2)}   ·   CTR ${dec(
+        m.totals.ctr * 100,
+      )}%`,
+    footerRight: `Google Ads · ${m.accountName} (${m.customerId})`,
+  };
+}
+
+function buildSeoCoverModel(seo: SeoReportMetrics, eyebrow: string): CoverModel {
+  const s = seo.search.current;
+  const sec: string[] = [];
+  if (seo.crawl) {
+    const c = seo.crawl;
+    sec.push(`Technische fouten ${int(c.clientErrors + c.serverErrors)}`);
+    sec.push(`Indexeerbaar ${int(Math.max(0, c.totalUrls - c.nonIndexable))}`);
+    sec.push(`Ontbrekende meta ${int(c.missingMetaDescriptions)}`);
+  }
+  if (seo.pagespeed) {
+    sec.push(`PageSpeed ${int(seo.pagespeed.performanceScore)}/100`);
+    if (seo.pagespeed.lcpMs > 0) {
+      sec.push(`LCP ${(seo.pagespeed.lcpMs / 1000).toFixed(1)}s`);
+    }
+  }
+  return {
+    eyebrow,
+    cards: [
+      { label: "ORG. KLIKKEN", value: int(s.clicks), accent: PURPLE },
+      { label: "VERTONINGEN", value: int(s.impressions), accent: PURPLE },
+      { label: "CTR", value: `${dec(s.ctr * 100)}%`, accent: AMBER },
+      { label: "GEM. POSITIE", value: dec(s.position, 1), accent: AMBER },
+    ],
+    secondaryLine: sec.length > 0 ? sec.join("   ·   ") : null,
+    footerRight: `Search Console · ${seo.siteUrl}`,
+  };
+}
+
+/**
+ * Resolve the cover model for the report type. The eyebrow is always present
+ * (it's drawn even when no live snapshot came back); the cards, secondary strip
+ * and footer source line appear only when the corresponding data is available.
+ */
+function coverModel(meta: ReportPdfMeta): CoverModel {
+  if (meta.reportType === "seo") {
+    const eyebrow =
+      meta.seo?.cadence === "quarterly" ? "SEO-KWARTAALRAPPORT" : "SEO-RAPPORT";
+    return meta.seo
+      ? buildSeoCoverModel(meta.seo, eyebrow)
+      : { eyebrow, cards: [], secondaryLine: null, footerRight: null };
+  }
+  return meta.metrics
+    ? buildAdsCoverModel(meta.metrics)
+    : {
+        eyebrow: "MAANDRAPPORT GOOGLE ADS",
+        cards: [],
+        secondaryLine: null,
+        footerRight: null,
+      };
 }
 
 /** Largest title size (≤34pt) that keeps the client name within two lines, so a
@@ -101,12 +201,14 @@ function drawCover(doc: PDFKit.PDFDocument, meta: ReportPdfMeta): void {
       lineBreak: false,
     });
 
+  const cover = coverModel(meta);
+
   // Hero title block — sits in the lower-centre for an editorial, deck-like balance.
   doc
     .font("Helvetica-Bold")
     .fontSize(10)
     .fillColor(AMBER)
-    .text("MAANDRAPPORT GOOGLE ADS", x, 308, {
+    .text(cover.eyebrow, x, 308, {
       characterSpacing: 3,
       lineBreak: false,
     });
@@ -134,47 +236,27 @@ function drawCover(doc: PDFKit.PDFDocument, meta: ReportPdfMeta): void {
       lineBreak: false,
     });
 
-  // KPI cards from live metrics
-  const m = meta.metrics;
-  if (m) {
-    const cur = m.currency || "EUR";
-    const cards: KpiCard[] = [
-      { label: "KOSTEN", value: eur(m.totals.cost, cur, 0), accent: PURPLE },
-      { label: "LEADS", value: int(m.totals.conversions), accent: PURPLE },
-      {
-        label: "KOST PER LEAD",
-        value: m.totals.cpa !== null ? eur(m.totals.cpa, cur, 2) : "n.v.t.",
-        accent: AMBER,
-      },
-      {
-        label: "ROAS",
-        value: m.totals.roas !== null ? `${dec(m.totals.roas)}×` : "n.v.t.",
-        accent: AMBER,
-      },
-    ];
+  // KPI cards from the live snapshot (Ads or SEO); absent when no data came back.
+  if (cover.cards.length > 0) {
     const cy = 486;
     const ch = 96;
-    kpiCards(doc, { x, y: cy, width: contentWidth(doc), cards });
+    kpiCards(doc, { x, y: cy, width: contentWidth(doc), cards: cover.cards });
 
     // Secondary stat strip, set off by a faint divider.
-    const sy = cy + ch + 30;
-    doc.save();
-    doc.rect(x, sy - 14, contentWidth(doc), 1).fill(COVER_DIVIDER);
-    doc.restore();
-    doc
-      .font("Helvetica")
-      .fontSize(9.5)
-      .fillColor(CARD_LABEL)
-      .text(
-        `Klikken ${int(m.totals.clicks)}   ·   Vertoningen ${int(
-          m.totals.impressions,
-        )}   ·   Gem. CPC ${eur(m.totals.avgCpc, cur, 2)}   ·   CTR ${dec(
-          m.totals.ctr * 100,
-        )}%`,
-        x,
-        sy,
-        { width: contentWidth(doc), lineBreak: false },
-      );
+    if (cover.secondaryLine) {
+      const sy = cy + ch + 30;
+      doc.save();
+      doc.rect(x, sy - 14, contentWidth(doc), 1).fill(COVER_DIVIDER);
+      doc.restore();
+      doc
+        .font("Helvetica")
+        .fontSize(9.5)
+        .fillColor(CARD_LABEL)
+        .text(cover.secondaryLine, x, sy, {
+          width: contentWidth(doc),
+          lineBreak: false,
+        });
+    }
   }
 
   // Footer meta — left/right like the deck cover.
@@ -188,12 +270,12 @@ function drawCover(doc: PDFKit.PDFDocument, meta: ReportPdfMeta): void {
     .text(`Vertrouwelijk · Opgesteld ${meta.dateLabel}`, x, fy, {
       lineBreak: false,
     });
-  if (m) {
+  if (cover.footerRight) {
     doc
       .font("Helvetica")
       .fontSize(8.5)
       .fillColor(FOOTER_GREY)
-      .text(`Google Ads · ${m.accountName} (${m.customerId})`, x, fy, {
+      .text(cover.footerRight, x, fy, {
         width: contentWidth(doc),
         align: "right",
         lineBreak: false,
@@ -248,6 +330,24 @@ function drawCharts(doc: PDFKit.PDFDocument, m: GoogleAdsMetrics): void {
   }
 }
 
+/** SEO analysis charts: the top organic queries by clicks this period. */
+function drawSeoCharts(doc: PDFKit.PDFDocument, seo: SeoReportMetrics): void {
+  const byClicks = seo.search.topQueries
+    .filter((q) => q.clicks > 0)
+    .slice(0, 6);
+  if (byClicks.length > 0) {
+    chartLabel(doc, "Top zoektermen (klikken)");
+    hbarChart(
+      doc,
+      byClicks.map((q) => ({
+        label: q.key,
+        value: q.clicks,
+        display: int(q.clicks),
+      })),
+    );
+  }
+}
+
 // --- Public API -------------------------------------------------------------
 
 export function renderReportPdf(
@@ -284,7 +384,13 @@ export function renderReportPdf(
 
     // Page 2+: analysis
     doc.addPage();
-    if (meta.metrics && meta.metrics.campaigns.length > 0) {
+    if (meta.reportType === "seo") {
+      if (meta.seo && meta.seo.search.topQueries.length > 0) {
+        sectionTitle(doc, "Organische zoekprestaties in beeld");
+        drawSeoCharts(doc, meta.seo);
+        doc.moveDown(0.5);
+      }
+    } else if (meta.metrics && meta.metrics.campaigns.length > 0) {
       sectionTitle(doc, "Campagneprestaties in beeld");
       drawCharts(doc, meta.metrics);
       doc.moveDown(0.5);

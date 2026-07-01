@@ -298,11 +298,14 @@ function renderRowLines(rows: SearchConsoleRow[], label: string): string[] {
  */
 export async function fetchSearchConsoleReport(
   rawSiteUrl: string,
-  opts: { now?: number } = {},
+  opts: { now?: number; dateRange?: { startDate: string; endDate: string } } = {},
 ): Promise<{ text: string; fetchedAt: Date; report: SearchConsoleReport }> {
   const siteUrl = validateSiteUrl(rawSiteUrl);
   const now = opts.now ?? Date.now();
-  const { startDate, endDate } = reportWindow(now);
+  // A caller can pin an exact reporting window (e.g. a completed calendar month
+  // for the SEO report's period-over-period comparison); otherwise fall back to
+  // the rolling 28-day window that accounts for GSC's ~3-day data lag.
+  const { startDate, endDate } = opts.dateRange ?? reportWindow(now);
   const accessToken = await getReadonlyAccessToken();
 
   const base = { startDate, endDate, dataState: "final" as const };

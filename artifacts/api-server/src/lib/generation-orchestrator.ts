@@ -28,9 +28,16 @@ import {
 import {
   runDeliverableStep,
   runReportEmailAction,
+  runSeoReportEmailAction,
   runEmailReplyAction,
   type DeliverableExecContext,
 } from "./generation-deliverable-executor";
+import {
+  buildSeoReportPeriods,
+  fetchSeoReportSnapshot,
+  type SeoReportCadence,
+  type SeoReportMetrics,
+} from "./seo-report-data";
 
 import {
   extractMonitorList,
@@ -220,6 +227,11 @@ export async function runGeneration(
   let reportClient: Client | null = null;
   // Structured live numbers captured at run start; drive the PDF cover/charts.
   let reportMetrics: GoogleAdsMetrics | null = null;
+  // SEO report: the structured snapshot + resolved cadence/period, captured at
+  // run start and reused by the post-loop SEO email action.
+  let reportSeoMetrics: SeoReportMetrics | null = null;
+  let reportSeoCadence: SeoReportCadence = "monthly";
+  let reportSeoPeriodLabel = "";
   // Live SEARCH ad-group structure captured at run start for the ad-copy CSV.
   let adCopyLiveData: string | null = null;
   let negativesLiveData: string | null = null;
@@ -460,6 +472,47 @@ export async function runGeneration(
               (err instanceof Error ? err.message : String(err)).slice(0, 200),
           });
         }
+      }
+    }
+
+    // SEO/website report: before the team writes, assemble the organic snapshot
+    // — Search Console (primary, three completed windows for real PoP/YoY),
+    // technical crawl health, PageSpeed (current-state) and optional Bing — and
+    // inject each labelled block into the client doc so the team compares real,
+    // period-correct numbers. The cadence (monthly vs quarterly) is read from
+    // the workflow path. Best-effort: every source fails independently into a
+    // note; the report still runs on existing data. The structured metrics drive
+    // the PDF cover/charts and the email KPI strip.
+    if (deliverableKind === "seo-report-email" && !isGone()) {
+      reportSeoCadence = workflowPath.includes("quarterly")
+        ? "quarterly"
+        : "monthly";
+      const clientId = dbClientIdFromPath(clientPath);
+      try {
+        reportClient = reportClient ?? (clientId !== null ? await getClientRow(clientId) : null);
+        const periods = buildSeoReportPeriods(new Date(), reportSeoCadence);
+        reportSeoPeriodLabel = periods.current.label;
+        const snapshot = await fetchSeoReportSnapshot(
+          reportClient ?? {},
+          clientId,
+          reportSeoCadence,
+          periods,
+        );
+        reportSeoMetrics = snapshot.metrics;
+        const doc = clientDocs.find((d) => d.path === clientPath);
+        if (doc && snapshot.blocks.length > 0) {
+          doc.content += "\n\n" + snapshot.blocks.join("\n") + "\n";
+        }
+        for (const note of snapshot.notes) {
+          send({ type: "deliverable_note", message: note });
+        }
+      } catch (err) {
+        send({
+          type: "deliverable_note",
+          message:
+            "SEO-data kon niet opgehaald worden; het rapport gebruikt de bestaande data. " +
+            (err instanceof Error ? err.message : String(err)).slice(0, 200),
+        });
       }
     }
 
@@ -1220,6 +1273,9 @@ export async function runGeneration(
       negativesLiveData,
       reportClient,
       reportMetrics,
+      reportSeoMetrics,
+      reportSeoCadence,
+      reportSeoPeriodLabel,
       memberTitles,
       teamPaths,
       humanizerRan,
@@ -1244,6 +1300,19 @@ export async function runGeneration(
     // is tracked by approvalStatus, not run status.
     if (deliverableKind === "monthly-report-email" && !isGone()) {
       const actEffect = await runReportEmailAction(deliverableCtx);
+      steps.push({ ...actEffect.step, stepOrder: nextStepOrder++ });
+      if (actEffect.approval) {
+        pendingApproval = actEffect.approval.payload;
+        approvalStatus = actEffect.approval.status;
+      }
+      if (actEffect.downgrade) runStatus = "partial";
+    }
+
+    // Action deliverable: draft the recurring SEO/website report and HOLD it for
+    // human approval — same checkpoint as the monthly Ads report, but rendered
+    // from the SEO snapshot with the report cadence (monthly/quarterly).
+    if (deliverableKind === "seo-report-email" && !isGone()) {
+      const actEffect = await runSeoReportEmailAction(deliverableCtx);
       steps.push({ ...actEffect.step, stepOrder: nextStepOrder++ });
       if (actEffect.approval) {
         pendingApproval = actEffect.approval.payload;

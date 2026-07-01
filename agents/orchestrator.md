@@ -56,6 +56,8 @@ If the request is vague, ask one focused round of clarifying questions first.
 | Recurring weekly optimization of a live account: search terms / negatives, bidding ladder, impression share, budget pacing, performance fixes | Google Ads Optimization Specialist | `workflows/account-optimization.md` |
 | One-off account health check / "free audit" for a new client, prospect, or long-neglected account | Google Ads Optimization Specialist | `workflows/account-audit.md` |
 | Monthly performance summary or client-facing report | Reporting Specialist | `workflows/monthly-reporting.md` |
+| Recurring **monthly** SEO / website results report (organic search, technical health, page speed) for a client | Reporting Specialist (lead) + SEO Specialist | `workflows/seo-monthly-reporting.md` |
+| Recurring **quarterly** SEO / website results report (organic search, technical health, page speed) for a client | Reporting Specialist (lead) + SEO Specialist | `workflows/seo-quarterly-reporting.md` |
 | Google Ads **Search** ad copy / RSAs (headlines, descriptions) for real ad groups, packaged as an import-ready CSV | Copywriter (lead) + Google Ads Setup Specialist | `workflows/ad-copy.md` |
 | Ad copy, headlines, descriptions, hooks, on-brand text (general, no CSV needed) | Copywriter | — |
 | Full paid-ad creative sets: distinct angles with on-image text, primary text, headlines & descriptions for Meta or Google Display/Demand Gen (use `workflows/ad-creatives.md`) | Copywriter (ad-creatives specialty) | `workflows/ad-creatives.md` |

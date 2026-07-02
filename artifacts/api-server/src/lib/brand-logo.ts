@@ -1,22 +1,52 @@
-import type { InlineImage } from "./email";
-
 /**
  * The Saerens "SA" monogram, embedded as a base64 PNG so it is always available
- * to outbound emails with no runtime file IO or object-storage dependency (the
- * api-server runs from a bundled dist that wipes on rebuild, so a constant is the
- * robust source for a fixed brand asset). Transparent background, indigo mark —
- * sits cleanly on the dark email header band.
+ * with no runtime file IO or object-storage dependency (the api-server runs from
+ * a bundled dist that wipes on rebuild, so a constant is the robust source for a
+ * fixed brand asset). Transparent background, indigo mark — sits cleanly on the
+ * dark email header band.
+ *
+ * The logo used to be embedded in outbound emails as a `cid:` inline attachment.
+ * That renders in the Gmail DRAFT view but Gmail's send-time rewrite drops the
+ * inline logo in the DELIVERED mail (confirmed with a real test send). The robust
+ * fix is to serve the logo from a public HTTPS URL that Gmail's image proxy can
+ * fetch, and reference it as a normal `<img src="https://…">`. The bytes below
+ * back that public endpoint (see `routes/brand.ts`).
+ *
+ * Note: per-Head portraits in the footer signature still use `cid:` and may have
+ * the same after-send limitation, but hosting per-agent portraits publicly is
+ * harder — they stay on `cid:` for now.
  */
-export const SAERENS_LOGO_CID = "sa-logo";
 
 const SAERENS_LOGO_PNG_BASE64 =
   "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0S3gfxXpWVEQSAQzXY5nRtfzkb7JUcirXkVYcOFjVUzW2FfU1p8EzNqJvrDMHSKt3CmSHpHekfzHJBVMWPU32i7PSoFzUfkn4BMgtuGscvZhCByG5Px7Svnni1g8eM+JGxAeXQ2/NZaG5iLK2zFfBy4KFJ2VPednBOtG4LFPnr+JL1w/7VW1vfpdjdpa2L4P5BunAqcAHTt9uwG4FdcGiFv54pI5LLjoSQhboJxGcp0URK1Z60ikAwfixPeI8g8Nx1vNiZCQMkh5iwsKa4W+IvuGImuuqhUZxlx5/ehDhkXLpnP5fAPPbgV9UdZmlM6z6rOkxnTso+3OxxQ37p4dRHN6q/mgPgNnR40kgxLASsxPCAXJE1jQs6F1cEyGsCWH2oyQsqPLkE434QwrHApuFwUoVWotcKoL/diO1wfK74EH8yIfMzg7ZBWycKivl4rFjgPfhXSYSBF4cPL2X7KtNrrrna8OkAqcJqJszVtE2HeYaUDCsBrxgu1WLwqTgJngI0iTjgFOgHSYpW5LoSp8VHREsJDzpBSfEuU3DP+sovNxZ9uNCqxA37Jd62C9on8On5y3GvL1kNoKVDwKfnSYCCg0EUZJxYziOpR3en6DMzgB+BzQqIBhFjAbmE5linFYh0zVK1S15pVytgrn/4njv0iN+5KzOrEOjvRd99oLfl9YNus16xglQKDwAjiuBq1uvfywHAhc/ErQ/hqkpi6HxwPhFtBNwvcShgbsSBaGMOaK/pm8kWR0AKkJpKdB/w4cBnSO5netw64JbAR+grhF1n+FMl+ZAoNVlBtYtGxsie2elFFxEgt6VgHtAPtTXas8T9LIUvvXOeME2gKsTeJJ8H8DdwIPAJuCk6NLqqhbLHqD7ZgXyxiuZEagWAP+O0h3AGcIHWa5CwdXN+G8DsKToF/g8Escn8G1dcRtRdXIUgVODXXwpSVTXu93H5WMidW6tGcdAorURUdc157IOlNIbaTMdmhAapTkQ200i8I1kuJwNg7A1f0TX+/3HbOM6VJvpAmhoKY6iTgEGsIZVR0cQARMg7aqJPQmBWWv7JW9slf2yl75/yH/B0Oy6VyqMj4gAAAAJXRFWHRkYXRlOmNyZWF0ZQAyMDI2LTA2LTA5VDE2OjEyOjIyKzAwOjAwE+EevQAAACV0RVh0ZGF0ZTptb2RpZnkAMjAyNi0wNi0wOVQxNjoxMjoyMiswMDowMGK8pgEAAAAodEVYdGRhdGU6dGltZXN0YW1wADIwMjYtMDYtMTJUMTg6MzY6NTArMDA6MDDe72obAAAAF3RFWHRwZGY6QXV0aG9yAEF4ZWwgU2FlcmVuc0LgobkAAABddEVYdHhtcDpDcmVhdG9yVG9vbABDYW52YSAoUmVuZGVyZXIpIGRvYz1EQUcxVURDSjlXRSB1c2VyPVVBR1E0QVlCbm9nIGJyYW5kPUJBR1E0R2pHN0Y0IHRlbXBsYXRlPZBe8b4AAAAASUVORK5CYII=";
 
-/** The SA logo as an inline CID image, ready to drop into `inlineImages`. */
-export function saerensLogoInlineImage(): InlineImage {
-  return {
-    cid: SAERENS_LOGO_CID,
-    mimeType: "image/png",
-    content: Buffer.from(SAERENS_LOGO_PNG_BASE64, "base64"),
-  };
+/** The raw SA-logo PNG bytes, for the public logo endpoint. */
+export function saerensLogoPngBuffer(): Buffer {
+  return Buffer.from(SAERENS_LOGO_PNG_BASE64, "base64");
+}
+
+/**
+ * The public origin the api-server is reachable at, WITHOUT a trailing slash, or
+ * null when none can be resolved. `PUBLIC_BASE_URL` is the deployment override
+ * (production); otherwise we fall back to the Replit dev domain so the dev
+ * preview keeps working. Returns null when neither is set, so callers can degrade
+ * gracefully (no logo) instead of emitting a broken `https:///…` URL.
+ */
+export function publicBaseUrl(): string | null {
+  const explicit = (process.env.PUBLIC_BASE_URL ?? "").trim();
+  if (explicit) return explicit.replace(/\/+$/, "");
+  const devDomain = (process.env.REPLIT_DEV_DOMAIN ?? "").trim();
+  if (devDomain) return `https://${devDomain.replace(/\/+$/, "")}`;
+  return null;
+}
+
+/**
+ * The absolute HTTPS URL of the public SA-logo endpoint, or null when no public
+ * base URL is configured (the email builder then renders no logo rather than a
+ * broken image). The api-server is mounted behind the shared proxy at `/api`, so
+ * the logo lives at `<base>/api/brand/logo.png`.
+ */
+export function saerensLogoUrl(): string | null {
+  const base = publicBaseUrl();
+  return base ? `${base}/api/brand/logo.png` : null;
 }

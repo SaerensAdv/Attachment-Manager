@@ -8,7 +8,7 @@ import {
 } from "./email";
 import type { GoogleAdsMetrics } from "./google-ads";
 import { loadPortraitBytes } from "./portraits";
-import { SAERENS_LOGO_CID, saerensLogoInlineImage } from "./brand-logo";
+import { saerensLogoUrl } from "./brand-logo";
 
 /**
  * Building the client-facing monthly report e-mail lives here, apart from the
@@ -93,6 +93,19 @@ export function escapeHtml(s: string): string {
 }
 
 /**
+ * The footer sentence pointing the reader at the attached PDF(s), pluralised for
+ * nl-BE: a single attachment reads "de bijgevoegde PDF", multiple reads "de
+ * bijgevoegde PDF's" (e.g. a combined monthly + quarterly send). Defaults to the
+ * singular when the count is unknown.
+ */
+export function attachmentIntro(count?: number): string {
+  const n = typeof count === "number" && count > 0 ? count : 1;
+  return n > 1
+    ? "De volledige rapporten vind je in de bijgevoegde PDF's."
+    : "Het volledige rapport vind je in de bijgevoegde PDF.";
+}
+
+/**
  * The fixed Content-ID under which the Head's portrait is embedded; the HTML
  * refers to it as `cid:head-portrait`. A single inline image used by the footer
  * signature band.
@@ -148,11 +161,11 @@ export async function resolveHeadPortrait(
  * wordmark. Rendered only when the logo is embedded. Inline styles + explicit
  * dimensions so it renders in email clients that ignore CSS.
  */
-export function headerLogo(logoCid?: string): string {
-  if (!logoCid) return "";
+export function headerLogo(logoUrl?: string): string {
+  if (!logoUrl) return "";
   return (
     `<td valign="middle" style="width:40px;padding-right:12px;">` +
-    `<img src="cid:${logoCid}" width="36" height="36" alt="Saerens Advertising" ` +
+    `<img src="${escapeHtml(logoUrl)}" width="36" height="36" alt="Saerens Advertising" ` +
     `style="display:block;width:36px;height:36px;" />` +
     `</td>`
   );
@@ -213,8 +226,13 @@ export function buildBrandedEmail(args: {
   fallbackSignature?: string;
   /** Content-ID of the Head's embedded portrait (footer signature only). */
   portraitCid?: string;
-  /** Content-ID of the embedded SA logo (header lockup). */
-  logoCid?: string;
+  /** Absolute HTTPS URL of the SA logo (header lockup); omitted -> no logo. */
+  logoUrl?: string;
+  /**
+   * Number of PDFs attached to the mail; drives the footer wording ("de
+   * bijgevoegde PDF" vs "de bijgevoegde PDF's"). Defaults to 1.
+   */
+  attachmentCount?: number;
 }): string {
   const { clientName, eyebrow, periodLabel, dateLabel, bodyText, kpis } = args;
   const NEARBLACK = "#0A0A0B";
@@ -265,7 +283,7 @@ export function buildBrandedEmail(args: {
     // header band (SA logo + company wordmark lockup, left-aligned)
     `<tr><td style="background:${NEARBLACK};padding:22px 32px;border-bottom:3px solid ${PURPLE};">` +
     `<table role="presentation" cellpadding="0" cellspacing="0"><tr>` +
-    headerLogo(args.logoCid) +
+    headerLogo(args.logoUrl) +
     `<td valign="middle"><div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:bold;letter-spacing:2px;color:#FFFFFF;">SAERENS ADVERTISING</div></td>` +
     `</tr></table>` +
     `</td></tr>` +
@@ -288,7 +306,7 @@ export function buildBrandedEmail(args: {
       portraitCid: args.portraitCid,
       hair: HAIR,
       muted: MUTED,
-      textHtml: `Het volledige rapport vind je in de bijgevoegde PDF.<br>${
+      textHtml: `${attachmentIntro(args.attachmentCount)}<br>${
         args.signature && args.signature.trim()
           ? escapeHtml(args.signature.trim()).replace(/\n/g, "<br>")
           : escapeHtml(
@@ -358,12 +376,16 @@ async function buildReportEmailInput(
     metrics: payload.metrics,
   });
 
-  // Always embed the SA logo (header lockup); embed the Head's portrait when
-  // available (footer signature). Both best-effort: a missing portrait -> the
-  // signature renders text-only.
-  const logo = saerensLogoInlineImage();
+  // Reference the SA logo by public HTTPS URL (Gmail drops `cid:` inline logos
+  // after send). Embed only the Head's portrait when available (footer
+  // signature); best-effort -> a missing portrait renders the signature
+  // text-only, a missing public base URL renders no logo.
   const portrait = await resolveHeadPortrait(payload.headAgentPath);
-  const inlineImages = portrait ? [logo, portrait] : [logo];
+  const inlineImages = portrait ? [portrait] : [];
+
+  const attachments = [
+    { filename: filenameFor(payload.clientName), mimeType: "application/pdf", content: pdf },
+  ];
 
   const html = buildBrandedEmail({
     clientName: payload.clientName,
@@ -375,13 +397,9 @@ async function buildReportEmailInput(
     signature: payload.signature,
     fallbackSignature: "Saerens Advertising · Google Ads",
     portraitCid: portrait?.cid,
-    logoCid: SAERENS_LOGO_CID,
+    logoUrl: saerensLogoUrl() ?? undefined,
+    attachmentCount: attachments.length,
   });
-
-  const filename = `maandrapport-${payload.clientName
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "")}.pdf`;
 
   return {
     to: payload.recipient,
@@ -390,9 +408,17 @@ async function buildReportEmailInput(
     fromAddress: payload.fromAddress,
     fromName: payload.fromName,
     cc: payload.cc,
-    attachments: [{ filename, mimeType: "application/pdf", content: pdf }],
+    attachments,
     inlineImages,
   };
+}
+
+/** The download filename for a client's monthly report PDF. */
+function filenameFor(clientName: string): string {
+  return `maandrapport-${clientName
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "")}.pdf`;
 }
 
 /**

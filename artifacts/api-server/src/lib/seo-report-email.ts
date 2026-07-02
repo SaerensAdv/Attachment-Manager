@@ -12,7 +12,7 @@ import {
   resolveHeadPortrait,
 } from "./monthly-report-email";
 import { ownerEmail } from "./email-identity";
-import { SAERENS_LOGO_CID, saerensLogoInlineImage } from "./brand-logo";
+import { saerensLogoUrl } from "./brand-logo";
 
 /**
  * Building the client-facing recurring SEO/website report e-mail lives here,
@@ -164,12 +164,20 @@ async function buildSeoReportEmailInput(
     seo: payload.metrics,
   });
 
-  // Always embed the SA logo (header lockup); embed the Head's portrait when
-  // available (footer signature). Both best-effort: a missing portrait -> the
-  // signature renders text-only.
-  const logo = saerensLogoInlineImage();
+  // Reference the SA logo by public HTTPS URL (Gmail drops `cid:` inline logos
+  // after send). Embed only the Head's portrait when available (footer
+  // signature); best-effort -> a missing portrait renders the signature
+  // text-only, a missing public base URL renders no logo.
   const portrait = await resolveHeadPortrait(payload.headAgentPath);
-  const inlineImages = portrait ? [logo, portrait] : [logo];
+  const inlineImages = portrait ? [portrait] : [];
+
+  const cadenceSlug = payload.cadence === "quarterly" ? "kwartaal" : "maand";
+  const filename = `seo-${cadenceSlug}rapport-${payload.clientName
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "")}.pdf`;
+
+  const attachments = [{ filename, mimeType: "application/pdf", content: pdf }];
 
   const html = buildBrandedEmail({
     clientName: payload.clientName,
@@ -181,14 +189,9 @@ async function buildSeoReportEmailInput(
     signature: payload.signature,
     fallbackSignature: "Saerens Advertising · SEO & website",
     portraitCid: portrait?.cid,
-    logoCid: SAERENS_LOGO_CID,
+    logoUrl: saerensLogoUrl() ?? undefined,
+    attachmentCount: attachments.length,
   });
-
-  const cadenceSlug = payload.cadence === "quarterly" ? "kwartaal" : "maand";
-  const filename = `seo-${cadenceSlug}rapport-${payload.clientName
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "")}.pdf`;
 
   return {
     to: payload.recipient,
@@ -197,7 +200,7 @@ async function buildSeoReportEmailInput(
     fromAddress: payload.fromAddress,
     fromName: payload.fromName,
     cc: payload.cc,
-    attachments: [{ filename, mimeType: "application/pdf", content: pdf }],
+    attachments,
     inlineImages,
   };
 }

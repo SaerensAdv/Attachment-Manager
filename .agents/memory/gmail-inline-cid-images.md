@@ -33,3 +33,18 @@ differ.
 `format=raw` prove the MIME is structurally correct, but only an actual **send**
 (e.g. owner sends a test copy to himself) empirically confirms the delivered
 rendering. Recommend that as the last check, don't claim it from code alone.
+
+**Update — the fix above was NOT enough for the SA logo.** Even a correctly
+named `multipart/related; type="text/html"` inline part still lost the logo in
+the DELIVERED mail (owner confirmed by real send). The robust fix is to stop
+using `cid:` for the fixed brand logo entirely: serve it from a public,
+UNAUTHENTICATED HTTPS endpoint (`GET /api/brand/logo.png`, added to
+`requireAuth` PUBLIC_PATHS + a `routes/brand.ts` serving `saerensLogoPngBuffer()`
+with `image/png` + immutable cache) and reference it as `<img src="https://…">`.
+The absolute URL is built from `publicBaseUrl()` (`PUBLIC_BASE_URL` env override
+for production, else `https://$REPLIT_DEV_DOMAIN`, else null → render NO logo, not
+a broken image). Gmail's image proxy fetches that URL fine after send. All three
+email builders (monthly report, SEO report, two-way reply) share `headerLogo` +
+`buildBrandedEmail`, so the switch is one change point. Per-agent **portraits**
+still ride on `cid:` (harder to host publicly per-agent) and may keep the
+after-send limitation.

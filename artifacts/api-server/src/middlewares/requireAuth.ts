@@ -26,6 +26,9 @@ import { type Request, type Response, type NextFunction } from "express";
 const PUBLIC_PATHS = new Set<string>([
   // Health probe.
   "/healthz",
+  // Public brand asset (SA logo) referenced by absolute URL from outbound email,
+  // fetched by Gmail's image proxy with no session.
+  "/brand/logo.png",
   // Auth flow + auth-state probe.
   "/auth/user",
   "/login",

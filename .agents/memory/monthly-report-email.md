@@ -29,6 +29,22 @@ at runtime relative to their package dir. Bundling drops those files →
 `build.mjs` so they resolve from node_modules. (pdfkit→fontkit also needs
 `@swc/helpers` available at runtime; it's a direct dep for that reason.)
 
+## Ad-hoc batch drafts of already-rendered reports
+When the branded PDFs already exist on disk (e.g. a manual multi-client report
+batch), stage them as Gmail drafts by reusing `buildBrandedEmail` +
+`saerensLogoInlineImage`/`SAERENS_LOGO_CID` + `createGmailDraft` DIRECTLY from a
+`tsx` script (run from `artifacts/api-server`) — skip the generation engine
+entirely (no model re-run, no LAST_MONTH pull). `createGmailDraft` returns
+`{draftId, messageId, threadId}` and writes to the AGENCY mailbox via
+`gmail-oauth.ts` (write scope, needs `GOOGLE_OAUTH_GMAIL_REFRESH_TOKEN`),
+separate from read-only `google-oauth.ts`. `buildBrandedEmail`'s footer always
+reads singular "de bijgevoegde PDF", so when attaching >1 PDF, name both in the
+`bodyText`. **Why:** the full pipeline re-pulls data + re-runs the team, which is
+wasted work and a drift risk for pre-approved existing PDFs.
+**How to apply:** draft creation is NOT idempotent — re-running duplicates every
+draft. Verify via `users/me/drafts` list+get rather than blindly re-running; for
+a single-client redo, delete the old draft first or run only that entry.
+
 ## Mail-send security
 **Why:** the raw RFC 822 MIME is hand-built; an unsanitized `To`/`Subject`/
 attachment filename with a CR/LF would allow header/MIME injection (extra

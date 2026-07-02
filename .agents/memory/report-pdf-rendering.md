@@ -30,6 +30,15 @@ numbered, hr, and GitHub pipe tables) and horizontal bar charts.
 - Built-in Helvetica fonts only (no custom fonts) to avoid pdfkit/fontkit AFM
   font-file fragility; `build.mjs` externalizes `pdfkit`+`fontkit` for the AFM data.
 
+- **Helvetica has glyph gaps — author report copy around them.** The built-in
+  Helvetica AFM has no `U+2212` MINUS SIGN or `U+2192` RIGHTWARDS ARROW; they
+  render as blank/tofu in the PDF. Write report/deliverable copy with ASCII `-`
+  and the word `naar` (not `→`). `×`, `±`, `–`, `—`, `ë` render fine.
+  **Why:** built-in fonts only, so any glyph outside Helvetica's set silently
+  drops with no error at render time.
+  **How to apply:** applies to every LLM-authored report/email body that becomes
+  a PDF — prefer ASCII substitutes in the source markdown.
+
 **Final-report extraction:** the team loop concatenates each member under a
 `## <AgentTitle>` heading; the client-facing PDF uses the LAST such section
 (the Humanizer's polished version) via `extractFinalReport`, falling back to the

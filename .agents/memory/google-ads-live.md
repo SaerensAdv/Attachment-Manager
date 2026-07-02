@@ -52,6 +52,23 @@ client→markdown bridge. No gRPC and no SDK — plain `fetch` against the REST
   So negative-keyword mining must judge relevance/channel per term, not assume every
   search term belongs to a Search campaign.
 
+## Phone calls (`metrics.phone_calls`, the "Oproepen" column)
+- This is a REAL, valid metric and is **distinct from tracked conversions**:
+  Google call reporting counts ad-driven phone calls independently of the
+  account's conversion actions, so the call count can legitimately EXCEED the
+  tracked-lead total. Never "reconcile" the two — they measure different things.
+- **GAQL incompatibility:** `metrics.phone_calls` cannot be selected in the same
+  query as conversion/segment fields (segmented rows). Pull it as a STANDALONE
+  per-campaign query, then merge into the period data separately.
+- **Why it matters:** for call-driven lead-gen clients (e.g. LCS / account
+  "Waterlek"), the client explicitly wants the client-facing PDF to headline
+  actual phone calls, with tracked leads/conversions kept secondary.
+- **How to apply:** report-pdf.ts reframes the Ads cover + charts around calls
+  via opt-in `meta.callMetrics` (AdsCallMetrics); when omitted, every other
+  client keeps the default leads framing. Only the manual render script passes
+  callMetrics — the scheduled monthly-report-email path has no callMetrics source
+  yet, so scheduled sends still use leads framing until that's wired up.
+
 ## Secret-entry gotcha
 - Secrets pasted into the dialog can be swapped/mistyped. A token refresh that
   returns `invalid_client — The OAuth client was not found` usually means the

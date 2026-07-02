@@ -43,6 +43,25 @@ import {
  * Chromium/headless dependency.
  */
 
+/**
+ * Opt-in reframing for call-driven lead-gen accounts: headline the actual
+ * phone-call count instead of generic "leads". Only applied to
+ * `reportType: "ads"`.
+ *
+ * Phone-call counts come from Google's call reporting (the "Oproepen" column,
+ * `metrics.phone_calls`). NOTE: these are NOT a subset of the tracked
+ * conversions in `GoogleAdsMetrics.totals.conversions` — call reporting counts
+ * ad-driven phone calls independently of the account's conversion actions, so
+ * `total` can legitimately exceed the tracked-lead count on the cover. Do not
+ * "reconcile" the two figures; they measure different things.
+ */
+export interface AdsCallMetrics {
+  /** Total phone calls in the period. */
+  total: number;
+  /** Phone calls per campaign, for the "…per campagne" chart. */
+  perCampaign?: { name: string; calls: number }[];
+}
+
 export interface ReportPdfMeta {
   clientName: string;
   /** e.g. "Maandrapport — vorige maand" or "SEO-maandrapport — mei 2026" */
@@ -55,6 +74,9 @@ export interface ReportPdfMeta {
   reportType?: "ads" | "seo" | "internal";
   /** Live Google Ads numbers — drive the Ads cover KPI cards and the charts. */
   metrics?: GoogleAdsMetrics | null;
+  /** Opt-in: reframe the Ads cover + charts around phone calls (see
+   * AdsCallMetrics). When omitted, the cover keeps the default leads framing. */
+  callMetrics?: AdsCallMetrics | null;
   /** SEO snapshot — drives the SEO cover KPI cards and the charts. */
   seo?: SeoReportMetrics | null;
   /** Ads report cadence — drives the cover eyebrow ("MAANDRAPPORT" vs
@@ -88,8 +110,43 @@ interface CoverModel {
   footerRight: string | null;
 }
 
-function buildAdsCoverModel(m: GoogleAdsMetrics, eyebrow: string): CoverModel {
+function buildAdsCoverModel(
+  m: GoogleAdsMetrics,
+  eyebrow: string,
+  calls?: AdsCallMetrics | null,
+): CoverModel {
   const cur = m.currency || "EUR";
+  const secondaryLine =
+    `Klikken ${int(m.totals.clicks)}   ·   Vertoningen ${int(
+      m.totals.impressions,
+    )}   ·   Gem. CPC ${eur(m.totals.avgCpc, cur, 2)}   ·   CTR ${dec(
+      m.totals.ctr * 100,
+    )}%`;
+  const footerRight = `Google Ads · ${m.accountName} (${m.customerId})`;
+
+  // Call-driven lead-gen accounts: headline the actual phone calls and keep the
+  // total leads as a secondary card. Opt-in via meta.callMetrics — every other
+  // account keeps the default framing below.
+  if (calls) {
+    const costPerCall =
+      calls.total > 0 ? eur(m.totals.cost / calls.total, cur, 2) : "n.v.t.";
+    return {
+      eyebrow,
+      cards: [
+        { label: "KOSTEN", value: eur(m.totals.cost, cur, 0), accent: PURPLE },
+        { label: "OPROEPEN", value: int(calls.total), accent: PURPLE },
+        { label: "KOST PER OPROEP", value: costPerCall, accent: AMBER },
+        {
+          label: "TOTALE LEADS",
+          value: int(m.totals.conversions),
+          accent: AMBER,
+        },
+      ],
+      secondaryLine,
+      footerRight,
+    };
+  }
+
   // Lead-gen accounts (form fills / calls) don't track a monetary conversion
   // value, so ROAS is 0. Showing a "0,00×" card would read as broken to the
   // client, so we surface the conversion rate instead. Accounts that do track
@@ -191,7 +248,7 @@ function coverModel(meta: ReportPdfMeta): CoverModel {
       ? "KWARTAALRAPPORT GOOGLE ADS"
       : "MAANDRAPPORT GOOGLE ADS";
   return meta.metrics
-    ? buildAdsCoverModel(meta.metrics, adsEyebrow)
+    ? buildAdsCoverModel(meta.metrics, adsEyebrow, meta.callMetrics)
     : {
         eyebrow: adsEyebrow,
         cards: [],
@@ -333,15 +390,15 @@ function drawCover(doc: PDFKit.PDFDocument, meta: ReportPdfMeta): void {
 
 // --- Charts -----------------------------------------------------------------
 
-function drawCharts(doc: PDFKit.PDFDocument, m: GoogleAdsMetrics): void {
+function drawCharts(
+  doc: PDFKit.PDFDocument,
+  m: GoogleAdsMetrics,
+  calls?: AdsCallMetrics | null,
+): void {
   const cur = m.currency || "EUR";
   const byCost = [...m.campaigns]
     .filter((c) => c.cost > 0)
     .sort((a, b) => b.cost - a.cost)
-    .slice(0, 6);
-  const byConv = [...m.campaigns]
-    .filter((c) => c.conversions > 0)
-    .sort((a, b) => b.conversions - a.conversions)
     .slice(0, 6);
 
   if (byCost.length > 0) {
@@ -355,6 +412,30 @@ function drawCharts(doc: PDFKit.PDFDocument, m: GoogleAdsMetrics): void {
       })),
     );
   }
+
+  // Call-driven accounts chart phone calls per campaign; everyone else keeps the
+  // leads-per-campaign chart.
+  const byCalls = (calls?.perCampaign ?? [])
+    .filter((c) => c.calls > 0)
+    .sort((a, b) => b.calls - a.calls)
+    .slice(0, 6);
+  if (byCalls.length > 0) {
+    chartLabel(doc, "Telefoonoproepen per campagne");
+    hbarChart(
+      doc,
+      byCalls.map((c) => ({
+        label: c.name,
+        value: c.calls,
+        display: dec(c.calls, c.calls % 1 === 0 ? 0 : 1),
+      })),
+    );
+    return;
+  }
+
+  const byConv = [...m.campaigns]
+    .filter((c) => c.conversions > 0)
+    .sort((a, b) => b.conversions - a.conversions)
+    .slice(0, 6);
   if (byConv.length > 0) {
     chartLabel(doc, "Leads per campagne");
     hbarChart(
@@ -430,7 +511,7 @@ export function renderReportPdf(
       }
     } else if (meta.metrics && meta.metrics.campaigns.length > 0) {
       sectionTitle(doc, "Campagneprestaties in beeld");
-      drawCharts(doc, meta.metrics);
+      drawCharts(doc, meta.metrics, meta.callMetrics);
       doc.moveDown(0.5);
     }
     renderMarkdown(doc, markdown);

@@ -39,6 +39,11 @@ async function main() {
     throw new Error(`Periode "${periodKey}" niet gevonden of zonder metrics in ${dataPath}.`);
   }
   const metrics = period.metrics as GoogleAdsMetrics;
+  // Opt-in: if the pulled data carries a phone-call breakdown for this period,
+  // reframe the cover + charts around calls (see AdsCallMetrics in report-pdf).
+  const callMetrics = (period.callMetrics ?? null) as
+    | { total: number; perCampaign?: { name: string; calls: number }[] }
+    | null;
   const markdown = readFileSync(mdPath!, "utf8");
 
   const dateLabel = new Intl.DateTimeFormat("nl-BE", {
@@ -53,6 +58,7 @@ async function main() {
     dateLabel,
     reportType: "ads",
     metrics,
+    callMetrics,
     adsCadence: cadence,
   });
 

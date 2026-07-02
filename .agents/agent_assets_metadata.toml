@@ -431,3 +431,15 @@ id = "5ULcBJ-Pip707uKqgZzKR"
 uri = "file://tmp/lcs/LCS-BV-Kwartaalrapport-Q2-2026.pdf"
 type = "pdf"
 title = "LCS BV — Kwartaalrapport Q2 2026 (bijgewerkt)"
+
+[[outputs]]
+id = "96Z6yLOzbT1CnEijx-qNZ"
+uri = "file://deliverables/lcs/LCS-maandrapport-juni-2026.pdf"
+type = "pdf"
+title = "LCS BV — Maandrapport Google Ads (juni 2026)"
+
+[[outputs]]
+id = "cCRxmNWP2QhHK0fQbm5wx"
+uri = "file://deliverables/lcs/LCS-kwartaalrapport-Q2-2026.pdf"
+type = "pdf"
+title = "LCS BV — Kwartaalrapport Google Ads (Q2 2026)"

@@ -383,3 +383,15 @@ id = "lTYkH55sOav4oOwP3wb1z"
 uri = "file://client-reports/schoonpannendak/Schoonpannendak-Kwartaalrapport-Q2-2026.pdf"
 type = "pdf"
 title = "Schoonpannendak — Kwartaalrapport Q2 2026 (apr–jun)"
+
+[[outputs]]
+id = "-tsuwziYGBiXACmn0JNRM"
+uri = "file://client-reports/schrever-cleaning/Schrever-Cleaning-Maandrapport-juni-2026.pdf"
+type = "pdf"
+title = "Schrever Cleaning — Maandrapport juni 2026"
+
+[[outputs]]
+id = "WENLvIzIbTuDoJeLn-Bt-"
+uri = "file://client-reports/schrever-cleaning/Schrever-Cleaning-Kwartaalrapport-Q2-2026.pdf"
+type = "pdf"
+title = "Schrever Cleaning — Kwartaalrapport Q2 2026 (apr–jun)"

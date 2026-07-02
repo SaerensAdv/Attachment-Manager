@@ -90,6 +90,27 @@ interface CoverModel {
 
 function buildAdsCoverModel(m: GoogleAdsMetrics, eyebrow: string): CoverModel {
   const cur = m.currency || "EUR";
+  // Lead-gen accounts (form fills / calls) don't track a monetary conversion
+  // value, so ROAS is 0. Showing a "0,00×" card would read as broken to the
+  // client, so we surface the conversion rate instead. Accounts that do track
+  // value (real ROAS > 0) keep the ROAS card unchanged.
+  const tracksValue =
+    m.totals.roas !== null &&
+    m.totals.roas > 0 &&
+    (m.totals.conversionsValue ?? 0) > 0;
+  const convRate =
+    m.totals.clicks > 0 ? (m.totals.conversions / m.totals.clicks) * 100 : null;
+  const fourthCard: KpiCard = tracksValue
+    ? {
+        label: "ROAS",
+        value: m.totals.roas !== null ? `${dec(m.totals.roas)}×` : "n.v.t.",
+        accent: AMBER,
+      }
+    : {
+        label: "CONVERSIERATIO",
+        value: convRate !== null ? `${dec(convRate)}%` : "n.v.t.",
+        accent: AMBER,
+      };
   return {
     eyebrow,
     cards: [
@@ -100,11 +121,7 @@ function buildAdsCoverModel(m: GoogleAdsMetrics, eyebrow: string): CoverModel {
         value: m.totals.cpa !== null ? eur(m.totals.cpa, cur, 2) : "n.v.t.",
         accent: AMBER,
       },
-      {
-        label: "ROAS",
-        value: m.totals.roas !== null ? `${dec(m.totals.roas)}×` : "n.v.t.",
-        accent: AMBER,
-      },
+      fourthCard,
     ],
     secondaryLine:
       `Klikken ${int(m.totals.clicks)}   ·   Vertoningen ${int(

@@ -201,11 +201,18 @@ export function buildMime(input: SendEmailInput): {
   const inlineParts = inlineImages.map((img) => {
     const cid = sanitizeHeaderValue(img.cid).replace(/[<>"]/g, "");
     const safeType = sanitizeHeaderValue(img.mimeType).replace(/"/g, "");
+    // Gmail renders a bare `cid:` part fine in the DRAFT view, but on SEND it
+    // re-writes the message and only re-hosts inline images it recognises as
+    // named parts. Without a `name`/`filename` the cid link goes dangling and
+    // the image breaks in the DELIVERED mail. Give every inline part a filename
+    // (derived from the cid + mime subtype) and keep Content-Disposition inline.
+    const ext = (safeType.split("/")[1] || "png").replace(/[^a-z0-9]/gi, "") || "png";
+    const name = `${cid}.${ext}`;
     return [
-      `Content-Type: ${safeType}`,
+      `Content-Type: ${safeType}; name="${name}"`,
       "Content-Transfer-Encoding: base64",
       `Content-ID: <${cid}>`,
-      "Content-Disposition: inline",
+      `Content-Disposition: inline; filename="${name}"`,
       "",
       chunk76(img.content.toString("base64")),
     ].join("\r\n");
@@ -234,8 +241,10 @@ export function buildMime(input: SendEmailInput): {
     topContentType = `multipart/mixed; boundary="${boundary}"`;
     bodyBlock = wrap(boundary, [htmlPart, ...attachmentParts]);
   } else if (attachments.length === 0) {
-    // HTML + inline images only: a single multipart/related.
-    topContentType = `multipart/related; boundary="${boundary}"`;
+    // HTML + inline images only: a single multipart/related. The `type` param
+    // (RFC 2387) names the root part so Gmail links the cid images to the HTML
+    // when it re-hosts them on send.
+    topContentType = `multipart/related; type="text/html"; boundary="${boundary}"`;
     bodyBlock = wrap(boundary, [htmlPart, ...inlineParts]);
   } else {
     // Both: multipart/mixed { multipart/related { html, inlines }, attachments }
@@ -247,7 +256,7 @@ export function buildMime(input: SendEmailInput): {
     // the two strings divergent from the first character.
     const relBoundary = `rel_${boundary}`;
     const relatedPart = [
-      `Content-Type: multipart/related; boundary="${relBoundary}"`,
+      `Content-Type: multipart/related; type="text/html"; boundary="${relBoundary}"`,
       "",
       wrap(relBoundary, [htmlPart, ...inlineParts]),
     ].join("\r\n");

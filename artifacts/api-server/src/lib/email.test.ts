@@ -122,10 +122,15 @@ describe("buildMime", () => {
         { cid: "head-portrait", mimeType: "image/png", content: Buffer.from("PNG") },
       ],
     });
-    // No PDF: the whole message is a single multipart/related.
+    // No PDF: the whole message is a single multipart/related (with the RFC 2387
+    // type param so Gmail links the cid image to the HTML when re-hosting on send).
     expect(headerBlock(mime)).toContain("Content-Type: multipart/related;");
+    expect(headerBlock(mime)).toContain('type="text/html"');
     expect(mime).toContain("Content-ID: <head-portrait>");
-    expect(mime).toContain("Content-Disposition: inline");
+    // A named inline part survives Gmail's send-time re-hosting (bare cid parts
+    // render in the draft but break after send).
+    expect(mime).toContain('Content-Disposition: inline; filename="head-portrait.png"');
+    expect(mime).toContain('Content-Type: image/png; name="head-portrait.png"');
     // The image bytes ride along base64-encoded.
     expect(mime).toContain(Buffer.from("PNG").toString("base64"));
   });
@@ -165,7 +170,7 @@ describe("buildMime", () => {
     // parser matching delimiters with startsWith would truncate at the first
     // inner delimiter.
     const outer = headerBlock(mime).match(/boundary="([^"]+)"/)?.[1];
-    const inner = mime.match(/multipart\/related; boundary="([^"]+)"/)?.[1];
+    const inner = mime.match(/multipart\/related;[^\r\n]*boundary="([^"]+)"/)?.[1];
     expect(outer).toBeTruthy();
     expect(inner).toBeTruthy();
     expect(inner).not.toBe(outer);

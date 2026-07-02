@@ -407,3 +407,15 @@ id = "ID3OyBdwDdioxYylShNsf"
 uri = "file://client-reports/goedkoopdrank/Goedkoopdrank-Kwartaalrapport-Q2-2026.pdf"
 type = "pdf"
 title = "Goedkoopdrank — Kwartaalrapport Q2 2026 (apr–jun)"
+
+[[outputs]]
+id = "evWWCOg-uIIExeEKarxuQ"
+uri = "file://client-reports/elektrische-boilers/Elektrische-Boilers-Maandrapport-juni-2026.pdf"
+type = "pdf"
+title = "Elektrische Boilers — Maandrapport juni 2026"
+
+[[outputs]]
+id = "s1KBIkZtQdMbX5e8AsmPY"
+uri = "file://client-reports/elektrische-boilers/Elektrische-Boilers-Kwartaalrapport-Q2-2026.pdf"
+type = "pdf"
+title = "Elektrische Boilers — Kwartaalrapport Q2 2026 (apr–jun)"

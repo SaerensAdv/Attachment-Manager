@@ -57,6 +57,9 @@ export interface ReportPdfMeta {
   metrics?: GoogleAdsMetrics | null;
   /** SEO snapshot — drives the SEO cover KPI cards and the charts. */
   seo?: SeoReportMetrics | null;
+  /** Ads report cadence — drives the cover eyebrow ("MAANDRAPPORT" vs
+   * "KWARTAALRAPPORT GOOGLE ADS"). Defaults to monthly. Mirrors seo.cadence. */
+  adsCadence?: "monthly" | "quarterly";
 }
 
 // --- Cover page -------------------------------------------------------------
@@ -85,10 +88,10 @@ interface CoverModel {
   footerRight: string | null;
 }
 
-function buildAdsCoverModel(m: GoogleAdsMetrics): CoverModel {
+function buildAdsCoverModel(m: GoogleAdsMetrics, eyebrow: string): CoverModel {
   const cur = m.currency || "EUR";
   return {
-    eyebrow: "MAANDRAPPORT GOOGLE ADS",
+    eyebrow,
     cards: [
       { label: "KOSTEN", value: eur(m.totals.cost, cur, 0), accent: PURPLE },
       { label: "LEADS", value: int(m.totals.conversions), accent: PURPLE },
@@ -162,10 +165,14 @@ function coverModel(meta: ReportPdfMeta): CoverModel {
       ? buildSeoCoverModel(meta.seo, eyebrow)
       : { eyebrow, cards: [], secondaryLine: null, footerRight: null };
   }
+  const adsEyebrow =
+    meta.adsCadence === "quarterly"
+      ? "KWARTAALRAPPORT GOOGLE ADS"
+      : "MAANDRAPPORT GOOGLE ADS";
   return meta.metrics
-    ? buildAdsCoverModel(meta.metrics)
+    ? buildAdsCoverModel(meta.metrics, adsEyebrow)
     : {
-        eyebrow: "MAANDRAPPORT GOOGLE ADS",
+        eyebrow: adsEyebrow,
         cards: [],
         secondaryLine: null,
         footerRight: null,

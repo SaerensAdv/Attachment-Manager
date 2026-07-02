@@ -371,3 +371,15 @@ id = "9k86bP2BmLjfCaDo0XzrP"
 uri = "file://.local/exports/seo-maandrapport-beauty-icon-werklijst.pdf"
 type = "pdf"
 title = "Interne werklijst — Beauty Icon (bureau + webbouwer)"
+
+[[outputs]]
+id = "zyfJT3P0jI2On0AlpV-3g"
+uri = "file://client-reports/schoonpannendak/Schoonpannendak-Maandrapport-juni-2026.pdf"
+type = "pdf"
+title = "Schoonpannendak — Maandrapport juni 2026"
+
+[[outputs]]
+id = "lTYkH55sOav4oOwP3wb1z"
+uri = "file://client-reports/schoonpannendak/Schoonpannendak-Kwartaalrapport-Q2-2026.pdf"
+type = "pdf"
+title = "Schoonpannendak — Kwartaalrapport Q2 2026 (apr–jun)"

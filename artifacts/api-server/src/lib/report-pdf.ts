@@ -111,13 +111,17 @@ function buildAdsCoverModel(m: GoogleAdsMetrics, eyebrow: string): CoverModel {
         value: convRate !== null ? `${dec(convRate)}%` : "n.v.t.",
         accent: AMBER,
       };
+  // Webshops that track a monetary value convert into orders, not leads, so we
+  // label the count/cost cards "conversies" there and keep "leads" for lead-gen.
+  const countLabel = tracksValue ? "CONVERSIES" : "LEADS";
+  const costPerLabel = tracksValue ? "KOST PER CONVERSIE" : "KOST PER LEAD";
   return {
     eyebrow,
     cards: [
       { label: "KOSTEN", value: eur(m.totals.cost, cur, 0), accent: PURPLE },
-      { label: "LEADS", value: int(m.totals.conversions), accent: PURPLE },
+      { label: countLabel, value: int(m.totals.conversions), accent: PURPLE },
       {
-        label: "KOST PER LEAD",
+        label: costPerLabel,
         value: m.totals.cpa !== null ? eur(m.totals.cpa, cur, 2) : "n.v.t.",
         accent: AMBER,
       },

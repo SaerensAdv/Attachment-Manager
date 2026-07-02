@@ -1368,6 +1368,172 @@ export async function fetchGoogleAdsNegativesContext(
   return { text, fetchedAt: new Date() };
 }
 
+/** One aggregated Shopping product-group / product row (read-only). */
+export interface ShoppingGroupMetric {
+  key: string;
+  cost: number;
+  clicks: number;
+  impressions: number;
+  conversions: number;
+  conversionsValue: number;
+  cpa: number | null;
+  roas: number | null;
+}
+
+/** Product-level breakdown of the Shopping campaigns for one period. */
+export interface ShoppingProductBreakdown {
+  currency: string;
+  /** By top-level product category (segments.product_type_l1). */
+  byProductType: ShoppingGroupMetric[];
+  /** By brand (segments.product_brand). */
+  byBrand: ShoppingGroupMetric[];
+  /** Individual products (segments.product_title), best sellers first. */
+  topProducts: ShoppingGroupMetric[];
+  warnings: string[];
+}
+
+interface ShoppingAgg {
+  cost: number;
+  clicks: number;
+  impressions: number;
+  conversions: number;
+  conversionsValue: number;
+}
+
+function aggShoppingRows(
+  rows: Record<string, unknown>[],
+  keyPath: string,
+  fallback: string,
+): Map<string, ShoppingAgg> {
+  const map = new Map<string, ShoppingAgg>();
+  for (const row of rows) {
+    const raw = pick(row, keyPath);
+    const k =
+      raw === undefined || raw === null || String(raw).trim() === ""
+        ? fallback
+        : String(raw);
+    const cur = map.get(k) ?? {
+      cost: 0,
+      clicks: 0,
+      impressions: 0,
+      conversions: 0,
+      conversionsValue: 0,
+    };
+    cur.cost += num(pick(row, "metrics.costMicros")) / 1_000_000;
+    cur.clicks += num(pick(row, "metrics.clicks"));
+    cur.impressions += num(pick(row, "metrics.impressions"));
+    cur.conversions += num(pick(row, "metrics.conversions"));
+    cur.conversionsValue += num(pick(row, "metrics.conversionsValue"));
+    map.set(k, cur);
+  }
+  return map;
+}
+
+function toShoppingMetrics(
+  map: Map<string, ShoppingAgg>,
+  topN: number,
+): ShoppingGroupMetric[] {
+  return [...map.entries()]
+    .map(([key, a]) => ({
+      key,
+      cost: a.cost,
+      clicks: a.clicks,
+      impressions: a.impressions,
+      conversions: a.conversions,
+      conversionsValue: a.conversionsValue,
+      cpa: a.conversions > 0 ? a.cost / a.conversions : null,
+      roas: a.cost > 0 ? a.conversionsValue / a.cost : null,
+    }))
+    .sort(
+      (x, y) => y.conversionsValue - x.conversionsValue || y.cost - x.cost,
+    )
+    .slice(0, topN);
+}
+
+/**
+ * Pull a product-level breakdown of the Shopping campaigns for one period —
+ * READ ONLY. Aggregates `shopping_performance_view` by product category
+ * (product_type_l1), brand and individual product title. Each cut is
+ * best-effort: a single failing query is captured as a warning, not fatal.
+ */
+export async function fetchShoppingProductBreakdown(
+  rawCustomerId: string,
+  range: GoogleAdsCustomRange,
+): Promise<ShoppingProductBreakdown> {
+  assertIsoDate(range.start);
+  assertIsoDate(range.end);
+  if (range.start > range.end) {
+    throw new GoogleAdsConfigError(
+      "Ongeldige Google Ads-periode: startdatum ligt na einddatum.",
+    );
+  }
+  const cfg = readConfig();
+  const customerId = digitsOnly(rawCustomerId);
+  if (!customerId) {
+    throw new GoogleAdsConfigError("Ongeldig Google Ads customer ID.");
+  }
+  const accessToken = await getAccessToken(cfg);
+  const dateClause = `segments.date BETWEEN '${range.start}' AND '${range.end}'`;
+  const warnings: string[] = [];
+
+  const accountRows = await runGaql(
+    cfg,
+    accessToken,
+    customerId,
+    `SELECT customer.currency_code FROM customer WHERE ${dateClause}`,
+  );
+  const currency = String(
+    pick(accountRows[0] ?? {}, "customer.currencyCode") ?? "EUR",
+  );
+
+  const query = (segment: string) =>
+    `SELECT ${segment},
+            metrics.cost_micros, metrics.clicks, metrics.impressions,
+            metrics.conversions, metrics.conversions_value
+     FROM shopping_performance_view
+     WHERE ${dateClause}
+     ORDER BY metrics.cost_micros DESC
+     LIMIT 5000`;
+
+  const cut = async (
+    segment: string,
+    keyPath: string,
+    fallback: string,
+    label: string,
+  ): Promise<ShoppingGroupMetric[]> => {
+    try {
+      const rows = await runGaql(cfg, accessToken, customerId, query(segment));
+      return toShoppingMetrics(aggShoppingRows(rows, keyPath, fallback), 15);
+    } catch (err) {
+      warnings.push(
+        `${label} kon niet worden opgehaald: ${err instanceof Error ? err.message : String(err)}`,
+      );
+      return [];
+    }
+  };
+
+  const byProductType = await cut(
+    "segments.product_type_l1",
+    "segments.productTypeL1",
+    "(geen categorie)",
+    "Productcategorieën",
+  );
+  const byBrand = await cut(
+    "segments.product_brand",
+    "segments.productBrand",
+    "(geen merk)",
+    "Merken",
+  );
+  const topProducts = await cut(
+    "segments.product_title",
+    "segments.productTitle",
+    "(geen titel)",
+    "Producten",
+  );
+
+  return { currency, byProductType, byBrand, topProducts, warnings };
+}
+
 /** One child account discovered under the agency MCC. */
 export interface AdsAccount {
   /** Plain digits, no dashes (the canonical googleAdsCustomerId value). */

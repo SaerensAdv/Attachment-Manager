@@ -419,3 +419,15 @@ id = "s1KBIkZtQdMbX5e8AsmPY"
 uri = "file://client-reports/elektrische-boilers/Elektrische-Boilers-Kwartaalrapport-Q2-2026.pdf"
 type = "pdf"
 title = "Elektrische Boilers — Kwartaalrapport Q2 2026 (apr–jun)"
+
+[[outputs]]
+id = "mW2wT186EPincoeBdkUKo"
+uri = "file://tmp/lcs/LCS-BV-Maandrapport-juni-2026.pdf"
+type = "pdf"
+title = "LCS BV — Maandrapport juni 2026 (Google Ads)"
+
+[[outputs]]
+id = "5ULcBJ-Pip707uKqgZzKR"
+uri = "file://tmp/lcs/LCS-BV-Kwartaalrapport-Q2-2026.pdf"
+type = "pdf"
+title = "LCS BV — Kwartaalrapport Q2 2026 (Google Ads)"

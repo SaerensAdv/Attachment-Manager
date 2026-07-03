@@ -27,6 +27,10 @@ const SC_BASE = "https://searchconsole.googleapis.com/webmasters/v3";
 const SC_DATA_LAG_DAYS = 3;
 const SC_WINDOW_DAYS = 28;
 const MAX_ROWS = 50;
+/** Query-dimension fetch depth. Higher than the 50-row display cap so the SEO
+ * report's branded/non-branded split sees the long tail (GSC returns up to the
+ * full set); only the first MAX_ROWS are ever rendered into the agent text. */
+const QUERY_FETCH_LIMIT = 1000;
 const MAX_REPORT_LEN = 20_000;
 
 /** Cache (6h) — GSC refreshes ~daily, so this never serves meaningfully stale data. */
@@ -328,7 +332,7 @@ export async function fetchSearchConsoleReport(
     const rows = await searchConsoleQuery(accessToken, siteUrl, {
       ...base,
       dimensions: ["query"],
-      rowLimit: MAX_ROWS,
+      rowLimit: QUERY_FETCH_LIMIT,
     });
     topQueries = rows.map(toRow);
   } catch (err) {
@@ -366,7 +370,14 @@ export async function fetchSearchConsoleReport(
   lines.push("");
   lines.push(...renderRowLines(topPages.slice(0, MAX_ROWS), "Top pagina's (op klikken)"));
 
-  const signals = computeSearchConsoleSignals(topQueries, {}, now);
+  // Signals + display stay on the top MAX_ROWS so existing behaviour and the
+  // report length are unchanged; the full topQueries list is returned in
+  // `report` for the SEO report's branded/non-branded split.
+  const signals = computeSearchConsoleSignals(
+    topQueries.slice(0, MAX_ROWS),
+    {},
+    now,
+  );
   const renderedSignals = renderSearchConsoleSignals(signals);
   if (renderedSignals) {
     lines.push("");

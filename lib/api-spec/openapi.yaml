@@ -2261,6 +2261,8 @@ components:
           type: ["string", "null"]
         reportEmail:
           type: ["string", "null"]
+        brandTerms:
+          type: ["string", "null"]
         websiteIntake:
           type: ["string", "null"]
         websiteIntakeAt:
@@ -2392,6 +2394,8 @@ components:
         searchConsoleData:
           type: ["string", "null"]
         reportEmail:
+          type: ["string", "null"]
+        brandTerms:
           type: ["string", "null"]
         googleAdsCustomerId:
           type: ["string", "null"]

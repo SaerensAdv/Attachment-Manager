@@ -67,6 +67,9 @@ export const clientsTable = pgTable("clients", {
   crawlLive: text("crawl_live"),
   crawlLiveAt: timestamp("crawl_live_at"),
   reportEmail: text("report_email"),
+  // Merktermen (één per regel): merknaam + veelvoorkomende varianten/typfouten,
+  // gebruikt om organische zoektermen in branded vs non-branded te splitsen.
+  brandTerms: text("brand_terms"),
   googleAdsCustomerId: text("google_ads_customer_id"),
   googleAdsLive: text("google_ads_live"),
   googleAdsLiveAt: timestamp("google_ads_live_at"),

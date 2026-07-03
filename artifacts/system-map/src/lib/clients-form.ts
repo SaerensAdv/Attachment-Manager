@@ -125,6 +125,13 @@ export const FIELDS: FieldDef[] = [
     placeholder: "naam@bedrijf.be",
     help: "Maandrapport wordt naar dit adres gestuurd",
   },
+  {
+    key: "brandTerms",
+    label: "Merktermen",
+    kind: "list",
+    placeholder: "Bv. merknaam + veelvoorkomende schrijfwijzen/typfouten",
+    help: "Eén per regel · splitst zoektermen in branded vs non-branded (SEO-rapport). Merknaam + domein worden al automatisch herkend.",
+  },
 ];
 
 // "Huidige stand" — vrije notities over de echte stand van zaken per klant.
@@ -163,6 +170,7 @@ export const EMPTY_FORM: FormState = {
   googleAdsData: "",
   searchConsoleData: "",
   reportEmail: "",
+  brandTerms: "",
   googleAdsCustomerId: "",
   competitorAdvertisers: "",
   searchConsoleSiteUrl: "",

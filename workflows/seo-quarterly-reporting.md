@@ -14,7 +14,7 @@ The regular quarterly SEO/website reporting cycle for a client with organic sear
 
 1. Confirm the reporting quarter and comparison period (the previous quarter).
 2. Review the client's goals and priority pages/services (`clients/<client>.md`).
-3. Read the supplied Search Console data: clicks, impressions, average position, CTR — for the report quarter and the previous quarter, with the real deltas.
+3. Read the supplied Search Console data: clicks, impressions, average position, CTR — for the report quarter and the previous quarter, with the real deltas. When a branded vs non-branded split is supplied, read it too: how much organic traffic is non-branded (new demand SEO captures over the quarter) vs branded (people already searching the brand).
 4. Read the supplied technical crawl-health signals and note what changed over the quarter.
 5. Read the supplied PageSpeed / Core Web Vitals current-state signals (these are a snapshot, not a delta).
 6. Include Bing / other-engine organic signals only when supplied.
@@ -34,6 +34,7 @@ Follow `knowledge/seo-reporting.md`. Must include:
 
 - Headline — how the site's organic quarter went, in one or two sentences
 - Key organic results (clicks, impressions, average position, CTR) with quarter-over-quarter change
+- Branded vs non-branded organic split, where supplied — lead with the non-branded share and its top terms (the demand SEO actively wins), then state the branded share
 - Technical health summary (crawl signals) and what changed over the quarter
 - Page speed / Core Web Vitals current state
 - Bing / other-engine signals, where available

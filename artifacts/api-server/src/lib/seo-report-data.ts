@@ -18,6 +18,12 @@
 
 import { fetchSearchConsoleReport } from "./search-console";
 import type { SearchConsoleReport, SearchConsoleRow } from "./search-console";
+import {
+  deriveBrandTokens,
+  classifyQueries,
+  hasBrandTokens,
+  toBrandTermList,
+} from "./brand-classify";
 import { fetchBingReport } from "./bing-webmaster";
 import { fetchPageSpeedReport } from "./pagespeed";
 import { listSnapshots } from "./crawl-history";
@@ -54,6 +60,36 @@ export interface SeoSearchTotals {
   position: number;
 }
 
+/** One side (branded or non-branded) of the organic query split. */
+export interface SeoBrandSplitSide {
+  clicks: number;
+  impressions: number;
+  /** Impression-weighted average position. */
+  position: number;
+  /** Share of classified clicks this period (0..1). */
+  clickShare: number;
+  /** Number of distinct queries on this side. */
+  queryCount: number;
+}
+
+/** Branded vs non-branded organic-query split for the SEO report. */
+export interface SeoBrandSplit {
+  /** True when brand tokens were auto-derived from the client name/domain. */
+  autoDerived: boolean;
+  /** How many manual brand terms the client configured. */
+  manualTermCount: number;
+  current: { branded: SeoBrandSplitSide; nonBranded: SeoBrandSplitSide };
+  previous: { branded: SeoBrandSplitSide; nonBranded: SeoBrandSplitSide } | null;
+  /** Top non-branded queries this period (the demand SEO actually captures). */
+  topNonBranded: {
+    key: string;
+    clicks: number;
+    impressions: number;
+    ctr: number;
+    position: number;
+  }[];
+}
+
 /**
  * The structured, JSON-serializable snapshot that drives the PDF cover + email
  * KPI block. Built only when Search Console current data is available; the
@@ -77,6 +113,9 @@ export interface SeoReportMetrics {
       ctr: number;
       position: number;
     }[];
+    /** Branded vs non-branded split. Optional: older persisted payloads lack it
+     * and must keep rendering exactly as before. */
+    brandSplit?: SeoBrandSplit | null;
   };
   crawl: {
     crawledAt: string;
@@ -104,10 +143,15 @@ export interface SeoReportMetrics {
 
 /** The client fields this pipeline reads. Structural so tests need no full row. */
 export interface SeoReportClient {
+  /** Client name — seeds automatic brand-term derivation for the query split. */
+  name?: string | null;
   searchConsoleSiteUrl?: string | null;
   bingSiteUrl?: string | null;
   website?: string | null;
   landingPages?: string | null;
+  /** Editable per-client brand terms (newline/comma separated) — variants and
+   * typos the auto rules can't infer. */
+  brandTerms?: string | null;
 }
 
 function isoDay(d: Date): string {
@@ -223,6 +267,90 @@ function topQueriesOf(
   }));
 }
 
+/** Aggregate one side of the split; position is impression-weighted. */
+function sideAgg(rows: SearchConsoleRow[]): {
+  clicks: number;
+  impressions: number;
+  position: number;
+  queryCount: number;
+} {
+  let clicks = 0;
+  let impressions = 0;
+  let weighted = 0;
+  for (const r of rows) {
+    clicks += r.clicks;
+    impressions += r.impressions;
+    weighted += r.position * r.impressions;
+  }
+  return {
+    clicks,
+    impressions,
+    position: impressions > 0 ? weighted / impressions : 0,
+    queryCount: rows.length,
+  };
+}
+
+/** Build both split sides with each side's share of total classified clicks. */
+function buildSplitSides(
+  branded: SearchConsoleRow[],
+  nonBranded: SearchConsoleRow[],
+): { branded: SeoBrandSplitSide; nonBranded: SeoBrandSplitSide } {
+  const b = sideAgg(branded);
+  const n = sideAgg(nonBranded);
+  const total = b.clicks + n.clicks;
+  const share = (c: number) => (total > 0 ? c / total : 0);
+  return {
+    branded: { ...b, clickShare: share(b.clicks) },
+    nonBranded: { ...n, clickShare: share(n.clicks) },
+  };
+}
+
+function fmtSharePct(x: number): string {
+  return `${Math.round(x * 100)}%`;
+}
+
+/** Team-facing Dutch summary of the split — deliberately leads with non-branded. */
+function renderBrandSplitText(split: SeoBrandSplit): string {
+  const c = split.current;
+  const lines: string[] = [];
+  lines.push(
+    "Splitsing van de organische zoekklikken in non-branded (nieuwe vraag die SEO binnenhaalt) vs branded (mensen die het merk al zochten).",
+  );
+  lines.push("");
+  lines.push(
+    `Non-branded: ${c.nonBranded.clicks} klikken (${fmtSharePct(c.nonBranded.clickShare)}), ${c.nonBranded.impressions} vertoningen, gem. positie ${c.nonBranded.position.toFixed(1)}, ${c.nonBranded.queryCount} zoektermen.`,
+  );
+  lines.push(
+    `Branded: ${c.branded.clicks} klikken (${fmtSharePct(c.branded.clickShare)}), ${c.branded.impressions} vertoningen, gem. positie ${c.branded.position.toFixed(1)}, ${c.branded.queryCount} zoektermen.`,
+  );
+  if (split.previous) {
+    const p = split.previous;
+    lines.push("");
+    lines.push(
+      `Vorige periode — non-branded: ${p.nonBranded.clicks} klikken (${fmtSharePct(p.nonBranded.clickShare)}); branded: ${p.branded.clicks} klikken (${fmtSharePct(p.branded.clickShare)}).`,
+    );
+  }
+  if (split.topNonBranded.length > 0) {
+    lines.push("");
+    lines.push("Top non-branded zoektermen (de vraag die SEO binnenhaalt):");
+    for (const q of split.topNonBranded) {
+      lines.push(
+        `- ${q.key}: ${q.clicks} klikken, gem. positie ${q.position.toFixed(1)}`,
+      );
+    }
+  }
+  lines.push("");
+  const origin = split.autoDerived
+    ? "automatisch herkend uit naam/domein"
+    : "geen automatische merkherkenning";
+  const manual =
+    split.manualTermCount > 0
+      ? ` + ${split.manualTermCount} handmatige merkterm(en)`
+      : "";
+  lines.push(`(Merkherkenning: ${origin}${manual}.)`);
+  return lines.join("\n");
+}
+
 /**
  * Assemble the SEO report snapshot for one client. Best-effort per source:
  * every failure becomes a note, nothing throws. `metrics` is populated only when
@@ -270,6 +398,7 @@ export async function fetchSeoReportSnapshot(
 
     if (current) {
       let previous: SeoSearchTotals | null = null;
+      let previousReport: SearchConsoleReport | null = null;
       let yearAgo: SeoSearchTotals | null = null;
 
       // Previous period (PoP) — best-effort.
@@ -282,6 +411,7 @@ export async function fetchSeoReportSnapshot(
           },
         });
         previous = totalsOf(prev.report);
+        previousReport = prev.report;
         blocks.push(
           labelledBlock(
             "Search Console — vorige periode (vergelijking)",
@@ -318,6 +448,45 @@ export async function fetchSeoReportSnapshot(
         );
       }
 
+      // Branded vs non-branded organic-query split — deterministic classifier
+      // over the full query long tail; best-effort (absent → renders as before).
+      const brandTokens = deriveBrandTokens({
+        name: client.name,
+        website: client.website,
+        siteUrl: scSite,
+        extraTerms: client.brandTerms,
+      });
+      let brandSplit: SeoBrandSplit | null = null;
+      if (hasBrandTokens(brandTokens) && current.topQueries.length > 0) {
+        const cur = classifyQueries(current.topQueries, brandTokens);
+        const autoOnly = deriveBrandTokens({
+          name: client.name,
+          website: client.website,
+          siteUrl: scSite,
+        });
+        let prevSides:
+          | { branded: SeoBrandSplitSide; nonBranded: SeoBrandSplitSide }
+          | null = null;
+        if (previousReport && previousReport.topQueries.length > 0) {
+          const p = classifyQueries(previousReport.topQueries, brandTokens);
+          prevSides = buildSplitSides(p.branded, p.nonBranded);
+        }
+        brandSplit = {
+          autoDerived: hasBrandTokens(autoOnly),
+          manualTermCount: toBrandTermList(client.brandTerms).length,
+          current: buildSplitSides(cur.branded, cur.nonBranded),
+          previous: prevSides,
+          topNonBranded: topQueriesOf(cur.nonBranded),
+        };
+        blocks.push(
+          labelledBlock(
+            "Search Console — branded vs non-branded zoektermen (rapportperiode)",
+            periods.current,
+            renderBrandSplitText(brandSplit),
+          ),
+        );
+      }
+
       metrics = {
         siteUrl: current.siteUrl,
         cadence,
@@ -329,6 +498,7 @@ export async function fetchSeoReportSnapshot(
           previous,
           yearAgo,
           topQueries: topQueriesOf(current.topQueries),
+          brandSplit,
         },
         crawl: null,
         pagespeed: null,

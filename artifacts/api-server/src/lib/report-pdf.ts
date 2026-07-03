@@ -467,6 +467,46 @@ function drawSeoCharts(doc: PDFKit.PDFDocument, seo: SeoReportMetrics): void {
   }
 }
 
+/**
+ * Branded vs non-branded organic-query split — deterministic, drawn only when
+ * the (optional) split is present on the metrics. Leads with non-branded (the
+ * demand SEO actually captures) so it reads first as the amber/highlighted bar.
+ */
+function drawSeoBrandSplit(doc: PDFKit.PDFDocument, seo: SeoReportMetrics): void {
+  const split = seo.search.brandSplit;
+  if (!split) return;
+  const c = split.current;
+  if (c.branded.clicks + c.nonBranded.clicks <= 0) return;
+  const pct = (x: number) => `${Math.round(x * 100)}%`;
+
+  chartLabel(doc, "Branded vs non-branded (klikken)");
+  hbarChart(doc, [
+    {
+      label: "Non-branded",
+      value: c.nonBranded.clicks,
+      display: `${int(c.nonBranded.clicks)} · ${pct(c.nonBranded.clickShare)}`,
+    },
+    {
+      label: "Branded",
+      value: c.branded.clicks,
+      display: `${int(c.branded.clicks)} · ${pct(c.branded.clickShare)}`,
+    },
+  ]);
+
+  const topNB = split.topNonBranded.filter((q) => q.clicks > 0).slice(0, 6);
+  if (topNB.length > 0) {
+    chartLabel(doc, "Top non-branded zoektermen (klikken)");
+    hbarChart(
+      doc,
+      topNB.map((q) => ({
+        label: q.key,
+        value: q.clicks,
+        display: int(q.clicks),
+      })),
+    );
+  }
+}
+
 // --- Public API -------------------------------------------------------------
 
 export function renderReportPdf(
@@ -507,6 +547,7 @@ export function renderReportPdf(
       if (meta.seo && meta.seo.search.topQueries.length > 0) {
         sectionTitle(doc, "Organische zoekprestaties in beeld");
         drawSeoCharts(doc, meta.seo);
+        drawSeoBrandSplit(doc, meta.seo);
         doc.moveDown(0.5);
       }
     } else if (meta.metrics && meta.metrics.campaigns.length > 0) {

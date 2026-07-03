@@ -7,6 +7,7 @@ The Reporting Specialist leads the client-facing write-up; the SEO Specialist in
 ## Data sources
 
 - **Google Search Console (primary).** The organic source of truth: clicks, impressions, average position, and CTR, with the real change against the comparison period (previous month or previous quarter). Position is a real 1-based rank — never scale or invent it.
+- **Branded vs non-branded split.** The organic queries split into *branded* (people already searching for the business by name — they would likely find it anyway) and *non-branded* (generic demand the SEO work actually captures). This is where SEO earns its keep, so lead the organic story with the non-branded numbers. The split is derived deterministically from the client's name/domain plus an editable per-client brand-terms list; treat the supplied figures as given — never re-classify queries by hand.
 - **Technical crawl health.** Signals from the most recent site crawl (indexation, errors, broken links, redirects) and what changed since the last report.
 - **PageSpeed / Core Web Vitals (current state).** A snapshot of page speed and Core Web Vitals at report time — a state, not a period-over-period delta. Say so plainly rather than implying a trend.
 - **Bing / other engines (optional).** Include only when the data is actually supplied; never pad the report with an empty engine.
@@ -28,7 +29,7 @@ The client report is **short and plain-language** — a one-glance read, not a t
 1. **Kerncijfers in één oogopslag** — clicks, impressions, average position and CTR for the period, each with the change versus the comparison period (a clear up/down trend). Average position is a real 1-based rank; page speed, if mentioned at all, is a current-state snapshot, never a trend.
 2. **Hoogtepunten van de maand** — two or three concrete wins or notable movements, in plain language (e.g. "meer mensen vonden je via lokale zoekopdrachten"). Honest: if it was a quiet month, say so plainly.
 3. **Waar we komende maand op focussen** — two or three focus points for the coming period, written for the client, NOT as technical tasks. Describe the *goal and the payoff* ("we werken aan snellere productpagina's zodat bezoekers minder afhaken"), never the implementation ("LCP naar <2,5s, title tags herschrijven").
-4. **Top zoektermen** — the handful of search terms bringing the most organic traffic, with their clicks (and position where useful).
+4. **Top zoektermen** — the handful of search terms bringing the most organic traffic, with their clicks (and position where useful). When a branded/non-branded split is supplied, lead with the non-branded picture — how many clicks come from *new, non-branded* demand vs from people already searching the brand — and highlight the top non-branded terms, since that is the traffic SEO is actively winning. State the branded share too, plainly, so the client sees the full picture.
 
 Everything technical — per-page title tags, meta descriptions, headings, FAQ/schema markup, redirects/canonicals, Core Web Vitals fixes, crawl errors, the prioritized action list — belongs in the internal werklijst, NOT in the client report (see below).
 

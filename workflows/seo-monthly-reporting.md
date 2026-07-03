@@ -14,7 +14,7 @@ The regular monthly SEO/website reporting cycle for a client with organic search
 
 1. Confirm the reporting period and comparison period (the previous month).
 2. Review the client's goals and priority pages/services (`clients/<client>.md`).
-3. Read the supplied Search Console data: clicks, impressions, average position, CTR — for the report month and the previous month, with the real deltas.
+3. Read the supplied Search Console data: clicks, impressions, average position, CTR — for the report month and the previous month, with the real deltas. When a branded vs non-branded split is supplied, read it too: how much organic traffic is non-branded (new demand SEO captures) vs branded (people already searching the brand).
 4. Read the supplied technical crawl-health signals and note what changed since last time.
 5. Read the supplied PageSpeed / Core Web Vitals current-state signals (these are a snapshot, not a delta).
 6. Include Bing / other-engine organic signals only when supplied.
@@ -35,7 +35,7 @@ Follow `knowledge/seo-reporting.md`. The CLIENT report is short and plain-langua
 - **Kerncijfers in één oogopslag** — clicks, impressions, average position, CTR with the month-over-month change (clear up/down trend)
 - **Hoogtepunten van de maand** — two or three concrete wins or notable movements, in plain language
 - **Waar we komende maand op focussen** — two or three focus points written for the client (the goal and payoff), NOT technical tasks
-- **Top zoektermen** — the handful of search terms bringing the most organic traffic
+- **Top zoektermen** — the handful of search terms bringing the most organic traffic. When the branded vs non-branded split is supplied, lead with the non-branded picture (the demand SEO actively wins) and its top terms, then state the branded share plainly
 
 Tone: neutral and factual, with a light, reassuring undertone. No jargon, no technical implementation detail, no emoji.
 

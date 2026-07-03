@@ -192,3 +192,157 @@ describe("fetchSeoReportSnapshot — best-effort degradation", () => {
     expect(out.notes.some((n) => /Jaar-op-jaar/.test(n))).toBe(true);
   });
 });
+
+describe("fetchSeoReportSnapshot — branded vs non-branded split", () => {
+  const periods = buildSeoReportPeriods(
+    new Date("2026-06-07T10:00:00Z"),
+    "monthly",
+  );
+
+  const currentQueries = [
+    { key: "voorbeeld schoenen", clicks: 30, impressions: 100, ctr: 0.3, position: 2 },
+    { key: "voorbeeld", clicks: 20, impressions: 50, ctr: 0.4, position: 1 },
+    { key: "rode schoenen kopen", clicks: 40, impressions: 200, ctr: 0.2, position: 8 },
+    { key: "sneakers online", clicks: 10, impressions: 100, ctr: 0.1, position: 12 },
+  ];
+
+  beforeEach(() => {
+    scMock.mockReset();
+    bingMock.mockReset();
+    psMock.mockReset();
+    snapMock.mockReset();
+    snapMock.mockResolvedValue([]);
+    bingMock.mockRejectedValue(new Error("no bing"));
+    psMock.mockResolvedValue({ text: "", fetchedAt: new Date(), records: [] });
+  });
+
+  it("splits queries auto-derived from name/domain, impression-weighted position, leading with non-branded", async () => {
+    scMock.mockImplementation(async (_site, opts) => {
+      if (opts?.dateRange?.startDate === periods.current.startDate) {
+        return scResult(
+          { clicks: 100, impressions: 450, ctr: 0.22, position: 6 },
+          currentQueries,
+        );
+      }
+      throw new Error("no comparison data");
+    });
+
+    const out = await fetchSeoReportSnapshot(
+      {
+        name: "Voorbeeld Shop",
+        searchConsoleSiteUrl: "sc-domain:voorbeeld.be",
+      },
+      1,
+      "monthly",
+      periods,
+    );
+
+    const split = out.metrics?.search.brandSplit;
+    expect(split).toBeTruthy();
+    expect(split?.autoDerived).toBe(true);
+    expect(split?.manualTermCount).toBe(0);
+
+    // "voorbeeld schoenen" (30) + "voorbeeld" (20) = 50 branded clicks;
+    // "rode schoenen kopen" (40) + "sneakers online" (10) = 50 non-branded.
+    expect(split?.current.branded.clicks).toBe(50);
+    expect(split?.current.nonBranded.clicks).toBe(50);
+    expect(split?.current.branded.clickShare).toBeCloseTo(0.5, 5);
+    expect(split?.current.nonBranded.clickShare).toBeCloseTo(0.5, 5);
+    expect(split?.current.branded.queryCount).toBe(2);
+    expect(split?.current.nonBranded.queryCount).toBe(2);
+
+    // Impression-weighted average position for the non-branded side:
+    // (8*200 + 12*100) / 300 = 9.333…
+    expect(split?.current.nonBranded.position).toBeCloseTo(9.3333, 3);
+    // Branded: (2*100 + 1*50) / 150 = 1.666…
+    expect(split?.current.branded.position).toBeCloseTo(1.6667, 3);
+
+    // Top non-branded leads with the biggest non-branded term.
+    expect(split?.topNonBranded[0]?.key).toBe("rode schoenen kopen");
+    expect(split?.topNonBranded.some((q) => q.key === "voorbeeld")).toBe(false);
+
+    // No comparison period → previous split absent.
+    expect(split?.previous).toBeNull();
+
+    // Team-facing block leads with the non-branded numbers.
+    const block = out.blocks.find((b) => /branded vs non-branded/i.test(b));
+    expect(block).toBeTruthy();
+    expect(block?.indexOf("Non-branded:")).toBeLessThan(
+      block?.indexOf("Branded:") ?? -1,
+    );
+  });
+
+  it("uses a manual brand term to catch a variant the auto rules miss", async () => {
+    const queries = [
+      { key: "voorbeeld schoenen", clicks: 30, impressions: 100, ctr: 0.3, position: 2 },
+      { key: "vrbld outlet", clicks: 25, impressions: 80, ctr: 0.3, position: 3 },
+      { key: "rode schoenen kopen", clicks: 40, impressions: 200, ctr: 0.2, position: 8 },
+    ];
+    scMock.mockImplementation(async (_site, opts) => {
+      if (opts?.dateRange?.startDate === periods.current.startDate) {
+        return scResult(
+          { clicks: 95, impressions: 380, ctr: 0.25, position: 5 },
+          queries,
+        );
+      }
+      throw new Error("no comparison data");
+    });
+
+    const out = await fetchSeoReportSnapshot(
+      {
+        name: "Voorbeeld Shop",
+        searchConsoleSiteUrl: "sc-domain:voorbeeld.be",
+        brandTerms: "vrbld",
+      },
+      1,
+      "monthly",
+      periods,
+    );
+
+    const split = out.metrics?.search.brandSplit;
+    expect(split?.manualTermCount).toBe(1);
+    // "vrbld outlet" is only branded because of the manual term.
+    expect(split?.current.branded.clicks).toBe(55);
+    expect(split?.current.nonBranded.clicks).toBe(40);
+    expect(split?.topNonBranded.some((q) => q.key === "vrbld outlet")).toBe(
+      false,
+    );
+  });
+
+  it("captures a previous-period split when the comparison period is available", async () => {
+    scMock.mockImplementation(async (_site, opts) => {
+      const start = opts?.dateRange?.startDate;
+      if (start === periods.current.startDate) {
+        return scResult(
+          { clicks: 100, impressions: 450, ctr: 0.22, position: 6 },
+          currentQueries,
+        );
+      }
+      if (start === periods.previous.startDate) {
+        return scResult(
+          { clicks: 60, impressions: 300, ctr: 0.2, position: 7 },
+          [
+            { key: "voorbeeld", clicks: 20, impressions: 60, ctr: 0.33, position: 2 },
+            { key: "goedkope schoenen", clicks: 40, impressions: 240, ctr: 0.17, position: 9 },
+          ],
+        );
+      }
+      throw new Error("no year-ago data");
+    });
+
+    const out = await fetchSeoReportSnapshot(
+      {
+        name: "Voorbeeld Shop",
+        searchConsoleSiteUrl: "sc-domain:voorbeeld.be",
+      },
+      1,
+      "monthly",
+      periods,
+    );
+
+    const split = out.metrics?.search.brandSplit;
+    expect(split?.previous).toBeTruthy();
+    expect(split?.previous?.branded.clicks).toBe(20);
+    expect(split?.previous?.nonBranded.clicks).toBe(40);
+  });
+});

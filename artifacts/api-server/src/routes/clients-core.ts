@@ -37,6 +37,7 @@ const FIELDS = [
   "googleAdsData",
   "searchConsoleData",
   "reportEmail",
+  "brandTerms",
   "googleAdsCustomerId",
   "competitorAdvertisers",
   "searchConsoleSiteUrl",

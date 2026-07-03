@@ -62,6 +62,8 @@ export interface Client {
   /** @nullable */
   reportEmail?: string | null;
   /** @nullable */
+  brandTerms?: string | null;
+  /** @nullable */
   websiteIntake?: string | null;
   /** @nullable */
   websiteIntakeAt?: Date | null;

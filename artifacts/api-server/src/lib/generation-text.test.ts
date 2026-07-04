@@ -142,6 +142,120 @@ describe("toClientFacingReport client-leak regression", () => {
   });
 });
 
+describe("toClientFacingReport cover/signature/meta de-duplication", () => {
+  it("drops a leading heading that restates the cover title but keeps the body", () => {
+    const report = [
+      "## Maandelijks SEO-rapport — juni 2026",
+      "",
+      "## Kerncijfers in één oogopslag",
+      "",
+      "Organische klikken stegen met 25%.",
+    ].join("\n");
+    const client = toClientFacingReport(report);
+    expect(client).not.toContain("Maandelijks SEO-rapport — juni 2026");
+    expect(client).toContain("Kerncijfers in één oogopslag");
+    expect(client).toContain("Organische klikken stegen met 25%.");
+  });
+
+  it("drops the leading 'Rapportage — …' title restatement", () => {
+    const report = [
+      "## Rapportage — Maandelijks SEO/websiterapport Waterlek (juni 2026)",
+      "",
+      "Juni was een positieve maand.",
+    ].join("\n");
+    const client = toClientFacingReport(report);
+    expect(client).not.toContain("Rapportage —");
+    expect(client).toContain("Juni was een positieve maand.");
+  });
+
+  it("keeps a first heading that is NOT a title restatement", () => {
+    const report = ["## Kerncijfers in één oogopslag", "", "245 klikken."].join(
+      "\n",
+    );
+    const client = toClientFacingReport(report);
+    expect(client).toContain("Kerncijfers in één oogopslag");
+  });
+
+  it("strips leading blockquote attribution / period / author meta", () => {
+    const report = [
+      "> Reporting Specialist — Bram",
+      "> Dit is de klantgerichte sectie van het maandrapport. De interne werklijst staat onderaan.",
+      "> Rapportperiode: juni 2026 | Vergelijking: mei 2026 | Opgesteld door: Axel Saerens",
+      "",
+      "## Kerncijfers in één oogopslag",
+      "",
+      "245 klikken.",
+    ].join("\n");
+    const client = toClientFacingReport(report);
+    expect(client).not.toContain("Reporting Specialist");
+    expect(client).not.toContain("klantgerichte sectie");
+    expect(client).not.toContain("Opgesteld door");
+    expect(client).not.toContain("Rapportperiode");
+    expect(client).toContain("Kerncijfers in één oogopslag");
+    expect(client).toContain("245 klikken.");
+  });
+
+  it("strips the title restatement even when a meta blockquote precedes it", () => {
+    const report = [
+      "> Reporting Specialist — Bram",
+      "> Rapportperiode: juni 2026 | Opgesteld door: Axel Saerens",
+      "",
+      "# Maandelijks SEO-rapport — juni 2026",
+      "",
+      "## Kerncijfers in één oogopslag",
+      "",
+      "245 klikken.",
+    ].join("\n");
+    const client = toClientFacingReport(report);
+    expect(client).not.toContain("Reporting Specialist");
+    expect(client).not.toContain("Opgesteld door");
+    expect(client).not.toContain("Maandelijks SEO-rapport");
+    expect(client).toContain("Kerncijfers in één oogopslag");
+    expect(client).toContain("245 klikken.");
+  });
+
+  it("does not strip a genuine (non-meta) blockquote in client prose", () => {
+    const report = [
+      "## Kerncijfers in één oogopslag",
+      "",
+      "> Belangrijkste inzicht: de branded zoektermen groeien sterk.",
+      "",
+      "245 klikken.",
+    ].join("\n");
+    const client = toClientFacingReport(report);
+    expect(client).toContain("Belangrijkste inzicht");
+  });
+
+  it("truncates a trailing sign-off block (signature lives in the e-mail)", () => {
+    const report = [
+      "## Kerncijfers in één oogopslag",
+      "",
+      "245 klikken.",
+      "",
+      "Met vriendelijke groeten,",
+      "",
+      "Axel Saerens",
+      "Saerens Advertising",
+      "axel@saerensadvertising.com | saerensadvertising.com",
+    ].join("\n");
+    const client = toClientFacingReport(report);
+    expect(client).toContain("245 klikken.");
+    expect(client).not.toContain("Met vriendelijke groeten");
+    expect(client).not.toContain("Axel Saerens");
+    expect(client).not.toContain("axel@saerensadvertising.com");
+  });
+
+  it("does not truncate prose that merely mentions a greeting mid-sentence", () => {
+    const report = [
+      "## Kerncijfers in één oogopslag",
+      "",
+      "We sturen met vriendelijke groeten een overzicht van de resultaten.",
+    ].join("\n");
+    const client = toClientFacingReport(report);
+    expect(client).toContain("overzicht van de resultaten");
+  });
+});
+
 describe("extractInternalWorklist QC-meta narrowing", () => {
   it("does NOT capture the reviewer's approval/QC section as werklijst", () => {
     const report = [

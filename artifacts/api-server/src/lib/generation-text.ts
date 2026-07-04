@@ -314,6 +314,32 @@ const REPORT_WORKLIST_HEADING =
   /interne werklijst|interne nota|niet voor de klant|intern gebruik|internal worklist|internal note/i;
 
 /**
+ * A leading heading that merely restates the report title already printed on the
+ * PDF cover (client name + period). The cover carries "SEO-RAPPORT · <client> ·
+ * <period>", so an in-body title heading like "Maandelijks SEO-rapport — juni
+ * 2026" or "Rapportage — Maandrapport <client>" is pure duplication. Only the
+ * FIRST content heading is ever treated this way (see `toClientFacingReport`).
+ */
+const REPORT_TITLE_RESTATE =
+  /^(rapportage|maandelijks|seo[-\s]?rapport|maand(?:rapport|verslag)|kwartaal(?:rapport|verslag))\b/i;
+/**
+ * An internal attribution / period / author / section-note line the LEAD
+ * sometimes emits as a blockquote at the top of its section (e.g.
+ * "> Reporting Specialist — Bram", "> Rapportperiode: … | Opgesteld door: …",
+ * "> Dit is de klantgerichte sectie …"). Never client-facing. Matched ONLY on
+ * blockquote lines so genuine client prose is never touched.
+ */
+const REPORT_META_BLOCKQUOTE =
+  /^>\s*(reporting specialist|seo specialist|dit is de klantgerichte sectie|de interne werklijst|rapportperiode\b|vergelijking\s*:|opgesteld door\b|opgemaakt door\b|auteur\s*:)/i;
+/**
+ * The start of a sign-off block (greeting + name + agency + contact). The
+ * signature lives in the e-mail cover, never the PDF body, so everything from
+ * this line to the end of the report is dropped.
+ */
+const REPORT_SIGNATURE_START =
+  /^(met vriendelijke groet(?:en)?|met sportieve groet(?:en)?|vriendelijke groet(?:en)?|beste groet(?:en)?|hoogachtend|met de meeste hoogachting)[,.!]?\s*$/i;
+
+/**
  * Reduce a report to the client-facing version that goes into the PDF + cover
  * email. The archived run keeps the full text (internal notes + approval
  * checklist) for the team; the client never sees unfinished placeholders or
@@ -323,8 +349,33 @@ const REPORT_WORKLIST_HEADING =
  *  - any stray placeholder lines elsewhere.
  */
 export function toClientFacingReport(markdown: string): string {
-  const lines = markdown.replace(/\r\n/g, "\n").split("\n");
+  let lines = markdown.replace(/\r\n/g, "\n").split("\n");
   const headingRe = /^(#{1,6})\s+(.*?)\s*$/;
+
+  // Drop a leading heading that merely restates the report title already on the
+  // PDF cover (client + period). Skip leading blank AND internal meta-blockquote
+  // lines when locating that first content heading — the LEAD sometimes emits a
+  // meta blockquote above the title (the blockquote itself is stripped below).
+  {
+    let k = 0;
+    while (
+      k < lines.length &&
+      (lines[k].trim() === "" || REPORT_META_BLOCKQUOTE.test(lines[k].trim()))
+    )
+      k++;
+    const hm = headingRe.exec(lines[k] ?? "");
+    if (hm && REPORT_TITLE_RESTATE.test(hm[2].trim())) lines.splice(k, 1);
+  }
+
+  // Truncate a trailing sign-off block (greeting + name + agency + contact); the
+  // signature belongs to the e-mail cover, never the PDF body.
+  for (let k = 0; k < lines.length; k++) {
+    if (REPORT_SIGNATURE_START.test(lines[k].trim())) {
+      lines = lines.slice(0, k);
+      break;
+    }
+  }
+
   const out: string[] = [];
   let i = 0;
   while (i < lines.length) {
@@ -352,6 +403,10 @@ export function toClientFacingReport(markdown: string): string {
         continue;
       }
       out.push(lines[i]);
+      i++;
+      continue;
+    }
+    if (REPORT_META_BLOCKQUOTE.test(lines[i].trim())) {
       i++;
       continue;
     }

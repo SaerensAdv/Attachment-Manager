@@ -22,18 +22,27 @@ These mirror the Reporting Standards in `knowledge/measurement-reporting.md`:
 - **Comparable over time.** Keep a consistent structure so month-to-month and quarter-to-quarter reports can be compared.
 - **Data you can trust.** Use only the figures actually supplied. If a comparison period is missing or a property is unverified, mark it "n/a" and say why in the notes — never estimate or back-fill.
 
+## What the report already shows for you (never restate it)
+
+Your text is rendered into a branded PDF that Saerens builds around it. Two parts are produced automatically, so the written report must never duplicate them — this is the single biggest cause of a bloated, unpolished SEO report:
+
+- **The cover** already shows the client/domain name, that this is the SEO report, the period, the date and the data source (Search Console). Do **not** open with a title, a subtitle, the client or domain name, the date, or an "Opgesteld door …" author line — start straight at the first section.
+- **A "Organische zoekprestaties in beeld" charts block** is drawn automatically *above* your text: the top search terms by clicks, the branded-vs-non-branded split, and the top non-branded terms. Do **not** repeat these as tables or keyword lists — refer to what they show in prose instead. (A genuinely different table, e.g. a side-by-side comparison of two domains, is fine — it is not one of these charts.)
+
+The report also goes out with a cover e-mail that carries the sender's signature, so the report body must contain **no greeting, salutation or sign-off** ("Beste …", "Met vriendelijke groeten", an author name) — end on the focus for next month.
+
 ## Structure of a report
 
-The client report is **short and plain-language** — a one-glance read, not a technical to-do list. It has four sections and nothing more:
+The client report is **short and plain-language** — a one-glance read, not a technical to-do list, and it should read as tight and polished as the monthly Google Ads report. It has four sections and nothing more:
 
-1. **Kerncijfers in één oogopslag** — clicks, impressions, average position and CTR for the period, each with the change versus the comparison period (a clear up/down trend). Average position is a real 1-based rank; page speed, if mentioned at all, is a current-state snapshot, never a trend.
-2. **Hoogtepunten van de maand** — two or three concrete wins or notable movements, in plain language (e.g. "meer mensen vonden je via lokale zoekopdrachten"). Honest: if it was a quiet month, say so plainly.
-3. **Waar we komende maand op focussen** — two or three focus points for the coming period, written for the client, NOT as technical tasks. Describe the *goal and the payoff* ("we werken aan snellere productpagina's zodat bezoekers minder afhaken"), never the implementation ("LCP naar <2,5s, title tags herschrijven").
-4. **Top zoektermen** — the handful of search terms bringing the most organic traffic, with their clicks (and position where useful). When a branded/non-branded split is supplied, lead with the non-branded picture — how many clicks come from *new, non-branded* demand vs from people already searching the brand — and highlight the top non-branded terms, since that is the traffic SEO is actively winning. State the branded share too, plainly, so the client sees the full picture.
+1. **Kerncijfers in één oogopslag** — open with one or two plain sentences on how the period went, then the metrics table: clicks, impressions, average position and CTR for the period, each with the change versus the comparison period (a clear up/down trend). Average position is a real 1-based rank; page speed, if mentioned at all, is a current-state snapshot, never a trend.
+2. **Hoogtepunten van de maand** — two or three concrete wins or notable movements as **short bullet points** (one to two sentences each, not multi-paragraph write-ups), in plain language (e.g. "meer mensen vonden je via lokale zoekopdrachten"). Honest: if it was a quiet month, say so plainly.
+3. **Waar we komende maand op focussen** — two or three focus points for the coming period as short bullets, written for the client, NOT as technical tasks. Describe the goal and the payoff ("we werken aan snellere productpagina's zodat bezoekers minder afhaken"), never the implementation ("LCP naar <2,5s, title tags herschrijven").
+4. **Top zoektermen** — a **short written takeaway** on where the organic traffic comes from; the term-by-term detail is already in the charts above, so do not repeat it as a table. When a branded/non-branded split is supplied, lead with the non-branded picture — roughly how many clicks come from new, non-branded demand vs from people already searching the brand — and name one or two of the strongest non-branded themes in prose. State the branded share too, plainly. Keep the split **consistent with the on-page chart**: express branded and non-branded as their share of the branded + non-branded clicks, and do not introduce a separate "niet te classificeren" percentage in the client report.
 
-Everything technical — per-page title tags, meta descriptions, headings, FAQ/schema markup, redirects/canonicals, Core Web Vitals fixes, crawl errors, the prioritized action list — belongs in the internal werklijst, NOT in the client report (see below).
+Everything technical — per-page title tags, meta descriptions, headings, FAQ/schema markup, redirects/canonicals, Core Web Vitals fixes, crawl errors, per-keyword positions, the prioritized action list — belongs in the internal werklijst, NOT in the client report (see below).
 
-Depth flexes with the period: a quiet month is a short update, a quarter a fuller trend read. The four sections stay the same so reports stay comparable.
+Depth flexes with the period: a quiet month is a short update, a quarter a fuller trend read. The four sections stay the same so reports stay comparable. Keep the whole client write-up to about **one page of text** — it sits after the cover and the charts, so brevity is what makes it feel as polished as the Google Ads monthly report.
 
 ## Tone
 

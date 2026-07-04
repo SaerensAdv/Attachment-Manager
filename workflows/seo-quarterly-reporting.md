@@ -34,12 +34,14 @@ Follow `knowledge/seo-reporting.md`. Must include:
 
 - Headline — how the site's organic quarter went, in one or two sentences
 - Key organic results (clicks, impressions, average position, CTR) with quarter-over-quarter change
-- Branded vs non-branded organic split, where supplied — lead with the non-branded share and its top terms (the demand SEO actively wins), then state the branded share
+- Branded vs non-branded organic split, where supplied — lead with the non-branded picture (the demand SEO actively wins) and name a strong non-branded theme or two in prose, then state the branded share plainly
 - Technical health summary (crawl signals) and what changed over the quarter
 - Page speed / Core Web Vitals current state
 - Bing / other-engine signals, where available
 - What drove the results — plain-language explanation of the quarter's trend
 - What's planned next for the site
 - Notes & caveats (data gaps, one-offs, unverified data)
+
+The branded cover and the "Organische zoekprestaties in beeld" charts (top terms, branded-vs-non-branded split, top non-branded terms) are generated automatically — do **not** restate the title/domain/date/author or repeat those charts as tables, and add **no** signature or sign-off to the report body (the cover e-mail carries it). Keep the client write-up tight and plain-language, as polished and concise as the Google Ads report.
 
 Use only the period data actually supplied — never invent organic figures for a missing comparison period; mark it "n/a". The client-facing report must contain no placeholders and no internal-only sections. Put anything needing internal follow-up or approval under a final `## Interne nota's (niet voor de klant)` section, which is stripped from the client PDF and email.

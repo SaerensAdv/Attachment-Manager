@@ -1,5 +1,5 @@
 import { HAIR, INDIGO, INK, MARGIN, PURPLE } from "./theme";
-import { cleanInline, contentWidth, ensureSpace, writeRichLine } from "./core";
+import { cleanInline, contentWidth, ensureSpace, stripEmphasis, writeRichLine } from "./core";
 import { drawTable, splitRow } from "./table";
 
 /**
@@ -55,7 +55,9 @@ export function renderMarkdown(doc: PDFKit.PDFDocument, markdown: string): void 
         .font("Helvetica-Bold")
         .fontSize(size)
         .fillColor(level <= 2 ? INDIGO : INK)
-        .text(cleanInline(h[2]), MARGIN.left, doc.y, { width: contentWidth(doc) });
+        .text(stripEmphasis(cleanInline(h[2])), MARGIN.left, doc.y, {
+          width: contentWidth(doc),
+        });
       if (level <= 2) {
         const y = doc.y + 2;
         doc

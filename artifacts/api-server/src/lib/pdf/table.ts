@@ -1,12 +1,15 @@
 import { HAIR, INDIGO, INK, MARGIN, PANEL, WHITE } from "./theme";
-import { cleanInline, contentWidth, ensureSpace } from "./core";
+import { cleanInline, contentWidth, ensureSpace, stripEmphasis } from "./core";
 
-/** Split a GitHub-style pipe table row into trimmed, inline-cleaned cells. */
+/** Split a GitHub-style pipe table row into trimmed, inline-cleaned cells.
+ * Emphasis markers are stripped too: cells are drawn as single runs (the header
+ * is already bold, body cells plain), so an LLM-authored `**+12%**` delta would
+ * otherwise render its asterisks verbatim inside the table. */
 export function splitRow(line: string): string[] {
   let s = line.trim();
   if (s.startsWith("|")) s = s.slice(1);
   if (s.endsWith("|")) s = s.slice(0, -1);
-  return s.split("|").map((c) => cleanInline(c.trim()));
+  return s.split("|").map((c) => stripEmphasis(cleanInline(c.trim())));
 }
 
 function isSeparatorRow(cells: string[]): boolean {

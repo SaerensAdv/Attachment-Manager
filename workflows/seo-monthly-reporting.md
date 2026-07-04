@@ -35,7 +35,9 @@ Follow `knowledge/seo-reporting.md`. The CLIENT report is short and plain-langua
 - **Kerncijfers in één oogopslag** — clicks, impressions, average position, CTR with the month-over-month change (clear up/down trend)
 - **Hoogtepunten van de maand** — two or three concrete wins or notable movements, in plain language
 - **Waar we komende maand op focussen** — two or three focus points written for the client (the goal and payoff), NOT technical tasks
-- **Top zoektermen** — the handful of search terms bringing the most organic traffic. When the branded vs non-branded split is supplied, lead with the non-branded picture (the demand SEO actively wins) and its top terms, then state the branded share plainly
+- **Top zoektermen** — a short written takeaway on where the organic traffic comes from. When the branded vs non-branded split is supplied, lead with the non-branded picture (the demand SEO actively wins) and name a strong non-branded theme or two in prose, then state the branded share plainly
+
+The branded cover and the "Organische zoekprestaties in beeld" charts (top terms, branded-vs-non-branded split, top non-branded terms) are generated automatically — do **not** restate the title/domain/date/author or repeat those charts as tables, and add **no** signature or sign-off to the report body (the cover e-mail carries it). Keep the whole write-up tight and to about one page of text, as polished and concise as the Google Ads monthly report.
 
 Tone: neutral and factual, with a light, reassuring undertone. No jargon, no technical implementation detail, no emoji.
 

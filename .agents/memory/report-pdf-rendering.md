@@ -39,6 +39,21 @@ numbered, hr, and GitHub pipe tables) and horizontal bar charts.
   **How to apply:** applies to every LLM-authored report/email body that becomes
   a PDF — prefer ASCII substitutes in the source markdown.
 
+**Inline emphasis must be handled in THREE render paths or asterisks leak.** The
+pdfkit markdown subset renders each line as pdfkit runs, so raw `**bold**` /
+`*italic*` markers print verbatim unless consumed. `richSpans()` (core.ts) parses
+`**bold**`, `*italic*`, `***both***` (alternation order ***→**→*; unpaired markers
+stay literal) and `writeRichLine` maps each span to Helvetica / -Bold / -Oblique /
+-BoldOblique — that covers PARAGRAPHS/bullets only. Headings (`markdown.ts`) and
+table cells (`splitRow` in `table.ts`) are drawn as single runs, so they must call
+`stripEmphasis()` instead, or a leaked `*`/`**` shows in the report's most
+prominent elements (headings, the Kerncijfers delta cells).
+**Why:** the LLM authors report copy with markdown emphasis; only the paragraph
+path originally understood `**`, so `*italic*` sign-offs and `**+12%**` deltas
+rendered literal asterisks — the exact "formatting doesn't render" complaint.
+**How to apply:** any new single-run draw path (labels, cover text) needs
+`stripEmphasis`; the multi-span paragraph path is the only one that styles.
+
 **Final-report extraction:** the team loop concatenates each member under a
 `## <AgentTitle>` heading; the client-facing PDF uses the LAST such section
 (the Humanizer's polished version) via `extractFinalReport`, falling back to the

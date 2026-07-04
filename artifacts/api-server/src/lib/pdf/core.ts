@@ -18,35 +18,71 @@ export function cleanInline(text: string): string {
     .trim();
 }
 
-/** Split a line into bold / non-bold spans for `**bold**` rendering. */
-export function boldSpans(text: string): { text: string; bold: boolean }[] {
-  const spans: { text: string; bold: boolean }[] = [];
-  const re = /\*\*([^*]+)\*\*/g;
+export interface RichSpan {
+  text: string;
+  bold: boolean;
+  italic: boolean;
+}
+
+/**
+ * Split a line into styled spans for inline `**bold**`, `*italic*` and
+ * `***bold italic***`. Bold is matched before italic so `**x**` never leaks a
+ * stray `*`. Unpaired markers are left literal, so ordinary prose with a lone
+ * asterisk (or math like `2 * 3`) is never mangled.
+ */
+export function richSpans(text: string): RichSpan[] {
+  const spans: RichSpan[] = [];
+  const re = /\*\*\*([^*\n]+)\*\*\*|\*\*([^*\n]+)\*\*|\*([^*\n]+)\*/g;
   let last = 0;
   let m: RegExpExecArray | null;
   while ((m = re.exec(text)) !== null) {
-    if (m.index > last) spans.push({ text: text.slice(last, m.index), bold: false });
-    spans.push({ text: m[1], bold: true });
+    if (m.index > last) {
+      spans.push({ text: text.slice(last, m.index), bold: false, italic: false });
+    }
+    if (m[1] !== undefined) spans.push({ text: m[1], bold: true, italic: true });
+    else if (m[2] !== undefined) spans.push({ text: m[2], bold: true, italic: false });
+    else spans.push({ text: m[3], bold: false, italic: true });
     last = m.index + m[0].length;
   }
-  if (last < text.length) spans.push({ text: text.slice(last), bold: false });
-  return spans.length > 0 ? spans : [{ text, bold: false }];
+  if (last < text.length) {
+    spans.push({ text: text.slice(last), bold: false, italic: false });
+  }
+  return spans.length > 0 ? spans : [{ text, bold: false, italic: false }];
 }
 
-/** Write a paragraph line with inline `**bold**` spans, left-aligned at the margin. */
+/** The Helvetica variant for a span's bold/italic combination. */
+function spanFont(bold: boolean, italic: boolean): string {
+  if (bold && italic) return "Helvetica-BoldOblique";
+  if (bold) return "Helvetica-Bold";
+  if (italic) return "Helvetica-Oblique";
+  return "Helvetica";
+}
+
+/**
+ * Strip inline emphasis markers without styling — for contexts rendered as a
+ * single run (e.g. headings), where a leaked `*`/`**` would look broken.
+ */
+export function stripEmphasis(text: string): string {
+  return text
+    .replace(/\*\*\*([^*\n]+)\*\*\*/g, "$1")
+    .replace(/\*\*([^*\n]+)\*\*/g, "$1")
+    .replace(/\*([^*\n]+)\*/g, "$1");
+}
+
+/** Write a paragraph line with inline `**bold**` / `*italic*` spans, left-aligned. */
 export function writeRichLine(
   doc: PDFKit.PDFDocument,
   text: string,
   opts: { size: number; indent?: number; color?: string } = { size: 10.5 },
 ): void {
-  const spans = boldSpans(cleanInline(text));
+  const spans = richSpans(cleanInline(text));
   const indent = opts.indent ?? 0;
   const x = MARGIN.left + indent;
   const width = contentWidth(doc) - indent;
   const startY = doc.y;
   spans.forEach((span, i) => {
     doc
-      .font(span.bold ? "Helvetica-Bold" : "Helvetica")
+      .font(spanFont(span.bold, span.italic))
       .fontSize(opts.size)
       .fillColor(opts.color ?? INK);
     if (i === 0) {

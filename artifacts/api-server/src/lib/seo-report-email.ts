@@ -3,14 +3,11 @@ import {
   createGmailDraft,
   sendEmail,
   type CreateDraftResult,
+  type InlineImage,
   type SendEmailInput,
 } from "./email";
 import type { SeoReportCadence, SeoReportMetrics } from "./seo-report-data";
-import {
-  buildBrandedEmail,
-  escapeHtml,
-  resolveHeadPortrait,
-} from "./monthly-report-email";
+import { buildBrandedEmail, escapeHtml } from "./monthly-report-email";
 import { ownerEmail } from "./email-identity";
 import { saerensLogoUrl } from "./brand-logo";
 
@@ -58,18 +55,19 @@ export interface SeoReportDeliveryPayload {
   internalWorklist?: string | null;
   /** Structured SEO snapshot; drives the PDF cover + charts + KPI strip. */
   metrics: SeoReportMetrics | null;
-  // Sender identity (the responsible Head) + owner CC, snapshotted at run time
-  // so the held draft sends from the right Head after approval. All optional:
-  // when absent the mail falls back to the primary mailbox with no CC.
-  /** Full "From" display name, e.g. "Sara — SEO, Saerens Advertising". */
+  // Sender identity, snapshotted at run time so the held draft sends correctly
+  // after approval. Client mail is signed by the agency OWNER (Axel); these
+  // fields carry that owner identity. All optional: when absent the mail falls
+  // back to the primary mailbox.
+  /** Full "From" display name, e.g. "Axel Saerens — Saerens Advertising". */
   fromName?: string;
-  /** Derived alias address; only honoured as a verified Gmail "send as". */
+  /** Sender address (the owner); only honoured as a verified Gmail "send as". */
   fromAddress?: string;
-  /** Agency owner kept in CC. */
+  /** Optional extra CC (unused for owner-signed mail; kept for back-compat). */
   cc?: string;
-  /** Plain-text footer signature (Head name + role). */
+  /** Plain-text footer signature (owner name + agency). */
   signature?: string;
-  /** The Head agent's doc path — used to route inbound replies. */
+  /** The responsible Head's doc path — routes inbound replies back to the team. */
   headAgentPath?: string;
 }
 
@@ -107,9 +105,9 @@ export function parseSeoReportDeliveryPayload(
         ? p.internalWorklist
         : null,
     metrics: (p.metrics ?? null) as SeoReportMetrics | null,
-    // Carry the snapshotted sender identity through, or the held draft would
-    // lose its From/Cc/signature when re-read at approval time and send from
-    // the primary mailbox instead of the responsible Head.
+    // Carry the snapshotted sender identity (the owner) through, or the held
+    // draft would lose its From/signature when re-read at approval time and
+    // fall back to the primary mailbox with no signature.
     fromName: optStr(p.fromName),
     fromAddress: optStr(p.fromAddress),
     cc: optStr(p.cc),
@@ -165,11 +163,9 @@ async function buildSeoReportEmailInput(
   });
 
   // Reference the SA logo by public HTTPS URL (Gmail drops `cid:` inline logos
-  // after send). Embed only the Head's portrait when available (footer
-  // signature); best-effort -> a missing portrait renders the signature
-  // text-only, a missing public base URL renders no logo.
-  const portrait = await resolveHeadPortrait(payload.headAgentPath);
-  const inlineImages = portrait ? [portrait] : [];
+  // after send). Client email is owner-signed with a text-only footer, so no
+  // portrait is embedded; a missing public base URL simply renders no logo.
+  const inlineImages: InlineImage[] = [];
 
   const cadenceSlug = payload.cadence === "quarterly" ? "kwartaal" : "maand";
   const filename = `seo-${cadenceSlug}rapport-${payload.clientName
@@ -188,7 +184,7 @@ async function buildSeoReportEmailInput(
     kpis: seoEmailKpis(payload.metrics),
     signature: payload.signature,
     fallbackSignature: "Saerens Advertising · SEO & website",
-    portraitCid: portrait?.cid,
+    portraitCid: undefined,
     logoUrl: saerensLogoUrl() ?? undefined,
     attachmentCount: attachments.length,
   });

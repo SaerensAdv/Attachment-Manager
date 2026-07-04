@@ -2,7 +2,6 @@ import { createGmailDraft, type CreateDraftResult } from "./email";
 import {
   escapeHtml,
   headerLogo,
-  resolveHeadPortrait,
   signatureBand,
 } from "./monthly-report-email";
 import { saerensLogoUrl } from "./brand-logo";
@@ -28,7 +27,9 @@ export interface EmailReplyPayload {
   replyBody: string;
   /** The client's inbound message text, kept so a human can review in context. */
   inboundText: string;
-  // Sender identity (the responsible Head) + owner CC — same shape as the report.
+  // Sender identity — same shape as the report. Client mail is signed by the
+  // agency OWNER (Axel); headAgentPath still names the responsible Head so the
+  // next inbound reply routes back to the right team.
   fromName?: string;
   fromAddress?: string;
   cc?: string;
@@ -164,15 +165,12 @@ export async function draftEmailReply(
   payload: EmailReplyPayload,
 ): Promise<CreateDraftResult> {
   // Reference the SA logo by public HTTPS URL (Gmail drops `cid:` inline logos
-  // after send). Embed only the Head's portrait when available (footer
-  // signature); best-effort -> a missing portrait renders the signature
-  // text-only, a missing public base URL renders no logo.
-  const portrait = await resolveHeadPortrait(payload.headAgentPath);
-  const inlineImages = portrait ? [portrait] : [];
+  // after send). Client email is owner-signed with a text-only footer, so no
+  // portrait is embedded; a missing public base URL simply renders no logo.
   const html = buildReplyEmail({
     bodyText: payload.replyBody,
     signature: payload.signature,
-    portraitCid: portrait?.cid,
+    portraitCid: undefined,
     logoUrl: saerensLogoUrl() ?? undefined,
   });
   return createGmailDraft({
@@ -185,6 +183,6 @@ export async function draftEmailReply(
     inReplyTo: payload.inReplyTo,
     references: payload.references,
     threadId: payload.threadId,
-    inlineImages,
+    inlineImages: [],
   });
 }

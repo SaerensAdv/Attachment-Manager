@@ -11,7 +11,12 @@ import {
   stripHumanizerMeta,
   toClientFacingReport,
 } from "./generation-text";
-import { resolveHeadIdentity, ownerEmail } from "./email-identity";
+import {
+  resolveHeadIdentity,
+  ownerEmail,
+  ownerDisplayName,
+  ownerSignatureText,
+} from "./email-identity";
 import type { ReportDeliveryPayload } from "./monthly-report-email";
 import type { SeoReportDeliveryPayload } from "./seo-report-email";
 import { seoReportEyebrow } from "./seo-report-email";
@@ -293,10 +298,11 @@ export async function runReportEmailAction(
 
     // Human approval checkpoint: do NOT send. Snapshot everything needed to
     // render + send later, and HOLD it. The PDF is rendered at approval time
-    // from this payload, so nothing reaches the client unattended. Freeze the
-    // responsible Head's email identity (derived from the lead agent's
-    // department) so the held draft is sent FROM that Head with the owner in CC.
-    const identity = await resolveHeadIdentity(dc.teamPaths[0]);
+    // from this payload, so nothing reaches the client unattended. The email is
+    // signed by the agency OWNER (Axel) — the permanent sender for all client
+    // mail. `resolveHeadIdentity` is kept ONLY to freeze the responsible Head's
+    // doc path, which routes any inbound reply back to the right team.
+    const routing = await resolveHeadIdentity(dc.teamPaths[0]);
     const payload: ReportDeliveryPayload = {
       recipient,
       subject,
@@ -306,11 +312,11 @@ export async function runReportEmailAction(
       emailBody,
       clientReport,
       metrics: dc.reportMetrics,
-      fromName: identity?.displayName,
-      fromAddress: identity?.address ?? undefined,
-      cc: ownerEmail() ?? undefined,
-      signature: identity?.signature,
-      headAgentPath: identity?.headAgentPath ?? dc.teamPaths[0],
+      fromName: ownerDisplayName(),
+      fromAddress: ownerEmail() ?? undefined,
+      cc: undefined,
+      signature: ownerSignatureText(),
+      headAgentPath: routing?.headAgentPath ?? dc.teamPaths[0],
     };
     approval = { status: "pending", payload: JSON.stringify(payload) };
     dc.send({ type: "deliverable_done", truncated: false });
@@ -465,10 +471,11 @@ export async function runSeoReportEmailAction(
 
     // Human approval checkpoint: do NOT send. Snapshot everything needed to
     // render + send later, and HOLD it. The PDF is rendered at approval time
-    // from this payload, so nothing reaches the client unattended. Freeze the
-    // responsible Head's email identity (derived from the lead agent's
-    // department) so the held draft is sent FROM that Head with the owner in CC.
-    const identity = await resolveHeadIdentity(dc.teamPaths[0]);
+    // from this payload, so nothing reaches the client unattended. The email is
+    // signed by the agency OWNER (Axel) — the permanent sender for all client
+    // mail. `resolveHeadIdentity` is kept ONLY to freeze the responsible Head's
+    // doc path, which routes any inbound reply back to the right team.
+    const routing = await resolveHeadIdentity(dc.teamPaths[0]);
     const payload: SeoReportDeliveryPayload = {
       kind: "seo-report",
       recipient,
@@ -481,11 +488,11 @@ export async function runSeoReportEmailAction(
       clientReport,
       internalWorklist,
       metrics: dc.reportSeoMetrics,
-      fromName: identity?.displayName,
-      fromAddress: identity?.address ?? undefined,
-      cc: ownerEmail() ?? undefined,
-      signature: identity?.signature,
-      headAgentPath: identity?.headAgentPath ?? dc.teamPaths[0],
+      fromName: ownerDisplayName(),
+      fromAddress: ownerEmail() ?? undefined,
+      cc: undefined,
+      signature: ownerSignatureText(),
+      headAgentPath: routing?.headAgentPath ?? dc.teamPaths[0],
     };
     approval = { status: "pending", payload: JSON.stringify(payload) };
     dc.send({ type: "deliverable_done", truncated: false });
@@ -577,9 +584,11 @@ export async function runEmailReplyAction(
 
     if (dc.isGone()) throw new Error("Afgebroken voor opslag.");
 
-    // Freeze the responsible Head's identity (same derivation as the report)
-    // so the held reply is sent FROM that Head with the owner in CC.
-    const identity = await resolveHeadIdentity(dc.teamPaths[0]);
+    // The reply is signed by the agency OWNER (Axel) — the permanent sender for
+    // all client mail. `resolveHeadIdentity` is kept ONLY to freeze the
+    // responsible Head's doc path, which routes the next inbound reply back to
+    // the right team.
+    const routing = await resolveHeadIdentity(dc.teamPaths[0]);
     const payload: EmailReplyPayload = {
       kind: "email-reply",
       recipient: er.recipient,
@@ -587,11 +596,11 @@ export async function runEmailReplyAction(
       clientName: dc.clientName,
       replyBody,
       inboundText: er.inboundText,
-      fromName: identity?.displayName,
-      fromAddress: identity?.address ?? undefined,
-      cc: ownerEmail() ?? undefined,
-      signature: identity?.signature,
-      headAgentPath: identity?.headAgentPath ?? dc.teamPaths[0],
+      fromName: ownerDisplayName(),
+      fromAddress: ownerEmail() ?? undefined,
+      cc: undefined,
+      signature: ownerSignatureText(),
+      headAgentPath: routing?.headAgentPath ?? dc.teamPaths[0],
       threadId: er.gmailThreadId,
       inReplyTo: er.inReplyTo ?? undefined,
       references: er.references ?? undefined,

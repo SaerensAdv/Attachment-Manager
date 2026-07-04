@@ -72,4 +72,17 @@ describe("buildBrandedEmail footer wording", () => {
     const withoutLogo = buildBrandedEmail(base);
     expect(withoutLogo).not.toContain("logo.png");
   });
+
+  it("renders the owner signature as two lines with no portrait", () => {
+    const html = buildBrandedEmail({
+      ...base,
+      signature: "Axel Saerens\nSaerens Advertising",
+      portraitCid: undefined,
+    });
+    // Exactly two footer lines: owner name, then agency name.
+    expect(html).toContain("Axel Saerens<br>Saerens Advertising");
+    // Owner-signed client mail is text-only: no embedded portrait image.
+    expect(html).not.toContain("cid:");
+    expect(html).not.toContain("<img");
+  });
 });

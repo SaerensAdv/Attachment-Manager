@@ -1,20 +1,22 @@
 import { getTeamRoster } from "./team";
 
 /**
- * Per-Head email identity — who an outbound client email is sent AS.
+ * Email identity helpers — who an outbound client email is sent AS, and which
+ * team an inbound reply routes back TO.
  *
- * Every department in the agency org model (parsed from AGENTS.md) has an owner:
- * its "Head". When the team produces a client-facing email (a monthly report, a
- * reply), it is sent from the responsible Head — derived from the run's lead
- * agent's department, never hardcoded per department — with the agency owner in
- * CC. This keeps the feature generic: add or move a Head in AGENTS.md and the
- * sender identity follows automatically.
+ * SENDER: every client-facing email (monthly report, SEO report, reply) is
+ * signed by the agency OWNER (Axel) — see `ownerDisplayName` / `ownerSignatureText`.
+ * The owner is a permanent default, not a per-run choice.
+ *
+ * ROUTING: `resolveHeadIdentity` still maps a run's lead agent to the responsible
+ * department Head (via the agency org model parsed from AGENTS.md). Its
+ * `headAgentPath` is recorded on the outbound thread so a later inbound reply is
+ * routed back to the right team — even though the visible sender is the owner.
  *
  * The alias local-part is DERIVED from the department id (e.g. `paid-media` ->
- * `paidmedia@<domain>`). That is safe even when the alias is not a verified
- * Gmail "send as": Gmail silently rewrites an unverified From to the primary
+ * `paidmedia@<domain>`). Gmail silently rewrites an unverified From to the primary
  * mailbox, and inbound routing keys off the Gmail threadId, not the address — so
- * a missing/unverified alias degrades gracefully. The domain and the owner CC
+ * a missing/unverified alias degrades gracefully. The domain and the owner address
  * are deployment config (env), NOT in AGENTS.md (which feeds model prompts).
  */
 
@@ -68,6 +70,31 @@ export function ownerEmail(): string | null {
 export function agentEmailDomain(): string | null {
   const v = (process.env.AGENT_EMAIL_DOMAIN ?? "").trim();
   return v.length > 0 ? v : null;
+}
+
+/** The agency's display name, used in the owner signature + fallbacks. */
+export const AGENCY_NAME = "Saerens Advertising";
+
+/**
+ * The agency owner's name for outbound client email. Configurable via OWNER_NAME
+ * so the identity isn't hardcoded in source; falls back to the known owner.
+ */
+export function ownerName(): string {
+  const v = (process.env.OWNER_NAME ?? "").trim();
+  return v.length > 0 ? v : "Axel Saerens";
+}
+
+/** The From display name shown in the client's inbox for owner-signed email. */
+export function ownerDisplayName(): string {
+  return `${ownerName()} — ${AGENCY_NAME}`;
+}
+
+/**
+ * The plain-text footer signature for owner-signed client email: two lines,
+ * the owner name then the agency name.
+ */
+export function ownerSignatureText(): string {
+  return `${ownerName()}\n${AGENCY_NAME}`;
 }
 
 /**

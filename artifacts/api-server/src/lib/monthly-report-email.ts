@@ -35,18 +35,19 @@ export interface ReportDeliveryPayload {
   /** The client-facing report markdown that becomes the attached PDF. */
   clientReport: string;
   metrics: GoogleAdsMetrics | null;
-  // Sender identity (the responsible Head) + owner CC, snapshotted at run time
-  // so the held draft sends from the right Head after approval. All optional:
-  // when absent the mail falls back to the primary mailbox with no CC.
-  /** Full "From" display name, e.g. "Sven — Paid Media, Saerens Advertising". */
+  // Sender identity, snapshotted at run time so the held draft sends correctly
+  // after approval. Client mail is signed by the agency OWNER (Axel); these
+  // fields carry that owner identity. All optional: when absent the mail falls
+  // back to the primary mailbox.
+  /** Full "From" display name, e.g. "Axel Saerens — Saerens Advertising". */
   fromName?: string;
-  /** Derived alias address; only honoured as a verified Gmail "send as". */
+  /** Sender address (the owner); only honoured as a verified Gmail "send as". */
   fromAddress?: string;
-  /** Agency owner kept in CC. */
+  /** Optional extra CC (unused for owner-signed mail; kept for back-compat). */
   cc?: string;
-  /** Plain-text footer signature (Head name + role). */
+  /** Plain-text footer signature (owner name + agency). */
   signature?: string;
-  /** The Head agent's doc path — used to route inbound replies (Phase 2). */
+  /** The responsible Head's doc path — routes inbound replies back to the team. */
   headAgentPath?: string;
 }
 
@@ -74,9 +75,9 @@ export function parseReportDeliveryPayload(
     emailBody: typeof p.emailBody === "string" ? p.emailBody : "",
     clientReport,
     metrics: (p.metrics ?? null) as GoogleAdsMetrics | null,
-    // Carry the snapshotted sender identity through, or the held draft would
-    // lose its From/Cc/signature when re-read at approval time and send from
-    // the primary mailbox instead of the responsible Head.
+    // Carry the snapshotted sender identity (the owner) through, or the held
+    // draft would lose its From/signature when re-read at approval time and
+    // fall back to the primary mailbox with no signature.
     fromName: optStr(p.fromName),
     fromAddress: optStr(p.fromAddress),
     cc: optStr(p.cc),
@@ -377,11 +378,9 @@ async function buildReportEmailInput(
   });
 
   // Reference the SA logo by public HTTPS URL (Gmail drops `cid:` inline logos
-  // after send). Embed only the Head's portrait when available (footer
-  // signature); best-effort -> a missing portrait renders the signature
-  // text-only, a missing public base URL renders no logo.
-  const portrait = await resolveHeadPortrait(payload.headAgentPath);
-  const inlineImages = portrait ? [portrait] : [];
+  // after send). Client email is owner-signed with a text-only footer, so no
+  // portrait is embedded; a missing public base URL simply renders no logo.
+  const inlineImages: InlineImage[] = [];
 
   const attachments = [
     { filename: filenameFor(payload.clientName), mimeType: "application/pdf", content: pdf },
@@ -396,7 +395,7 @@ async function buildReportEmailInput(
     kpis: adsEmailKpis(payload.metrics),
     signature: payload.signature,
     fallbackSignature: "Saerens Advertising · Google Ads",
-    portraitCid: portrait?.cid,
+    portraitCid: undefined,
     logoUrl: saerensLogoUrl() ?? undefined,
     attachmentCount: attachments.length,
   });

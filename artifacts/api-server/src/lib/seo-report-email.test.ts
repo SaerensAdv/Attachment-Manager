@@ -14,7 +14,6 @@ vi.mock("./email", () => ({
 vi.mock("./monthly-report-email", () => ({
   escapeHtml: (s: string) => s,
   buildBrandedEmail: () => "<html></html>",
-  resolveHeadPortrait: async () => null,
 }));
 
 const ownerEmailMock = vi.hoisted(() => vi.fn());

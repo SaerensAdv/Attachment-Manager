@@ -1,29 +1,46 @@
-import { describe, it, expect } from "vitest";
-import { aliasLocalPart, headDisplayName, headSignature } from "./email-identity";
+import { describe, it, expect, afterEach, vi } from "vitest";
 
-describe("email identity helpers", () => {
-  it("derives a clean alias local-part from a department id", () => {
-    expect(aliasLocalPart("paid-media")).toBe("paidmedia");
-    expect(aliasLocalPart("seo-web")).toBe("seoweb");
-    expect(aliasLocalPart("content-creative")).toBe("contentcreative");
-    expect(aliasLocalPart("client-growth")).toBe("clientgrowth");
+// The owner helpers only read process.env; mock the roster so importing this
+// module doesn't pull in the docs/portraits graph.
+vi.mock("./team", () => ({ getTeamRoster: vi.fn(async () => []) }));
+
+import {
+  ownerName,
+  ownerDisplayName,
+  ownerSignatureText,
+} from "./email-identity";
+
+const ORIG = process.env.OWNER_NAME;
+afterEach(() => {
+  if (ORIG === undefined) delete process.env.OWNER_NAME;
+  else process.env.OWNER_NAME = ORIG;
+});
+
+describe("owner email identity (all client mail is signed by the owner)", () => {
+  it("defaults to the agency owner when OWNER_NAME is unset", () => {
+    delete process.env.OWNER_NAME;
+    expect(ownerName()).toBe("Axel Saerens");
+    expect(ownerDisplayName()).toBe("Axel Saerens — Saerens Advertising");
   });
 
-  it("builds a From display name, with and without a persona name", () => {
-    expect(headDisplayName("Sven", "Paid Media")).toBe(
-      "Sven — Paid Media, Saerens Advertising",
-    );
-    expect(headDisplayName(null, "Paid Media")).toBe(
-      "Paid Media — Saerens Advertising",
-    );
+  it("signs with exactly two lines: owner name, then agency name", () => {
+    delete process.env.OWNER_NAME;
+    expect(ownerSignatureText()).toBe("Axel Saerens\nSaerens Advertising");
+    expect(ownerSignatureText().split("\n")).toEqual([
+      "Axel Saerens",
+      "Saerens Advertising",
+    ]);
   });
 
-  it("builds a footer signature, with and without a persona name", () => {
-    expect(headSignature("Sven", "Paid Media")).toBe(
-      "Sven\nPaid Media · Saerens Advertising",
-    );
-    expect(headSignature(null, "Paid Media")).toBe(
-      "Paid Media\nPaid Media · Saerens Advertising",
-    );
+  it("honours an OWNER_NAME override", () => {
+    process.env.OWNER_NAME = "Jane Doe";
+    expect(ownerName()).toBe("Jane Doe");
+    expect(ownerDisplayName()).toBe("Jane Doe — Saerens Advertising");
+    expect(ownerSignatureText()).toBe("Jane Doe\nSaerens Advertising");
+  });
+
+  it("falls back to the default when OWNER_NAME is blank", () => {
+    process.env.OWNER_NAME = "   ";
+    expect(ownerName()).toBe("Axel Saerens");
   });
 });

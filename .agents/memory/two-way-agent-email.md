@@ -11,12 +11,27 @@ roster (no per-Head config). Resolver: `lib/email-identity.ts` maps a run's
 title), address, signature}`. Address alias is derived from the **department id**
 (`AGENT_EMAIL_DOMAIN`); owner is `OWNER_EMAIL`.
 
-**Phase 1 (outbound):** the monthly report is built FROM the responsible Head
-alias with the owner on Cc, and a generic roster-derived signature replaces the
-old hardcoded footer. Held by the approval checkpoint; on approve it is NOT sent
-but placed as a Gmail DRAFT in the agency mailbox (`draftMonthlyReport` →
-`createGmailDraft`) so the owner does the final send from Gmail himself. The
-email-reply path is now ALSO draft-on-approve (`draftEmailReply`, same pattern).
+**Phase 1 (outbound):** held by the approval checkpoint; on approve it is NOT
+sent but placed as a Gmail DRAFT in the agency mailbox (`draftMonthlyReport` /
+`draftSeoReport` / `draftEmailReply` → `createGmailDraft`) so the owner does the
+final send from Gmail himself.
+
+**Owner signs ALL client mail (permanent default, Jul 2026).** Every client-facing
+email (monthly Ads report, recurring SEO report, inbound reply) is signed by the
+agency OWNER, not the department Head. At the three executor payload sites in
+`generation-deliverable-executor.ts`: `fromName=ownerDisplayName()`,
+`signature=ownerSignatureText()` (EXACTLY two lines, `"Axel Saerens\nSaerens
+Advertising"`), `fromAddress=ownerEmail()`, `cc=undefined` (the old owner self-Cc
+was redundant — the owner IS the sender). Helpers in `email-identity.ts`:
+`ownerName()` reads env `OWNER_NAME` (fallback "Axel Saerens"), `AGENCY_NAME`
+const, `ownerDisplayName()`, `ownerSignatureText()`. `resolveHeadIdentity` is
+KEPT but used ONLY to freeze `headAgentPath` for inbound routing — its
+displayName/signature/address outputs have NO client-mail consumers anymore.
+**Why:** one consistent sender voice; per-Head signing (Elke/Daan/…) confused
+clients. **How to apply:** never re-introduce Head displayName/signature for
+client mail; only the owner helpers. Held payloads snapshotted BEFORE this change
+still carry the frozen Head signature (parse fns pass old fields through) —
+re-generate to get the owner signature.
 
 **Phase 2 (inbound):** a sibling interval in the scheduler (`startInboundPoller`,
 same 60s tick as the run scheduler) polls open `email_threads`, routes each reply
@@ -68,11 +83,16 @@ the final send from Gmail himself.
   threading internals). `ApprovalPanel` renders the email-reply variant.
 - `workflows/client-email.md` carries `<!-- deliverable: email-reply -->`.
 
-## Inline images in outbound emails (SA logo + Head portrait, CID)
-Both client emails (monthly report + reply) carry TWO inline `cid:` images: the SA
-brand logo in the dark-header lockup (left of the wordmark) and the responsible Head's
-portrait in the footer signature band ONLY. The portrait was moved out of the header at
-the user's request — header = company brand, footer = personal signature.
+## Inline images in outbound emails (logo by URL, portrait removed)
+**Client mail is owner-signed with a TEXT-ONLY footer and carries NO inline `cid:`
+images (Jul 2026).** The three builders (`buildReportEmailInput`,
+`buildSeoReportEmailInput`, `draftEmailReply`) pass `inlineImages: []` +
+`portraitCid: undefined` and no longer call `resolveHeadPortrait`. The SA brand
+logo is referenced by public HTTPS URL (`saerensLogoUrl()`) because Gmail drops
+`cid:` inline logos after send. `resolveHeadPortrait` (sharp downscale, exported
+from `monthly-report-email.ts`) is retained for `scripts/test-head-aliases.ts` and
+easy re-add, but has NO client-mail caller. The detail below is the HISTORICAL cid
+logo + portrait design, kept for reference only.
 - **SA logo is a self-contained base64 PNG constant** in `lib/brand-logo.ts`
   (`SAERENS_LOGO_CID="sa-logo"`, `saerensLogoInlineImage()`). **Why a constant, not file
   IO / object storage:** api-server dev runs from a BUNDLED dist that is wiped on rebuild,

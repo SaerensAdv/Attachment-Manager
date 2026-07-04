@@ -152,6 +152,10 @@ export interface SeoReportClient {
   /** Editable per-client brand terms (newline/comma separated) — variants and
    * typos the auto rules can't infer. */
   brandTerms?: string | null;
+  /** Opt-in extra Search Console properties (newline/comma separated) laid next
+   * to the primary domain for a side-by-side or combined report. Data-only
+   * (current + previous windows); `metrics` stays the primary domain. */
+  comparisonScUrls?: string | null;
 }
 
 function isoDay(d: Date): string {
@@ -232,6 +236,30 @@ export function buildSeoReportPeriods(
 
 function msg(err: unknown): string {
   return (err instanceof Error ? err.message : String(err)).slice(0, 200);
+}
+
+/**
+ * Parse the opt-in comparison Search Console properties (newline / comma
+ * separated), trimmed, de-duplicated and with the primary property removed so a
+ * domain is never fetched twice. Capped to keep the prompt bounded.
+ */
+function parseComparisonSites(
+  raw: string | null | undefined,
+  primary: string,
+): string[] {
+  const primaryNorm = primary.trim().toLowerCase();
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const part of (raw ?? "").split(/[\n,]/)) {
+    const site = part.trim();
+    if (!site) continue;
+    const norm = site.toLowerCase();
+    if (norm === primaryNorm || seen.has(norm)) continue;
+    seen.add(norm);
+    out.push(site);
+    if (out.length >= 3) break;
+  }
+  return out;
 }
 
 /** Wrap a source's raw text as a clearly-labelled Dutch block for the team. */
@@ -509,6 +537,59 @@ export async function fetchSeoReportSnapshot(
     notes.push(
       "Geen Search Console-property ingesteld voor deze klant; organische zoekdata ontbreekt in dit rapport.",
     );
+  }
+
+  // --- Comparison domains (opt-in; Search Console only) --------------------
+  // Extra properties laid next to the primary domain so the team can write a
+  // side-by-side (e.g. .be vs .com) or one combined report (e.g. NL + FR sister
+  // sites). Current + previous windows only — no YoY / brand split — and the
+  // structured `metrics` stays strictly the primary domain, so the PDF cover and
+  // email KPI strip never change. Best-effort per site: a failure becomes a note.
+  const comparisonSites = parseComparisonSites(client.comparisonScUrls, scSite);
+  for (const site of comparisonSites) {
+    let gotCurrent = false;
+    try {
+      const cur = await fetchSearchConsoleReport(site, {
+        now,
+        dateRange: {
+          startDate: periods.current.startDate,
+          endDate: periods.current.endDate,
+        },
+      });
+      gotCurrent = true;
+      blocks.push(
+        labelledBlock(
+          `Search Console — VERGELIJKINGSDOMEIN ${site} (rapportperiode)`,
+          periods.current,
+          cur.text,
+        ),
+      );
+    } catch (err) {
+      notes.push(
+        `Search Console-data vergelijkingsdomein ${site} (rapportperiode) kon niet opgehaald worden: ${msg(err)}`,
+      );
+    }
+    if (!gotCurrent) continue;
+    try {
+      const prev = await fetchSearchConsoleReport(site, {
+        now,
+        dateRange: {
+          startDate: periods.previous.startDate,
+          endDate: periods.previous.endDate,
+        },
+      });
+      blocks.push(
+        labelledBlock(
+          `Search Console — VERGELIJKINGSDOMEIN ${site} (vorige periode)`,
+          periods.previous,
+          prev.text,
+        ),
+      );
+    } catch (err) {
+      notes.push(
+        `Vergelijkingsdata vorige periode vergelijkingsdomein ${site} (${periods.previous.label}) kon niet opgehaald worden: ${msg(err)}`,
+      );
+    }
   }
 
   // --- Technical crawl health (latest snapshot) ----------------------------

@@ -70,6 +70,11 @@ export const clientsTable = pgTable("clients", {
   // Merktermen (één per regel): merknaam + veelvoorkomende varianten/typfouten,
   // gebruikt om organische zoektermen in branded vs non-branded te splitsen.
   brandTerms: text("brand_terms"),
+  // Optionele extra Search Console-properties (één per regel of komma-gescheiden)
+  // om in het SEO-rapport náást het hoofddomein te leggen — bv. een .be vs .com
+  // vergelijking of NL+FR zustersites in één gecombineerd rapport. Enkel data
+  // (huidige + vorige periode); het hoofddomein blijft de bron voor de PDF-cover.
+  comparisonScUrls: text("comparison_sc_urls"),
   googleAdsCustomerId: text("google_ads_customer_id"),
   googleAdsLive: text("google_ads_live"),
   googleAdsLiveAt: timestamp("google_ads_live_at"),

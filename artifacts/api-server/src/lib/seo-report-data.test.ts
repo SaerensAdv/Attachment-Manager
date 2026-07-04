@@ -346,3 +346,118 @@ describe("fetchSeoReportSnapshot — branded vs non-branded split", () => {
     expect(split?.previous?.nonBranded.clicks).toBe(40);
   });
 });
+
+describe("fetchSeoReportSnapshot — comparison domains", () => {
+  const periods = buildSeoReportPeriods(
+    new Date("2026-06-07T10:00:00Z"),
+    "monthly",
+  );
+
+  beforeEach(() => {
+    scMock.mockReset();
+    bingMock.mockReset();
+    psMock.mockReset();
+    snapMock.mockReset();
+    snapMock.mockResolvedValue([]);
+    bingMock.mockRejectedValue(new Error("no bing"));
+    psMock.mockResolvedValue({ text: "", fetchedAt: new Date(), records: [] });
+  });
+
+  it("appends comparison-domain blocks without changing the primary metrics", async () => {
+    scMock.mockImplementation(async (site, opts) => {
+      const start = opts?.dateRange?.startDate;
+      if (
+        start === periods.current.startDate ||
+        start === periods.previous.startDate
+      ) {
+        return scResult(
+          {
+            clicks: site === "sc-domain:voorbeeld.be" ? 100 : 7,
+            impressions: 500,
+            ctr: 0.2,
+            position: 6,
+          },
+          [{ key: "iets", clicks: 5, impressions: 50, ctr: 0.1, position: 4 }],
+        );
+      }
+      throw new Error("no year-ago data");
+    });
+
+    const out = await fetchSeoReportSnapshot(
+      {
+        name: "Voorbeeld Shop",
+        searchConsoleSiteUrl: "sc-domain:voorbeeld.be",
+        comparisonScUrls: "sc-domain:voorbeeld.com",
+      },
+      1,
+      "monthly",
+      periods,
+    );
+
+    // Primary metrics untouched: siteUrl + totals come from the primary domain.
+    expect(out.metrics?.siteUrl).toBe("sc-domain:voorbeeld.be");
+    expect(out.metrics?.search.current.clicks).toBe(100);
+
+    const cmpBlocks = out.blocks.filter((b) => /VERGELIJKINGSDOMEIN/.test(b));
+    expect(cmpBlocks).toHaveLength(2); // current + previous window
+    expect(
+      cmpBlocks.some((b) =>
+        /sc-domain:voorbeeld\.com \(rapportperiode\)/.test(b),
+      ),
+    ).toBe(true);
+    expect(
+      cmpBlocks.some(
+        (b) => /sc-domain:voorbeeld\.com/.test(b) && /vorige periode/.test(b),
+      ),
+    ).toBe(true);
+  });
+
+  it("drops the primary property and de-duplicates comparison entries", async () => {
+    scMock.mockImplementation(async (_site, opts) => {
+      const start = opts?.dateRange?.startDate;
+      if (
+        start === periods.current.startDate ||
+        start === periods.previous.startDate
+      ) {
+        return scResult({ clicks: 10, impressions: 100, ctr: 0.1, position: 5 });
+      }
+      throw new Error("no data");
+    });
+
+    const out = await fetchSeoReportSnapshot(
+      {
+        name: "Voorbeeld Shop",
+        searchConsoleSiteUrl: "sc-domain:voorbeeld.be",
+        comparisonScUrls:
+          "sc-domain:voorbeeld.be\nsc-domain:voorbeeld.com\nsc-domain:voorbeeld.com",
+      },
+      1,
+      "monthly",
+      periods,
+    );
+
+    const cmpCurrent = out.blocks.filter((b) =>
+      /VERGELIJKINGSDOMEIN .*\(rapportperiode\)/.test(b),
+    );
+    expect(cmpCurrent).toHaveLength(1); // only voorbeeld.com, once; primary excluded
+    expect(cmpCurrent[0]).toMatch(/sc-domain:voorbeeld\.com/);
+  });
+
+  it("adds no comparison blocks when the field is absent", async () => {
+    scMock.mockImplementation(async (_site, opts) => {
+      if (opts?.dateRange?.startDate === periods.current.startDate) {
+        return scResult({ clicks: 10, impressions: 100, ctr: 0.1, position: 5 });
+      }
+      throw new Error("no data");
+    });
+
+    const out = await fetchSeoReportSnapshot(
+      { name: "Voorbeeld Shop", searchConsoleSiteUrl: "sc-domain:voorbeeld.be" },
+      1,
+      "monthly",
+      periods,
+    );
+
+    expect(out.blocks.some((b) => /VERGELIJKINGSDOMEIN/.test(b))).toBe(false);
+  });
+});

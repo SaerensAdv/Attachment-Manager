@@ -90,6 +90,28 @@ export function checkAgentEmailEnv(env: NodeJS.ProcessEnv = process.env): string
 }
 
 /**
+ * Shape-check the optional CORS allowlist. `CORS_ALLOWED_ORIGINS` is a
+ * comma-separated list of extra browser origins to trust (on top of the
+ * Replit-provided domains). Warns (never throws) on an entry that isn't a valid
+ * http(s) origin, so a typo surfaces at boot rather than as a silent CORS block.
+ */
+export function checkCorsEnv(env: NodeJS.ProcessEnv = process.env): string[] {
+  const warnings: string[] = [];
+  const raw = (env.CORS_ALLOWED_ORIGINS ?? "").trim();
+  if (!raw) return warnings;
+  for (const entry of raw.split(",")) {
+    const value = entry.trim();
+    if (!value) continue;
+    if (!/^https?:\/\/[^\s/]+$/i.test(value.replace(/\/+$/, ""))) {
+      warnings.push(
+        `CORS_ALLOWED_ORIGINS bevat een ongeldige origin: "${value}" (verwacht bv. https://voorbeeld.be).`,
+      );
+    }
+  }
+  return warnings;
+}
+
+/**
  * Validate required env and warn about an optional misconfiguration. Throws on a
  * missing/invalid required variable so the process exits at boot with a clear
  * message rather than crashing on the first request.
@@ -109,6 +131,10 @@ export function validateEnv(env: NodeJS.ProcessEnv = process.env): AppEnv {
 
   for (const warning of checkAgentEmailEnv(env)) {
     logger.warn({ scope: "env:agent-email" }, warning);
+  }
+
+  for (const warning of checkCorsEnv(env)) {
+    logger.warn({ scope: "env:cors" }, warning);
   }
 
   return {

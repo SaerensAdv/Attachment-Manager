@@ -5,8 +5,10 @@ import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import pinoHttp from "pino-http";
 import router from "./routes";
+import partnerRouter from "./routes/partner";
 import { authMiddleware } from "./middlewares/authMiddleware";
 import { requireAuth } from "./middlewares/requireAuth";
+import { buildCorsOptions } from "./lib/cors-origins";
 import { logger } from "./lib/logger";
 
 const app: Express = express();
@@ -43,7 +45,7 @@ app.use(
 // The web artifact authenticates with a session cookie, which the browser only
 // sends (and the server only accepts back) when credentials are allowed and the
 // origin is reflected rather than wildcarded.
-app.use(cors({ credentials: true, origin: true }));
+app.use(cors(buildCorsOptions()));
 app.use(cookieParser());
 
 // Rate-limit the two expensive, LLM-backed endpoints so a runaway client or an
@@ -64,6 +66,8 @@ const llmLimiter = rateLimit({
 });
 app.use("/api/generate", llmLimiter);
 app.use("/api/route", llmLimiter);
+// Triggering a generation over the partner API is equally LLM-backed.
+app.use("/api/v1/partner/generations", llmLimiter);
 // Portrait uploads (POST /api/team/:slug/portrait) carry a base64-encoded image
 // that exceeds the default 100kb JSON limit, so parse team routes with a larger
 // cap. body-parser marks the request parsed, so the global parser below skips it.
@@ -87,6 +91,10 @@ app.use(express.urlencoded({ extended: true }));
 // rejects unauthenticated callers but leaves the health check, the auth flow and
 // the secret-gated webhooks open (see requireAuth).
 app.use(authMiddleware);
+// The versioned partner API authenticates with its own long-lived key (see
+// partnerAuth), not a browser session. Mount it AHEAD of the session gate so
+// requireAuth never rejects a keyed partner request.
+app.use("/api/v1/partner", partnerRouter);
 app.use("/api", requireAuth);
 
 app.use("/api", router);

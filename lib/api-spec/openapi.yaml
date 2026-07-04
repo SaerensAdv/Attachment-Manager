@@ -2,7 +2,7 @@ openapi: 3.1.0
 info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
-  version: 0.1.0
+  version: 0.2.0
   description: API specification
 servers:
   - url: /api
@@ -22,6 +22,8 @@ tags:
     description: System alerts for silent background failures
   - name: Auth
     description: Browser and mobile authentication endpoints.
+  - name: partner
+    description: Versioned, per-project authenticated partner API for spun-off projects.
 paths:
   /auth/user:
     get:
@@ -1727,7 +1729,261 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /v1/partner/clients/{id}:
+    get:
+      operationId: partnerGetClient
+      tags: [partner]
+      summary: Read a client's current state and recent deliverables
+      security:
+        - PartnerApiKey: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: The client's curated state and recent deliverables
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PartnerClientEnvelope"
+        "400":
+          description: Invalid client id
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Missing or invalid partner key
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Partner key lacks the required scope
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Client not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /v1/partner/clients/{id}/events:
+    post:
+      operationId: partnerCreateClientEvent
+      tags: [partner]
+      summary: Write an event/result back as the client's new current state
+      security:
+        - PartnerApiKey: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PartnerEventInput"
+      responses:
+        "200":
+          description: The event was appended to the client's current state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PartnerEventResult"
+        "400":
+          description: Invalid client id or missing summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Missing or invalid partner key
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Partner key lacks the required scope
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Client not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /v1/partner/generations:
+    post:
+      operationId: partnerCreateGeneration
+      tags: [partner]
+      summary: Trigger a generation by the AI team
+      security:
+        - PartnerApiKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PartnerGenerationInput"
+      responses:
+        "200":
+          description: The archived run outcome
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PartnerGenerationTriggerResult"
+        "400":
+          description: Invalid generation request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Missing or invalid partner key
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Partner key lacks the required scope
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /v1/partner/generations/{id}:
+    get:
+      operationId: partnerGetGeneration
+      tags: [partner]
+      summary: Poll a generation's status and result
+      security:
+        - PartnerApiKey: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: The generation's status and result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PartnerGeneration"
+        "400":
+          description: Invalid generation id
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Missing or invalid partner key
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Partner key lacks the required scope
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Generation not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /partner-keys:
+    get:
+      operationId: listPartnerKeys
+      tags: [partner]
+      summary: List partner API keys (operator only, metadata only)
+      responses:
+        "200":
+          description: The partner keys (never the secret or its hash)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PartnerKeyListEnvelope"
+    post:
+      operationId: issuePartnerKey
+      tags: [partner]
+      summary: Issue a new partner API key (operator only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PartnerKeyInput"
+      responses:
+        "201":
+          description: The issued key, including the plaintext key shown once
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IssuedPartnerKey"
+        "400":
+          description: Missing name
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Key store unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /partner-keys/{id}:
+    delete:
+      operationId: revokePartnerKey
+      tags: [partner]
+      summary: Revoke a partner API key (operator only, idempotent)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: The key was revoked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PartnerKeyRevokeResult"
+        "400":
+          description: Invalid key id
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Key not found or already revoked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 components:
+  securitySchemes:
+    PartnerApiKey:
+      type: http
+      scheme: bearer
+      description: >-
+        Long-lived per-project partner key issued by the brain, sent as
+        `Authorization: Bearer sap_...`.
   parameters:
     AuthorizationSessionHeader:
       name: Authorization
@@ -3584,3 +3840,247 @@ components:
       properties:
         error:
           type: string
+    PartnerClientProfile:
+      type: object
+      required:
+        - business
+        - world
+        - services
+        - audience
+        - locations
+        - languages
+        - mainGoal
+        - conversionAction
+        - kpis
+        - toneOfVoice
+        - website
+      properties:
+        business:
+          type: [string, "null"]
+        world:
+          type: [string, "null"]
+        services:
+          type: [string, "null"]
+        audience:
+          type: [string, "null"]
+        locations:
+          type: [string, "null"]
+        languages:
+          type: [string, "null"]
+        mainGoal:
+          type: [string, "null"]
+        conversionAction:
+          type: [string, "null"]
+        kpis:
+          type: [string, "null"]
+        toneOfVoice:
+          type: [string, "null"]
+        website:
+          type: [string, "null"]
+    PartnerClient:
+      type: object
+      required: [id, name, currentState, profile, updatedAt]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        currentState:
+          type: [string, "null"]
+        profile:
+          $ref: "#/components/schemas/PartnerClientProfile"
+        updatedAt:
+          type: string
+          format: date-time
+    PartnerDeliverable:
+      type: object
+      required: [id, workflowTitle, status, finalMarkdown, createdAt]
+      properties:
+        id:
+          type: integer
+        workflowTitle:
+          type: string
+        status:
+          type: string
+        finalMarkdown:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+    PartnerClientEnvelope:
+      type: object
+      required: [client, deliverables]
+      properties:
+        client:
+          $ref: "#/components/schemas/PartnerClient"
+        deliverables:
+          type: array
+          items:
+            $ref: "#/components/schemas/PartnerDeliverable"
+    PartnerEventInput:
+      type: object
+      required: [summary]
+      properties:
+        summary:
+          type: string
+          minLength: 1
+          description: The event/result to record as the client's new current state.
+        type:
+          type: string
+          description: Optional short label for the event (defaults to "event").
+    PartnerEventResult:
+      type: object
+      required: [ok, clientId, currentStateLength, updatedAt]
+      properties:
+        ok:
+          type: boolean
+        clientId:
+          type: integer
+        currentStateLength:
+          type: integer
+        updatedAt:
+          type: string
+          format: date-time
+    PartnerGenerationInput:
+      type: object
+      required: [agentPath, workflowPath, request]
+      properties:
+        agentPath:
+          type: string
+          minLength: 1
+        workflowPath:
+          type: string
+          minLength: 1
+        request:
+          type: string
+          minLength: 1
+        clientId:
+          type: integer
+          description: Address the client by numeric id (wins over clientPath).
+        clientPath:
+          type: string
+          description: Address the client by explicit doc path.
+        additionalAgentPaths:
+          type: array
+          items:
+            type: string
+    PartnerGenerationTriggerResult:
+      type: object
+      required: [id, status, archived, approvalStatus, error]
+      properties:
+        id:
+          type: [integer, "null"]
+        status:
+          type: string
+        archived:
+          type: boolean
+        approvalStatus:
+          type: [string, "null"]
+        error:
+          type: [string, "null"]
+    PartnerGeneration:
+      type: object
+      required:
+        - id
+        - status
+        - workflowTitle
+        - clientName
+        - finalMarkdown
+        - approvalStatus
+        - createdAt
+      properties:
+        id:
+          type: integer
+        status:
+          type: string
+        workflowTitle:
+          type: string
+        clientName:
+          type: string
+        finalMarkdown:
+          type: string
+        approvalStatus:
+          type: [string, "null"]
+        createdAt:
+          type: string
+          format: date-time
+    PartnerKeyInput:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+        scopes:
+          description: Requested scopes (array or comma string); defaults to all.
+          oneOf:
+            - type: string
+            - type: array
+              items:
+                type: string
+    IssuedPartnerKey:
+      type: object
+      required: [id, name, prefix, scopes, key]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        prefix:
+          type: string
+        scopes:
+          type: array
+          items:
+            type: string
+        key:
+          type: string
+          description: The plaintext key — returned once, never recoverable.
+    PartnerKeyListItem:
+      type: object
+      required:
+        - id
+        - name
+        - prefix
+        - scopes
+        - active
+        - createdAt
+        - lastUsedAt
+        - revokedAt
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        prefix:
+          type: string
+        scopes:
+          type: array
+          items:
+            type: string
+        active:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        lastUsedAt:
+          type: [string, "null"]
+          format: date-time
+        revokedAt:
+          type: [string, "null"]
+          format: date-time
+    PartnerKeyListEnvelope:
+      type: object
+      required: [keys]
+      properties:
+        keys:
+          type: array
+          items:
+            $ref: "#/components/schemas/PartnerKeyListItem"
+    PartnerKeyRevokeResult:
+      type: object
+      required: [ok, id]
+      properties:
+        ok:
+          type: boolean
+        id:
+          type: integer

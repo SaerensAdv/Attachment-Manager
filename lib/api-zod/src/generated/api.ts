@@ -3,7 +3,7 @@
  * Do not edit manually.
  * Api
  * API specification
- * OpenAPI spec version: 0.1.0
+ * OpenAPI spec version: 0.2.0
  */
 import * as zod from 'zod';
 
@@ -2444,6 +2444,152 @@ export const RunScheduleNowResponse = zod.object({
   "status": zod.string(),
   "archived": zod.boolean(),
   "error": zod.string().nullable()
+})
+
+
+/**
+ * @summary Read a client's current state and recent deliverables
+ */
+export const PartnerGetClientParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const PartnerGetClientResponse = zod.object({
+  "client": zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "currentState": zod.string().nullable(),
+  "profile": zod.object({
+  "business": zod.string().nullable(),
+  "world": zod.string().nullable(),
+  "services": zod.string().nullable(),
+  "audience": zod.string().nullable(),
+  "locations": zod.string().nullable(),
+  "languages": zod.string().nullable(),
+  "mainGoal": zod.string().nullable(),
+  "conversionAction": zod.string().nullable(),
+  "kpis": zod.string().nullable(),
+  "toneOfVoice": zod.string().nullable(),
+  "website": zod.string().nullable()
+}),
+  "updatedAt": zod.coerce.date()
+}),
+  "deliverables": zod.array(zod.object({
+  "id": zod.number(),
+  "workflowTitle": zod.string(),
+  "status": zod.string(),
+  "finalMarkdown": zod.string(),
+  "createdAt": zod.coerce.date()
+}))
+})
+
+
+/**
+ * @summary Write an event/result back as the client's new current state
+ */
+export const PartnerCreateClientEventParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+
+
+export const PartnerCreateClientEventBody = zod.object({
+  "summary": zod.string().min(1).describe('The event\/result to record as the client\'s new current state.'),
+  "type": zod.string().optional().describe('Optional short label for the event (defaults to \"event\").')
+})
+
+export const PartnerCreateClientEventResponse = zod.object({
+  "ok": zod.boolean(),
+  "clientId": zod.number(),
+  "currentStateLength": zod.number(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Trigger a generation by the AI team
+ */
+
+
+
+
+
+export const PartnerCreateGenerationBody = zod.object({
+  "agentPath": zod.string().min(1),
+  "workflowPath": zod.string().min(1),
+  "request": zod.string().min(1),
+  "clientId": zod.number().optional().describe('Address the client by numeric id (wins over clientPath).'),
+  "clientPath": zod.string().optional().describe('Address the client by explicit doc path.'),
+  "additionalAgentPaths": zod.array(zod.string()).optional()
+})
+
+export const PartnerCreateGenerationResponse = zod.object({
+  "id": zod.number().nullable(),
+  "status": zod.string(),
+  "archived": zod.boolean(),
+  "approvalStatus": zod.string().nullable(),
+  "error": zod.string().nullable()
+})
+
+
+/**
+ * @summary Poll a generation's status and result
+ */
+export const PartnerGetGenerationParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const PartnerGetGenerationResponse = zod.object({
+  "id": zod.number(),
+  "status": zod.string(),
+  "workflowTitle": zod.string(),
+  "clientName": zod.string(),
+  "finalMarkdown": zod.string(),
+  "approvalStatus": zod.string().nullable(),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary List partner API keys (operator only, metadata only)
+ */
+export const ListPartnerKeysResponse = zod.object({
+  "keys": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "prefix": zod.string(),
+  "scopes": zod.array(zod.string()),
+  "active": zod.boolean(),
+  "createdAt": zod.coerce.date(),
+  "lastUsedAt": zod.coerce.date().nullable(),
+  "revokedAt": zod.coerce.date().nullable()
+}))
+})
+
+
+/**
+ * @summary Issue a new partner API key (operator only)
+ */
+
+
+
+export const IssuePartnerKeyBody = zod.object({
+  "name": zod.string().min(1),
+  "scopes": zod.union([zod.string(),zod.array(zod.string())]).optional().describe('Requested scopes (array or comma string); defaults to all.')
+})
+
+
+/**
+ * @summary Revoke a partner API key (operator only, idempotent)
+ */
+export const RevokePartnerKeyParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const RevokePartnerKeyResponse = zod.object({
+  "ok": zod.boolean(),
+  "id": zod.number()
 })
 
 

@@ -3,7 +3,7 @@
  * Do not edit manually.
  * Api
  * API specification
- * OpenAPI spec version: 0.1.0
+ * OpenAPI spec version: 0.2.0
  */
 export interface AuthUser {
   id: string;
@@ -1141,6 +1141,144 @@ export interface ScheduleUpdate {
 
 export interface ErrorResponse {
   error: string;
+}
+
+export interface PartnerClientProfile {
+  /** @nullable */
+  business: string | null;
+  /** @nullable */
+  world: string | null;
+  /** @nullable */
+  services: string | null;
+  /** @nullable */
+  audience: string | null;
+  /** @nullable */
+  locations: string | null;
+  /** @nullable */
+  languages: string | null;
+  /** @nullable */
+  mainGoal: string | null;
+  /** @nullable */
+  conversionAction: string | null;
+  /** @nullable */
+  kpis: string | null;
+  /** @nullable */
+  toneOfVoice: string | null;
+  /** @nullable */
+  website: string | null;
+}
+
+export interface PartnerClient {
+  id: number;
+  name: string;
+  /** @nullable */
+  currentState: string | null;
+  profile: PartnerClientProfile;
+  updatedAt: string;
+}
+
+export interface PartnerDeliverable {
+  id: number;
+  workflowTitle: string;
+  status: string;
+  finalMarkdown: string;
+  createdAt: string;
+}
+
+export interface PartnerClientEnvelope {
+  client: PartnerClient;
+  deliverables: PartnerDeliverable[];
+}
+
+export interface PartnerEventInput {
+  /**
+     * The event/result to record as the client's new current state.
+     * @minLength 1
+     */
+  summary: string;
+  /** Optional short label for the event (defaults to "event"). */
+  type?: string;
+}
+
+export interface PartnerEventResult {
+  ok: boolean;
+  clientId: number;
+  currentStateLength: number;
+  updatedAt: string;
+}
+
+export interface PartnerGenerationInput {
+  /** @minLength 1 */
+  agentPath: string;
+  /** @minLength 1 */
+  workflowPath: string;
+  /** @minLength 1 */
+  request: string;
+  /** Address the client by numeric id (wins over clientPath). */
+  clientId?: number;
+  /** Address the client by explicit doc path. */
+  clientPath?: string;
+  additionalAgentPaths?: string[];
+}
+
+export interface PartnerGenerationTriggerResult {
+  /** @nullable */
+  id: number | null;
+  status: string;
+  archived: boolean;
+  /** @nullable */
+  approvalStatus: string | null;
+  /** @nullable */
+  error: string | null;
+}
+
+export interface PartnerGeneration {
+  id: number;
+  status: string;
+  workflowTitle: string;
+  clientName: string;
+  finalMarkdown: string;
+  /** @nullable */
+  approvalStatus: string | null;
+  createdAt: string;
+}
+
+export interface PartnerKeyInput {
+  /** @minLength 1 */
+  name: string;
+  /** Requested scopes (array or comma string); defaults to all. */
+  scopes?: string | string[];
+}
+
+export interface IssuedPartnerKey {
+  id: number;
+  name: string;
+  prefix: string;
+  scopes: string[];
+  /** The plaintext key — returned once, never recoverable. */
+  key: string;
+}
+
+export interface PartnerKeyListItem {
+  id: number;
+  name: string;
+  prefix: string;
+  scopes: string[];
+  active: boolean;
+  createdAt: string;
+  /** @nullable */
+  lastUsedAt: string | null;
+  /** @nullable */
+  revokedAt: string | null;
+}
+
+export interface PartnerKeyListEnvelope {
+  keys: PartnerKeyListItem[];
+}
+
+export interface PartnerKeyRevokeResult {
+  ok: boolean;
+  id: number;
 }
 
 /**

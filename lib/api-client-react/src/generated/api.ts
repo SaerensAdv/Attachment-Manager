@@ -3,7 +3,7 @@
  * Do not edit manually.
  * Api
  * API specification
- * OpenAPI spec version: 0.1.0
+ * OpenAPI spec version: 0.2.0
  */
 import {
   useMutation,
@@ -61,9 +61,19 @@ import type {
   HandleBrowserLoginCallbackParams,
   HealthStatus,
   ImprovementProposal,
+  IssuedPartnerKey,
   LogoutSuccess,
   MobileTokenExchangeRequest,
   MobileTokenExchangeSuccess,
+  PartnerClientEnvelope,
+  PartnerEventInput,
+  PartnerEventResult,
+  PartnerGeneration,
+  PartnerGenerationInput,
+  PartnerGenerationTriggerResult,
+  PartnerKeyInput,
+  PartnerKeyListEnvelope,
+  PartnerKeyRevokeResult,
   ProposalList,
   RequestChangesInput,
   RevenueSummary,
@@ -4988,5 +4998,520 @@ export const useRunScheduleNow = <TError = ErrorType<ErrorResponse>,
         TContext
       > => {
       return useMutation(getRunScheduleNowMutationOptions(options));
+    }
+
+export const getPartnerGetClientUrl = (id: number,) => {
+
+
+
+
+  return `/api/v1/partner/clients/${id}`
+}
+
+/**
+ * @summary Read a client's current state and recent deliverables
+ */
+export const partnerGetClient = async (id: number, options?: RequestInit): Promise<PartnerClientEnvelope> => {
+
+  return customFetch<PartnerClientEnvelope>(getPartnerGetClientUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getPartnerGetClientQueryKey = (id: number,) => {
+    return [
+    `/api/v1/partner/clients/${id}`
+    ] as const;
+    }
+
+
+export const getPartnerGetClientQueryOptions = <TData = Awaited<ReturnType<typeof partnerGetClient>>, TError = ErrorType<ErrorResponse>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof partnerGetClient>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getPartnerGetClientQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof partnerGetClient>>> = ({ signal }) => partnerGetClient(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof partnerGetClient>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type PartnerGetClientQueryResult = NonNullable<Awaited<ReturnType<typeof partnerGetClient>>>
+export type PartnerGetClientQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary Read a client's current state and recent deliverables
+ */
+
+export function usePartnerGetClient<TData = Awaited<ReturnType<typeof partnerGetClient>>, TError = ErrorType<ErrorResponse>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof partnerGetClient>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getPartnerGetClientQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getPartnerCreateClientEventUrl = (id: number,) => {
+
+
+
+
+  return `/api/v1/partner/clients/${id}/events`
+}
+
+/**
+ * @summary Write an event/result back as the client's new current state
+ */
+export const partnerCreateClientEvent = async (id: number,
+    partnerEventInput: PartnerEventInput, options?: RequestInit): Promise<PartnerEventResult> => {
+
+  return customFetch<PartnerEventResult>(getPartnerCreateClientEventUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      partnerEventInput,)
+  }
+);}
+
+
+
+
+export const getPartnerCreateClientEventMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof partnerCreateClientEvent>>, TError,{id: number;data: BodyType<PartnerEventInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof partnerCreateClientEvent>>, TError,{id: number;data: BodyType<PartnerEventInput>}, TContext> => {
+
+const mutationKey = ['partnerCreateClientEvent'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof partnerCreateClientEvent>>, {id: number;data: BodyType<PartnerEventInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  partnerCreateClientEvent(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PartnerCreateClientEventMutationResult = NonNullable<Awaited<ReturnType<typeof partnerCreateClientEvent>>>
+    export type PartnerCreateClientEventMutationBody = BodyType<PartnerEventInput>
+    export type PartnerCreateClientEventMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Write an event/result back as the client's new current state
+ */
+export const usePartnerCreateClientEvent = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof partnerCreateClientEvent>>, TError,{id: number;data: BodyType<PartnerEventInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof partnerCreateClientEvent>>,
+        TError,
+        {id: number;data: BodyType<PartnerEventInput>},
+        TContext
+      > => {
+      return useMutation(getPartnerCreateClientEventMutationOptions(options));
+    }
+
+export const getPartnerCreateGenerationUrl = () => {
+
+
+
+
+  return `/api/v1/partner/generations`
+}
+
+/**
+ * @summary Trigger a generation by the AI team
+ */
+export const partnerCreateGeneration = async (partnerGenerationInput: PartnerGenerationInput, options?: RequestInit): Promise<PartnerGenerationTriggerResult> => {
+
+  return customFetch<PartnerGenerationTriggerResult>(getPartnerCreateGenerationUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      partnerGenerationInput,)
+  }
+);}
+
+
+
+
+export const getPartnerCreateGenerationMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof partnerCreateGeneration>>, TError,{data: BodyType<PartnerGenerationInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof partnerCreateGeneration>>, TError,{data: BodyType<PartnerGenerationInput>}, TContext> => {
+
+const mutationKey = ['partnerCreateGeneration'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof partnerCreateGeneration>>, {data: BodyType<PartnerGenerationInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  partnerCreateGeneration(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PartnerCreateGenerationMutationResult = NonNullable<Awaited<ReturnType<typeof partnerCreateGeneration>>>
+    export type PartnerCreateGenerationMutationBody = BodyType<PartnerGenerationInput>
+    export type PartnerCreateGenerationMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Trigger a generation by the AI team
+ */
+export const usePartnerCreateGeneration = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof partnerCreateGeneration>>, TError,{data: BodyType<PartnerGenerationInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof partnerCreateGeneration>>,
+        TError,
+        {data: BodyType<PartnerGenerationInput>},
+        TContext
+      > => {
+      return useMutation(getPartnerCreateGenerationMutationOptions(options));
+    }
+
+export const getPartnerGetGenerationUrl = (id: number,) => {
+
+
+
+
+  return `/api/v1/partner/generations/${id}`
+}
+
+/**
+ * @summary Poll a generation's status and result
+ */
+export const partnerGetGeneration = async (id: number, options?: RequestInit): Promise<PartnerGeneration> => {
+
+  return customFetch<PartnerGeneration>(getPartnerGetGenerationUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getPartnerGetGenerationQueryKey = (id: number,) => {
+    return [
+    `/api/v1/partner/generations/${id}`
+    ] as const;
+    }
+
+
+export const getPartnerGetGenerationQueryOptions = <TData = Awaited<ReturnType<typeof partnerGetGeneration>>, TError = ErrorType<ErrorResponse>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof partnerGetGeneration>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getPartnerGetGenerationQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof partnerGetGeneration>>> = ({ signal }) => partnerGetGeneration(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof partnerGetGeneration>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type PartnerGetGenerationQueryResult = NonNullable<Awaited<ReturnType<typeof partnerGetGeneration>>>
+export type PartnerGetGenerationQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary Poll a generation's status and result
+ */
+
+export function usePartnerGetGeneration<TData = Awaited<ReturnType<typeof partnerGetGeneration>>, TError = ErrorType<ErrorResponse>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof partnerGetGeneration>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getPartnerGetGenerationQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getListPartnerKeysUrl = () => {
+
+
+
+
+  return `/api/partner-keys`
+}
+
+/**
+ * @summary List partner API keys (operator only, metadata only)
+ */
+export const listPartnerKeys = async ( options?: RequestInit): Promise<PartnerKeyListEnvelope> => {
+
+  return customFetch<PartnerKeyListEnvelope>(getListPartnerKeysUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListPartnerKeysQueryKey = () => {
+    return [
+    `/api/partner-keys`
+    ] as const;
+    }
+
+
+export const getListPartnerKeysQueryOptions = <TData = Awaited<ReturnType<typeof listPartnerKeys>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPartnerKeys>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListPartnerKeysQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPartnerKeys>>> = ({ signal }) => listPartnerKeys({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listPartnerKeys>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListPartnerKeysQueryResult = NonNullable<Awaited<ReturnType<typeof listPartnerKeys>>>
+export type ListPartnerKeysQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List partner API keys (operator only, metadata only)
+ */
+
+export function useListPartnerKeys<TData = Awaited<ReturnType<typeof listPartnerKeys>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPartnerKeys>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListPartnerKeysQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getIssuePartnerKeyUrl = () => {
+
+
+
+
+  return `/api/partner-keys`
+}
+
+/**
+ * @summary Issue a new partner API key (operator only)
+ */
+export const issuePartnerKey = async (partnerKeyInput: PartnerKeyInput, options?: RequestInit): Promise<IssuedPartnerKey> => {
+
+  return customFetch<IssuedPartnerKey>(getIssuePartnerKeyUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      partnerKeyInput,)
+  }
+);}
+
+
+
+
+export const getIssuePartnerKeyMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof issuePartnerKey>>, TError,{data: BodyType<PartnerKeyInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof issuePartnerKey>>, TError,{data: BodyType<PartnerKeyInput>}, TContext> => {
+
+const mutationKey = ['issuePartnerKey'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof issuePartnerKey>>, {data: BodyType<PartnerKeyInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  issuePartnerKey(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type IssuePartnerKeyMutationResult = NonNullable<Awaited<ReturnType<typeof issuePartnerKey>>>
+    export type IssuePartnerKeyMutationBody = BodyType<PartnerKeyInput>
+    export type IssuePartnerKeyMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Issue a new partner API key (operator only)
+ */
+export const useIssuePartnerKey = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof issuePartnerKey>>, TError,{data: BodyType<PartnerKeyInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof issuePartnerKey>>,
+        TError,
+        {data: BodyType<PartnerKeyInput>},
+        TContext
+      > => {
+      return useMutation(getIssuePartnerKeyMutationOptions(options));
+    }
+
+export const getRevokePartnerKeyUrl = (id: number,) => {
+
+
+
+
+  return `/api/partner-keys/${id}`
+}
+
+/**
+ * @summary Revoke a partner API key (operator only, idempotent)
+ */
+export const revokePartnerKey = async (id: number, options?: RequestInit): Promise<PartnerKeyRevokeResult> => {
+
+  return customFetch<PartnerKeyRevokeResult>(getRevokePartnerKeyUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getRevokePartnerKeyMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokePartnerKey>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof revokePartnerKey>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['revokePartnerKey'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof revokePartnerKey>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  revokePartnerKey(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RevokePartnerKeyMutationResult = NonNullable<Awaited<ReturnType<typeof revokePartnerKey>>>
+
+    export type RevokePartnerKeyMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Revoke a partner API key (operator only, idempotent)
+ */
+export const useRevokePartnerKey = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokePartnerKey>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof revokePartnerKey>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getRevokePartnerKeyMutationOptions(options));
     }
 

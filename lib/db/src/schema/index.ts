@@ -24,5 +24,6 @@ export * from "./email-threads";
 export * from "./generations";
 export * from "./invoices";
 export * from "./monitored-terms";
+export * from "./partner-keys";
 export * from "./proposals";
 export * from "./schedules";

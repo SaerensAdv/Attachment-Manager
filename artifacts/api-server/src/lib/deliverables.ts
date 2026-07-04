@@ -361,6 +361,13 @@ interface BuildPromptSpec {
   brand: "agency" | "client" | "client+signature";
   /** Optional artifact-specific extra rules appended after the shared rules. */
   extraRules?: string[];
+  /**
+   * One NL sentence describing how THIS artifact type would use the brain's
+   * partner API (read client state, write events back, trigger a generation).
+   * Drives the "Koppel terug aan de brain" section baked into every build
+   * prompt. Static artifacts (deck, video) phrase this as conditional.
+   */
+  connectBackUse: string;
 }
 
 function buildBuildPrompt(
@@ -407,6 +414,19 @@ function buildBuildPrompt(
     "- Geen goedkeuringssectie en geen meta-commentaar — enkel de bouwprompt.",
     ...(spec.extraRules ?? []),
     ...brandBlock,
+    "",
+    "## Koppel terug aan de brain (verplicht in de bouwprompt)",
+    "Neem in de bouwprompt een duidelijke sectie **'## Koppel terug aan de brain'** op die de bouwer opdraagt om het nieuwe project — indien het een server-side component heeft — te laten terugkoppelen met de partner-API van deze app (de 'brain'). Beschrijf concreet:",
+    `- **Waarvoor**: ${spec.connectBackUse}`,
+    "- **Basis-URL**: laat deze staan als duidelijke placeholder **[AAN TE VULLEN: basis-URL van de brain-API, bv. https://<jouw-brain>.replit.app/api]** — verzin nooit een URL.",
+    "- **Authenticatie**: een per-project partner-API-sleutel die UITSLUITEND server-side bewaard wordt (nooit in de browser/frontend), meegestuurd als `Authorization: Bearer [AAN TE VULLEN: partner-API-sleutel]`.",
+    "- **Endpoints** (versie v1, onder de basis-URL):",
+    "  - `GET /v1/partner/clients/{id}` — lees de actuele klantstatus en de recentste deliverables.",
+    "  - `POST /v1/partner/clients/{id}/events` — schrijf resultaten/gebeurtenissen terug als nieuwe actuele status (body: `summary`, optioneel `type`).",
+    "  - `POST /v1/partner/generations` — start een generatie door het AI-team (`agentPath`, `workflowPath`, `request`, optioneel `clientId`).",
+    "  - `GET /v1/partner/generations/{id}` — poll de status en het resultaat van die generatie.",
+    "- **Getypte client**: genereer de API-client uit de gepubliceerde OpenAPI-spec van de brain (bv. met orval of openapi-generator) in plaats van de calls met de hand te schrijven.",
+    "- Niets koppelt automatisch live: een mens bewaart de sleutel en zet de koppeling aan.",
   ].join("\n");
 
   const user = [
@@ -449,6 +469,8 @@ function buildReplitPrompt(ctx: DeliverableContext): DeliverablePrompt {
     extraRules: [
       "- Bij een site met meerdere pagina's: zet de paginastructuur en de copy per pagina/sectie apart en overzichtelijk neer, zodat de bouwer pagina per pagina kan bouwen in plaats van alles in één blok.",
     ],
+    connectBackUse:
+      "leadformulieren/contactaanvragen server-side terugschrijven als klant-events (`POST .../events`), de actuele klantstatus ophalen om de pagina te personaliseren (`GET .../clients/{id}`), en waar zinvol een opvolg-generatie starten (`POST .../generations`).",
   });
 }
 
@@ -467,6 +489,8 @@ function buildSlideDeckPrompt(ctx: DeliverableContext): DeliverablePrompt {
       "6. **Aantal slides & export** — een expliciet aantal slides; bouw als React-deck dat exporteerbaar is naar PPTX/Google Slides/PDF.",
       "7. **Belangrijke regels** — verzin geen testimonials of cijfers; gebruik de echte Saerens-bewijspunten alleen waar de context erom vraagt, en duidelijke placeholders voor de rest.",
     ],
+    connectBackUse:
+      "een slide deck is een statisch artefact zonder server; de terugkoppeling geldt alleen als er later een begeleidend web-onderdeel bij komt — houd de sectie dan als korte, conditionele notitie.",
   });
 }
 
@@ -485,6 +509,8 @@ function buildAnimatedVideoPrompt(ctx: DeliverableContext): DeliverablePrompt {
       "6. **Technisch** — React-motion graphics (geen Remotion, geen AI-gegenereerde video), auto-play loop, exporteerbaar als MP4 (720p/1080p, 16:9).",
       "7. **Belangrijke regels** — verzin geen claims, prijzen of cijfers; gebruik duidelijke placeholders.",
     ],
+    connectBackUse:
+      "een geanimeerde video is een statisch artefact zonder server; de terugkoppeling geldt alleen als er later een begeleidend web-onderdeel bij komt — houd de sectie dan als korte, conditionele notitie.",
   });
 }
 
@@ -504,6 +530,8 @@ function buildDataAppPrompt(ctx: DeliverableContext): DeliverablePrompt {
       "7. **Ingebouwd** — refresh/auto-refresh, export naar PDF, grafiekdata naar CSV, en een korte analyse-samenvatting.",
       "8. **Belangrijke regels** — verzin geen metrics, rijen of koppelingen; gebruik duidelijke placeholders.",
     ],
+    connectBackUse:
+      "de actuele klantstatus en recentste deliverables server-side ophalen als databron (`GET .../clients/{id}`), gebruikersacties/notities terugschrijven als events (`POST .../events`), en een verse analyse-generatie starten en pollen (`POST .../generations`, `GET .../generations/{id}`).",
   });
 }
 

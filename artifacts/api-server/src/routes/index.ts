@@ -17,6 +17,7 @@ import storageRouter from "./storage";
 import schedulesRouter from "./schedules";
 import alertsRouter from "./alerts";
 import todoRouter from "./todo";
+import partnerKeysRouter from "./partner-keys";
 
 const router: IRouter = Router();
 
@@ -38,5 +39,6 @@ router.use(storageRouter);
 router.use(schedulesRouter);
 router.use(alertsRouter);
 router.use(todoRouter);
+router.use(partnerKeysRouter);
 
 export default router;

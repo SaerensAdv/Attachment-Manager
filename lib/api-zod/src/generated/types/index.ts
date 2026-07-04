@@ -3,7 +3,7 @@
  * Do not edit manually.
  * Api
  * API specification
- * OpenAPI spec version: 0.1.0
+ * OpenAPI spec version: 0.2.0
  */
 
 export * from './acceptProposalResult';
@@ -79,10 +79,24 @@ export * from './handoffBrief';
 export * from './healthStatus';
 export * from './improvementProposal';
 export * from './integrationCoverage';
+export * from './issuedPartnerKey';
 export * from './leaderboardEntry';
 export * from './logoutSuccess';
 export * from './mobileTokenExchangeRequest';
 export * from './mobileTokenExchangeSuccess';
+export * from './partnerClient';
+export * from './partnerClientEnvelope';
+export * from './partnerClientProfile';
+export * from './partnerDeliverable';
+export * from './partnerEventInput';
+export * from './partnerEventResult';
+export * from './partnerGeneration';
+export * from './partnerGenerationInput';
+export * from './partnerGenerationTriggerResult';
+export * from './partnerKeyInput';
+export * from './partnerKeyListEnvelope';
+export * from './partnerKeyListItem';
+export * from './partnerKeyRevokeResult';
 export * from './pendingApproval';
 export * from './proposalList';
 export * from './refreshOutcome';

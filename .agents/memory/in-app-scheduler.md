@@ -30,3 +30,15 @@ croner scheduler is the in-app trigger fallback, not a replacement for that visi
 process is alive. True 24/7 automation requires publishing as a **Reserved VM**
 (always-on), not an autoscale/scale-to-zero deployment. This is surfaced in the
 Planning page warning banner.
+
+**Priming a one-off run by inserting a row directly (SQL):** works — set
+`enabled=true` and `next_run_at` in the past, the next tick claims + fires it once
+(claim advances `next_run_at` to the cron's next occurrence), records
+`last_generation_id`/`last_status`, then delete the row. BUT `next_run_at` must have
+≤ millisecond precision. The claim CAS is an exact `eq(nextRunAt, expected)` where
+`expected` is a JS Date (ms precision) drizzle read back from `listDue`. A
+microsecond value (e.g. straight `now()`, which stores `.NNNNNN`) is truncated by
+JS Date, so the CAS never matches: the row shows `is_due=true` forever but is never
+claimed/fired (and `next_run_at` stays unchanged — the tell-tale). Fix: insert with
+`date_trunc('second', now())` (or `'milliseconds'`). Diagnosis time-sink; check this
+first if a hand-inserted schedule refuses to fire.

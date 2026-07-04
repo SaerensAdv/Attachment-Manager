@@ -34,7 +34,20 @@ server-side, fully client-independent; tick every 60s (+5s initial delay),
 `ticking` guard. Insert an enabled `schedules` row whose `next_run_at` is in the
 past (cron_expr must be valid croner) and it fires on the next tick, recording
 `last_generation_id`. `POST /api/schedules/:id/run-now` awaits in the request
-handler, so it has the same client-timeout caveat as autonomous.
+handler, so it has the same client-timeout caveat as autonomous. Delete the
+throwaway row after it fires, or its cron re-fires on the next real occurrence.
+
+**Gotcha — `next_run_at` MUST be millisecond precision when inserted via raw
+SQL.** `claim()` is a compare-and-set that matches the row with `eq(nextRunAt,
+expected)` where `expected` is the JS `Date` read back from the row (JS Dates are
+millisecond precision). `now()` / `now() - interval '2 minutes'` yields a
+MICROSECOND timestamp (e.g. `...11.016715`); the round-trip truncates it to
+`.016`, so `eq` never matches by value → `listDue` keeps finding the row but
+`claim` silently returns 0 rows and it NEVER fires, with NO log line. Symptom:
+`is_due=t` yet `next_run_at` stays put and `last_run_at` empty across many ticks.
+Fix: insert `date_trunc('milliseconds', now()) - interval '5 minutes'`. Schedules
+created through the app avoid this because `computeNextRun` returns a ms-precision
+JS Date.
 
 **Rendering a report PDF locally without Gmail:** trigger the report deliverable
 server-side (autonomous or scheduler) with the client's `report_email` temporarily

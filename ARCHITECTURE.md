@@ -95,7 +95,8 @@ saerens-ai-team/
 │   ├── creative-designer.md
 │   ├── brand-identity-designer.md
 │   ├── legal-contracts-specialist.md
-│   └── operations-coordinator.md
+│   ├── operations-coordinator.md
+│   └── personal-brand-strategist.md
 │
 ├── clients/             # Client context (data, kept separate from agents)
 │   ├── _template.md
@@ -128,7 +129,8 @@ saerens-ai-team/
 │   ├── sales-proposal.md
 │   ├── email-automation.md
 │   ├── brand-identity.md
-│   └── legal-review.md
+│   ├── legal-review.md
+│   └── linkedin-personal-brand.md
 │
 ├── templates/           # Reusable output formats
 │   ├── campaign-brief.md
@@ -148,6 +150,7 @@ saerens-ai-team/
     ├── belgian-market-context.md
     ├── naming-conventions.md
     ├── agent-personas.md
+    ├── founder-voice.md
     ├── portrait-art-direction.md
     ├── saerens-brand.md
     ├── saerens-deck-layout.md

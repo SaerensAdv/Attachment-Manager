@@ -73,6 +73,7 @@ If the request is vague, ask one focused round of clarifying questions first.
 | Client updates, answering client questions, relationship communication | Client Success Agent | `workflows/client-update.md`, `workflows/client-email.md` |
 | New-business proposals, pitches, prospect qualification | Sales / Proposal Agent | `workflows/sales-proposal.md` |
 | Organic social posts, newsletters, content calendars, video scripts, SEO blog/content production | Copywriter (content & social specialty) + SEO Specialist | `workflows/content-production.md` |
+| Axel's own LinkedIn personal-brand posts from his own input (brain-dump or brainstorm), Google Ads focus, in his voice — review-only, never AI-invented topics | Personal Brand Strategist (lead) + Copywriter (+ Creative Designer for an optional carousel/infographic) | `workflows/linkedin-personal-brand.md` |
 | Email marketing, newsletters as a channel, automation flows, lifecycle/retention, list segmentation, lead nurturing & CRM handoff | Email & Marketing Automation Specialist | `workflows/email-automation.md` |
 | Producing the actual visual ad assets, banners, email visuals, or motion/video from an approved creative direction | Creative Designer | `workflows/ad-creatives.md` |
 | Brand identity from the ground up: positioning into a visual identity system — naming (if needed), logo/wordmark, colour palette, typography, brand guidelines | Brand & Identity Designer | `workflows/brand-identity.md` |

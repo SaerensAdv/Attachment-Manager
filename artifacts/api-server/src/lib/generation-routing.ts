@@ -100,11 +100,15 @@ export async function resolveGenerationContext(
   // A "markdown" deliverable (or none) means the team's text IS the output, so
   // it is client-facing and the Humanizer language pass applies. Structured
   // deliverables (CSV, Replit prompt, e-mailed report) treat team work as
-  // intermediate. An explicit clientFacing flag from routing overrides.
+  // intermediate. A LinkedIn post is published text where Axel's natural voice
+  // is the whole point, so it also gets the Humanizer pass. An explicit
+  // clientFacing flag from routing overrides.
   const clientFacing =
     typeof b.clientFacing === "boolean"
       ? b.clientFacing
-      : deliverableKind === null || deliverableKind === "markdown";
+      : deliverableKind === null ||
+        deliverableKind === "markdown" ||
+        deliverableKind === "linkedin-post";
   const qcEnabled = b.qcEnabled === false ? false : true;
   const touchesLiveAccount = b.touchesLiveAccount === true;
   // Fan-out is opt-in via the workflow marker; an explicit numeric body value

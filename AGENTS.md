@@ -66,7 +66,7 @@ Each department lists its **Owner** (the head, who is also a member), its **Agen
    - Handoff: receives briefs from Direction & Orchestration and Client & Growth; hands finished work to Quality & Compliance and Client & Growth.
 3. **Content & Creative** *(delivery)* — owns brand identity, messaging, copy, produced visuals/video, the owned email & lifecycle channel, and a natural client-ready voice.
    - Owner: `agents/copywriter.md`
-   - Agents: `agents/copywriter.md`, `agents/humanizer.md`, `agents/creative-designer.md`, `agents/brand-identity-designer.md`, `agents/email-automation-specialist.md`
+   - Agents: `agents/copywriter.md`, `agents/humanizer.md`, `agents/creative-designer.md`, `agents/brand-identity-designer.md`, `agents/email-automation-specialist.md`, `agents/personal-brand-strategist.md`
    - Handoff: receives briefs from Direction & Orchestration and Client & Growth; hands finished work to Quality & Compliance and Client & Growth.
 4. **Client & Growth** *(client)* — owns the client relationship, client-facing reporting, new business, market insight, contracts, and internal coordination.
    - Owner: `agents/client-success-agent.md`
@@ -108,6 +108,7 @@ Specified after the initial MVP, following the "new agent vs deeper specialty" r
 - Brand & Identity Designer — `agents/brand-identity-designer.md`
 - Legal & Contracts Specialist — `agents/legal-contracts-specialist.md`
 - Operations & Schedule Coordinator — `agents/operations-coordinator.md`
+- Personal Brand Strategist — `agents/personal-brand-strategist.md`
 
 Content & social is **not** a separate agent: it is a deeper specialty of the Copywriter (`agents/copywriter.md`).
 

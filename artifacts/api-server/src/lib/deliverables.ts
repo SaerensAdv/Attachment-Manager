@@ -20,6 +20,7 @@ export type DeliverableKind =
   | "google-ads-csv"
   | "negative-keywords-csv"
   | "audit-report"
+  | "linkedin-post"
   | "meta-ad-image"
   | "markdown";
 
@@ -78,6 +79,7 @@ const KNOWN: ReadonlySet<DeliverableKind> = new Set([
   "google-ads-csv",
   "negative-keywords-csv",
   "audit-report",
+  "linkedin-post",
 ]);
 
 export function getDeliverableKind(workflow: DocFile | null): DeliverableKind {
@@ -169,6 +171,15 @@ export function deliverableMeta(
         mimeType: "text/markdown",
         format: "text",
       };
+    case "linkedin-post":
+      return {
+        kind,
+        title: "LinkedIn-posts (concept)",
+        note: "1 à 3 LinkedIn-postconcepten in de stem van Axel, gegrond in zijn eigen input en het stemprofiel. Een mens reviewt, kiest en post zelf; er wordt niets automatisch gepubliceerd.",
+        filename: `${slug(clientName)}-linkedin-posts.md`,
+        mimeType: "text/markdown",
+        format: "text",
+      };
     default:
       return null;
   }
@@ -193,6 +204,8 @@ export function buildDeliverablePrompt(
       return buildNegativesCsvPrompt(ctx);
     case "audit-report":
       return buildAuditReportPrompt(ctx);
+    case "linkedin-post":
+      return buildLinkedInPostPrompt(ctx);
     default:
       return null;
   }
@@ -577,6 +590,53 @@ function buildAuditReportPrompt(ctx: DeliverableContext): DeliverablePrompt {
     ctx.teamWork.trim() || "(geen)",
     "",
     "Zet dit nu om in één klantklaar audit-rapport volgens je instructies.",
+  ].join("\n");
+
+  return { system, user };
+}
+
+function buildLinkedInPostPrompt(ctx: DeliverableContext): DeliverablePrompt {
+  const system = [
+    "Je bent de ghostwriter voor het persoonlijke merk van Axel (oprichter van Saerens Advertising) binnen het AI-team. Je taak is NIET om nieuwe onderwerpen, meningen, cijfers, cases of anekdotes te bedenken, maar om Axels EIGEN input (brain-dump of beantwoorde brainstormvragen) plus het werk van het team om te zetten in 1 à 3 postklare LinkedIn-concepten in zijn stem. Volg het stemprofiel in knowledge/founder-voice.md en de toon van knowledge/agency-foundations.md.",
+    "",
+    "## Wat je krijgt",
+    "- De klantcontext (indien de post over een specifieke klant of case gaat; vaak leeg — dit is Axels eigen personal brand).",
+    "- De oorspronkelijke opdracht: Axels ruwe input (brain-dump) of zijn antwoorden op de brainstormvragen, plus de gekozen invalshoek.",
+    "- Het gezamenlijke werk van het team (de gekozen hoek(en), structuur en eventuele humanizer-pass).",
+    "",
+    "## Wat je teruggeeft",
+    "Uitsluitend de LinkedIn-postconcepten zelf in Markdown — geen inleiding, geen meta-commentaar, geen codeblok eromheen. Lever 1 à 3 varianten, elk als een aparte sectie:",
+    "- `## Variant N — <korte hoeknaam>`",
+    "- Direct daaronder de volledige posttekst, exact zoals ze geplakt kan worden (behoud regelafbrekingen en witruimte).",
+    "- Daarna een cursief regeltje `_Waarom deze werkt:_` met één zin over de gekozen hoek en hook (intern, niet mee te posten).",
+    "",
+    "## LinkedIn-mechanica (per variant)",
+    "- **Hook:** de eerste regel is de hook, ≤ ~110 tekens, geen throat-clearing ('Ik wilde even delen…', 'Als ondernemer…'). Hij moet in het mobiele 'meer'-venster de aandacht pakken.",
+    "- **Lengte:** streef naar ~800–1000 tekens totaal; niet de volledige 3000.",
+    "- **Opbouw:** korte alinea's (1–2 regels) met witruimte ertussen voor leesbaarheid en dwell time. Hook → inzicht/verhaal → afronding.",
+    "- **CTA:** precies één vraag als afsluiting die tot reacties uitnodigt.",
+    "- **Hashtags:** 3 à 5, relevant, onderaan.",
+    "- Gebruik nl-BE; spreektaal zoals Axel schrijft (zie stemprofiel), niet corporate of AI-achtig. Geen emoji tenzij het stemprofiel dat expliciet toelaat.",
+    "",
+    "## Regels",
+    "- Verzin NOOIT feiten, cijfers, cases, klantnamen of anekdotes. Alles moet terug te voeren zijn op Axels eigen input of op het teamwerk. Ontbreekt een concreet gegeven, laat het weg of houd het algemeen — vul het niet fictief in.",
+    "- Als de input te dun is voor een geloofwaardige post, lever dan minder varianten en zet onderaan een korte sectie `## Wat ik nog van Axel nodig heb` met de ontbrekende input (dit is intern, niet om te posten).",
+    "- Blijf binnen Axels stem: neem geen standpunten of claims in die niet uit zijn input volgen.",
+    "- Google Ads is de kernfocus; bredere ondernemers-/marketingthema's mogen als ze uit Axels input komen.",
+    "- Niets wordt automatisch gepost: dit zijn concepten die een mens reviewt, kiest en zelf publiceert.",
+  ].join("\n");
+
+  const user = [
+    "## Klantcontext",
+    ctx.clientContent.trim() || "(geen — dit is Axels eigen personal brand)",
+    "",
+    "## Oorspronkelijke opdracht (Axels eigen input)",
+    ctx.request.trim(),
+    "",
+    "## Werk van het team",
+    ctx.teamWork.trim() || "(geen)",
+    "",
+    "Zet dit nu om in 1 à 3 postklare LinkedIn-concepten volgens je instructies.",
   ].join("\n");
 
   return { system, user };

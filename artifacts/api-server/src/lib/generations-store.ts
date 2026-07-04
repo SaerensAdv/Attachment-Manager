@@ -310,7 +310,16 @@ export async function listAgentRuns(
 }
 
 /** All generations, newest first. */
-export async function listGenerations(): Promise<Generation[]> {
+export async function listGenerations(
+  clientPath?: string,
+): Promise<Generation[]> {
+  if (clientPath) {
+    return db
+      .select()
+      .from(generationsTable)
+      .where(eq(generationsTable.clientPath, clientPath))
+      .orderBy(desc(generationsTable.createdAt));
+  }
   return db
     .select()
     .from(generationsTable)

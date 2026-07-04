@@ -74,6 +74,7 @@ export * from './generationSummary';
 export * from './getAlertsParams';
 export * from './getDocBacklinksParams';
 export * from './getDocContentParams';
+export * from './getGenerationsParams';
 export * from './handleBrowserLoginCallbackParams';
 export * from './handoffBrief';
 export * from './healthStatus';

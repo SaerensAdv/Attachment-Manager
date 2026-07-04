@@ -9,6 +9,7 @@
 export interface GenerationSummary {
   id: number;
   clientName: string;
+  clientPath: string;
   workflowTitle: string;
   leadAgentTitle: string;
   teamTitles: string[];

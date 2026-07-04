@@ -1241,6 +1241,15 @@ paths:
       operationId: getGenerations
       tags: [generations]
       summary: List all saved generations (newest first)
+      parameters:
+        - name: clientPath
+          in: query
+          required: false
+          description: >-
+            Optional filter: only generations for this doc-graph client path
+            (e.g. "clients/db/17.md"). Omitted returns the full archive.
+          schema:
+            type: string
       responses:
         "200":
           description: The archive of generations
@@ -3090,6 +3099,7 @@ components:
       required:
         - id
         - clientName
+        - clientPath
         - workflowTitle
         - leadAgentTitle
         - teamTitles
@@ -3101,6 +3111,8 @@ components:
         id:
           type: integer
         clientName:
+          type: string
+        clientPath:
           type: string
         workflowTitle:
           type: string

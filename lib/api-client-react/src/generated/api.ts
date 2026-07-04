@@ -58,6 +58,7 @@ import type {
   GetAlertsParams,
   GetDocBacklinksParams,
   GetDocContentParams,
+  GetGenerationsParams,
   HandleBrowserLoginCallbackParams,
   HealthStatus,
   ImprovementProposal,
@@ -3607,20 +3608,27 @@ export const useClientBriefingSuggest = <TError = ErrorType<ErrorResponse>,
       return useMutation(getClientBriefingSuggestMutationOptions(options));
     }
 
-export const getGetGenerationsUrl = () => {
+export const getGetGenerationsUrl = (params?: GetGenerationsParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/api/generations`
+  return stringifiedParams.length > 0 ? `/api/generations?${stringifiedParams}` : `/api/generations`
 }
 
 /**
  * @summary List all saved generations (newest first)
  */
-export const getGenerations = async ( options?: RequestInit): Promise<GenerationList> => {
+export const getGenerations = async (params?: GetGenerationsParams, options?: RequestInit): Promise<GenerationList> => {
 
-  return customFetch<GenerationList>(getGetGenerationsUrl(),
+  return customFetch<GenerationList>(getGetGenerationsUrl(params),
   {
     ...options,
     method: 'GET'
@@ -3633,23 +3641,23 @@ export const getGenerations = async ( options?: RequestInit): Promise<Generation
 
 
 
-export const getGetGenerationsQueryKey = () => {
+export const getGetGenerationsQueryKey = (params?: GetGenerationsParams,) => {
     return [
-    `/api/generations`
+    `/api/generations`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getGetGenerationsQueryOptions = <TData = Awaited<ReturnType<typeof getGenerations>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGenerations>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getGetGenerationsQueryOptions = <TData = Awaited<ReturnType<typeof getGenerations>>, TError = ErrorType<unknown>>(params?: GetGenerationsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGenerations>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetGenerationsQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getGetGenerationsQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getGenerations>>> = ({ signal }) => getGenerations({ signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getGenerations>>> = ({ signal }) => getGenerations(params, { signal, ...requestOptions });
 
 
 
@@ -3667,11 +3675,11 @@ export type GetGenerationsQueryError = ErrorType<unknown>
  */
 
 export function useGetGenerations<TData = Awaited<ReturnType<typeof getGenerations>>, TError = ErrorType<unknown>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGenerations>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+ params?: GetGenerationsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGenerations>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getGetGenerationsQueryOptions(options)
+  const queryOptions = getGetGenerationsQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

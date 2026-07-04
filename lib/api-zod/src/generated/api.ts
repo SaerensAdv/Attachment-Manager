@@ -1892,10 +1892,15 @@ export const ClientBriefingSuggestResponse = zod.object({
 /**
  * @summary List all saved generations (newest first)
  */
+export const GetGenerationsQueryParams = zod.object({
+  "clientPath": zod.coerce.string().optional().describe('Optional filter: only generations for this doc-graph client path (e.g. \"clients\/db\/17.md\"). Omitted returns the full archive.')
+})
+
 export const GetGenerationsResponse = zod.object({
   "generations": zod.array(zod.object({
   "id": zod.number(),
   "clientName": zod.string(),
+  "clientPath": zod.string(),
   "workflowTitle": zod.string(),
   "leadAgentTitle": zod.string(),
   "teamTitles": zod.array(zod.string()),

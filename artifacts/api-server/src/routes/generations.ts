@@ -81,6 +81,7 @@ function serializeSummary(g: Generation) {
   return {
     id: g.id,
     clientName: g.clientName,
+    clientPath: g.clientPath,
     workflowTitle: g.workflowTitle,
     leadAgentTitle: g.leadAgentTitle,
     teamTitles: parseList(g.teamTitles),
@@ -292,8 +293,14 @@ function serializeStep(s: GenerationStep) {
   };
 }
 
-router.get("/generations", async (_req, res) => {
-  const rows = await listGenerations();
+router.get("/generations", async (req, res) => {
+  // Optional per-client filter for the dossier's document history. An equality
+  // match on the doc-graph client path (e.g. "clients/db/17.md"); omitted =
+  // the full archive.
+  const raw = req.query.clientPath;
+  const clientPath =
+    typeof raw === "string" && raw.trim().length > 0 ? raw.trim() : undefined;
+  const rows = await listGenerations(clientPath);
   res.json({ generations: rows.map(serializeSummary) });
 });
 

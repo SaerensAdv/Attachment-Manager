@@ -760,6 +760,7 @@ export interface BriefingSuggestResult {
 export interface GenerationSummary {
   id: number;
   clientName: string;
+  clientPath: string;
   workflowTitle: string;
   leadAgentTitle: string;
   teamTitles: string[];
@@ -1315,6 +1316,13 @@ path: string;
 
 export type DeleteClientGroup200 = {
   ok: boolean;
+};
+
+export type GetGenerationsParams = {
+/**
+ * Optional filter: only generations for this doc-graph client path (e.g. "clients/db/17.md"). Omitted returns the full archive.
+ */
+clientPath?: string;
 };
 
 export type GetAlertsParams = {

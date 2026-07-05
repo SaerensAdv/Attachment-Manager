@@ -68,6 +68,8 @@ app.use("/api/generate", llmLimiter);
 app.use("/api/route", llmLimiter);
 // Triggering a generation over the partner API is equally LLM-backed.
 app.use("/api/v1/partner/generations", llmLimiter);
+// Visual Studio: content plan (Claude) + background generation (gpt-image-1).
+app.use("/api/visuals", llmLimiter);
 // Portrait uploads (POST /api/team/:slug/portrait) carry a base64-encoded image
 // that exceeds the default 100kb JSON limit, so parse team routes with a larger
 // cap. body-parser marks the request parsed, so the global parser below skips it.

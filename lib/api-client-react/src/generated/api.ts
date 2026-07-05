@@ -90,7 +90,11 @@ import type {
   TodoOverview,
   UpdatePersonaRequest,
   UploadPortraitRequest,
-  ValidationReport
+  ValidationReport,
+  VisualBackgroundBody,
+  VisualBackgroundResult,
+  VisualPlanBody,
+  VisualPlanResult
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -3606,6 +3610,150 @@ export const useClientBriefingSuggest = <TError = ErrorType<ErrorResponse>,
         TContext
       > => {
       return useMutation(getClientBriefingSuggestMutationOptions(options));
+    }
+
+export const getPlanVisualUrl = () => {
+
+
+
+
+  return `/api/visuals/plan`
+}
+
+/**
+ * One model call that turns a post concept (source text) into editable content for ALL visual formats (carousel slides, single image, quote card) plus a recommended format and a suggested background-image prompt. Nothing is stored — the Visual Studio pre-fills its editor with the result and the user edits freely.
+ * @summary Propose structured visual content from a LinkedIn post concept
+ */
+export const planVisual = async (visualPlanBody: VisualPlanBody, options?: RequestInit): Promise<VisualPlanResult> => {
+
+  return customFetch<VisualPlanResult>(getPlanVisualUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      visualPlanBody,)
+  }
+);}
+
+
+
+
+export const getPlanVisualMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof planVisual>>, TError,{data: BodyType<VisualPlanBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof planVisual>>, TError,{data: BodyType<VisualPlanBody>}, TContext> => {
+
+const mutationKey = ['planVisual'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof planVisual>>, {data: BodyType<VisualPlanBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  planVisual(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PlanVisualMutationResult = NonNullable<Awaited<ReturnType<typeof planVisual>>>
+    export type PlanVisualMutationBody = BodyType<VisualPlanBody>
+    export type PlanVisualMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Propose structured visual content from a LinkedIn post concept
+ */
+export const usePlanVisual = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof planVisual>>, TError,{data: BodyType<VisualPlanBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof planVisual>>,
+        TError,
+        {data: BodyType<VisualPlanBody>},
+        TContext
+      > => {
+      return useMutation(getPlanVisualMutationOptions(options));
+    }
+
+export const getGenerateVisualBackgroundUrl = () => {
+
+
+
+
+  return `/api/visuals/background`
+}
+
+/**
+ * Generates a single portrait background image via the OpenAI proxy and returns it as a data URL, ready to drop into the studio canvas. Text never lives in the AI pixels — templates draw copy as real HTML on top.
+ * @summary Generate an AI background illustration for a visual (gpt-image-1)
+ */
+export const generateVisualBackground = async (visualBackgroundBody: VisualBackgroundBody, options?: RequestInit): Promise<VisualBackgroundResult> => {
+
+  return customFetch<VisualBackgroundResult>(getGenerateVisualBackgroundUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      visualBackgroundBody,)
+  }
+);}
+
+
+
+
+export const getGenerateVisualBackgroundMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateVisualBackground>>, TError,{data: BodyType<VisualBackgroundBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof generateVisualBackground>>, TError,{data: BodyType<VisualBackgroundBody>}, TContext> => {
+
+const mutationKey = ['generateVisualBackground'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof generateVisualBackground>>, {data: BodyType<VisualBackgroundBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  generateVisualBackground(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GenerateVisualBackgroundMutationResult = NonNullable<Awaited<ReturnType<typeof generateVisualBackground>>>
+    export type GenerateVisualBackgroundMutationBody = BodyType<VisualBackgroundBody>
+    export type GenerateVisualBackgroundMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Generate an AI background illustration for a visual (gpt-image-1)
+ */
+export const useGenerateVisualBackground = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateVisualBackground>>, TError,{data: BodyType<VisualBackgroundBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof generateVisualBackground>>,
+        TError,
+        {data: BodyType<VisualBackgroundBody>},
+        TContext
+      > => {
+      return useMutation(getGenerateVisualBackgroundMutationOptions(options));
     }
 
 export const getGetGenerationsUrl = (params?: GetGenerationsParams,) => {

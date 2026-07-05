@@ -1283,6 +1283,80 @@ export interface PartnerKeyRevokeResult {
 }
 
 /**
+ * Force a specific format; omitted/null lets the model recommend one.
+ * @nullable
+ */
+export type VisualPlanBodyFormat = typeof VisualPlanBodyFormat[keyof typeof VisualPlanBodyFormat] | null;
+
+
+export const VisualPlanBodyFormat = {
+  carousel: 'carousel',
+  single: 'single',
+  quote: 'quote',
+} as const;
+
+export interface VisualPlanBody {
+  /** The LinkedIn post concept (raw text) to turn into visual content. */
+  sourceText: string;
+  /**
+     * Force a specific format; omitted/null lets the model recommend one.
+     * @nullable
+     */
+  format?: VisualPlanBodyFormat;
+}
+
+export interface VisualSlide {
+  kicker: string;
+  title: string;
+  body: string;
+}
+
+/**
+ * Recommended (or forced) format for this concept.
+ */
+export type VisualPlanResultFormat = typeof VisualPlanResultFormat[keyof typeof VisualPlanResultFormat];
+
+
+export const VisualPlanResultFormat = {
+  carousel: 'carousel',
+  single: 'single',
+  quote: 'quote',
+} as const;
+
+export type VisualPlanResultSingle = {
+  kicker: string;
+  headline: string;
+  sub: string;
+};
+
+export type VisualPlanResultQuote = {
+  quote: string;
+  attribution: string;
+};
+
+export interface VisualPlanResult {
+  /** Recommended (or forced) format for this concept. */
+  format: VisualPlanResultFormat;
+  slides: VisualSlide[];
+  single: VisualPlanResultSingle;
+  quote: VisualPlanResultQuote;
+  /** Suggested gpt-image-1 background prompt (empty when a plain branded background fits better). */
+  imagePrompt: string;
+  /** One short Dutch sentence with advice for the user (may be empty). */
+  notes: string;
+}
+
+export interface VisualBackgroundBody {
+  /** Image prompt; the server adds house-style guardrails (no text in image). */
+  prompt: string;
+}
+
+export interface VisualBackgroundResult {
+  /** PNG as data URL, export-safe (same-origin). */
+  imageDataUrl: string;
+}
+
+/**
  * Opaque session token — `Bearer <sid>`.
  */
 export type AuthorizationSessionHeaderParameter = string;

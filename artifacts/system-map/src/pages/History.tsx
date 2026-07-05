@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { useSearch } from "wouter";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useLocation, useSearch } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useGetGenerations,
@@ -39,10 +39,12 @@ import {
   AlertTriangle,
   Eye,
   EyeOff,
+  Palette,
   Radio,
 } from "lucide-react";
 import Reveal from "@/components/Reveal";
 import { FlagChip, HandoffBriefPanel } from "@/components/HandoffBrief";
+import { extractPostConcepts, VISUAL_SOURCE_KEY } from "@/lib/visuals";
 
 function formatDate(iso: string): string {
   const d = new Date(iso);
@@ -242,6 +244,25 @@ export default function History() {
   };
 
   const markdown = detail.data?.finalMarkdown ?? "";
+
+  const [, navigate] = useLocation();
+  const [showConcepts, setShowConcepts] = useState(false);
+  const concepts = useMemo(() => extractPostConcepts(markdown), [markdown]);
+  useEffect(() => setShowConcepts(false), [selected]);
+
+  const openInStudio = (text: string) => {
+    sessionStorage.setItem(VISUAL_SOURCE_KEY, text);
+    navigate("/visuals");
+  };
+
+  const handleMakeVisual = () => {
+    if (concepts.length === 0) return;
+    if (concepts.length === 1) {
+      openInStudio(concepts[0].text);
+      return;
+    }
+    setShowConcepts((v) => !v);
+  };
 
   const handleCopy = async () => {
     if (!markdown) return;
@@ -562,6 +583,40 @@ export default function History() {
                     )}
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={handleMakeVisual}
+                        title="Maak visual"
+                        aria-label="Maak visual"
+                        data-testid="button-make-visual"
+                        disabled={!markdown}
+                        className="p-2 hover:bg-background transition-colors text-foreground group disabled:opacity-40"
+                      >
+                        <Palette className="w-4 h-4 group-hover:text-accent" />
+                      </button>
+                      {showConcepts && concepts.length > 1 && (
+                        <div className="absolute right-0 top-full z-30 mt-1 w-72 border border-foreground bg-card shadow-[4px_4px_0px_hsl(var(--foreground)/0.15)]">
+                          <p className="px-3 pt-2 pb-1 font-['Space_Mono'] text-[10px] uppercase tracking-widest text-muted-foreground">
+                            Kies een concept
+                          </p>
+                          {concepts.map((c, i) => (
+                            <button
+                              key={i}
+                              type="button"
+                              onClick={() => openInStudio(c.text)}
+                              data-testid={`concept-option-${i}`}
+                              className="block w-full text-left px-3 py-2 font-['Inter'] text-sm hover:bg-background border-t border-foreground/10"
+                            >
+                              <span className="font-medium">{c.label}</span>
+                              <span className="block text-xs text-muted-foreground truncate">
+                                {c.text.replace(/\s+/g, " ").slice(0, 70)}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                     <button
                       type="button"
                       onClick={handleCopy}

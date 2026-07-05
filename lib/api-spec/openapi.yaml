@@ -24,6 +24,8 @@ tags:
     description: Browser and mobile authentication endpoints.
   - name: partner
     description: Versioned, per-project authenticated partner API for spun-off projects.
+  - name: visuals
+    description: Visual Studio — branded LinkedIn visuals (content plan + AI backgrounds)
 paths:
   /auth/user:
     get:
@@ -1232,6 +1234,82 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
         "502":
           description: The briefing analysis failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /visuals/plan:
+    post:
+      operationId: planVisual
+      tags: [visuals]
+      summary: Propose structured visual content from a LinkedIn post concept
+      description: >-
+        One model call that turns a post concept (source text) into editable
+        content for ALL visual formats (carousel slides, single image, quote
+        card) plus a recommended format and a suggested background-image
+        prompt. Nothing is stored — the Visual Studio pre-fills its editor
+        with the result and the user edits freely.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VisualPlanBody"
+      responses:
+        "200":
+          description: Proposed content for all visual formats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VisualPlanResult"
+        "400":
+          description: Missing or empty sourceText
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "502":
+          description: The content-plan call failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /visuals/background:
+    post:
+      operationId: generateVisualBackground
+      tags: [visuals]
+      summary: Generate an AI background illustration for a visual (gpt-image-1)
+      description: >-
+        Generates a single portrait background image via the OpenAI proxy and
+        returns it as a data URL, ready to drop into the studio canvas. Text
+        never lives in the AI pixels — templates draw copy as real HTML on top.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VisualBackgroundBody"
+      responses:
+        "200":
+          description: The generated background image
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VisualBackgroundResult"
+        "400":
+          description: Missing or empty prompt
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "502":
+          description: Image generation failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: The OpenAI integration is not configured
           content:
             application/json:
               schema:
@@ -4096,3 +4174,74 @@ components:
           type: boolean
         id:
           type: integer
+    VisualPlanBody:
+      type: object
+      required: [sourceText]
+      properties:
+        sourceText:
+          type: string
+          description: The LinkedIn post concept (raw text) to turn into visual content.
+        format:
+          type: [string, "null"]
+          enum: [carousel, single, quote, null]
+          description: Force a specific format; omitted/null lets the model recommend one.
+    VisualSlide:
+      type: object
+      required: [kicker, title, body]
+      properties:
+        kicker:
+          type: string
+        title:
+          type: string
+        body:
+          type: string
+    VisualPlanResult:
+      type: object
+      required: [format, slides, single, quote, imagePrompt, notes]
+      properties:
+        format:
+          type: string
+          enum: [carousel, single, quote]
+          description: Recommended (or forced) format for this concept.
+        slides:
+          type: array
+          items:
+            $ref: "#/components/schemas/VisualSlide"
+        single:
+          type: object
+          required: [kicker, headline, sub]
+          properties:
+            kicker:
+              type: string
+            headline:
+              type: string
+            sub:
+              type: string
+        quote:
+          type: object
+          required: [quote, attribution]
+          properties:
+            quote:
+              type: string
+            attribution:
+              type: string
+        imagePrompt:
+          type: string
+          description: Suggested gpt-image-1 background prompt (empty when a plain branded background fits better).
+        notes:
+          type: string
+          description: One short Dutch sentence with advice for the user (may be empty).
+    VisualBackgroundBody:
+      type: object
+      required: [prompt]
+      properties:
+        prompt:
+          type: string
+          description: Image prompt; the server adds house-style guardrails (no text in image).
+    VisualBackgroundResult:
+      type: object
+      required: [imageDataUrl]
+      properties:
+        imageDataUrl:
+          type: string
+          description: PNG as data URL, export-safe (same-origin).

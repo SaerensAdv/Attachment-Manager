@@ -90,6 +90,23 @@ export function checkAgentEmailEnv(env: NodeJS.ProcessEnv = process.env): string
 }
 
 /**
+ * Shape-check the optional OpenAI proxy pair (Visual Studio AI-achtergronden).
+ * Both-or-neither: when only one of the two is set the image endpoint would
+ * fail deep inside a request, so surface that at boot. Never throws — the
+ * studio works fine without AI backgrounds.
+ */
+export function checkOpenAiEnv(env: NodeJS.ProcessEnv = process.env): string[] {
+  const base = (env.AI_INTEGRATIONS_OPENAI_BASE_URL ?? "").trim();
+  const key = (env.AI_INTEGRATIONS_OPENAI_API_KEY ?? "").trim();
+  if ((base && !key) || (!base && key)) {
+    return [
+      "De OpenAI-integratie is maar half geconfigureerd: AI_INTEGRATIONS_OPENAI_BASE_URL en AI_INTEGRATIONS_OPENAI_API_KEY horen samen gezet te zijn.",
+    ];
+  }
+  return [];
+}
+
+/**
  * Shape-check the optional CORS allowlist. `CORS_ALLOWED_ORIGINS` is a
  * comma-separated list of extra browser origins to trust (on top of the
  * Replit-provided domains). Warns (never throws) on an entry that isn't a valid
@@ -135,6 +152,10 @@ export function validateEnv(env: NodeJS.ProcessEnv = process.env): AppEnv {
 
   for (const warning of checkCorsEnv(env)) {
     logger.warn({ scope: "env:cors" }, warning);
+  }
+
+  for (const warning of checkOpenAiEnv(env)) {
+    logger.warn({ scope: "env:openai" }, warning);
   }
 
   return {

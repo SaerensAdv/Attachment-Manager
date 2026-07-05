@@ -1890,6 +1890,49 @@ export const ClientBriefingSuggestResponse = zod.object({
 
 
 /**
+ * One model call that turns a post concept (source text) into editable content for ALL visual formats (carousel slides, single image, quote card) plus a recommended format and a suggested background-image prompt. Nothing is stored — the Visual Studio pre-fills its editor with the result and the user edits freely.
+ * @summary Propose structured visual content from a LinkedIn post concept
+ */
+export const PlanVisualBody = zod.object({
+  "sourceText": zod.string().describe('The LinkedIn post concept (raw text) to turn into visual content.'),
+  "format": zod.union([zod.literal('carousel'),zod.literal('single'),zod.literal('quote'),zod.literal(null)]).nullish().describe('Force a specific format; omitted\/null lets the model recommend one.')
+})
+
+export const PlanVisualResponse = zod.object({
+  "format": zod.enum(['carousel', 'single', 'quote']).describe('Recommended (or forced) format for this concept.'),
+  "slides": zod.array(zod.object({
+  "kicker": zod.string(),
+  "title": zod.string(),
+  "body": zod.string()
+})),
+  "single": zod.object({
+  "kicker": zod.string(),
+  "headline": zod.string(),
+  "sub": zod.string()
+}),
+  "quote": zod.object({
+  "quote": zod.string(),
+  "attribution": zod.string()
+}),
+  "imagePrompt": zod.string().describe('Suggested gpt-image-1 background prompt (empty when a plain branded background fits better).'),
+  "notes": zod.string().describe('One short Dutch sentence with advice for the user (may be empty).')
+})
+
+
+/**
+ * Generates a single portrait background image via the OpenAI proxy and returns it as a data URL, ready to drop into the studio canvas. Text never lives in the AI pixels — templates draw copy as real HTML on top.
+ * @summary Generate an AI background illustration for a visual (gpt-image-1)
+ */
+export const GenerateVisualBackgroundBody = zod.object({
+  "prompt": zod.string().describe('Image prompt; the server adds house-style guardrails (no text in image).')
+})
+
+export const GenerateVisualBackgroundResponse = zod.object({
+  "imageDataUrl": zod.string().describe('PNG as data URL, export-safe (same-origin).')
+})
+
+
+/**
  * @summary List all saved generations (newest first)
  */
 export const GetGenerationsQueryParams = zod.object({

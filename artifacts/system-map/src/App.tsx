@@ -13,6 +13,7 @@ import History from "@/pages/History";
 import Controle from "@/pages/Controle";
 import Planning from "@/pages/Planning";
 import Todo from "@/pages/Todo";
+import VisualStudio from "@/pages/VisualStudio";
 import TabNav from "@/components/TabNav";
 import CommandPalette from "@/components/CommandPalette";
 import SmoothScroll from "@/components/SmoothScroll";
@@ -37,6 +38,7 @@ function Router() {
       <Route path="/todo" component={Todo} />
       <Route path="/planning" component={Planning} />
       <Route path="/controle" component={Controle} />
+      <Route path="/visuals" component={VisualStudio} />
       <Route component={NotFound} />
     </Switch>
   );

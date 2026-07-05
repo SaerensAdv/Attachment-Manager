@@ -54,6 +54,13 @@ type OrderlessStep = Omit<StepRecord, "stepOrder">;
 export interface DeliverableEffect {
   step: OrderlessStep | null;
   downgrade: boolean;
+  /**
+   * The full streamed deliverable text, so the orchestrator can append it to
+   * the archived markdown. Without this, scheduled (non-SSE) runs would lose
+   * the end product entirely — the deltas only go to live listeners. Null when
+   * nothing was produced.
+   */
+  text?: string | null;
 }
 
 /** Effect of an action deliverable that holds a draft for human approval. */
@@ -121,6 +128,7 @@ export async function runDeliverableStep(
 
   const delStartedAt = Date.now();
   let delChars = 0;
+  let delText = "";
   let delIn: number | null = null;
   let delOut: number | null = null;
   let delStatus = "completed";
@@ -142,6 +150,7 @@ export async function runDeliverableStep(
         event.delta.type === "text_delta"
       ) {
         delChars += event.delta.text.length;
+        delText += event.delta.text;
         dc.send({ type: "deliverable_delta", content: event.delta.text });
       }
     }
@@ -183,6 +192,7 @@ export async function runDeliverableStep(
       errorMessage: null,
     },
     downgrade: delStatus !== "completed",
+    text: delText.trim() ? delText : null,
   };
 }
 

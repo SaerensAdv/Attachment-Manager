@@ -1290,3 +1290,38 @@ describe("runGeneration — held client e-mails awaiting approval", () => {
     );
   });
 });
+
+describe("runGeneration — streamed deliverable archive", () => {
+  it("appends the streamed deliverable text to the archived markdown", async () => {
+    h.streamImpl = streamSequence([
+      "Team draft from the lead.",
+      "DRIE LINKEDIN-CONCEPTEN in Axels stem.",
+    ]);
+
+    const { promise } = run(
+      makeCtx({
+        deliverableKind: "linkedin-post",
+        workflowPath: "workflows/linkedin-personal-brand.md",
+        workflowTitle: "LinkedIn Personal Brand",
+      }),
+    );
+    const result = await promise;
+
+    expect(result.status).toBe("completed");
+    const markdown = String(saveGenerationMock.mock.calls[0][0].finalMarkdown);
+    // The archived markdown must contain the deliverable text itself: the SSE
+    // deltas only reach live listeners, so without this snapshot a scheduled
+    // run would lose the end product entirely (the run-#170 bug).
+    expect(markdown).toContain("## Eindproduct —");
+    expect(markdown).toContain("DRIE LINKEDIN-CONCEPTEN in Axels stem.");
+
+    // The deliverable step itself is still recorded as completed.
+    const steps = saveGenerationStepsMock.mock.calls[0][0] as Array<{
+      role: string;
+      status: string;
+    }>;
+    expect(
+      steps.some((s) => s.role === "deliverable" && s.status === "completed"),
+    ).toBe(true);
+  });
+});

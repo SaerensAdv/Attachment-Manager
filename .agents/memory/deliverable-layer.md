@@ -28,6 +28,20 @@ The deliverable runs after the team loop, in its own try/catch, and emits
   (or client disconnect) must never lose or block it. `finalMarkdown` is always
   the team's `priorWork`, independent of the deliverable.
 
+## Streamed deliverable text MUST be archived, not only streamed
+The streamed deliverable's deltas only reach live SSE listeners; scheduled/
+autonomous runs have none, so without an archive snapshot the end product is
+lost forever (only the step row with a char_count remains — this was the
+run-#170 archive bug).
+- **Why:** "never loses markdown" must include the deliverable itself; the
+  archive is the ONLY place a scheduled run's output can be read.
+- **How to apply:** `runDeliverableStep` returns the accumulated `text` on its
+  effect; the orchestrator appends it to `priorWork` as
+  `## Eindproduct — <title>` (CSV kinds fenced, ` (onvolledig)` suffix when the
+  step didn't complete) BEFORE the QA-verdict/fan-out appends. `deliverableSource`
+  and monitor-list capture are snapshotted earlier, so nothing feeds back. Any
+  new streamed deliverable path must keep returning its full text.
+
 ## SSE protocol
 Reuses the `/api/generate` stream: `deliverable_start {deliverable: meta}` →
 `deliverable_delta {content}` → `deliverable_done` (or `deliverable_error

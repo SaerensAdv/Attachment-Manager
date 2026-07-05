@@ -1294,6 +1294,24 @@ export async function runGeneration(
       steps.push({ ...delEffect.step, stepOrder: nextStepOrder++ });
       if (delEffect.downgrade) runStatus = "partial";
     }
+    // Archive the streamed deliverable text itself: the deltas only reach live
+    // (SSE) listeners, so without this snapshot a scheduled run would lose the
+    // end product entirely. CSV deliverables are fenced so the archive renders
+    // them verbatim.
+    if (delEffect.text?.trim() && delEffect.step) {
+      const delTitle = delEffect.step.agentTitle || "Eindproduct";
+      // Flag partial snapshots in the heading so an archive reader can't
+      // mistake a truncated/failed deliverable for a complete one.
+      const delSuffix =
+        delEffect.step.status === "completed" ? "" : " (onvolledig)";
+      const isCsv =
+        deliverableKind === "google-ads-csv" ||
+        deliverableKind === "negative-keywords-csv";
+      const delBody = isCsv
+        ? "```csv\n" + delEffect.text.trim() + "\n```"
+        : delEffect.text.trim();
+      priorWork += `\n\n## Eindproduct — ${delTitle}${delSuffix}\n\n${delBody}`;
+    }
 
     // Action deliverable: draft the monthly report and HOLD it for human
     // approval (nothing is sent here). Recorded as a final step; the held send

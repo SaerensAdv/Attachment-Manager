@@ -49,6 +49,11 @@ Fix: insert `date_trunc('milliseconds', now()) - interval '5 minutes'`. Schedule
 created through the app avoid this because `computeNextRun` returns a ms-precision
 JS Date.
 
+**Gotcha — the cron_expr must have a REAL next occurrence.** A never-matching
+expression (e.g. `0 0 31 2 *`, Feb 31) makes croner yield no `next`, and the
+tick silently skips the row (never claims, no log). For one-off triggers use a
+far-off but valid cron like `0 3 1 1 *` and delete the row after it fires.
+
 **Rendering a report PDF locally without Gmail:** trigger the report deliverable
 server-side (autonomous or scheduler) with the client's `report_email` temporarily
 set so the hold path builds a full payload; it stops at the approval hold (never

@@ -615,7 +615,7 @@ function buildLinkedInPostPrompt(ctx: DeliverableContext): DeliverablePrompt {
     "- **Lengte:** streef naar ~800–1000 tekens totaal; niet de volledige 3000.",
     "- **Opbouw:** korte alinea's (1–2 regels) met witruimte ertussen voor leesbaarheid en dwell time. Hook → inzicht/verhaal → afronding.",
     "- **CTA:** precies één vraag als afsluiting die tot reacties uitnodigt.",
-    "- **Hashtags:** 3 à 5, relevant, onderaan.",
+    "- **Hashtags:** volg het stemprofiel (knowledge/founder-voice.md). Axels echte posts bevatten géén hashtags — voeg er standaard dus geen toe, tenzij het stemprofiel dat later expliciet toelaat.",
     "- Gebruik nl-BE; spreektaal zoals Axel schrijft (zie stemprofiel), niet corporate of AI-achtig. Geen emoji tenzij het stemprofiel dat expliciet toelaat.",
     "",
     "## Regels",

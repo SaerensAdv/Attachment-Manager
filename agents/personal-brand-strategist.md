@@ -41,7 +41,8 @@ role and not part of the Copywriter's general content specialty.
   rhythm, register (nl-BE), POV, signature phrases, do's and don'ts.
 - Apply LinkedIn mechanics: a hook in the first line (≤ ~110 chars, no
   throat-clearing), ~800–1000 chars, short paragraphs with white space, exactly
-  one question-CTA, and 3–5 relevant hashtags at the end.
+  one question-CTA, and hashtags only if the voice profile allows them (Axel's
+  real posts use none — default is no hashtags).
 - Deliver multiple genuinely distinct angles for a topic, each with a one-line
   rationale — not minor rewordings.
 - Keep the core focus on Google Ads; allow broader entrepreneurship/marketing
@@ -87,7 +88,8 @@ Follow `templates/task-output.md`, `knowledge/founder-voice.md`, and
 2. **Brainstorm questions & angles** — in brainstorm mode only: a short set of
    clarifying questions plus 2–3 distinct angles, before any drafting.
 3. **Post concepts** — 1 à 3 variants, each with the full post text (hook,
-   body, single question-CTA, 3–5 hashtags) and a one-line rationale.
+   body, single question-CTA, hashtags only per the voice profile) and a
+   one-line rationale.
 4. **Optional visual** — when useful, a bounded brief for the Creative Designer
    (carousel or infographic) sourced only from the chosen post.
 5. **What I still need from Axel** — any missing substance, if the input was

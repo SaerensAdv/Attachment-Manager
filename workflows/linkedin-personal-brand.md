@@ -42,8 +42,9 @@ substance; use brainstorm when he asks for ideas or the input is thin).
 4. Choose 1 à 3 angles grounded strictly in Axel's input.
 5. Draft each concept in Axel's voice with LinkedIn mechanics: a hook in the
    first line (≤ ~110 chars, no throat-clearing), ~800–1000 chars, short
-   paragraphs with white space, exactly one question-CTA, and 3–5 relevant
-   hashtags at the end.
+   paragraphs with white space, exactly one question-CTA, and hashtags only if
+   the voice profile allows them (Axel's real posts use none — default is no
+   hashtags).
 6. Never invent facts, figures, cases, client names, or anecdotes. If the input
    is too thin for a credible post, deliver fewer variants and list the missing
    substance to ask Axel — do not fill the gap.
@@ -71,8 +72,9 @@ Follow `templates/task-output.md`, `knowledge/founder-voice.md`, and
 
 - The mode used and the topic (from Axel's own input)
 - Brainstorm questions and angles (in brainstorm mode, before drafting)
-- 1 à 3 LinkedIn post concepts, each with hook, body, one question-CTA, and 3–5
-  hashtags, plus a one-line rationale — no invented facts or figures
+- 1 à 3 LinkedIn post concepts, each with hook, body, and one question-CTA
+  (hashtags only if the voice profile allows them), plus a one-line rationale —
+  no invented facts or figures
 - Any missing substance to ask Axel, if the input was thin
 - An optional bounded visual brief (carousel / infographic) from the chosen post
 - Human approval required: Axel reviews, picks, and posts himself; nothing is

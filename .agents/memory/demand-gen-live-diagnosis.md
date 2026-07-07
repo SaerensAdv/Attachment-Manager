@@ -34,3 +34,21 @@ run a standalone `.mjs` doing OAuth refresh + searchStream (mirror `lib/google-a
 Gotcha: nested config fields like `campaign.maximize_conversions.target_cpa_micros` throw
 `UNRECOGNIZED_FIELD`; keep config queries to flat fields (`bidding_strategy_type`,
 `campaign_budget.amount_micros`). All writes/fixes are the client's to apply — the app is read-only.
+
+## Ad group / ad / asset level (don't blame the creative first)
+
+- Pull structure via `ad_group`, `ad_group_ad` (get `ad.final_urls` + per-ad metrics), assets via
+  `ad_group_ad_asset_view` (`field_type`, `performance_label`, `asset.text_asset.text`), and
+  targeting via `ad_group_criterion`.
+- **0 conversions with strong, well-segmented creative → the bottleneck is the landing page and/or
+  bidding, NOT the ads.** Classic tell: every ad points to the generic homepage and thousands of
+  clicks convert to 0 leads. A dedicated landing page (form above the fold, one CTA, mobile-first)
+  is usually the #1 lever after the bid fix.
+- **Asset `performance_label` = PENDING/LEARNING for everything** just means there's no conversion
+  signal yet (0 primary conv) — it's a symptom, not an action. It resolves once leads flow.
+- **Maximize Clicks (TARGET_SPEND) starves narrow/high-intent and retargeting ad groups**: budget
+  floods the cheapest broad audiences (YouTube prospecting) and near-zero impressions land on the
+  best angles + retargeting. Switching to conversion bidding should rebalance — watch it, and
+  consider splitting retargeting into its own campaign so it isn't outcompeted by cold prospecting.
+- Fully-open demographics (all ages 18-65+, all incomes) waste spend for homeowner services — narrow
+  to the real buyer (older homeowners, higher income).

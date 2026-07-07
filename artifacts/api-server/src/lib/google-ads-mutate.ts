@@ -1,20 +1,21 @@
 /**
- * Live Google Ads WRITE path — the ONLY module in the app that mutates a
- * customer account. It is deliberately tiny and single-purpose: it can *add*
- * negative keywords to a Shopping ad group and nothing else. It can never
- * update or remove a criterion, never touch a positive keyword, budget, bid or
- * anything outside `adGroupCriteria:mutate` create-with-negative operations.
+ * The app's FIRST-EVER live write to Google Ads.
  *
- * Two hard guardrails back the "only add negatives" promise:
- *   1. The request body is constructed here from validated inputs — only a
- *      `create` operation with `negative: true` is ever built.
- *   2. A mandatory `validateOnly` (dry-run) mode is a first-class parameter, so
- *      the caller can — and by policy does — test every batch against Google's
- *      own validation before anything is written.
+ * Everything else in this codebase is strictly read-only; this module is the
+ * single, narrow door through which a mutation can leave the app, and it does
+ * exactly ONE thing: add negative keywords to a Shopping ad group. It cannot
+ * pause, edit budgets, or touch anything else — the request body is built here,
+ * not by the caller, and every operation asserts `negative: true`.
  *
- * Operations are sent one at a time (not batched with partialFailure) so each
- * decision gets an unambiguous ok/error result, and an existing-duplicate
- * negative is treated as success (idempotent) rather than a failure.
+ * Safety properties:
+ *   - `validateOnly` performs Google's server-side dry-run (nothing persists),
+ *     so the UI can preview exactly what a real apply would do.
+ *   - One operation per request. A batch mutate hides which row failed; looping
+ *     gives a reliable per-decision status the caller maps back to the store.
+ *   - A DUPLICATE (the negative already exists) is treated as success — the end
+ *     state the user wanted is already true.
+ *   - The caller (route) still owns the claim-before-write / revert-on-fail
+ *     compare-and-set, so a negative can never be pushed twice.
  */
 
 import {
@@ -22,194 +23,225 @@ import {
   getAccessToken,
   digitsOnly,
   GoogleAdsConfigError,
+  GoogleAdsApiError,
 } from "./google-ads";
+import { logger } from "./logger";
 
-const API_VERSION = "v24";
-const API_BASE = `https://googleads.googleapis.com/${API_VERSION}`;
+// Keep in sync with GOOGLE_ADS_API_VERSION in google-ads.ts.
+const API_BASE = "https://googleads.googleapis.com/v24";
 
-/** Match types we allow for a negative keyword. */
-export type NegativeMatchType = "EXACT" | "PHRASE" | "BROAD";
-const ALLOWED_MATCH_TYPES: ReadonlySet<string> = new Set([
-  "EXACT",
-  "PHRASE",
-  "BROAD",
-]);
-
-/** Google's max keyword text length. */
+/** Google Ads caps a keyword at 80 characters / 10 words. */
 const MAX_KEYWORD_LEN = 80;
-/** Never push more than this in one call — a sanity cap, not a Google limit. */
-const MAX_BATCH = 50;
+
+/** How many operations one apply call may carry, as a guard-rail. */
+export const MAX_NEGATIVE_OPS = 50;
+
+export type NegativeMatchType = "EXACT" | "PHRASE" | "BROAD";
 
 export interface NegativeKeywordOp {
-  /** Stable id the caller uses to correlate the result back to a decision. */
-  ref: number;
   adGroupId: string;
   text: string;
   matchType: NegativeMatchType;
 }
 
-export interface NegativeKeywordOpResult {
-  ref: number;
-  adGroupId: string;
-  text: string;
-  matchType: NegativeMatchType;
-  ok: boolean;
-  /** Present on success (the created criterion, or a would-be name in dry-run). */
+export interface NegativeKeywordResult {
+  op: NegativeKeywordOp;
+  /** `created` = pushed (or would push, in dry-run); `duplicate` = already
+   *  present; `failed` = rejected (see `error`). */
+  status: "created" | "duplicate" | "failed";
   resourceName: string | null;
-  /** True when Google reported the negative already exists (idempotent no-op). */
-  alreadyExists: boolean;
   error: string | null;
 }
 
-function validateOp(op: NegativeKeywordOp): void {
-  if (!digitsOnly(op.adGroupId)) {
-    throw new GoogleAdsConfigError(`Ongeldige advertentiegroep-id: ${op.adGroupId}`);
-  }
-  const text = op.text?.trim() ?? "";
-  if (!text) {
-    throw new GoogleAdsConfigError("Leeg negatief zoekwoord is niet toegestaan.");
-  }
-  if (text.length > MAX_KEYWORD_LEN) {
-    throw new GoogleAdsConfigError(
-      `Negatief zoekwoord is te lang (max ${MAX_KEYWORD_LEN} tekens): "${text}"`,
-    );
-  }
-  if (!ALLOWED_MATCH_TYPES.has(op.matchType)) {
-    throw new GoogleAdsConfigError(`Ongeldig match type: ${op.matchType}`);
-  }
+export interface AddNegativesResult {
+  validateOnly: boolean;
+  results: NegativeKeywordResult[];
 }
 
-function looksLikeDuplicate(detail: string): boolean {
+function normalizeMatchType(raw: string): NegativeMatchType | null {
+  const t = raw.trim().toUpperCase();
+  return t === "EXACT" || t === "PHRASE" || t === "BROAD" ? t : null;
+}
+
+/** True when Google's rejection means "this negative already exists". */
+function isDuplicateError(detail: string): boolean {
   const d = detail.toLowerCase();
   return (
     d.includes("duplicate") ||
     d.includes("already exists") ||
-    d.includes("bestaat al")
+    d.includes("resource_already_exists")
   );
 }
 
 /**
- * Add negative keywords to Shopping ad groups. When `validateOnly` is true this
- * only asks Google to validate the operations — nothing is written. Each op is
- * sent on its own so results map 1:1 to the input `ref`s.
+ * Add ONE negative keyword to a Shopping ad group. Builds the mutate body
+ * (asserting `negative: true`), sends it, and maps the outcome to a typed
+ * result. Never throws for a per-op rejection — those become `failed`/`duplicate`
+ * results so the caller can record them per decision. Throws only for
+ * configuration or connection-level failures that abort the whole batch.
+ */
+async function addOneNegative(
+  cfg: ReturnType<typeof readConfig>,
+  accessToken: string,
+  customerId: string,
+  op: NegativeKeywordOp,
+  validateOnly: boolean,
+): Promise<NegativeKeywordResult> {
+  const adGroupId = digitsOnly(op.adGroupId);
+  const text = op.text.trim();
+  const matchType = normalizeMatchType(op.matchType);
+
+  if (!adGroupId) {
+    return { op, status: "failed", resourceName: null, error: "Ongeldige advertentiegroep-id." };
+  }
+  if (!text) {
+    return { op, status: "failed", resourceName: null, error: "Lege zoekterm." };
+  }
+  if (text.length > MAX_KEYWORD_LEN) {
+    return {
+      op,
+      status: "failed",
+      resourceName: null,
+      error: `Zoekterm te lang (max ${MAX_KEYWORD_LEN} tekens).`,
+    };
+  }
+  if (!matchType) {
+    return { op, status: "failed", resourceName: null, error: "Ongeldig matchtype." };
+  }
+
+  const body = {
+    operations: [
+      {
+        create: {
+          adGroup: `customers/${customerId}/adGroups/${adGroupId}`,
+          negative: true,
+          keyword: { text, matchType },
+        },
+      },
+    ],
+    // Never let one row silently swallow another — we send exactly one op, so a
+    // failure is unambiguous and surfaces as a non-2xx we classify below.
+    partialFailure: false,
+    validateOnly,
+  };
+
+  const url = `${API_BASE}/customers/${customerId}/adGroupCriteria:mutate`;
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${accessToken}`,
+        "developer-token": cfg.developerToken,
+        "login-customer-id": cfg.loginCustomerId,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(body),
+    });
+  } catch (err) {
+    // A connection failure is not this op's fault — abort the whole batch so the
+    // caller reverts the claim rather than marking the decision failed.
+    throw new GoogleAdsApiError(
+      `Kon geen verbinding maken met de Google Ads API: ${(err as Error).message}`,
+      "NETWORK_ERROR",
+    );
+  }
+
+  const raw = await res.text();
+  if (!res.ok) {
+    let detail = `HTTP ${res.status}`;
+    try {
+      const parsed = JSON.parse(raw);
+      const apiError = Array.isArray(parsed) ? parsed[0] : parsed;
+      detail =
+        apiError?.error?.message ||
+        apiError?.error?.status ||
+        JSON.stringify(apiError).slice(0, 500);
+    } catch {
+      detail = raw.slice(0, 500) || detail;
+    }
+    // Auth/quota problems are batch-fatal (every op will hit them) — throw so
+    // the caller aborts instead of marking every decision failed.
+    if (res.status === 401 || res.status === 403) {
+      throw new GoogleAdsApiError(`Google Ads weigerde de schrijfactie: ${detail}`, "AUTH_ERROR");
+    }
+    if (res.status === 429) {
+      throw new GoogleAdsApiError(`Google Ads rate limit bereikt: ${detail}`, "RATE_LIMIT");
+    }
+    if (res.status >= 500) {
+      throw new GoogleAdsApiError(`Google Ads API-fout: ${detail}`, "API_ERROR");
+    }
+    // A 4xx for this specific keyword: duplicate is the desired end state.
+    if (isDuplicateError(detail)) {
+      return { op, status: "duplicate", resourceName: null, error: null };
+    }
+    return { op, status: "failed", resourceName: null, error: detail };
+  }
+
+  let resourceName: string | null = null;
+  try {
+    const parsed = JSON.parse(raw) as {
+      results?: { resourceName?: string }[];
+    };
+    resourceName = parsed.results?.[0]?.resourceName ?? null;
+  } catch {
+    // A 2xx with an unparseable body still means the mutate landed; we just
+    // don't have the resource name to store.
+    resourceName = null;
+  }
+
+  return { op, status: "created", resourceName, error: null };
+}
+
+/**
+ * Add a batch of negative keywords, one live call per op for reliable status.
+ * `validateOnly` runs Google's dry-run for every op (nothing persists). Config
+ * errors and batch-fatal API errors (auth/quota/5xx/network) propagate; per-op
+ * rejections come back as `failed`/`duplicate` results.
  */
 export async function addAdGroupNegativeKeywords(
   rawCustomerId: string,
   ops: NegativeKeywordOp[],
-  opts: { validateOnly: boolean },
-): Promise<{ validateOnly: boolean; results: NegativeKeywordOpResult[] }> {
+  options: { validateOnly: boolean },
+): Promise<AddNegativesResult> {
   const cfg = readConfig();
   const customerId = digitsOnly(rawCustomerId);
   if (!customerId) {
     throw new GoogleAdsConfigError("Ongeldig Google Ads customer ID.");
   }
-  if (ops.length === 0) return { validateOnly: opts.validateOnly, results: [] };
-  if (ops.length > MAX_BATCH) {
+  if (ops.length === 0) {
+    return { validateOnly: options.validateOnly, results: [] };
+  }
+  if (ops.length > MAX_NEGATIVE_OPS) {
     throw new GoogleAdsConfigError(
-      `Te veel bewerkingen in één keer (max ${MAX_BATCH}).`,
+      `Te veel uitsluitingen in één keer (max ${MAX_NEGATIVE_OPS}).`,
     );
   }
-  ops.forEach(validateOp);
 
   const accessToken = await getAccessToken(cfg);
-  const url = `${API_BASE}/customers/${customerId}/adGroupCriteria:mutate`;
-  const results: NegativeKeywordOpResult[] = [];
 
+  const results: NegativeKeywordResult[] = [];
   for (const op of ops) {
-    const adGroupId = digitsOnly(op.adGroupId);
-    const body = {
-      // Only ever a create-with-negative. No update/remove is constructed here.
-      operations: [
-        {
-          create: {
-            adGroup: `customers/${customerId}/adGroups/${adGroupId}`,
-            negative: true,
-            keyword: {
-              text: op.text.trim(),
-              matchType: op.matchType,
-            },
-          },
-        },
-      ],
-      validateOnly: opts.validateOnly,
-      partialFailure: false,
-    };
-
-    let res: Response;
-    try {
-      res = await fetch(url, {
-        method: "POST",
-        headers: {
-          authorization: `Bearer ${accessToken}`,
-          "developer-token": cfg.developerToken,
-          "login-customer-id": cfg.loginCustomerId,
-          "content-type": "application/json",
-        },
-        body: JSON.stringify(body),
-      });
-    } catch (err) {
-      results.push({
-        ref: op.ref,
-        adGroupId: op.adGroupId,
-        text: op.text,
-        matchType: op.matchType,
-        ok: false,
-        resourceName: null,
-        alreadyExists: false,
-        error: `Netwerkfout: ${err instanceof Error ? err.message : String(err)}`,
-      });
-      continue;
-    }
-
-    const raw = await res.text();
-    if (!res.ok) {
-      let detail = `HTTP ${res.status}`;
-      try {
-        const parsed = JSON.parse(raw);
-        const apiError = Array.isArray(parsed) ? parsed[0] : parsed;
-        detail =
-          apiError?.error?.message ||
-          apiError?.error?.status ||
-          JSON.stringify(apiError).slice(0, 400);
-      } catch {
-        detail = raw.slice(0, 400) || detail;
-      }
-      const dup = looksLikeDuplicate(detail);
-      results.push({
-        ref: op.ref,
-        adGroupId: op.adGroupId,
-        text: op.text,
-        matchType: op.matchType,
-        // A duplicate means the negative is already in place — the desired end
-        // state — so treat it as a successful (idempotent) no-op.
-        ok: dup,
-        resourceName: null,
-        alreadyExists: dup,
-        error: dup ? null : `Google Ads-fout: ${detail}`,
-      });
-      continue;
-    }
-
-    let resourceName: string | null = null;
-    try {
-      const parsed = JSON.parse(raw) as {
-        results?: { resourceName?: string }[];
-      };
-      resourceName = parsed.results?.[0]?.resourceName ?? null;
-    } catch {
-      // A 2xx with an unparseable body still means the op was accepted.
-    }
-    results.push({
-      ref: op.ref,
-      adGroupId: op.adGroupId,
-      text: op.text,
-      matchType: op.matchType,
-      ok: true,
-      resourceName,
-      alreadyExists: false,
-      error: null,
-    });
+    const result = await addOneNegative(
+      cfg,
+      accessToken,
+      customerId,
+      op,
+      options.validateOnly,
+    );
+    results.push(result);
   }
 
-  return { validateOnly: opts.validateOnly, results };
+  logger.info(
+    {
+      customerId,
+      validateOnly: options.validateOnly,
+      created: results.filter((r) => r.status === "created").length,
+      duplicate: results.filter((r) => r.status === "duplicate").length,
+      failed: results.filter((r) => r.status === "failed").length,
+    },
+    "Google Ads negative-keyword mutate",
+  );
+
+  return { validateOnly: options.validateOnly, results };
 }

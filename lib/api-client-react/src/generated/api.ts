@@ -82,6 +82,14 @@ import type {
   ScheduleInput,
   ScheduleList,
   ScheduleUpdate,
+  ShoppingApplyInput,
+  ShoppingApplyResult,
+  ShoppingDecisionsResult,
+  ShoppingRunDetail,
+  ShoppingRunList,
+  ShoppingSaveDecisionsInput,
+  ShoppingSettings,
+  ShoppingSettingsInput,
   SystemAlert,
   SystemAlertList,
   TeamMember,
@@ -5669,5 +5677,522 @@ export const useRevokePartnerKey = <TError = ErrorType<ErrorResponse>,
         TContext
       > => {
       return useMutation(getRevokePartnerKeyMutationOptions(options));
+    }
+
+export const getCreateShoppingRunUrl = (id: number,) => {
+
+
+
+
+  return `/api/clients/${id}/shopping-terms/runs`
+}
+
+/**
+ * @summary Analyse a client's Shopping search terms (read-only) and store a scored run for review
+ */
+export const createShoppingRun = async (id: number, options?: RequestInit): Promise<ShoppingRunDetail> => {
+
+  return customFetch<ShoppingRunDetail>(getCreateShoppingRunUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getCreateShoppingRunMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createShoppingRun>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createShoppingRun>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['createShoppingRun'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createShoppingRun>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  createShoppingRun(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateShoppingRunMutationResult = NonNullable<Awaited<ReturnType<typeof createShoppingRun>>>
+
+    export type CreateShoppingRunMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Analyse a client's Shopping search terms (read-only) and store a scored run for review
+ */
+export const useCreateShoppingRun = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createShoppingRun>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createShoppingRun>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getCreateShoppingRunMutationOptions(options));
+    }
+
+export const getListShoppingRunsUrl = (id: number,) => {
+
+
+
+
+  return `/api/clients/${id}/shopping-terms/runs`
+}
+
+/**
+ * @summary List a client's past Shopping analysis runs (headers only)
+ */
+export const listShoppingRuns = async (id: number, options?: RequestInit): Promise<ShoppingRunList> => {
+
+  return customFetch<ShoppingRunList>(getListShoppingRunsUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListShoppingRunsQueryKey = (id: number,) => {
+    return [
+    `/api/clients/${id}/shopping-terms/runs`
+    ] as const;
+    }
+
+
+export const getListShoppingRunsQueryOptions = <TData = Awaited<ReturnType<typeof listShoppingRuns>>, TError = ErrorType<ErrorResponse>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listShoppingRuns>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListShoppingRunsQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listShoppingRuns>>> = ({ signal }) => listShoppingRuns(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listShoppingRuns>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListShoppingRunsQueryResult = NonNullable<Awaited<ReturnType<typeof listShoppingRuns>>>
+export type ListShoppingRunsQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary List a client's past Shopping analysis runs (headers only)
+ */
+
+export function useListShoppingRuns<TData = Awaited<ReturnType<typeof listShoppingRuns>>, TError = ErrorType<ErrorResponse>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listShoppingRuns>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListShoppingRunsQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetShoppingRunUrl = (runId: number,) => {
+
+
+
+
+  return `/api/shopping-terms/runs/${runId}`
+}
+
+/**
+ * @summary Read one run with its scored terms and saved decisions
+ */
+export const getShoppingRun = async (runId: number, options?: RequestInit): Promise<ShoppingRunDetail> => {
+
+  return customFetch<ShoppingRunDetail>(getGetShoppingRunUrl(runId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetShoppingRunQueryKey = (runId: number,) => {
+    return [
+    `/api/shopping-terms/runs/${runId}`
+    ] as const;
+    }
+
+
+export const getGetShoppingRunQueryOptions = <TData = Awaited<ReturnType<typeof getShoppingRun>>, TError = ErrorType<ErrorResponse>>(runId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getShoppingRun>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetShoppingRunQueryKey(runId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getShoppingRun>>> = ({ signal }) => getShoppingRun(runId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(runId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getShoppingRun>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetShoppingRunQueryResult = NonNullable<Awaited<ReturnType<typeof getShoppingRun>>>
+export type GetShoppingRunQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary Read one run with its scored terms and saved decisions
+ */
+
+export function useGetShoppingRun<TData = Awaited<ReturnType<typeof getShoppingRun>>, TError = ErrorType<ErrorResponse>>(
+ runId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getShoppingRun>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetShoppingRunQueryOptions(runId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getSaveShoppingDecisionsUrl = (runId: number,) => {
+
+
+
+
+  return `/api/shopping-terms/runs/${runId}/decisions`
+}
+
+/**
+ * @summary Save keep/exclude decisions for a run (also learns durable rules)
+ */
+export const saveShoppingDecisions = async (runId: number,
+    shoppingSaveDecisionsInput: ShoppingSaveDecisionsInput, options?: RequestInit): Promise<ShoppingDecisionsResult> => {
+
+  return customFetch<ShoppingDecisionsResult>(getSaveShoppingDecisionsUrl(runId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      shoppingSaveDecisionsInput,)
+  }
+);}
+
+
+
+
+export const getSaveShoppingDecisionsMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveShoppingDecisions>>, TError,{runId: number;data: BodyType<ShoppingSaveDecisionsInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof saveShoppingDecisions>>, TError,{runId: number;data: BodyType<ShoppingSaveDecisionsInput>}, TContext> => {
+
+const mutationKey = ['saveShoppingDecisions'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof saveShoppingDecisions>>, {runId: number;data: BodyType<ShoppingSaveDecisionsInput>}> = (props) => {
+          const {runId,data} = props ?? {};
+
+          return  saveShoppingDecisions(runId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SaveShoppingDecisionsMutationResult = NonNullable<Awaited<ReturnType<typeof saveShoppingDecisions>>>
+    export type SaveShoppingDecisionsMutationBody = BodyType<ShoppingSaveDecisionsInput>
+    export type SaveShoppingDecisionsMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Save keep/exclude decisions for a run (also learns durable rules)
+ */
+export const useSaveShoppingDecisions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveShoppingDecisions>>, TError,{runId: number;data: BodyType<ShoppingSaveDecisionsInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof saveShoppingDecisions>>,
+        TError,
+        {runId: number;data: BodyType<ShoppingSaveDecisionsInput>},
+        TContext
+      > => {
+      return useMutation(getSaveShoppingDecisionsMutationOptions(options));
+    }
+
+export const getGetShoppingSettingsUrl = (id: number,) => {
+
+
+
+
+  return `/api/clients/${id}/shopping-terms/settings`
+}
+
+/**
+ * @summary Read the per-client "may write to Google Ads" switch
+ */
+export const getShoppingSettings = async (id: number, options?: RequestInit): Promise<ShoppingSettings> => {
+
+  return customFetch<ShoppingSettings>(getGetShoppingSettingsUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetShoppingSettingsQueryKey = (id: number,) => {
+    return [
+    `/api/clients/${id}/shopping-terms/settings`
+    ] as const;
+    }
+
+
+export const getGetShoppingSettingsQueryOptions = <TData = Awaited<ReturnType<typeof getShoppingSettings>>, TError = ErrorType<ErrorResponse>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getShoppingSettings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetShoppingSettingsQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getShoppingSettings>>> = ({ signal }) => getShoppingSettings(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getShoppingSettings>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetShoppingSettingsQueryResult = NonNullable<Awaited<ReturnType<typeof getShoppingSettings>>>
+export type GetShoppingSettingsQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary Read the per-client "may write to Google Ads" switch
+ */
+
+export function useGetShoppingSettings<TData = Awaited<ReturnType<typeof getShoppingSettings>>, TError = ErrorType<ErrorResponse>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getShoppingSettings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetShoppingSettingsQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getUpdateShoppingSettingsUrl = (id: number,) => {
+
+
+
+
+  return `/api/clients/${id}/shopping-terms/settings`
+}
+
+/**
+ * @summary Flip the per-client "may write to Google Ads" switch
+ */
+export const updateShoppingSettings = async (id: number,
+    shoppingSettingsInput: ShoppingSettingsInput, options?: RequestInit): Promise<ShoppingSettings> => {
+
+  return customFetch<ShoppingSettings>(getUpdateShoppingSettingsUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      shoppingSettingsInput,)
+  }
+);}
+
+
+
+
+export const getUpdateShoppingSettingsMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateShoppingSettings>>, TError,{id: number;data: BodyType<ShoppingSettingsInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateShoppingSettings>>, TError,{id: number;data: BodyType<ShoppingSettingsInput>}, TContext> => {
+
+const mutationKey = ['updateShoppingSettings'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateShoppingSettings>>, {id: number;data: BodyType<ShoppingSettingsInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateShoppingSettings(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateShoppingSettingsMutationResult = NonNullable<Awaited<ReturnType<typeof updateShoppingSettings>>>
+    export type UpdateShoppingSettingsMutationBody = BodyType<ShoppingSettingsInput>
+    export type UpdateShoppingSettingsMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Flip the per-client "may write to Google Ads" switch
+ */
+export const useUpdateShoppingSettings = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateShoppingSettings>>, TError,{id: number;data: BodyType<ShoppingSettingsInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateShoppingSettings>>,
+        TError,
+        {id: number;data: BodyType<ShoppingSettingsInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateShoppingSettingsMutationOptions(options));
+    }
+
+export const getApplyShoppingNegativesUrl = (id: number,) => {
+
+
+
+
+  return `/api/clients/${id}/shopping-terms/apply`
+}
+
+/**
+ * @summary Apply chosen exclusions to Google Ads. Default is a dry-run (validateOnly); a real write needs validateOnly=false AND the client write switch on.
+ */
+export const applyShoppingNegatives = async (id: number,
+    shoppingApplyInput: ShoppingApplyInput, options?: RequestInit): Promise<ShoppingApplyResult> => {
+
+  return customFetch<ShoppingApplyResult>(getApplyShoppingNegativesUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      shoppingApplyInput,)
+  }
+);}
+
+
+
+
+export const getApplyShoppingNegativesMutationOptions = <TError = ErrorType<ErrorResponse | ShoppingApplyResult>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof applyShoppingNegatives>>, TError,{id: number;data: BodyType<ShoppingApplyInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof applyShoppingNegatives>>, TError,{id: number;data: BodyType<ShoppingApplyInput>}, TContext> => {
+
+const mutationKey = ['applyShoppingNegatives'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof applyShoppingNegatives>>, {id: number;data: BodyType<ShoppingApplyInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  applyShoppingNegatives(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ApplyShoppingNegativesMutationResult = NonNullable<Awaited<ReturnType<typeof applyShoppingNegatives>>>
+    export type ApplyShoppingNegativesMutationBody = BodyType<ShoppingApplyInput>
+    export type ApplyShoppingNegativesMutationError = ErrorType<ErrorResponse | ShoppingApplyResult>
+
+    /**
+ * @summary Apply chosen exclusions to Google Ads. Default is a dry-run (validateOnly); a real write needs validateOnly=false AND the client write switch on.
+ */
+export const useApplyShoppingNegatives = <TError = ErrorType<ErrorResponse | ShoppingApplyResult>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof applyShoppingNegatives>>, TError,{id: number;data: BodyType<ShoppingApplyInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof applyShoppingNegatives>>,
+        TError,
+        {id: number;data: BodyType<ShoppingApplyInput>},
+        TContext
+      > => {
+      return useMutation(getApplyShoppingNegativesMutationOptions(options));
     }
 

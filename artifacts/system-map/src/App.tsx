@@ -9,6 +9,7 @@ import Dashboard from "@/pages/Dashboard";
 import Team from "@/pages/Team";
 import Clients from "@/pages/Clients";
 import CrawlUpload from "@/pages/CrawlUpload";
+import Zoektermen from "@/pages/Zoektermen";
 import History from "@/pages/History";
 import Controle from "@/pages/Controle";
 import Planning from "@/pages/Planning";
@@ -34,6 +35,7 @@ function Router() {
       <Route path="/team" component={Team} />
       <Route path="/clients" component={Clients} />
       <Route path="/crawl" component={CrawlUpload} />
+      <Route path="/zoektermen" component={Zoektermen} />
       <Route path="/history" component={History} />
       <Route path="/todo" component={Todo} />
       <Route path="/planning" component={Planning} />

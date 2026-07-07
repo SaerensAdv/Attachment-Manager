@@ -2641,3 +2641,200 @@ export const RevokePartnerKeyResponse = zod.object({
 })
 
 
+/**
+ * @summary Analyse a client's Shopping search terms (read-only) and store a scored run for review
+ */
+export const CreateShoppingRunParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
+ * @summary List a client's past Shopping analysis runs (headers only)
+ */
+export const ListShoppingRunsParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ListShoppingRunsResponse = zod.object({
+  "runs": zod.array(zod.object({
+  "id": zod.number(),
+  "clientId": zod.number(),
+  "customerId": zod.string(),
+  "currency": zod.string(),
+  "adGroupCount": zod.number(),
+  "termCount": zod.number(),
+  "adGroups": zod.array(zod.object({
+  "adGroupId": zod.string(),
+  "adGroupName": zod.string(),
+  "campaignName": zod.string(),
+  "products": zod.array(zod.object({
+  "title": zod.string(),
+  "brand": zod.string(),
+  "productType": zod.string()
+}))
+})),
+  "warnings": zod.array(zod.string()),
+  "createdAt": zod.coerce.date()
+}))
+})
+
+
+/**
+ * @summary Read one run with its scored terms and saved decisions
+ */
+export const GetShoppingRunParams = zod.object({
+  "runId": zod.coerce.number()
+})
+
+export const GetShoppingRunResponse = zod.object({
+  "run": zod.object({
+  "id": zod.number(),
+  "clientId": zod.number(),
+  "customerId": zod.string(),
+  "currency": zod.string(),
+  "adGroupCount": zod.number(),
+  "termCount": zod.number(),
+  "adGroups": zod.array(zod.object({
+  "adGroupId": zod.string(),
+  "adGroupName": zod.string(),
+  "campaignName": zod.string(),
+  "products": zod.array(zod.object({
+  "title": zod.string(),
+  "brand": zod.string(),
+  "productType": zod.string()
+}))
+})),
+  "warnings": zod.array(zod.string()),
+  "createdAt": zod.coerce.date()
+}),
+  "scores": zod.array(zod.object({
+  "id": zod.number(),
+  "runId": zod.number(),
+  "adGroupId": zod.string(),
+  "adGroupName": zod.string(),
+  "campaignId": zod.string(),
+  "campaignName": zod.string(),
+  "term": zod.string(),
+  "score": zod.number(),
+  "verdict": zod.enum(['keep', 'review', 'exclude']),
+  "advice": zod.string(),
+  "reason": zod.string(),
+  "matchedProducts": zod.array(zod.string()),
+  "alreadyExcluded": zod.boolean(),
+  "suggestedMatchType": zod.enum(['EXACT', 'PHRASE', 'BROAD']),
+  "cost": zod.number(),
+  "clicks": zod.number(),
+  "conversions": zod.number()
+})),
+  "decisions": zod.array(zod.object({
+  "id": zod.number(),
+  "scoreId": zod.number(),
+  "runId": zod.number(),
+  "clientId": zod.number(),
+  "customerId": zod.string(),
+  "adGroupId": zod.string(),
+  "term": zod.string(),
+  "decision": zod.enum(['exclude', 'keep']),
+  "matchType": zod.enum(['EXACT', 'PHRASE', 'BROAD']),
+  "note": zod.string().nullable(),
+  "status": zod.enum(['pending', 'applied', 'failed']),
+  "adsResourceName": zod.string().nullable(),
+  "error": zod.string().nullable(),
+  "appliedAt": zod.coerce.date().nullable(),
+  "createdAt": zod.coerce.date()
+}))
+})
+
+
+/**
+ * @summary Save keep/exclude decisions for a run (also learns durable rules)
+ */
+export const SaveShoppingDecisionsParams = zod.object({
+  "runId": zod.coerce.number()
+})
+
+export const SaveShoppingDecisionsBody = zod.object({
+  "decisions": zod.array(zod.object({
+  "scoreId": zod.number(),
+  "decision": zod.enum(['exclude', 'keep']),
+  "matchType": zod.enum(['EXACT', 'PHRASE', 'BROAD']).optional(),
+  "note": zod.string().nullish()
+}))
+})
+
+export const SaveShoppingDecisionsResponse = zod.object({
+  "decisions": zod.array(zod.object({
+  "id": zod.number(),
+  "scoreId": zod.number(),
+  "runId": zod.number(),
+  "clientId": zod.number(),
+  "customerId": zod.string(),
+  "adGroupId": zod.string(),
+  "term": zod.string(),
+  "decision": zod.enum(['exclude', 'keep']),
+  "matchType": zod.enum(['EXACT', 'PHRASE', 'BROAD']),
+  "note": zod.string().nullable(),
+  "status": zod.enum(['pending', 'applied', 'failed']),
+  "adsResourceName": zod.string().nullable(),
+  "error": zod.string().nullable(),
+  "appliedAt": zod.coerce.date().nullable(),
+  "createdAt": zod.coerce.date()
+}))
+})
+
+
+/**
+ * @summary Read the per-client "may write to Google Ads" switch
+ */
+export const GetShoppingSettingsParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetShoppingSettingsResponse = zod.object({
+  "writeEnabled": zod.boolean()
+})
+
+
+/**
+ * @summary Flip the per-client "may write to Google Ads" switch
+ */
+export const UpdateShoppingSettingsParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateShoppingSettingsBody = zod.object({
+  "writeEnabled": zod.boolean()
+})
+
+export const UpdateShoppingSettingsResponse = zod.object({
+  "writeEnabled": zod.boolean()
+})
+
+
+/**
+ * @summary Apply chosen exclusions to Google Ads. Default is a dry-run (validateOnly); a real write needs validateOnly=false AND the client write switch on.
+ */
+export const ApplyShoppingNegativesParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ApplyShoppingNegativesBody = zod.object({
+  "decisionIds": zod.array(zod.number()),
+  "validateOnly": zod.boolean().describe('When true (default\/safe) Google validates without persisting. Only an explicit false performs a real write.')
+})
+
+export const ApplyShoppingNegativesResponse = zod.object({
+  "validateOnly": zod.boolean(),
+  "results": zod.array(zod.object({
+  "decisionId": zod.number(),
+  "term": zod.string(),
+  "adGroupId": zod.string(),
+  "status": zod.enum(['created', 'duplicate', 'failed', 'skipped']),
+  "resourceName": zod.string().nullable(),
+  "error": zod.string().nullable()
+})),
+  "error": zod.string().nullish()
+})
+
+

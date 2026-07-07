@@ -1356,6 +1356,202 @@ export interface VisualBackgroundResult {
   imageDataUrl: string;
 }
 
+export interface ShoppingRunProduct {
+  title: string;
+  brand: string;
+  productType: string;
+}
+
+export interface ShoppingRunAdGroup {
+  adGroupId: string;
+  adGroupName: string;
+  campaignName: string;
+  products: ShoppingRunProduct[];
+}
+
+export interface ShoppingRun {
+  id: number;
+  clientId: number;
+  customerId: string;
+  currency: string;
+  adGroupCount: number;
+  termCount: number;
+  adGroups: ShoppingRunAdGroup[];
+  warnings: string[];
+  createdAt: string;
+}
+
+export type ShoppingScoreVerdict = typeof ShoppingScoreVerdict[keyof typeof ShoppingScoreVerdict];
+
+
+export const ShoppingScoreVerdict = {
+  keep: 'keep',
+  review: 'review',
+  exclude: 'exclude',
+} as const;
+
+export type ShoppingScoreSuggestedMatchType = typeof ShoppingScoreSuggestedMatchType[keyof typeof ShoppingScoreSuggestedMatchType];
+
+
+export const ShoppingScoreSuggestedMatchType = {
+  EXACT: 'EXACT',
+  PHRASE: 'PHRASE',
+  BROAD: 'BROAD',
+} as const;
+
+export interface ShoppingScore {
+  id: number;
+  runId: number;
+  adGroupId: string;
+  adGroupName: string;
+  campaignId: string;
+  campaignName: string;
+  term: string;
+  score: number;
+  verdict: ShoppingScoreVerdict;
+  advice: string;
+  reason: string;
+  matchedProducts: string[];
+  alreadyExcluded: boolean;
+  suggestedMatchType: ShoppingScoreSuggestedMatchType;
+  cost: number;
+  clicks: number;
+  conversions: number;
+}
+
+export type ShoppingDecisionDecision = typeof ShoppingDecisionDecision[keyof typeof ShoppingDecisionDecision];
+
+
+export const ShoppingDecisionDecision = {
+  exclude: 'exclude',
+  keep: 'keep',
+} as const;
+
+export type ShoppingDecisionMatchType = typeof ShoppingDecisionMatchType[keyof typeof ShoppingDecisionMatchType];
+
+
+export const ShoppingDecisionMatchType = {
+  EXACT: 'EXACT',
+  PHRASE: 'PHRASE',
+  BROAD: 'BROAD',
+} as const;
+
+export type ShoppingDecisionStatus = typeof ShoppingDecisionStatus[keyof typeof ShoppingDecisionStatus];
+
+
+export const ShoppingDecisionStatus = {
+  pending: 'pending',
+  applied: 'applied',
+  failed: 'failed',
+} as const;
+
+export interface ShoppingDecision {
+  id: number;
+  scoreId: number;
+  runId: number;
+  clientId: number;
+  customerId: string;
+  adGroupId: string;
+  term: string;
+  decision: ShoppingDecisionDecision;
+  matchType: ShoppingDecisionMatchType;
+  /** @nullable */
+  note: string | null;
+  status: ShoppingDecisionStatus;
+  /** @nullable */
+  adsResourceName: string | null;
+  /** @nullable */
+  error: string | null;
+  /** @nullable */
+  appliedAt: string | null;
+  createdAt: string;
+}
+
+export interface ShoppingRunDetail {
+  run: ShoppingRun;
+  scores: ShoppingScore[];
+  decisions: ShoppingDecision[];
+}
+
+export interface ShoppingRunList {
+  runs: ShoppingRun[];
+}
+
+export type ShoppingDecisionInputDecision = typeof ShoppingDecisionInputDecision[keyof typeof ShoppingDecisionInputDecision];
+
+
+export const ShoppingDecisionInputDecision = {
+  exclude: 'exclude',
+  keep: 'keep',
+} as const;
+
+export type ShoppingDecisionInputMatchType = typeof ShoppingDecisionInputMatchType[keyof typeof ShoppingDecisionInputMatchType];
+
+
+export const ShoppingDecisionInputMatchType = {
+  EXACT: 'EXACT',
+  PHRASE: 'PHRASE',
+  BROAD: 'BROAD',
+} as const;
+
+export interface ShoppingDecisionInput {
+  scoreId: number;
+  decision: ShoppingDecisionInputDecision;
+  matchType?: ShoppingDecisionInputMatchType;
+  /** @nullable */
+  note?: string | null;
+}
+
+export interface ShoppingSaveDecisionsInput {
+  decisions: ShoppingDecisionInput[];
+}
+
+export interface ShoppingDecisionsResult {
+  decisions: ShoppingDecision[];
+}
+
+export interface ShoppingSettings {
+  writeEnabled: boolean;
+}
+
+export interface ShoppingSettingsInput {
+  writeEnabled: boolean;
+}
+
+export interface ShoppingApplyInput {
+  decisionIds: number[];
+  /** When true (default/safe) Google validates without persisting. Only an explicit false performs a real write. */
+  validateOnly: boolean;
+}
+
+export type ShoppingApplyOutcomeStatus = typeof ShoppingApplyOutcomeStatus[keyof typeof ShoppingApplyOutcomeStatus];
+
+
+export const ShoppingApplyOutcomeStatus = {
+  created: 'created',
+  duplicate: 'duplicate',
+  failed: 'failed',
+  skipped: 'skipped',
+} as const;
+
+export interface ShoppingApplyOutcome {
+  decisionId: number;
+  term: string;
+  adGroupId: string;
+  status: ShoppingApplyOutcomeStatus;
+  /** @nullable */
+  resourceName: string | null;
+  /** @nullable */
+  error: string | null;
+}
+
+export interface ShoppingApplyResult {
+  validateOnly: boolean;
+  results: ShoppingApplyOutcome[];
+  /** @nullable */
+  error?: string | null;
+}
+
 /**
  * Opaque session token — `Bearer <sid>`.
  */

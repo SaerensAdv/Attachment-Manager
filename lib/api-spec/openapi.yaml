@@ -2063,6 +2063,237 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /clients/{id}/shopping-terms/runs:
+    post:
+      operationId: createShoppingRun
+      tags: [shopping-negatives]
+      summary: >-
+        Analyse a client's Shopping search terms (read-only) and store a scored
+        run for review
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "201":
+          description: The created run with its scored terms
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShoppingRunDetail"
+        "400":
+          description: Invalid request (e.g. no customer id, missing config)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Client not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "502":
+          description: The Shopping data could not be read or analysed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    get:
+      operationId: listShoppingRuns
+      tags: [shopping-negatives]
+      summary: List a client's past Shopping analysis runs (headers only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: The client's runs, newest first
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShoppingRunList"
+        "400":
+          description: Invalid id
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /shopping-terms/runs/{runId}:
+    get:
+      operationId: getShoppingRun
+      tags: [shopping-negatives]
+      summary: Read one run with its scored terms and saved decisions
+      parameters:
+        - name: runId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: The run detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShoppingRunDetail"
+        "400":
+          description: Invalid id
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Run not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /shopping-terms/runs/{runId}/decisions:
+    post:
+      operationId: saveShoppingDecisions
+      tags: [shopping-negatives]
+      summary: Save keep/exclude decisions for a run (also learns durable rules)
+      parameters:
+        - name: runId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ShoppingSaveDecisionsInput"
+      responses:
+        "200":
+          description: The saved decisions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShoppingDecisionsResult"
+        "400":
+          description: Invalid request (no valid decisions)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Run not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /clients/{id}/shopping-terms/settings:
+    get:
+      operationId: getShoppingSettings
+      tags: [shopping-negatives]
+      summary: Read the per-client "may write to Google Ads" switch
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: The current write switch
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShoppingSettings"
+        "400":
+          description: Invalid id
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    post:
+      operationId: updateShoppingSettings
+      tags: [shopping-negatives]
+      summary: Flip the per-client "may write to Google Ads" switch
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ShoppingSettingsInput"
+      responses:
+        "200":
+          description: The updated write switch
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShoppingSettings"
+        "400":
+          description: Invalid id
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /clients/{id}/shopping-terms/apply:
+    post:
+      operationId: applyShoppingNegatives
+      tags: [shopping-negatives]
+      summary: >-
+        Apply chosen exclusions to Google Ads. Default is a dry-run
+        (validateOnly); a real write needs validateOnly=false AND the client
+        write switch on.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ShoppingApplyInput"
+      responses:
+        "200":
+          description: Per-decision outcomes (dry-run or successful write)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShoppingApplyResult"
+        "400":
+          description: Invalid request (e.g. nothing selected, no customer id)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Live writing is switched off for this client
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Client not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "502":
+          description: The write to Google Ads failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShoppingApplyResult"
 components:
   securitySchemes:
     PartnerApiKey:
@@ -4245,3 +4476,282 @@ components:
         imageDataUrl:
           type: string
           description: PNG as data URL, export-safe (same-origin).
+    ShoppingRunProduct:
+      type: object
+      required: [title, brand, productType]
+      properties:
+        title:
+          type: string
+        brand:
+          type: string
+        productType:
+          type: string
+    ShoppingRunAdGroup:
+      type: object
+      required: [adGroupId, adGroupName, campaignName, products]
+      properties:
+        adGroupId:
+          type: string
+        adGroupName:
+          type: string
+        campaignName:
+          type: string
+        products:
+          type: array
+          items:
+            $ref: "#/components/schemas/ShoppingRunProduct"
+    ShoppingRun:
+      type: object
+      required:
+        - id
+        - clientId
+        - customerId
+        - currency
+        - adGroupCount
+        - termCount
+        - adGroups
+        - warnings
+        - createdAt
+      properties:
+        id:
+          type: integer
+        clientId:
+          type: integer
+        customerId:
+          type: string
+        currency:
+          type: string
+        adGroupCount:
+          type: integer
+        termCount:
+          type: integer
+        adGroups:
+          type: array
+          items:
+            $ref: "#/components/schemas/ShoppingRunAdGroup"
+        warnings:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+          format: date-time
+    ShoppingScore:
+      type: object
+      required:
+        - id
+        - runId
+        - adGroupId
+        - adGroupName
+        - campaignId
+        - campaignName
+        - term
+        - score
+        - verdict
+        - advice
+        - reason
+        - matchedProducts
+        - alreadyExcluded
+        - suggestedMatchType
+        - cost
+        - clicks
+        - conversions
+      properties:
+        id:
+          type: integer
+        runId:
+          type: integer
+        adGroupId:
+          type: string
+        adGroupName:
+          type: string
+        campaignId:
+          type: string
+        campaignName:
+          type: string
+        term:
+          type: string
+        score:
+          type: integer
+        verdict:
+          type: string
+          enum: [keep, review, exclude]
+        advice:
+          type: string
+        reason:
+          type: string
+        matchedProducts:
+          type: array
+          items:
+            type: string
+        alreadyExcluded:
+          type: boolean
+        suggestedMatchType:
+          type: string
+          enum: [EXACT, PHRASE, BROAD]
+        cost:
+          type: number
+        clicks:
+          type: integer
+        conversions:
+          type: number
+    ShoppingDecision:
+      type: object
+      required:
+        - id
+        - scoreId
+        - runId
+        - clientId
+        - customerId
+        - adGroupId
+        - term
+        - decision
+        - matchType
+        - note
+        - status
+        - adsResourceName
+        - error
+        - appliedAt
+        - createdAt
+      properties:
+        id:
+          type: integer
+        scoreId:
+          type: integer
+        runId:
+          type: integer
+        clientId:
+          type: integer
+        customerId:
+          type: string
+        adGroupId:
+          type: string
+        term:
+          type: string
+        decision:
+          type: string
+          enum: [exclude, keep]
+        matchType:
+          type: string
+          enum: [EXACT, PHRASE, BROAD]
+        note:
+          type: ["string", "null"]
+        status:
+          type: string
+          enum: [pending, applied, failed]
+        adsResourceName:
+          type: ["string", "null"]
+        error:
+          type: ["string", "null"]
+        appliedAt:
+          type: ["string", "null"]
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+    ShoppingRunDetail:
+      type: object
+      required: [run, scores, decisions]
+      properties:
+        run:
+          $ref: "#/components/schemas/ShoppingRun"
+        scores:
+          type: array
+          items:
+            $ref: "#/components/schemas/ShoppingScore"
+        decisions:
+          type: array
+          items:
+            $ref: "#/components/schemas/ShoppingDecision"
+    ShoppingRunList:
+      type: object
+      required: [runs]
+      properties:
+        runs:
+          type: array
+          items:
+            $ref: "#/components/schemas/ShoppingRun"
+    ShoppingDecisionInput:
+      type: object
+      required: [scoreId, decision]
+      properties:
+        scoreId:
+          type: integer
+        decision:
+          type: string
+          enum: [exclude, keep]
+        matchType:
+          type: string
+          enum: [EXACT, PHRASE, BROAD]
+        note:
+          type: ["string", "null"]
+    ShoppingSaveDecisionsInput:
+      type: object
+      required: [decisions]
+      properties:
+        decisions:
+          type: array
+          items:
+            $ref: "#/components/schemas/ShoppingDecisionInput"
+    ShoppingDecisionsResult:
+      type: object
+      required: [decisions]
+      properties:
+        decisions:
+          type: array
+          items:
+            $ref: "#/components/schemas/ShoppingDecision"
+    ShoppingSettings:
+      type: object
+      required: [writeEnabled]
+      properties:
+        writeEnabled:
+          type: boolean
+    ShoppingSettingsInput:
+      type: object
+      required: [writeEnabled]
+      properties:
+        writeEnabled:
+          type: boolean
+    ShoppingApplyInput:
+      type: object
+      required: [decisionIds, validateOnly]
+      properties:
+        decisionIds:
+          type: array
+          items:
+            type: integer
+        validateOnly:
+          type: boolean
+          description: >-
+            When true (default/safe) Google validates without persisting. Only an
+            explicit false performs a real write.
+    ShoppingApplyOutcome:
+      type: object
+      required: [decisionId, term, adGroupId, status, resourceName, error]
+      properties:
+        decisionId:
+          type: integer
+        term:
+          type: string
+        adGroupId:
+          type: string
+        status:
+          type: string
+          enum: [created, duplicate, failed, skipped]
+        resourceName:
+          type: ["string", "null"]
+        error:
+          type: ["string", "null"]
+    ShoppingApplyResult:
+      type: object
+      required: [validateOnly, results]
+      properties:
+        validateOnly:
+          type: boolean
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/ShoppingApplyOutcome"
+        error:
+          type: ["string", "null"]

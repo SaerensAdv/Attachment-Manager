@@ -198,7 +198,7 @@ function classifyApiError(
   return "UNKNOWN_ERROR";
 }
 
-interface GoogleAdsConfig {
+export interface GoogleAdsConfig {
   developerToken: string;
   clientId: string;
   clientSecret: string;
@@ -207,7 +207,7 @@ interface GoogleAdsConfig {
 }
 
 /** Strip everything but digits (customer ids may be entered with dashes). */
-function digitsOnly(value: string | null | undefined): string {
+export function digitsOnly(value: string | null | undefined): string {
   return (value ?? "").replace(/\D/g, "");
 }
 
@@ -218,7 +218,7 @@ function assertIsoDate(value: string): void {
   }
 }
 
-function readConfig(): GoogleAdsConfig {
+export function readConfig(): GoogleAdsConfig {
   const developerToken = process.env.GOOGLE_ADS_DEVELOPER_TOKEN?.trim() ?? "";
   const clientId = process.env.GOOGLE_ADS_OAUTH_CLIENT_ID?.trim() ?? "";
   const clientSecret = process.env.GOOGLE_ADS_OAUTH_CLIENT_SECRET?.trim() ?? "";
@@ -248,7 +248,7 @@ function readConfig(): GoogleAdsConfig {
 }
 
 /** Exchange the offline refresh token for a short-lived access token. */
-async function getAccessToken(cfg: GoogleAdsConfig): Promise<string> {
+export async function getAccessToken(cfg: GoogleAdsConfig): Promise<string> {
   const body = new URLSearchParams({
     grant_type: "refresh_token",
     client_id: cfg.clientId,
@@ -1582,4 +1582,292 @@ export async function listAdsAccounts(): Promise<AdsAccount[]> {
     });
   }
   return accounts;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Shopping search-term relevance (READ ONLY)
+//
+// Raw material for the product-relevance exclusion tool. Per Shopping ad group
+// we pull (a) the products that actually served in that group, (b) the search
+// terms that triggered it, and (c) the negative keywords already present (at
+// ad-group and campaign level, so we never propose a duplicate). Scoring lives
+// in `shopping-relevance.ts`; writing negatives back lives in
+// `google-ads-mutate.ts`. This function never mutates anything.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** One product that served in an ad group (from shopping_performance_view). */
+export interface ShoppingAdGroupProduct {
+  title: string;
+  brand: string;
+  productType: string;
+  cost: number;
+  clicks: number;
+  conversions: number;
+}
+
+/** One search term that triggered an ad group (from search_term_view). */
+export interface ShoppingSearchTermRow {
+  term: string;
+  cost: number;
+  clicks: number;
+  conversions: number;
+}
+
+/** An existing negative keyword, so we can flag/skip duplicates. */
+export interface ShoppingExistingNegative {
+  text: string;
+  matchType: string;
+  level: "ad_group" | "campaign";
+}
+
+/** Everything about one Shopping ad group needed to score its search terms. */
+export interface ShoppingAdGroupRelevance {
+  adGroupId: string;
+  adGroupName: string;
+  campaignId: string;
+  campaignName: string;
+  products: ShoppingAdGroupProduct[];
+  searchTerms: ShoppingSearchTermRow[];
+  existingNegatives: ShoppingExistingNegative[];
+}
+
+/** Full read-only pull for one customer, grouped per ad group. */
+export interface ShoppingTermRelevanceData {
+  customerId: string;
+  currency: string;
+  adGroups: ShoppingAdGroupRelevance[];
+  warnings: string[];
+}
+
+const MAX_PRODUCTS_PER_GROUP = 40;
+const MAX_TERMS_PER_GROUP = 60;
+
+/** Run one GAQL query, turning a failure into a warning + empty rows. */
+async function safeRows(
+  cfg: GoogleAdsConfig,
+  accessToken: string,
+  customerId: string,
+  query: string,
+  label: string,
+  warnings: string[],
+): Promise<Record<string, unknown>[]> {
+  try {
+    return await runGaql(cfg, accessToken, customerId, query);
+  } catch (err) {
+    warnings.push(
+      `${label} kon niet worden opgehaald: ${err instanceof Error ? err.message : String(err)}`,
+    );
+    return [];
+  }
+}
+
+/**
+ * Pull, per Shopping ad group, the served products + triggering search terms +
+ * existing negatives for the last 30 days. READ ONLY. Best-effort per query: a
+ * single failing pull becomes a warning, not a fatal error, so a partial result
+ * still reaches the user.
+ */
+export async function fetchShoppingTermRelevanceData(
+  rawCustomerId: string,
+): Promise<ShoppingTermRelevanceData> {
+  const cfg = readConfig();
+  const customerId = digitsOnly(rawCustomerId);
+  if (!customerId) {
+    throw new GoogleAdsConfigError("Ongeldig Google Ads customer ID.");
+  }
+  const accessToken = await getAccessToken(cfg);
+  const warnings: string[] = [];
+
+  const currencyRows = await safeRows(
+    cfg,
+    accessToken,
+    customerId,
+    `SELECT customer.currency_code FROM customer LIMIT 1`,
+    "Valuta",
+    warnings,
+  );
+  const currency = String(
+    pick(currencyRows[0] ?? {}, "customer.currencyCode") ?? "EUR",
+  );
+
+  const productRows = await safeRows(
+    cfg,
+    accessToken,
+    customerId,
+    `SELECT ad_group.id, ad_group.name, campaign.id, campaign.name,
+            segments.product_title, segments.product_brand, segments.product_type_l1,
+            metrics.cost_micros, metrics.clicks, metrics.conversions
+     FROM shopping_performance_view
+     WHERE segments.date DURING LAST_30_DAYS
+     ORDER BY metrics.cost_micros DESC
+     LIMIT 5000`,
+    "Shopping-producten",
+    warnings,
+  );
+
+  const termRows = await safeRows(
+    cfg,
+    accessToken,
+    customerId,
+    `SELECT campaign.id, campaign.name, ad_group.id, ad_group.name,
+            search_term_view.search_term,
+            metrics.cost_micros, metrics.clicks, metrics.conversions
+     FROM search_term_view
+     WHERE segments.date DURING LAST_30_DAYS
+       AND campaign.advertising_channel_type = 'SHOPPING'
+     ORDER BY metrics.cost_micros DESC
+     LIMIT 3000`,
+    "Zoektermen",
+    warnings,
+  );
+
+  const adGroupNegRows = await safeRows(
+    cfg,
+    accessToken,
+    customerId,
+    `SELECT ad_group.id, ad_group_criterion.keyword.text,
+            ad_group_criterion.keyword.match_type
+     FROM ad_group_criterion
+     WHERE ad_group_criterion.type = 'KEYWORD'
+       AND ad_group_criterion.negative = TRUE
+       AND campaign.advertising_channel_type = 'SHOPPING'`,
+    "Bestaande uitsluitingen (groep)",
+    warnings,
+  );
+
+  const campaignNegRows = await safeRows(
+    cfg,
+    accessToken,
+    customerId,
+    `SELECT campaign.id, campaign_criterion.keyword.text,
+            campaign_criterion.keyword.match_type
+     FROM campaign_criterion
+     WHERE campaign_criterion.type = 'KEYWORD'
+       AND campaign_criterion.negative = TRUE
+       AND campaign.advertising_channel_type = 'SHOPPING'`,
+    "Bestaande uitsluitingen (campagne)",
+    warnings,
+  );
+
+  // Products aggregated per ad group + product title.
+  const prodMap = new Map<string, Map<string, ShoppingAdGroupProduct>>();
+  for (const r of productRows) {
+    const agId = String(pick(r, "adGroup.id") ?? "");
+    const title = String(pick(r, "segments.productTitle") ?? "").trim();
+    if (!agId || !title) continue;
+    let g = prodMap.get(agId);
+    if (!g) {
+      g = new Map();
+      prodMap.set(agId, g);
+    }
+    const cost = num(pick(r, "metrics.costMicros")) / 1_000_000;
+    const clicks = num(pick(r, "metrics.clicks"));
+    const conv = num(pick(r, "metrics.conversions"));
+    const ex = g.get(title);
+    if (ex) {
+      ex.cost += cost;
+      ex.clicks += clicks;
+      ex.conversions += conv;
+    } else {
+      g.set(title, {
+        title,
+        brand: String(pick(r, "segments.productBrand") ?? "").trim(),
+        productType: String(pick(r, "segments.productTypeL1") ?? "").trim(),
+        cost,
+        clicks,
+        conversions: conv,
+      });
+    }
+  }
+
+  // Search terms aggregated per ad group.
+  interface TermAgg {
+    adGroupName: string;
+    campaignId: string;
+    campaignName: string;
+    terms: Map<string, ShoppingSearchTermRow>;
+  }
+  const termMap = new Map<string, TermAgg>();
+  for (const r of termRows) {
+    const agId = String(pick(r, "adGroup.id") ?? "");
+    const term = String(pick(r, "searchTermView.searchTerm") ?? "").trim();
+    if (!agId || !term) continue;
+    let t = termMap.get(agId);
+    if (!t) {
+      t = {
+        adGroupName: String(pick(r, "adGroup.name") ?? "").trim(),
+        campaignId: String(pick(r, "campaign.id") ?? ""),
+        campaignName: String(pick(r, "campaign.name") ?? "").trim(),
+        terms: new Map(),
+      };
+      termMap.set(agId, t);
+    }
+    const cost = num(pick(r, "metrics.costMicros")) / 1_000_000;
+    const clicks = num(pick(r, "metrics.clicks"));
+    const conv = num(pick(r, "metrics.conversions"));
+    const ex = t.terms.get(term);
+    if (ex) {
+      ex.cost += cost;
+      ex.clicks += clicks;
+      ex.conversions += conv;
+    } else {
+      t.terms.set(term, { term, cost, clicks, conversions: conv });
+    }
+  }
+
+  const agNeg = new Map<string, ShoppingExistingNegative[]>();
+  for (const r of adGroupNegRows) {
+    const agId = String(pick(r, "adGroup.id") ?? "");
+    const text = String(pick(r, "adGroupCriterion.keyword.text") ?? "").trim();
+    if (!agId || !text) continue;
+    const arr = agNeg.get(agId) ?? [];
+    arr.push({
+      text,
+      matchType: String(pick(r, "adGroupCriterion.keyword.matchType") ?? ""),
+      level: "ad_group",
+    });
+    agNeg.set(agId, arr);
+  }
+
+  const campNeg = new Map<string, ShoppingExistingNegative[]>();
+  for (const r of campaignNegRows) {
+    const cId = String(pick(r, "campaign.id") ?? "");
+    const text = String(pick(r, "campaignCriterion.keyword.text") ?? "").trim();
+    if (!cId || !text) continue;
+    const arr = campNeg.get(cId) ?? [];
+    arr.push({
+      text,
+      matchType: String(pick(r, "campaignCriterion.keyword.matchType") ?? ""),
+      level: "campaign",
+    });
+    campNeg.set(cId, arr);
+  }
+
+  const adGroups: ShoppingAdGroupRelevance[] = [];
+  for (const [agId, t] of termMap) {
+    const products = [...(prodMap.get(agId)?.values() ?? [])]
+      .sort((a, b) => b.cost - a.cost)
+      .slice(0, MAX_PRODUCTS_PER_GROUP);
+    const searchTerms = [...t.terms.values()]
+      .sort((a, b) => b.cost - a.cost)
+      .slice(0, MAX_TERMS_PER_GROUP);
+    const existingNegatives = [
+      ...(agNeg.get(agId) ?? []),
+      ...(campNeg.get(t.campaignId) ?? []),
+    ];
+    adGroups.push({
+      adGroupId: agId,
+      adGroupName: t.adGroupName,
+      campaignId: t.campaignId,
+      campaignName: t.campaignName,
+      products,
+      searchTerms,
+      existingNegatives,
+    });
+  }
+  const groupCost = (g: ShoppingAdGroupRelevance): number =>
+    g.searchTerms.reduce((s, x) => s + x.cost, 0);
+  adGroups.sort((a, b) => groupCost(b) - groupCost(a));
+
+  return { customerId, currency, adGroups, warnings };
 }

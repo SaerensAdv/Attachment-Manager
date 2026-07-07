@@ -42,8 +42,19 @@ Gotcha: nested config fields like `campaign.maximize_conversions.target_cpa_micr
   targeting via `ad_group_criterion`.
 - **0 conversions with strong, well-segmented creative → the bottleneck is the landing page and/or
   bidding, NOT the ads.** Classic tell: every ad points to the generic homepage and thousands of
-  clicks convert to 0 leads. A dedicated landing page (form above the fold, one CTA, mobile-first)
-  is usually the #1 lever after the bid fix.
+  clicks convert to 0 leads.
+- **BUT before blaming the page, ask: does the SAME page convert other channels?** If Search sends
+  traffic to the same homepage and gets good leads, the page is exonerated — the gap is **traffic
+  intent / funnel stage**, not the page. Search = in-market, ready to request a quote; DG = cold,
+  interrupted. The same closing page won't convert cold browsers.
+- **Read the dwell/engagement signal to tell junk from cold-but-interested.** Timer/dwell micro-
+  conversions reveal how many DG clickers actually stayed: e.g. of ~2.4k clicks only ~6% stayed
+  ≥1 min. That split = a huge fast-bounce majority (accidental mobile/YouTube taps → the Max-Clicks
+  signature, killed by the bid fix) + a small genuinely-engaged minority that read for minutes yet
+  still didn't convert (proof it's funnel stage, not the page).
+- **For that engaged-but-not-ready minority, retargeting is the goldmine + a softer cold offer**
+  (gratis dakcheck / price indication as a native lead form, lower mobile friction) — not another
+  landing-page rebuild. First retargeting leads also feed the conversion-bidding cold start.
 - **Asset `performance_label` = PENDING/LEARNING for everything** just means there's no conversion
   signal yet (0 primary conv) — it's a symptom, not an action. It resolves once leads flow.
 - **Maximize Clicks (TARGET_SPEND) starves narrow/high-intent and retargeting ad groups**: budget

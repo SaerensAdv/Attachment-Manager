@@ -44,3 +44,14 @@ false positive; rewriting the label to match the filename would BREAK the edge.
 sub-specialty over a new agent; add a new agent only when the domain/output/boundary
 is genuinely distinct (e.g. cross-cutting review/edit steps like QA Reviewer and
 Humanizer that act on *any* agent's output).
+
+**Gotcha — a platform-OWNING agent also needs downstream attribution edits.** The
+four touch points above are not enough when the new agent owns a channel's *creative
+direction* (like the Meta Ads Strategist owns Meta). Those attribution sentences are
+duplicated in prose across `agents/copywriter.md` and `agents/creative-designer.md`
+(e.g. "creative direction set with the Meta Ads Strategist"). Since these files are
+assembled into prompts at runtime, leaving them stale tells the Copywriter/Creative
+Designer to take direction from the wrong agent. Grep the other agents for the
+channel/owner phrasing and update every occurrence, not just AGENTS.md. **Why:**
+validate-docs only catches broken backtick refs, routing, and department membership —
+plain-prose ownership contradictions pass validation but still mislead the team.

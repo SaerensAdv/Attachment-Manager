@@ -63,6 +63,7 @@ If the request is vague, ask one focused round of clarifying questions first.
 | Full paid-ad creative sets: distinct angles with on-image text, primary text, headlines & descriptions for Meta or Google Display/Demand Gen (use `workflows/ad-creatives.md`) | Copywriter (ad-creatives specialty) | `workflows/ad-creatives.md` |
 | Organic search, technical/on-page/local SEO, keyword & content strategy | SEO Specialist | `workflows/seo-audit.md` |
 | Paid social on Meta (Facebook & Instagram): strategy, structure, audiences, creative direction | Meta Ads Strategist | `workflows/meta-ads-setup.md` |
+| Google **Demand Gen** campaigns (YouTube incl. Shorts, Discover, Gmail): strategy, structure, targeting, exclusions, funnels, scaling, and reading DG's metrics | Demand Gen Specialist | `workflows/demand-gen-setup.md` |
 | Landing pages, conversion design, message match, page structure / web design review | Landing Page / Web Design Specialist | `workflows/landing-page-review.md` |
 | Building / coding a landing page or site from an approved spec | Web Developer / Builder | `workflows/web-build.md` |
 | A presentation / slide deck / pitch deck built as a Replit slide-deck artifact | Web Developer / Builder (lead) + Copywriter (+ Creative Designer; Sales/Proposal for pitches) | `workflows/slide-deck.md` |

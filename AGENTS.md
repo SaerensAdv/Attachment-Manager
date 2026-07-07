@@ -58,7 +58,7 @@ Each department lists its **Owner** (the head, who is also a member), its **Agen
    - Handoff: receives the request from the CEO; hands briefs to Client & Growth and the three delivery teams.
 1. **Paid Media** *(delivery)* — owns paid acquisition across Google and Meta.
    - Owner: `agents/google-ads-strategist.md`
-   - Agents: `agents/google-ads-strategist.md`, `agents/google-ads-setup-specialist.md`, `agents/google-ads-optimization-specialist.md`, `agents/meta-ads-strategist.md`, `agents/shopping-feed-specialist.md`
+   - Agents: `agents/google-ads-strategist.md`, `agents/google-ads-setup-specialist.md`, `agents/google-ads-optimization-specialist.md`, `agents/meta-ads-strategist.md`, `agents/demand-gen-specialist.md`, `agents/shopping-feed-specialist.md`
    - Handoff: receives briefs from Direction & Orchestration and Client & Growth; hands finished work to Quality & Compliance and Client & Growth.
 2. **SEO & Web** *(delivery)* — owns organic visibility, the website, conversion, and measurement.
    - Owner: `agents/seo-specialist.md`
@@ -109,10 +109,11 @@ Specified after the initial MVP, following the "new agent vs deeper specialty" r
 - Legal & Contracts Specialist — `agents/legal-contracts-specialist.md`
 - Operations & Schedule Coordinator — `agents/operations-coordinator.md`
 - Personal Brand Strategist — `agents/personal-brand-strategist.md`
+- Demand Gen Specialist — `agents/demand-gen-specialist.md`
 
 Content & social is **not** a separate agent: it is a deeper specialty of the Copywriter (`agents/copywriter.md`).
 
-Paid-ad **creatives** (full ad sets: angles + on-image text + post copy for Meta and Google Display/Demand Gen) are likewise a deeper specialty of the Copywriter, with creative direction set by the Meta Ads Strategist — not a separate agent.
+Paid-ad **creatives** (full ad sets: angles + on-image text + post copy for Meta and Google Display/Demand Gen) are likewise a deeper specialty of the Copywriter, with creative direction set by the Meta Ads Strategist (for Meta) or the Demand Gen Specialist (for Google Demand Gen) — not a separate agent.
 
 Two of these are **cross-cutting quality-gate steps** rather than channel specialists, and they run **automatically after the team finishes** — not as members of any single workflow: the **QA & Compliance Reviewer** always runs as the quality gate before human approval (claims, policy, live-spend safety), and the **Humanizer** adds a final natural-voice pass whenever the output is client-facing. Because they are a shared runtime gate, individual workflow files list only their *execution* agents under "Agents involved" and do not repeat the QA or Humanizer step. Both review or refine other agents' output, which is why each is a distinct shared gate rather than folded into one specialist.
 

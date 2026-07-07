@@ -80,6 +80,7 @@ saerens-ai-team/
 │   ├── copywriter.md
 │   ├── seo-specialist.md
 │   ├── meta-ads-strategist.md
+│   ├── demand-gen-specialist.md
 │   ├── landing-page-specialist.md
 │   ├── web-developer.md
 │   ├── analytics-tracking-specialist.md
@@ -115,6 +116,7 @@ saerens-ai-team/
 │   ├── ad-copy.md
 │   ├── ad-creatives.md
 │   ├── meta-ads-setup.md
+│   ├── demand-gen-setup.md
 │   ├── shopping-feed-setup.md
 │   ├── landing-page-review.md
 │   ├── cro-experiment.md
@@ -155,6 +157,7 @@ saerens-ai-team/
     ├── saerens-brand.md
     ├── saerens-deck-layout.md
     ├── google-ads-standards.md
+    ├── demand-gen.md
     ├── google-ads-policy.md
     ├── budget-management-standards.md
     ├── ad-copy-standards.md

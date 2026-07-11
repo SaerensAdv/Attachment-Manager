@@ -443,3 +443,9 @@ id = "cCRxmNWP2QhHK0fQbm5wx"
 uri = "file://deliverables/lcs/LCS-kwartaalrapport-Q2-2026.pdf"
 type = "pdf"
 title = "LCS BV — Kwartaalrapport Google Ads (Q2 2026)"
+
+[[outputs]]
+id = "DG9C14P6cEC4U0kmfICau"
+uri = "file://outputs/klanten-fee-export.csv"
+type = "table"
+title = "Klanten + fee/budget export (CSV)"

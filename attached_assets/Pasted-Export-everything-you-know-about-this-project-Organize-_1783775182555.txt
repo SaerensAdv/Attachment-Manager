@@ -1,0 +1,58 @@
+Export everything you know about this project. Organize it using the exact section headers below. Preserve original naming, variables, and terminology wherever possible. Be exhaustive.
+
+PROJECT IDENTITY
+Elevator Pitch
+What does this project do? (2 sentences max)
+Target Audience
+Who is this for? What problem does it solve for them?
+Business Model
+How does (or would) this make money? Pricing, subscriptions, one-time, freemium, etc.
+
+TECHNICAL OVERVIEW
+Tech Stack
+Languages, frameworks, libraries, databases, hosting, and deployment method.
+Architecture
+How are the components connected? (frontend, backend, APIs, databases, external services)
+External Dependencies
+Third-party services, API keys, domains, DNS, payment providers, auth providers, etc.
+Environment & Config
+Environment variables, secrets, config files, and deployment settings.
+
+CURRENT STATE
+What Works
+Features and flows that are functional and production-ready.
+What's Broken or Incomplete
+Known bugs, half-built features, technical debt.
+What's Missing
+Features that are planned or needed but not yet started.
+
+INTEGRATIONS & API SURFACE
+Existing Integrations
+What external tools/services does this project currently connect to?
+ClickUp API Integration Points
+Where could this project read from or write to ClickUp? (tasks, docs, custom fields, time tracking, etc.)
+Other Potential Integrations
+What other tools could this connect to, and why?
+
+FILE STRUCTURE
+Key Files & Folders
+List the most important files/folders and what they do. Skip node_modules, build artifacts, etc.
+Database Schema
+Tables, collections, or data models (if applicable).
+
+ROADMAP & EFFORT
+What Would It Take to Ship This?
+Concrete steps to make this production-ready.
+Estimated Effort
+Rough time estimate per step (hours/days).
+Blockers
+What's preventing progress? (time, money, knowledge, dependencies)
+
+TEMPLATE POTENTIAL
+Reusable Components
+What parts of this project could be extracted as a template for other projects?
+GitHub Template Candidate?
+Yes/No. If yes, what would need to be abstracted or genericized?
+
+Rules:
+After the output, state whether the export is complete or if more remains.

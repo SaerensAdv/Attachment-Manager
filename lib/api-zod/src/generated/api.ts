@@ -1726,6 +1726,61 @@ export const ApplyClientsDiscoveryResponse = zod.object({
 
 
 /**
+ * @summary Match app clients to ClickUp companies (link-only review, read-only)
+ */
+export const GetClientsClickupSyncResponse = zod.object({
+  "available": zod.boolean(),
+  "companyCount": zod.number(),
+  "clientCount": zod.number(),
+  "links": zod.array(zod.object({
+  "clientId": zod.number(),
+  "clientName": zod.string(),
+  "companyId": zod.string(),
+  "companyName": zod.string(),
+  "matchBy": zod.enum(['domein', 'naam']),
+  "reason": zod.string()
+})),
+  "alreadyLinked": zod.array(zod.object({
+  "clientId": zod.number(),
+  "clientName": zod.string(),
+  "companyId": zod.string(),
+  "companyName": zod.string().nullish()
+})),
+  "unmatchedClients": zod.array(zod.object({
+  "clientId": zod.number(),
+  "clientName": zod.string(),
+  "website": zod.string().nullish()
+})),
+  "unmatchedCompanies": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "website": zod.string().nullish(),
+  "status": zod.string().nullish()
+})),
+  "warnings": zod.array(zod.string())
+})
+
+
+/**
+ * @summary Store confirmed ClickUp company links on app clients (never overwrite)
+ */
+export const ApplyClientsClickupLinksBody = zod.object({
+  "links": zod.array(zod.object({
+  "clientId": zod.number(),
+  "companyId": zod.string()
+}))
+})
+
+export const ApplyClientsClickupLinksResponse = zod.object({
+  "linked": zod.array(zod.object({
+  "clientId": zod.number(),
+  "companyId": zod.string()
+})),
+  "errors": zod.array(zod.string())
+})
+
+
+/**
  * @summary Refresh every configured integration for one client (best-effort)
  */
 export const ClientRefreshAllParams = zod.object({

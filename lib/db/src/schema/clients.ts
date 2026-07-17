@@ -1,4 +1,12 @@
-import { integer, pgTable, serial, text, timestamp } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
+import {
+  integer,
+  pgTable,
+  serial,
+  text,
+  timestamp,
+  uniqueIndex,
+} from "drizzle-orm/pg-core";
 import { clientGroupsTable } from "./client-groups";
 
 /**
@@ -81,9 +89,23 @@ export const clientsTable = pgTable("clients", {
   competitorAdvertisers: text("competitor_advertisers"),
   competitorAdsLive: text("competitor_ads_live"),
   competitorAdsLiveAt: timestamp("competitor_ads_live_at"),
+  // Read-only koppeling naar het CRM-bedrijf in ClickUp (CRM → Companies).
+  // Enkel een verwijzing (task-id) zodat de app een klant kan terugvinden in
+  // ClickUp; de app maakt of overschrijft nooit iets in ClickUp. Wordt ingevuld
+  // via de link-only sync (nooit geklobberd zodra gezet).
+  clickupCompanyId: text("clickup_company_id"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (t) => ({
+  // One ClickUp company → at most one app client. Enforced in the DB (not just
+  // app code) so a concurrent/double-clicked apply can never link the same
+  // company to two clients. Partial: NULL/empty ids are free to repeat.
+  clickupCompanyIdUnique: uniqueIndex("clients_clickup_company_id_unique")
+    .on(t.clickupCompanyId)
+    .where(
+      sql`${t.clickupCompanyId} is not null and ${t.clickupCompanyId} <> ''`,
+    ),
+}));
 
 export type Client = typeof clientsTable.$inferSelect;
 export type InsertClient = typeof clientsTable.$inferInsert;

@@ -1170,6 +1170,42 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ClientDiscoveryApplyResult"
+  /clients/clickup/sync:
+    get:
+      operationId: getClientsClickupSync
+      tags: [clients]
+      summary: Match app clients to ClickUp companies (link-only review, read-only)
+      responses:
+        "200":
+          description: Link proposals + already-linked + unmatched on both sides
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClickUpSyncResult"
+        "502":
+          description: ClickUp sync could not be run
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /clients/clickup/apply:
+    post:
+      operationId: applyClientsClickupLinks
+      tags: [clients]
+      summary: Store confirmed ClickUp company links on app clients (never overwrite)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClickUpApplyInput"
+      responses:
+        "200":
+          description: Which clients were linked, plus any per-item errors
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClickUpApplyResult"
   /clients/{id}/refresh-all:
     post:
       operationId: clientRefreshAll
@@ -3351,6 +3387,131 @@ components:
               id:
                 type: integer
               name:
+                type: string
+        errors:
+          type: array
+          items:
+            type: string
+    ClickUpSyncLink:
+      type: object
+      required: [clientId, clientName, companyId, companyName, matchBy, reason]
+      properties:
+        clientId:
+          type: integer
+        clientName:
+          type: string
+        companyId:
+          type: string
+        companyName:
+          type: string
+        matchBy:
+          type: string
+          enum: [domein, naam]
+        reason:
+          type: string
+    ClickUpCompanyRef:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        website:
+          type: string
+          nullable: true
+        status:
+          type: string
+          nullable: true
+    ClickUpAlreadyLinked:
+      type: object
+      required: [clientId, clientName, companyId]
+      properties:
+        clientId:
+          type: integer
+        clientName:
+          type: string
+        companyId:
+          type: string
+        companyName:
+          type: string
+          nullable: true
+    ClickUpUnmatchedClient:
+      type: object
+      required: [clientId, clientName]
+      properties:
+        clientId:
+          type: integer
+        clientName:
+          type: string
+        website:
+          type: string
+          nullable: true
+    ClickUpSyncResult:
+      type: object
+      required:
+        - available
+        - companyCount
+        - clientCount
+        - links
+        - alreadyLinked
+        - unmatchedClients
+        - unmatchedCompanies
+        - warnings
+      properties:
+        available:
+          type: boolean
+        companyCount:
+          type: integer
+        clientCount:
+          type: integer
+        links:
+          type: array
+          items:
+            $ref: "#/components/schemas/ClickUpSyncLink"
+        alreadyLinked:
+          type: array
+          items:
+            $ref: "#/components/schemas/ClickUpAlreadyLinked"
+        unmatchedClients:
+          type: array
+          items:
+            $ref: "#/components/schemas/ClickUpUnmatchedClient"
+        unmatchedCompanies:
+          type: array
+          items:
+            $ref: "#/components/schemas/ClickUpCompanyRef"
+        warnings:
+          type: array
+          items:
+            type: string
+    ClickUpApplyInput:
+      type: object
+      required: [links]
+      properties:
+        links:
+          type: array
+          items:
+            type: object
+            required: [clientId, companyId]
+            properties:
+              clientId:
+                type: integer
+              companyId:
+                type: string
+    ClickUpApplyResult:
+      type: object
+      required: [linked, errors]
+      properties:
+        linked:
+          type: array
+          items:
+            type: object
+            required: [clientId, companyId]
+            properties:
+              clientId:
+                type: integer
+              companyId:
                 type: string
         errors:
           type: array

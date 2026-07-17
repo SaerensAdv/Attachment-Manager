@@ -716,6 +716,73 @@ export interface ClientDiscoveryApplyResult {
   errors: string[];
 }
 
+export type ClickUpSyncLinkMatchBy = typeof ClickUpSyncLinkMatchBy[keyof typeof ClickUpSyncLinkMatchBy];
+
+
+export const ClickUpSyncLinkMatchBy = {
+  domein: 'domein',
+  naam: 'naam',
+} as const;
+
+export interface ClickUpSyncLink {
+  clientId: number;
+  clientName: string;
+  companyId: string;
+  companyName: string;
+  matchBy: ClickUpSyncLinkMatchBy;
+  reason: string;
+}
+
+export interface ClickUpCompanyRef {
+  id: string;
+  name: string;
+  website?: string | null;
+  status?: string | null;
+}
+
+export interface ClickUpAlreadyLinked {
+  clientId: number;
+  clientName: string;
+  companyId: string;
+  companyName?: string | null;
+}
+
+export interface ClickUpUnmatchedClient {
+  clientId: number;
+  clientName: string;
+  website?: string | null;
+}
+
+export interface ClickUpSyncResult {
+  available: boolean;
+  companyCount: number;
+  clientCount: number;
+  links: ClickUpSyncLink[];
+  alreadyLinked: ClickUpAlreadyLinked[];
+  unmatchedClients: ClickUpUnmatchedClient[];
+  unmatchedCompanies: ClickUpCompanyRef[];
+  warnings: string[];
+}
+
+export type ClickUpApplyInputLinksItem = {
+  clientId: number;
+  companyId: string;
+};
+
+export interface ClickUpApplyInput {
+  links: ClickUpApplyInputLinksItem[];
+}
+
+export type ClickUpApplyResultLinkedItem = {
+  clientId: number;
+  companyId: string;
+};
+
+export interface ClickUpApplyResult {
+  linked: ClickUpApplyResultLinkedItem[];
+  errors: string[];
+}
+
 export type RefreshOutcomeStatus = typeof RefreshOutcomeStatus[keyof typeof RefreshOutcomeStatus];
 
 

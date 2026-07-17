@@ -5,10 +5,17 @@ import {
   useGetClientsDiscovery,
   getGetClientsDiscoveryQueryKey,
   useApplyClientsDiscovery,
+  useGetClientsClickupSync,
+  getGetClientsClickupSyncQueryKey,
+  useApplyClientsClickupLinks,
   useClientRefreshAll,
   type Client,
   type DiscoveryEnrichment,
   type DiscoveryNewClient,
+  type ClickUpSyncLink,
+  type ClickUpAlreadyLinked,
+  type ClickUpUnmatchedClient,
+  type ClickUpCompanyRef,
   type RefreshOutcome,
 } from "@workspace/api-client-react";
 import { Input } from "@/components/ui/input";
@@ -18,6 +25,7 @@ import {
   LayoutGrid,
   Check,
   AlertTriangle,
+  Link2,
 } from "lucide-react";
 
 /** Human, Dutch label per integration key (matches the coverage payload). */
@@ -39,7 +47,7 @@ const FIELD_LABELS: Record<string, string> = {
   searchConsoleSiteUrl: "Search Console-property",
 };
 
-type Tab = "coverage" | "refresh" | "discovery" | null;
+type Tab = "coverage" | "refresh" | "discovery" | "clickup" | null;
 
 type RefreshRow = {
   id: number;
@@ -234,6 +242,56 @@ export default function ClientToolbox({
     }
   };
 
+  // ---- ClickUp link-only sync ----------------------------------------------
+  const clickupQuery = useGetClientsClickupSync({
+    query: {
+      enabled: tab === "clickup",
+      queryKey: getGetClientsClickupSyncQueryKey(),
+    },
+  });
+  const clickupApplyMut = useApplyClientsClickupLinks();
+
+  // Proposed links are keyed by clientId; all pre-checked (both domain and exact
+  // name matches are confident, 1:1 links). The user can untick any before apply.
+  const [linkSel, setLinkSel] = useState<Record<number, boolean>>({});
+  const [clickupResult, setClickupResult] = useState<{
+    linked: number;
+    errors: string[];
+  } | null>(null);
+
+  const clickupData = clickupQuery.data;
+  useEffect(() => {
+    if (!clickupData) return;
+    const sel: Record<number, boolean> = {};
+    clickupData.links.forEach((l) => (sel[l.clientId] = true));
+    setLinkSel(sel);
+    setClickupResult(null);
+  }, [clickupData]);
+
+  const linkSelCount = useMemo(
+    () => Object.values(linkSel).filter(Boolean).length,
+    [linkSel],
+  );
+
+  const applyClickupLinks = async () => {
+    if (!clickupData) return;
+    const links = clickupData.links
+      .filter((l) => linkSel[l.clientId])
+      .map((l) => ({ clientId: l.clientId, companyId: l.companyId }));
+    if (links.length === 0) return;
+    try {
+      const res = await clickupApplyMut.mutateAsync({ data: { links } });
+      setClickupResult({ linked: res.linked.length, errors: res.errors });
+      onChanged();
+      clickupQuery.refetch();
+    } catch (err) {
+      setClickupResult({
+        linked: 0,
+        errors: [err instanceof Error ? err.message : String(err)],
+      });
+    }
+  };
+
   return (
     <div className="border-2 border-foreground bg-card mb-10">
       <div className="flex flex-wrap items-center gap-3 p-4 border-b-2 border-foreground/15">
@@ -255,6 +313,14 @@ export default function ClientToolbox({
           testid="tab-refresh"
         >
           Alles verversen
+        </TabButton>
+        <TabButton
+          active={tab === "clickup"}
+          onClick={() => setTab(tab === "clickup" ? null : "clickup")}
+          icon={<Link2 className="w-3.5 h-3.5" />}
+          testid="tab-clickup"
+        >
+          ClickUp
         </TabButton>
         {/*
           "Klanten ontdekken" (client discovery) is hidden for now — the
@@ -538,7 +604,262 @@ export default function ClientToolbox({
           ) : null}
         </div>
       )}
+
+      {tab === "clickup" && (
+        <div className="p-4" data-testid="panel-clickup">
+          {clickupQuery.isLoading ? (
+            <div className="flex items-center gap-2 text-muted-foreground py-6">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span className={monoLabel}>ClickUp synchroniseren…</span>
+            </div>
+          ) : clickupQuery.error ? (
+            <p className="text-sm text-destructive">
+              Kon ClickUp niet synchroniseren. Controleer het API-token.
+            </p>
+          ) : clickupData ? (
+            <div className="flex flex-col gap-6">
+              <p className="text-xs text-muted-foreground font-['Inter']">
+                {clickupData.available
+                  ? `${clickupData.companyCount} bedrijven in ClickUp · ${clickupData.clientCount} klanten in de app. Enkel koppelen — er wordt niets aangemaakt of overschreven, ook niet in ClickUp.`
+                  : clickupData.warnings.length > 0
+                    ? "ClickUp is momenteel niet bereikbaar — zie de details hieronder."
+                    : "ClickUp is nog niet bereikbaar. Controleer of het API-token is ingesteld."}
+              </p>
+
+              {clickupData.warnings.length > 0 && (
+                <div className="border border-destructive/40 bg-destructive/5 p-3 flex flex-col gap-1">
+                  {clickupData.warnings.map((w, i) => (
+                    <p
+                      key={i}
+                      className="text-xs text-destructive flex items-start gap-1.5"
+                    >
+                      <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                      {w}
+                    </p>
+                  ))}
+                </div>
+              )}
+
+              {clickupData.available && (
+                <>
+                  {/* Proposed links */}
+                  <section>
+                    <h3 className={`${monoLabel} mb-3 border-b border-foreground/20 pb-2`}>
+                      Voorgestelde koppelingen ({clickupData.links.length})
+                    </h3>
+                    {clickupData.links.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">
+                        Geen nieuwe koppelingen gevonden.
+                      </p>
+                    ) : (
+                      <div className="flex flex-col gap-2">
+                        {clickupData.links.map((l) => (
+                          <LinkRow
+                            key={l.clientId}
+                            link={l}
+                            checked={!!linkSel[l.clientId]}
+                            onToggle={() =>
+                              setLinkSel((s) => ({
+                                ...s,
+                                [l.clientId]: !s[l.clientId],
+                              }))
+                            }
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </section>
+
+                  {/* Already linked */}
+                  {clickupData.alreadyLinked.length > 0 && (
+                    <section>
+                      <h3 className={`${monoLabel} mb-3 border-b border-foreground/20 pb-2`}>
+                        Al gekoppeld ({clickupData.alreadyLinked.length})
+                      </h3>
+                      <div className="flex flex-col gap-1.5">
+                        {clickupData.alreadyLinked.map((a) => (
+                          <AlreadyLinkedRow key={a.clientId} linked={a} />
+                        ))}
+                      </div>
+                    </section>
+                  )}
+
+                  {/* Unmatched, both sides */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <section>
+                      <h3 className={`${monoLabel} mb-3 border-b border-foreground/20 pb-2`}>
+                        Klanten zonder ClickUp-match (
+                        {clickupData.unmatchedClients.length})
+                      </h3>
+                      {clickupData.unmatchedClients.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">
+                          Alle klanten zijn gekoppeld.
+                        </p>
+                      ) : (
+                        <ul className="flex flex-col gap-1">
+                          {clickupData.unmatchedClients.map((c) => (
+                            <UnmatchedRow
+                              key={c.clientId}
+                              name={c.clientName}
+                              sub={c.website}
+                            />
+                          ))}
+                        </ul>
+                      )}
+                    </section>
+                    <section>
+                      <h3 className={`${monoLabel} mb-3 border-b border-foreground/20 pb-2`}>
+                        ClickUp-bedrijven zonder app-klant (
+                        {clickupData.unmatchedCompanies.length})
+                      </h3>
+                      {clickupData.unmatchedCompanies.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">
+                          Elk ClickUp-bedrijf is gekoppeld.
+                        </p>
+                      ) : (
+                        <ul className="flex flex-col gap-1">
+                          {clickupData.unmatchedCompanies.map((c) => (
+                            <UnmatchedRow
+                              key={c.id}
+                              name={c.name}
+                              sub={c.status ?? c.website}
+                            />
+                          ))}
+                        </ul>
+                      )}
+                    </section>
+                  </div>
+
+                  {clickupResult && (
+                    <div
+                      className="border border-foreground/30 bg-background p-3"
+                      data-testid="clickup-apply-result"
+                    >
+                      <p className="text-sm">
+                        {clickupResult.linked} koppeling(en) opgeslagen.
+                      </p>
+                      {clickupResult.errors.length > 0 && (
+                        <ul className="mt-2 list-disc pl-5">
+                          {clickupResult.errors.map((er, i) => (
+                            <li key={i} className="text-xs text-destructive">
+                              {er}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-4 border-t border-foreground/15 pt-4">
+                    <button
+                      onClick={applyClickupLinks}
+                      disabled={clickupApplyMut.isPending || linkSelCount === 0}
+                      data-testid="button-apply-clickup"
+                      className={`flex items-center gap-2 px-5 py-3 bg-foreground text-background border-2 border-foreground ${monoLabel} shadow-[4px_4px_0px_hsl(var(--accent))] hover:bg-accent hover:border-accent active:translate-x-1 active:translate-y-1 active:shadow-none transition-all disabled:opacity-50 disabled:pointer-events-none`}
+                    >
+                      {clickupApplyMut.isPending ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Check className="w-4 h-4" />
+                      )}
+                      Koppel selectie ({linkSelCount})
+                    </button>
+                    <button
+                      onClick={() => clickupQuery.refetch()}
+                      disabled={clickupQuery.isFetching}
+                      className={`${monoLabel} text-muted-foreground hover:text-foreground underline underline-offset-4`}
+                    >
+                      Opnieuw synchroniseren
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          ) : null}
+        </div>
+      )}
     </div>
+  );
+}
+
+function LinkRow({
+  link,
+  checked,
+  onToggle,
+}: {
+  link: ClickUpSyncLink;
+  checked: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <label
+      className="flex items-start gap-3 border border-foreground/15 p-3 cursor-pointer hover:bg-background"
+      data-testid={`clickup-link-${link.clientId}`}
+    >
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={onToggle}
+        className="mt-1 w-4 h-4 accent-[hsl(var(--accent))]"
+      />
+      <span className="flex-1 min-w-0">
+        <span className="font-['Playfair_Display'] font-bold">
+          {link.clientName}
+        </span>
+        <span className="mx-2 text-muted-foreground">↔</span>
+        <span className="font-['Playfair_Display'] font-bold">
+          {link.companyName}
+        </span>
+        <span className="ml-2 font-['Space_Mono'] text-[10px] uppercase tracking-widest text-muted-foreground">
+          {link.matchBy}
+        </span>
+        <span className="block text-xs text-muted-foreground mt-0.5 font-['Inter']">
+          {link.reason}
+        </span>
+      </span>
+    </label>
+  );
+}
+
+function AlreadyLinkedRow({ linked }: { linked: ClickUpAlreadyLinked }) {
+  return (
+    <div
+      className="flex items-center gap-2 text-sm border border-foreground/10 px-3 py-2"
+      data-testid={`clickup-linked-${linked.clientId}`}
+    >
+      <Link2 className="w-3.5 h-3.5 text-accent shrink-0" />
+      <span className="font-['Playfair_Display'] font-bold">
+        {linked.clientName}
+      </span>
+      <span className="text-muted-foreground">
+        {linked.companyName ? (
+          <>→ {linked.companyName}</>
+        ) : (
+          <span className="text-destructive">
+            → bedrijf niet meer in ClickUp
+          </span>
+        )}
+      </span>
+    </div>
+  );
+}
+
+function UnmatchedRow({
+  name,
+  sub,
+}: {
+  name: string;
+  sub: string | null | undefined;
+}) {
+  return (
+    <li className="text-sm border border-foreground/10 px-3 py-2">
+      <span className="font-['Playfair_Display'] font-bold">{name}</span>
+      {sub && (
+        <span className="block text-xs text-muted-foreground font-['Inter'] break-all">
+          {sub}
+        </span>
+      )}
+    </li>
   );
 }
 

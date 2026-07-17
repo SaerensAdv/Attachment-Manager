@@ -29,6 +29,9 @@ import type {
   BacklinkList,
   BeginBrowserLoginParams,
   BriefingSuggestResult,
+  ClickUpApplyInput,
+  ClickUpApplyResult,
+  ClickUpSyncResult,
   Client,
   ClientCoverageList,
   ClientDiscovery,
@@ -3477,6 +3480,154 @@ export const useApplyClientsDiscovery = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getApplyClientsDiscoveryMutationOptions(options));
+    }
+
+export const getGetClientsClickupSyncUrl = () => {
+
+
+
+
+  return `/api/clients/clickup/sync`
+}
+
+/**
+ * @summary Match app clients to ClickUp companies (link-only review, read-only)
+ */
+export const getClientsClickupSync = async ( options?: RequestInit): Promise<ClickUpSyncResult> => {
+
+  return customFetch<ClickUpSyncResult>(getGetClientsClickupSyncUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetClientsClickupSyncQueryKey = () => {
+    return [
+    `/api/clients/clickup/sync`
+    ] as const;
+    }
+
+
+export const getGetClientsClickupSyncQueryOptions = <TData = Awaited<ReturnType<typeof getClientsClickupSync>>, TError = ErrorType<ErrorResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getClientsClickupSync>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetClientsClickupSyncQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getClientsClickupSync>>> = ({ signal }) => getClientsClickupSync({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getClientsClickupSync>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetClientsClickupSyncQueryResult = NonNullable<Awaited<ReturnType<typeof getClientsClickupSync>>>
+export type GetClientsClickupSyncQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary Match app clients to ClickUp companies (link-only review, read-only)
+ */
+
+export function useGetClientsClickupSync<TData = Awaited<ReturnType<typeof getClientsClickupSync>>, TError = ErrorType<ErrorResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getClientsClickupSync>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetClientsClickupSyncQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getApplyClientsClickupLinksUrl = () => {
+
+
+
+
+  return `/api/clients/clickup/apply`
+}
+
+/**
+ * @summary Store confirmed ClickUp company links on app clients (never overwrite)
+ */
+export const applyClientsClickupLinks = async (clickUpApplyInput: ClickUpApplyInput, options?: RequestInit): Promise<ClickUpApplyResult> => {
+
+  return customFetch<ClickUpApplyResult>(getApplyClientsClickupLinksUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      clickUpApplyInput,)
+  }
+);}
+
+
+
+
+export const getApplyClientsClickupLinksMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof applyClientsClickupLinks>>, TError,{data: BodyType<ClickUpApplyInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof applyClientsClickupLinks>>, TError,{data: BodyType<ClickUpApplyInput>}, TContext> => {
+
+const mutationKey = ['applyClientsClickupLinks'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof applyClientsClickupLinks>>, {data: BodyType<ClickUpApplyInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  applyClientsClickupLinks(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ApplyClientsClickupLinksMutationResult = NonNullable<Awaited<ReturnType<typeof applyClientsClickupLinks>>>
+    export type ApplyClientsClickupLinksMutationBody = BodyType<ClickUpApplyInput>
+    export type ApplyClientsClickupLinksMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Store confirmed ClickUp company links on app clients (never overwrite)
+ */
+export const useApplyClientsClickupLinks = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof applyClientsClickupLinks>>, TError,{data: BodyType<ClickUpApplyInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof applyClientsClickupLinks>>,
+        TError,
+        {data: BodyType<ClickUpApplyInput>},
+        TContext
+      > => {
+      return useMutation(getApplyClientsClickupLinksMutationOptions(options));
     }
 
 export const getClientRefreshAllUrl = (id: number,) => {

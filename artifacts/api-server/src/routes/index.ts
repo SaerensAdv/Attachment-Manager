@@ -21,6 +21,7 @@ import partnerKeysRouter from "./partner-keys";
 import visualsRouter from "./visuals";
 import shoppingNegativesRouter from "./shopping-negatives";
 import clickupPushRouter from "./clickup-push";
+import graphRouter from "./graph";
 
 const router: IRouter = Router();
 
@@ -46,5 +47,6 @@ router.use(partnerKeysRouter);
 router.use(visualsRouter);
 router.use(shoppingNegativesRouter);
 router.use(clickupPushRouter);
+router.use(graphRouter);
 
 export default router;

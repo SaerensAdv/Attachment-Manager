@@ -3026,3 +3026,146 @@ export const ApplyShoppingNegativesResponse = zod.object({
 })
 
 
+/**
+ * Returns a light, capped slice of the active Workspace Graph snapshot (≤~250 nodes / ≤~500 edges, active work only). Served from the in-memory active snapshot — the browser never talks to ClickUp directly.
+
+ * @summary Get the Workspace Graph overview slice
+ */
+export const GetGraphOverviewResponse = zod.object({
+  "nodes": zod.array(zod.object({
+  "id": zod.string().describe('Namespaced id `{source}:{sourceType}:{rawId}` (collision-proof across sources).'),
+  "source": zod.enum(['clickup', 'github', 'replit']),
+  "sourceType": zod.enum(['workspace', 'space', 'folder', 'list', 'task', 'doc', 'page', 'agent', 'workflow', 'sop', 'client', 'integration', 'run']),
+  "label": zod.string(),
+  "url": zod.string().optional().describe('Deep link to the canonical ClickUp\/GitHub object, when one exists.'),
+  "parentId": zod.string().optional().describe('Structural parent id (contains hierarchy), when known.'),
+  "status": zod.string().optional(),
+  "updatedAt": zod.string().optional(),
+  "metadata": zod.record(zod.string(), zod.unknown()).describe('Restricted, content-free bag (allowlisted keys only).')
+}).describe('One node in the normalized Workspace Graph (Fase 3.5 §7.3). Content-free by construction: only ids, labels (object titles), status, url and updatedAt — never descriptions, custom-field values or secrets.\n')),
+  "edges": zod.array(zod.object({
+  "id": zod.string(),
+  "sourceId": zod.string(),
+  "targetId": zod.string(),
+  "relation": zod.enum(['contains', 'references', 'assigned_to', 'governed_by', 'executes', 'reads_from', 'writes_to', 'generated', 'approved_by', 'related_to']),
+  "direction": zod.enum(['directed', 'undirected']),
+  "weight": zod.number().optional(),
+  "active": zod.boolean().optional().describe('Live-flow health — false marks a broken\/failed data stream.')
+}).describe('A provable relationship between two nodes (never LLM-invented — §7.4).')),
+  "meta": zod.object({
+  "status": zod.string().describe('active | none (no snapshot yet). building state is reported via `syncing`.'),
+  "nodeCount": zod.number(),
+  "edgeCount": zod.number(),
+  "contentHash": zod.string().nullish(),
+  "sourceUpdatedAt": zod.string().nullish(),
+  "lastSyncedAt": zod.string().nullish(),
+  "error": zod.string().nullish(),
+  "syncing": zod.boolean().describe('True while a background sync holds the lock.')
+}).describe('Cache metadata for the active snapshot (freshness + size + sync state).'),
+  "truncated": zod.boolean().describe('True when nodes\/edges were dropped to fit the overview budget.'),
+  "totalNodes": zod.number(),
+  "totalEdges": zod.number()
+}).describe('A light, capped overview slice (≤~250 nodes \/ ≤~500 edges — §7.7).')
+
+
+/**
+ * Returns a node plus its direct (1-hop) neighbours and the connecting edges, for progressive disclosure of the graph.
+
+ * @summary Get a node's direct neighbourhood
+ */
+export const GetGraphNeighborsParams = zod.object({
+  "nodeId": zod.coerce.string().describe('The namespaced node id (e.g. clickup:list:123).')
+})
+
+export const GetGraphNeighborsResponse = zod.object({
+  "center": zod.string().describe('The requested node id.'),
+  "nodes": zod.array(zod.object({
+  "id": zod.string().describe('Namespaced id `{source}:{sourceType}:{rawId}` (collision-proof across sources).'),
+  "source": zod.enum(['clickup', 'github', 'replit']),
+  "sourceType": zod.enum(['workspace', 'space', 'folder', 'list', 'task', 'doc', 'page', 'agent', 'workflow', 'sop', 'client', 'integration', 'run']),
+  "label": zod.string(),
+  "url": zod.string().optional().describe('Deep link to the canonical ClickUp\/GitHub object, when one exists.'),
+  "parentId": zod.string().optional().describe('Structural parent id (contains hierarchy), when known.'),
+  "status": zod.string().optional(),
+  "updatedAt": zod.string().optional(),
+  "metadata": zod.record(zod.string(), zod.unknown()).describe('Restricted, content-free bag (allowlisted keys only).')
+}).describe('One node in the normalized Workspace Graph (Fase 3.5 §7.3). Content-free by construction: only ids, labels (object titles), status, url and updatedAt — never descriptions, custom-field values or secrets.\n')),
+  "edges": zod.array(zod.object({
+  "id": zod.string(),
+  "sourceId": zod.string(),
+  "targetId": zod.string(),
+  "relation": zod.enum(['contains', 'references', 'assigned_to', 'governed_by', 'executes', 'reads_from', 'writes_to', 'generated', 'approved_by', 'related_to']),
+  "direction": zod.enum(['directed', 'undirected']),
+  "weight": zod.number().optional(),
+  "active": zod.boolean().optional().describe('Live-flow health — false marks a broken\/failed data stream.')
+}).describe('A provable relationship between two nodes (never LLM-invented — §7.4).'))
+}).describe('A node plus its direct (1-hop) neighbourhood for progressive disclosure.')
+
+
+/**
+ * Case-insensitive search over every node in the active snapshot (including nodes not currently expanded in the overview), by label and id.
+
+ * @summary Search the whole graph for nodes
+ */
+export const SearchGraphQueryParams = zod.object({
+  "q": zod.coerce.string().describe('The search query.'),
+  "limit": zod.coerce.number().optional().describe('Maximum results to return (default 30, max 100).')
+})
+
+export const SearchGraphResponse = zod.object({
+  "results": zod.array(zod.object({
+  "id": zod.string().describe('Namespaced id `{source}:{sourceType}:{rawId}` (collision-proof across sources).'),
+  "source": zod.enum(['clickup', 'github', 'replit']),
+  "sourceType": zod.enum(['workspace', 'space', 'folder', 'list', 'task', 'doc', 'page', 'agent', 'workflow', 'sop', 'client', 'integration', 'run']),
+  "label": zod.string(),
+  "url": zod.string().optional().describe('Deep link to the canonical ClickUp\/GitHub object, when one exists.'),
+  "parentId": zod.string().optional().describe('Structural parent id (contains hierarchy), when known.'),
+  "status": zod.string().optional(),
+  "updatedAt": zod.string().optional(),
+  "metadata": zod.record(zod.string(), zod.unknown()).describe('Restricted, content-free bag (allowlisted keys only).')
+}).describe('One node in the normalized Workspace Graph (Fase 3.5 §7.3). Content-free by construction: only ids, labels (object titles), status, url and updatedAt — never descriptions, custom-field values or secrets.\n')),
+  "total": zod.number().describe('Total matches before the result cap.')
+})
+
+
+/**
+ * Crawls the read-only sources (ClickUp structure + Docs, the repo agent/ workflow/SOP graph, app clients and live push flows), rebuilds the normalized graph and atomically activates the new snapshot. Owner-gated. A partial/failed crawl leaves the previous snapshot untouched.
+
+ * @summary Rebuild the Workspace Graph snapshot (owner-gated)
+ */
+export const SyncGraphResponse = zod.object({
+  "ok": zod.boolean(),
+  "changed": zod.boolean().describe('Whether the active graph actually changed (false = no-op flip).'),
+  "meta": zod.object({
+  "status": zod.string().describe('active | none (no snapshot yet). building state is reported via `syncing`.'),
+  "nodeCount": zod.number(),
+  "edgeCount": zod.number(),
+  "contentHash": zod.string().nullish(),
+  "sourceUpdatedAt": zod.string().nullish(),
+  "lastSyncedAt": zod.string().nullish(),
+  "error": zod.string().nullish(),
+  "syncing": zod.boolean().describe('True while a background sync holds the lock.')
+}).describe('Cache metadata for the active snapshot (freshness + size + sync state).'),
+  "note": zod.string().nullish().describe('Non-sensitive note, e.g. a partial-source warning.')
+})
+
+
+/**
+ * Returns the active snapshot's freshness metadata (last_synced_at, source_updated_at, content hash, sizes) and whether a sync is running.
+
+ * @summary Get the graph cache freshness + sync state
+ */
+export const GetGraphSyncStatusResponse = zod.object({
+  "meta": zod.object({
+  "status": zod.string().describe('active | none (no snapshot yet). building state is reported via `syncing`.'),
+  "nodeCount": zod.number(),
+  "edgeCount": zod.number(),
+  "contentHash": zod.string().nullish(),
+  "sourceUpdatedAt": zod.string().nullish(),
+  "lastSyncedAt": zod.string().nullish(),
+  "error": zod.string().nullish(),
+  "syncing": zod.boolean().describe('True while a background sync holds the lock.')
+}).describe('Cache metadata for the active snapshot (freshness + size + sync state).')
+})
+
+

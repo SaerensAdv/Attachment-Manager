@@ -1722,6 +1722,162 @@ export interface ShoppingApplyResult {
   error?: string | null;
 }
 
+export type GraphNodeSource = typeof GraphNodeSource[keyof typeof GraphNodeSource];
+
+
+export const GraphNodeSource = {
+  clickup: 'clickup',
+  github: 'github',
+  replit: 'replit',
+} as const;
+
+export type GraphNodeSourceType = typeof GraphNodeSourceType[keyof typeof GraphNodeSourceType];
+
+
+export const GraphNodeSourceType = {
+  workspace: 'workspace',
+  space: 'space',
+  folder: 'folder',
+  list: 'list',
+  task: 'task',
+  doc: 'doc',
+  page: 'page',
+  agent: 'agent',
+  workflow: 'workflow',
+  sop: 'sop',
+  client: 'client',
+  integration: 'integration',
+  run: 'run',
+} as const;
+
+/**
+ * Restricted, content-free bag (allowlisted keys only).
+ */
+export type GraphNodeMetadata = { [key: string]: unknown };
+
+/**
+ * One node in the normalized Workspace Graph (Fase 3.5 §7.3). Content-free by construction: only ids, labels (object titles), status, url and updatedAt — never descriptions, custom-field values or secrets.
+
+ */
+export interface GraphNode {
+  /** Namespaced id `{source}:{sourceType}:{rawId}` (collision-proof across sources). */
+  id: string;
+  source: GraphNodeSource;
+  sourceType: GraphNodeSourceType;
+  label: string;
+  /** Deep link to the canonical ClickUp/GitHub object, when one exists. */
+  url?: string;
+  /** Structural parent id (contains hierarchy), when known. */
+  parentId?: string;
+  status?: string;
+  updatedAt?: string;
+  /** Restricted, content-free bag (allowlisted keys only). */
+  metadata: GraphNodeMetadata;
+}
+
+export type GraphEdgeRelation = typeof GraphEdgeRelation[keyof typeof GraphEdgeRelation];
+
+
+export const GraphEdgeRelation = {
+  contains: 'contains',
+  references: 'references',
+  assigned_to: 'assigned_to',
+  governed_by: 'governed_by',
+  executes: 'executes',
+  reads_from: 'reads_from',
+  writes_to: 'writes_to',
+  generated: 'generated',
+  approved_by: 'approved_by',
+  related_to: 'related_to',
+} as const;
+
+export type GraphEdgeDirection = typeof GraphEdgeDirection[keyof typeof GraphEdgeDirection];
+
+
+export const GraphEdgeDirection = {
+  directed: 'directed',
+  undirected: 'undirected',
+} as const;
+
+/**
+ * A provable relationship between two nodes (never LLM-invented — §7.4).
+ */
+export interface GraphEdge {
+  id: string;
+  sourceId: string;
+  targetId: string;
+  relation: GraphEdgeRelation;
+  direction: GraphEdgeDirection;
+  weight?: number;
+  /** Live-flow health — false marks a broken/failed data stream. */
+  active?: boolean;
+}
+
+/**
+ * Cache metadata for the active snapshot (freshness + size + sync state).
+ */
+export interface GraphMeta {
+  /** active | none (no snapshot yet). building state is reported via `syncing`. */
+  status: string;
+  nodeCount: number;
+  edgeCount: number;
+  /** @nullable */
+  contentHash?: string | null;
+  /** @nullable */
+  sourceUpdatedAt?: string | null;
+  /** @nullable */
+  lastSyncedAt?: string | null;
+  /** @nullable */
+  error?: string | null;
+  /** True while a background sync holds the lock. */
+  syncing: boolean;
+}
+
+/**
+ * A light, capped overview slice (≤~250 nodes / ≤~500 edges — §7.7).
+ */
+export interface GraphOverview {
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+  meta: GraphMeta;
+  /** True when nodes/edges were dropped to fit the overview budget. */
+  truncated: boolean;
+  totalNodes: number;
+  totalEdges: number;
+}
+
+/**
+ * A node plus its direct (1-hop) neighbourhood for progressive disclosure.
+ */
+export interface GraphNeighbors {
+  /** The requested node id. */
+  center: string;
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+}
+
+export interface GraphSearchResults {
+  results: GraphNode[];
+  /** Total matches before the result cap. */
+  total: number;
+}
+
+export interface GraphSyncStatus {
+  meta: GraphMeta;
+}
+
+export interface GraphSyncResult {
+  ok: boolean;
+  /** Whether the active graph actually changed (false = no-op flip). */
+  changed: boolean;
+  meta: GraphMeta;
+  /**
+     * Non-sensitive note, e.g. a partial-source warning.
+     * @nullable
+     */
+  note?: string | null;
+}
+
 /**
  * Opaque session token — `Bearer <sid>`.
  */
@@ -1770,5 +1926,16 @@ export type GetAlertsParams = {
  * When true, only open (unresolved) alerts are returned.
  */
 unresolvedOnly?: boolean;
+};
+
+export type SearchGraphParams = {
+/**
+ * The search query.
+ */
+q: string;
+/**
+ * Maximum results to return (default 30, max 100).
+ */
+limit?: number;
 };
 

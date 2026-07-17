@@ -2465,6 +2465,134 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ShoppingApplyResult"
+  /graph/overview:
+    get:
+      operationId: getGraphOverview
+      tags: [graph]
+      summary: Get the Workspace Graph overview slice
+      description: >
+        Returns a light, capped slice of the active Workspace Graph snapshot
+        (≤~250 nodes / ≤~500 edges, active work only). Served from the in-memory
+        active snapshot — the browser never talks to ClickUp directly.
+      responses:
+        "200":
+          description: The overview slice
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GraphOverview"
+  /graph/neighbors/{nodeId}:
+    get:
+      operationId: getGraphNeighbors
+      tags: [graph]
+      summary: Get a node's direct neighbourhood
+      description: >
+        Returns a node plus its direct (1-hop) neighbours and the connecting
+        edges, for progressive disclosure of the graph.
+      parameters:
+        - name: nodeId
+          in: path
+          required: true
+          description: The namespaced node id (e.g. clickup:list:123).
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The node and its 1-hop neighbourhood
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GraphNeighbors"
+        "404":
+          description: Node not found in the active snapshot
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /graph/search:
+    get:
+      operationId: searchGraph
+      tags: [graph]
+      summary: Search the whole graph for nodes
+      description: >
+        Case-insensitive search over every node in the active snapshot (including
+        nodes not currently expanded in the overview), by label and id.
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: The search query.
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          description: Maximum results to return (default 30, max 100).
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Matching nodes
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GraphSearchResults"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /graph/sync:
+    post:
+      operationId: syncGraph
+      tags: [graph]
+      summary: Rebuild the Workspace Graph snapshot (owner-gated)
+      description: >
+        Crawls the read-only sources (ClickUp structure + Docs, the repo agent/
+        workflow/SOP graph, app clients and live push flows), rebuilds the
+        normalized graph and atomically activates the new snapshot. Owner-gated.
+        A partial/failed crawl leaves the previous snapshot untouched.
+      responses:
+        "200":
+          description: The sync result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GraphSyncResult"
+        "403":
+          description: Not the account owner
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: A sync is already in progress
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "502":
+          description: The source crawl failed (previous snapshot preserved)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GraphSyncResult"
+  /graph/sync-status:
+    get:
+      operationId: getGraphSyncStatus
+      tags: [graph]
+      summary: Get the graph cache freshness + sync state
+      description: >
+        Returns the active snapshot's freshness metadata (last_synced_at,
+        source_updated_at, content hash, sizes) and whether a sync is running.
+      responses:
+        "200":
+          description: The sync status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GraphSyncStatus"
 components:
   securitySchemes:
     PartnerApiKey:
@@ -5225,3 +5353,152 @@ components:
             $ref: "#/components/schemas/ShoppingApplyOutcome"
         error:
           type: ["string", "null"]
+    GraphNode:
+      type: object
+      description: >
+        One node in the normalized Workspace Graph (Fase 3.5 §7.3). Content-free
+        by construction: only ids, labels (object titles), status, url and
+        updatedAt — never descriptions, custom-field values or secrets.
+      required: [id, source, sourceType, label, metadata]
+      properties:
+        id:
+          type: string
+          description: Namespaced id `{source}:{sourceType}:{rawId}` (collision-proof across sources).
+        source:
+          type: string
+          enum: [clickup, github, replit]
+        sourceType:
+          type: string
+          enum:
+            [workspace, space, folder, list, task, doc, page, agent, workflow, sop, client, integration, run]
+        label:
+          type: string
+        url:
+          type: string
+          description: Deep link to the canonical ClickUp/GitHub object, when one exists.
+        parentId:
+          type: string
+          description: Structural parent id (contains hierarchy), when known.
+        status:
+          type: string
+        updatedAt:
+          type: string
+        metadata:
+          type: object
+          additionalProperties: true
+          description: Restricted, content-free bag (allowlisted keys only).
+    GraphEdge:
+      type: object
+      description: A provable relationship between two nodes (never LLM-invented — §7.4).
+      required: [id, sourceId, targetId, relation, direction]
+      properties:
+        id:
+          type: string
+        sourceId:
+          type: string
+        targetId:
+          type: string
+        relation:
+          type: string
+          enum:
+            [contains, references, assigned_to, governed_by, executes, reads_from, writes_to, generated, approved_by, related_to]
+        direction:
+          type: string
+          enum: [directed, undirected]
+        weight:
+          type: number
+        active:
+          type: boolean
+          description: Live-flow health — false marks a broken/failed data stream.
+    GraphMeta:
+      type: object
+      description: Cache metadata for the active snapshot (freshness + size + sync state).
+      required: [status, nodeCount, edgeCount, syncing]
+      properties:
+        status:
+          type: string
+          description: active | none (no snapshot yet). building state is reported via `syncing`.
+        nodeCount:
+          type: integer
+        edgeCount:
+          type: integer
+        contentHash:
+          type: ["string", "null"]
+        sourceUpdatedAt:
+          type: ["string", "null"]
+        lastSyncedAt:
+          type: ["string", "null"]
+        error:
+          type: ["string", "null"]
+        syncing:
+          type: boolean
+          description: True while a background sync holds the lock.
+    GraphOverview:
+      type: object
+      description: A light, capped overview slice (≤~250 nodes / ≤~500 edges — §7.7).
+      required: [nodes, edges, meta, truncated, totalNodes, totalEdges]
+      properties:
+        nodes:
+          type: array
+          items:
+            $ref: "#/components/schemas/GraphNode"
+        edges:
+          type: array
+          items:
+            $ref: "#/components/schemas/GraphEdge"
+        meta:
+          $ref: "#/components/schemas/GraphMeta"
+        truncated:
+          type: boolean
+          description: True when nodes/edges were dropped to fit the overview budget.
+        totalNodes:
+          type: integer
+        totalEdges:
+          type: integer
+    GraphNeighbors:
+      type: object
+      description: A node plus its direct (1-hop) neighbourhood for progressive disclosure.
+      required: [center, nodes, edges]
+      properties:
+        center:
+          type: string
+          description: The requested node id.
+        nodes:
+          type: array
+          items:
+            $ref: "#/components/schemas/GraphNode"
+        edges:
+          type: array
+          items:
+            $ref: "#/components/schemas/GraphEdge"
+    GraphSearchResults:
+      type: object
+      required: [results, total]
+      properties:
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/GraphNode"
+        total:
+          type: integer
+          description: Total matches before the result cap.
+    GraphSyncStatus:
+      type: object
+      required: [meta]
+      properties:
+        meta:
+          $ref: "#/components/schemas/GraphMeta"
+    GraphSyncResult:
+      type: object
+      required: [ok, changed, meta]
+      properties:
+        ok:
+          type: boolean
+        changed:
+          type: boolean
+          description: Whether the active graph actually changed (false = no-op flip).
+        meta:
+          $ref: "#/components/schemas/GraphMeta"
+        note:
+          type: ["string", "null"]
+          description: Non-sensitive note, e.g. a partial-source warning.

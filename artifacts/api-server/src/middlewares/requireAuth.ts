@@ -41,7 +41,7 @@ const PUBLIC_PATHS = new Set<string>([
   "/crawl-intake",
 ]);
 
-function isOwner(req: Request): boolean {
+export function isOwner(req: Request): boolean {
   const owner = (process.env.OWNER_EMAIL ?? "").trim().toLowerCase();
   // No owner configured: any authenticated Replit user is allowed.
   if (!owner) return true;

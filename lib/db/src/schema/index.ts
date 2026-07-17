@@ -23,6 +23,7 @@ export * from "./client-groups";
 export * from "./clients";
 export * from "./email-threads";
 export * from "./generations";
+export * from "./graph-snapshots";
 export * from "./invoices";
 export * from "./monitored-terms";
 export * from "./partner-keys";

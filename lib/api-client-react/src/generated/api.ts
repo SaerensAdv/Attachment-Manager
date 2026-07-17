@@ -68,6 +68,11 @@ import type {
   GetDocBacklinksParams,
   GetDocContentParams,
   GetGenerationsParams,
+  GraphNeighbors,
+  GraphOverview,
+  GraphSearchResults,
+  GraphSyncResult,
+  GraphSyncStatus,
   HandleBrowserLoginCallbackParams,
   HealthStatus,
   ImprovementProposal,
@@ -91,6 +96,7 @@ import type {
   ScheduleInput,
   ScheduleList,
   ScheduleUpdate,
+  SearchGraphParams,
   ShoppingApplyInput,
   ShoppingApplyResult,
   ShoppingDecisionsResult,
@@ -6644,4 +6650,399 @@ export const useApplyShoppingNegatives = <TError = ErrorType<ErrorResponse | Sho
       > => {
       return useMutation(getApplyShoppingNegativesMutationOptions(options));
     }
+
+export const getGetGraphOverviewUrl = () => {
+
+
+
+
+  return `/api/graph/overview`
+}
+
+/**
+ * Returns a light, capped slice of the active Workspace Graph snapshot (≤~250 nodes / ≤~500 edges, active work only). Served from the in-memory active snapshot — the browser never talks to ClickUp directly.
+
+ * @summary Get the Workspace Graph overview slice
+ */
+export const getGraphOverview = async ( options?: RequestInit): Promise<GraphOverview> => {
+
+  return customFetch<GraphOverview>(getGetGraphOverviewUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetGraphOverviewQueryKey = () => {
+    return [
+    `/api/graph/overview`
+    ] as const;
+    }
+
+
+export const getGetGraphOverviewQueryOptions = <TData = Awaited<ReturnType<typeof getGraphOverview>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGraphOverview>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetGraphOverviewQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getGraphOverview>>> = ({ signal }) => getGraphOverview({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getGraphOverview>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetGraphOverviewQueryResult = NonNullable<Awaited<ReturnType<typeof getGraphOverview>>>
+export type GetGraphOverviewQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get the Workspace Graph overview slice
+ */
+
+export function useGetGraphOverview<TData = Awaited<ReturnType<typeof getGraphOverview>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGraphOverview>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetGraphOverviewQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetGraphNeighborsUrl = (nodeId: string,) => {
+
+
+
+
+  return `/api/graph/neighbors/${nodeId}`
+}
+
+/**
+ * Returns a node plus its direct (1-hop) neighbours and the connecting edges, for progressive disclosure of the graph.
+
+ * @summary Get a node's direct neighbourhood
+ */
+export const getGraphNeighbors = async (nodeId: string, options?: RequestInit): Promise<GraphNeighbors> => {
+
+  return customFetch<GraphNeighbors>(getGetGraphNeighborsUrl(nodeId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetGraphNeighborsQueryKey = (nodeId: string,) => {
+    return [
+    `/api/graph/neighbors/${nodeId}`
+    ] as const;
+    }
+
+
+export const getGetGraphNeighborsQueryOptions = <TData = Awaited<ReturnType<typeof getGraphNeighbors>>, TError = ErrorType<ErrorResponse>>(nodeId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGraphNeighbors>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetGraphNeighborsQueryKey(nodeId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getGraphNeighbors>>> = ({ signal }) => getGraphNeighbors(nodeId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(nodeId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getGraphNeighbors>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetGraphNeighborsQueryResult = NonNullable<Awaited<ReturnType<typeof getGraphNeighbors>>>
+export type GetGraphNeighborsQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary Get a node's direct neighbourhood
+ */
+
+export function useGetGraphNeighbors<TData = Awaited<ReturnType<typeof getGraphNeighbors>>, TError = ErrorType<ErrorResponse>>(
+ nodeId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGraphNeighbors>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetGraphNeighborsQueryOptions(nodeId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getSearchGraphUrl = (params: SearchGraphParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/graph/search?${stringifiedParams}` : `/api/graph/search`
+}
+
+/**
+ * Case-insensitive search over every node in the active snapshot (including nodes not currently expanded in the overview), by label and id.
+
+ * @summary Search the whole graph for nodes
+ */
+export const searchGraph = async (params: SearchGraphParams, options?: RequestInit): Promise<GraphSearchResults> => {
+
+  return customFetch<GraphSearchResults>(getSearchGraphUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getSearchGraphQueryKey = (params?: SearchGraphParams,) => {
+    return [
+    `/api/graph/search`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getSearchGraphQueryOptions = <TData = Awaited<ReturnType<typeof searchGraph>>, TError = ErrorType<ErrorResponse>>(params: SearchGraphParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof searchGraph>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getSearchGraphQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof searchGraph>>> = ({ signal }) => searchGraph(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof searchGraph>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type SearchGraphQueryResult = NonNullable<Awaited<ReturnType<typeof searchGraph>>>
+export type SearchGraphQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary Search the whole graph for nodes
+ */
+
+export function useSearchGraph<TData = Awaited<ReturnType<typeof searchGraph>>, TError = ErrorType<ErrorResponse>>(
+ params: SearchGraphParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof searchGraph>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getSearchGraphQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getSyncGraphUrl = () => {
+
+
+
+
+  return `/api/graph/sync`
+}
+
+/**
+ * Crawls the read-only sources (ClickUp structure + Docs, the repo agent/ workflow/SOP graph, app clients and live push flows), rebuilds the normalized graph and atomically activates the new snapshot. Owner-gated. A partial/failed crawl leaves the previous snapshot untouched.
+
+ * @summary Rebuild the Workspace Graph snapshot (owner-gated)
+ */
+export const syncGraph = async ( options?: RequestInit): Promise<GraphSyncResult> => {
+
+  return customFetch<GraphSyncResult>(getSyncGraphUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getSyncGraphMutationOptions = <TError = ErrorType<ErrorResponse | GraphSyncResult>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof syncGraph>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof syncGraph>>, TError,void, TContext> => {
+
+const mutationKey = ['syncGraph'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof syncGraph>>, void> = () => {
+
+
+          return  syncGraph(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SyncGraphMutationResult = NonNullable<Awaited<ReturnType<typeof syncGraph>>>
+
+    export type SyncGraphMutationError = ErrorType<ErrorResponse | GraphSyncResult>
+
+    /**
+ * @summary Rebuild the Workspace Graph snapshot (owner-gated)
+ */
+export const useSyncGraph = <TError = ErrorType<ErrorResponse | GraphSyncResult>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof syncGraph>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof syncGraph>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getSyncGraphMutationOptions(options));
+    }
+
+export const getGetGraphSyncStatusUrl = () => {
+
+
+
+
+  return `/api/graph/sync-status`
+}
+
+/**
+ * Returns the active snapshot's freshness metadata (last_synced_at, source_updated_at, content hash, sizes) and whether a sync is running.
+
+ * @summary Get the graph cache freshness + sync state
+ */
+export const getGraphSyncStatus = async ( options?: RequestInit): Promise<GraphSyncStatus> => {
+
+  return customFetch<GraphSyncStatus>(getGetGraphSyncStatusUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetGraphSyncStatusQueryKey = () => {
+    return [
+    `/api/graph/sync-status`
+    ] as const;
+    }
+
+
+export const getGetGraphSyncStatusQueryOptions = <TData = Awaited<ReturnType<typeof getGraphSyncStatus>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGraphSyncStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetGraphSyncStatusQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getGraphSyncStatus>>> = ({ signal }) => getGraphSyncStatus({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getGraphSyncStatus>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetGraphSyncStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getGraphSyncStatus>>>
+export type GetGraphSyncStatusQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get the graph cache freshness + sync state
+ */
+
+export function useGetGraphSyncStatus<TData = Awaited<ReturnType<typeof getGraphSyncStatus>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGraphSyncStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetGraphSyncStatusQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 

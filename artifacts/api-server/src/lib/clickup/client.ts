@@ -94,6 +94,8 @@ export interface ClickUpRequestOptions {
   /** JSON body; omit for GET. */
   body?: unknown;
   query?: Record<string, string | number | boolean | undefined>;
+  /** Override the API base (e.g. the v3 base for Docs). Defaults to the v2 base. */
+  apiBase?: string;
   timeoutMs?: number;
   maxRetries?: number;
 }
@@ -101,8 +103,9 @@ export interface ClickUpRequestOptions {
 function buildUrl(
   path: string,
   query?: ClickUpRequestOptions["query"],
+  apiBase: string = API_BASE,
 ): string {
-  const url = new URL(`${API_BASE}${path}`);
+  const url = new URL(`${apiBase}${path}`);
   if (query) {
     for (const [k, v] of Object.entries(query)) {
       if (v !== undefined) url.searchParams.set(k, String(v));
@@ -215,7 +218,7 @@ export async function clickUpRequest<T = unknown>(
   if ("error" in auth) return { ok: false, error: auth.error };
 
   const method = (opts.method ?? (opts.body ? "POST" : "GET")).toUpperCase();
-  const url = buildUrl(path, opts.query);
+  const url = buildUrl(path, opts.query, opts.apiBase);
   const bodyJson = opts.body !== undefined ? JSON.stringify(opts.body) : undefined;
 
   return sendWithRetry<T>(

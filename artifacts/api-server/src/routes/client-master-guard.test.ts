@@ -1,0 +1,8 @@
+import { describe,expect,it,vi } from "vitest";
+import type { Request,Response,NextFunction } from "express";
+const selectResult=vi.hoisted(()=>({rows:[] as unknown[]}));
+vi.mock("@workspace/db",()=>{const chain:any={};for(const m of ["select","from","where"])chain[m]=()=>chain;chain.then=(resolve:(v:unknown[])=>unknown)=>Promise.resolve(selectResult.rows).then(resolve);return{db:chain,clientsTable:{id:"id"}}});
+vi.mock("drizzle-orm",()=>({eq:vi.fn()}));
+import { guardClickUpOwnedClientFields } from "./client-master-guard";
+function response(){const res:any={statusCode:200,body:null};res.status=(n:number)=>{res.statusCode=n;return res};res.json=(b:unknown)=>{res.body=b;return res};return res as Response&{statusCode:number;body:any}}
+describe("ClickUp ownership guard",()=>{it("rejects changing linked identity fields",async()=>{selectResult.rows=[{id:1,name:"Master",website:"https://master.be",currentState:"active",clickupCompanyId:"task1"}];const req={params:{id:"1"},body:{name:"Local override"}} as unknown as Request,res=response(),next=vi.fn() as NextFunction;await guardClickUpOwnedClientFields(req,res,next);expect(res.statusCode).toBe(409);expect(res.body.fields).toEqual(["name"]);expect(next).not.toHaveBeenCalled()});it("allows technical fields on linked clients",async()=>{selectResult.rows=[{id:1,name:"Master",website:null,currentState:"active",clickupCompanyId:"task1"}];const req={params:{id:"1"},body:{name:"Master",googleAdsCustomerId:"1234567890"}} as unknown as Request,res=response(),next=vi.fn() as NextFunction;await guardClickUpOwnedClientFields(req,res,next);expect(next).toHaveBeenCalled()})});

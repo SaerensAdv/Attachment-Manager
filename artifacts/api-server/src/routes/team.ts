@@ -1,36 +1,70 @@
 import { Router, type IRouter } from "express";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import sharp from "sharp";
 import type { Generation } from "@workspace/db";
-import {
-  GetTeamResponse,
-  UpdateAgentPersonaBody,
-  UploadAgentPortraitBody,
-} from "@workspace/api-zod";
-import { getDocFile } from "../lib/docs";
+import { UpdateAgentPersonaBody, UploadAgentPortraitBody } from "@workspace/api-zod";
+import { getDocFile, getDocsRoot, splitFrontmatter } from "../lib/docs";
 import {
   getTeamDepartments,
   getTeamRoster,
   updateAgentPersona,
   type PersonaEdits,
+  type TeamMember,
 } from "../lib/team";
 import { savePortrait } from "../lib/portraits";
-import {
-  getAgentStats,
-  getTeamStats,
-  listAgentRuns,
-} from "../lib/generations-store";
+import { getAgentStats, getTeamStats, listAgentRuns } from "../lib/generations-store";
 
-/** Largest portrait we store; the serving route resizes down for every display. */
 const MAX_PORTRAIT_WIDTH = 1024;
-
 const router: IRouter = Router();
 
-/** Map a roster slug back to its agent doc path. */
+type AgentLifecycle = "active" | "paused" | "deprecated";
+
+function frontmatterValue(frontmatter: string | null, key: string): string | null {
+  if (!frontmatter) return null;
+  const escaped = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const match = frontmatter.match(new RegExp(`^\\s*${escaped}\\s*:\\s*(.+?)\\s*$`, "im"));
+  return match?.[1]?.replace(/^['\"]|['\"]$/g, "").trim() || null;
+}
+
+function lifecycleFor(member: TeamMember) {
+  if (member.slug === "orchestrator") {
+    return { active: true, lifecycle: "active" as const, pausedAt: null, reason: null };
+  }
+  try {
+    const raw = readFileSync(join(getDocsRoot(), member.path), "utf8");
+    const frontmatter = splitFrontmatter(raw).frontmatter;
+    const explicit = frontmatterValue(frontmatter, "lifecycle")?.toLowerCase();
+    const lifecycle: AgentLifecycle =
+      explicit === "deprecated"
+        ? "deprecated"
+        : member.active
+          ? "active"
+          : "paused";
+    return {
+      active: lifecycle === "active",
+      lifecycle,
+      pausedAt: frontmatterValue(frontmatter, "paused_date"),
+      reason: frontmatterValue(frontmatter, "reason"),
+    };
+  } catch {
+    return {
+      active: member.active,
+      lifecycle: member.active ? ("active" as const) : ("paused" as const),
+      pausedAt: null,
+      reason: null,
+    };
+  }
+}
+
+function serializeMember(member: TeamMember) {
+  return { ...member, ...lifecycleFor(member) };
+}
+
 function agentPathFromSlug(slug: string): string {
   return `agents/${slug}.md`;
 }
 
-/** Parse a JSON-array text column back into a string list, tolerating bad data. */
 function parseList(value: string): string[] {
   try {
     const parsed = JSON.parse(value);
@@ -42,7 +76,6 @@ function parseList(value: string): string[] {
   }
 }
 
-/** Summary of a run an agent took part in, with this agent's role in it. */
 function serializeAgentRun(g: Generation, agentPath: string) {
   return {
     id: g.id,
@@ -58,31 +91,32 @@ function serializeAgentRun(g: Generation, agentPath: string) {
   };
 }
 
-router.get("/team", async (req, res): Promise<void> => {
+router.get("/team", async (_req, res): Promise<void> => {
   const employees = await getTeamRoster();
-  const departments = getTeamDepartments();
-  res.json(GetTeamResponse.parse({ employees, departments }));
+  res.json({
+    employees: employees.map(serializeMember),
+    departments: getTeamDepartments(),
+  });
 });
 
-router.get("/team/stats", async (req, res): Promise<void> => {
+router.get("/team/stats", async (_req, res): Promise<void> => {
   const [stats, roster] = await Promise.all([getTeamStats(), getTeamRoster()]);
   const byPath = new Map(roster.map((m) => [m.path, m]));
-  const leaderboard = stats.leaderboard.map((e) => {
-    const member = byPath.get(e.agentPath);
+  const leaderboard = stats.leaderboard.map((entry) => {
+    const member = byPath.get(entry.agentPath);
     return {
-      ...e,
-      slug: member?.slug ?? e.agentPath.replace(/^agents\//, "").replace(/\.md$/, ""),
-      title: member?.title ?? e.agentPath,
+      ...entry,
+      slug: member?.slug ?? entry.agentPath.replace(/^agents\//, "").replace(/\.md$/, ""),
+      title: member?.title ?? entry.agentPath,
       portraitThumbUrl: member?.portraitThumbUrl ?? null,
+      lifecycle: member ? lifecycleFor(member).lifecycle : "active",
     };
   });
   res.json({ ...stats, leaderboard });
 });
 
 router.get("/team/:slug/stats", async (req, res): Promise<void> => {
-  const agentPath = agentPathFromSlug(req.params.slug);
-  const stats = await getAgentStats(agentPath);
-  res.json(stats);
+  res.json(await getAgentStats(agentPathFromSlug(req.params.slug)));
 });
 
 router.get("/team/:slug/runs", async (req, res): Promise<void> => {
@@ -97,63 +131,49 @@ router.put("/team/:slug/persona", async (req, res): Promise<void> => {
     res.status(400).json({ error: "Invalid persona payload" });
     return;
   }
-  const updated = await updateAgentPersona(
-    req.params.slug,
-    parsed.data as PersonaEdits,
-  );
+  const updated = await updateAgentPersona(req.params.slug, parsed.data as PersonaEdits);
   if (!updated) {
     res.status(404).json({ error: "Agent not found" });
     return;
   }
-  res.json(updated);
+  res.json(serializeMember(updated));
 });
 
 router.post("/team/:slug/portrait", async (req, res): Promise<void> => {
   const { slug } = req.params;
-  // Only allow uploads for agents that actually exist in the doc graph.
   if (!getDocFile(agentPathFromSlug(slug))) {
     res.status(404).json({ error: "Agent not found" });
     return;
   }
-
   const parsed = UploadAgentPortraitBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "Invalid portrait payload" });
     return;
   }
-
-  // Tolerate a data-URL prefix; the spec says the bytes are PNG/JPEG/WebP.
   const base64 = parsed.data.imageBase64.replace(/^data:[^;]+;base64,/, "");
   const raw = Buffer.from(base64, "base64");
   if (raw.length === 0) {
     res.status(400).json({ error: "Empty image payload" });
     return;
   }
-
   let png: Buffer;
   try {
     png = await sharp(raw)
-      .rotate() // honour EXIF orientation before stripping metadata
-      .resize({
-        width: MAX_PORTRAIT_WIDTH,
-        withoutEnlargement: true,
-      })
+      .rotate()
+      .resize({ width: MAX_PORTRAIT_WIDTH, withoutEnlargement: true })
       .png()
       .toBuffer();
   } catch {
     res.status(400).json({ error: "Unsupported or corrupt image" });
     return;
   }
-
   await savePortrait(slug, png);
-
-  const roster = await getTeamRoster();
-  const member = roster.find((m) => m.slug === slug);
+  const member = (await getTeamRoster()).find((m) => m.slug === slug);
   if (!member) {
     res.status(404).json({ error: "Agent not found" });
     return;
   }
-  res.json(member);
+  res.json(serializeMember(member));
 });
 
 export default router;

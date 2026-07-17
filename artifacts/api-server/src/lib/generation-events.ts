@@ -25,13 +25,7 @@ export interface FanoutCandidateEventItem {
   reason: string;
 }
 
-/**
- * Stable, discriminated contract emitted by the generation engine.
- *
- * The `content`, terminal `done`, and terminal `error` events predate the typed
- * event names and intentionally remain explicit union members for backwards
- * compatibility. New event shapes must be added here before they are emitted.
- */
+/** Stable union emitted by the engine. Add new shapes here before emitting. */
 export type GenerationEvent =
   | {
       type: "plan";
@@ -80,7 +74,6 @@ export type GenerationEvent =
     }
   | { error: string; type?: never };
 
-/** Metadata added at the HTTP/SSE boundary, never by individual agents. */
 export interface GenerationEventMeta {
   correlationId: string;
   sequence: number;
@@ -106,19 +99,23 @@ export function createGenerationEventEnvelope() {
   };
 }
 
-/** Minimal runtime guard for consumers receiving JSON over SSE. */
 export function isGenerationWireEvent(value: unknown): value is GenerationWireEvent {
   if (!value || typeof value !== "object") return false;
   const event = value as Record<string, unknown>;
   if (typeof event.correlationId !== "string" || !event.correlationId) return false;
-  if (!Number.isInteger(event.sequence) || Number(event.sequence) < 1) return false;
+  if (typeof event.sequence !== "number" || !Number.isInteger(event.sequence) || event.sequence < 1) {
+    return false;
+  }
   if (typeof event.emittedAt !== "string" || Number.isNaN(Date.parse(event.emittedAt))) {
     return false;
   }
   if (event.done === true) return typeof event.archived === "boolean";
   if (typeof event.error === "string") return true;
   if (typeof event.content === "string") {
-    return event.type === "deliverable_delta" || Number.isInteger(event.index);
+    return (
+      event.type === "deliverable_delta" ||
+      (typeof event.index === "number" && Number.isInteger(event.index))
+    );
   }
   return typeof event.type === "string";
 }

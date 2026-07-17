@@ -14,15 +14,13 @@ router.post("/generate", async (req, res) => {
     return;
   }
 
+  const envelope = createGenerationEventEnvelope();
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
+  res.setHeader("X-Correlation-Id", envelope.correlationId);
   res.flushHeaders?.();
 
-  // One correlation id and a monotonic sequence are added centrally. Individual
-  // agents cannot drift the wire contract or create conflicting event order.
-  const envelope = createGenerationEventEnvelope();
-  res.setHeader("X-Correlation-Id", envelope.correlationId);
   const sink = (payload: Parameters<typeof envelope.wrap>[0]) =>
     res.write(`data: ${JSON.stringify(envelope.wrap(payload))}\n\n`);
 

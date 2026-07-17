@@ -2,25 +2,32 @@
 
 Wave A hardens four backward-compatible contracts without a database migration:
 
-1. **Generation SSE** is now a typed union. The HTTP boundary adds `correlationId`, monotonic `sequence`, and `emittedAt` to every event.
-2. **Agent lifecycle** adds `lifecycle`, `pausedAt`, and `reason` while retaining the legacy `active` boolean.
-3. **Todo reliability** retains the three legacy arrays and adds per-section `ok|unavailable` status plus a top-level `partial` flag.
+1. **Generation SSE** is a typed union. The HTTP boundary adds `correlationId`, monotonic `sequence`, and `emittedAt` to every event.
+2. **Agent lifecycle** adds `lifecycle`, `pausedAt`, and `reason` while retaining `active`.
+3. **Todo reliability** retains the legacy arrays and adds per-section `ok|unavailable` status plus `partial`.
 4. **Knowledge reader** adds `GET /api/knowledge/item?nodeId=...` with provenance, canonical URL, freshness, relations, and `editable:false`.
+
+## Frontend consumption
+
+`@workspace/api-client-react` exports additive Wave A types and clients from `atlas-wave-a.ts`:
+
+- `getAtlasTodo`
+- `getAtlasTeam`
+- `getAtlasKnowledgeItem`
+
+This keeps the branch immediately consumable without editing large generated files by hand. `lib/api-spec/atlas-wave-a.openapi.yaml` records the additive schema fragment for the next normal Orval/Zod regeneration and merge into the canonical OpenAPI document.
 
 ## Compatibility
 
-- Existing frontend fields and routes remain available.
-- No generation, approval, ClickUp, scheduler, or database behavior changes.
-- The old direct docs editor remains for compatibility, but Atlas v4 treats repository knowledge as read-only.
+- No existing response field or route was removed.
+- No generation, approval, ClickUp, scheduler, or DB behavior changed.
+- The old direct docs editor remains for compatibility, while Atlas treats repository knowledge read-only.
 
-## Generated API clients
-
-The new additive fields/endpoints are intentionally server-first in this branch. Before the Atlas frontend consumes them, mirror these contracts into `lib/api-spec/openapi.yaml` and regenerate Orval/Zod in Replit. The current frontend remains compatible because no existing response field was removed or renamed.
-
-## Validation commands
+## Validation
 
 ```bash
 pnpm --filter @workspace/api-server typecheck
 pnpm --filter @workspace/api-server test
+pnpm --filter @workspace/api-client-react typecheck
 pnpm typecheck
 ```

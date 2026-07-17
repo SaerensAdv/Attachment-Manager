@@ -7,11 +7,8 @@ import { serializeAlert } from "./alerts";
 
 const router: IRouter = Router();
 
-/**
- * Read the held deliverable's `kind` from the pending-delivery JSON snapshot,
- * tolerantly. The snapshot shape can change over time and bad/empty JSON must
- * never break the overview, so any parse failure degrades to null.
- */
+type SectionStatus = "ok" | "unavailable";
+
 function parseDeliveryKind(pendingDelivery: string | null): string | null {
   if (!pendingDelivery) return null;
   try {
@@ -30,30 +27,59 @@ function parseDeliveryKind(pendingDelivery: string | null): string | null {
   }
 }
 
-/**
- * "Te doen" overview: a single aggregate of everything waiting on the operator —
- * learned-rule proposals awaiting a decision, client-facing deliverables held
- * for approval, and unresolved system alerts. Each source is best-effort so a
- * single failing store degrades that section to empty instead of failing the
- * whole overview.
- */
+function section(status: SectionStatus, count: number, errorCode?: string) {
+  return { status, count, errorCode: errorCode ?? null };
+}
+
 router.get("/todo", async (_req, res) => {
-  const [proposals, approvals, alerts] = await Promise.all([
-    listPendingProposals().catch(() => []),
-    listPendingApprovals().catch(() => []),
-    listAlerts({ unresolvedOnly: true }).catch(() => []),
+  // allSettled preserves the useful best-effort behavior while making outages
+  // distinguishable from a genuinely empty queue.
+  const [proposalsResult, approvalsResult, alertsResult] = await Promise.allSettled([
+    listPendingProposals(),
+    listPendingApprovals(),
+    listAlerts({ unresolvedOnly: true }),
   ]);
 
+  const proposals =
+    proposalsResult.status === "fulfilled" ? proposalsResult.value : [];
+  const approvals =
+    approvalsResult.status === "fulfilled" ? approvalsResult.value : [];
+  const alerts = alertsResult.status === "fulfilled" ? alertsResult.value : [];
+
+  const pendingProposals = proposals.map(serializeProposal);
+  const pendingApprovals = approvals.map((a) => ({
+    generationId: a.id,
+    clientName: a.clientName,
+    workflowTitle: a.workflowTitle,
+    kind: parseDeliveryKind(a.pendingDelivery),
+    createdAt: a.createdAt.toISOString(),
+  }));
+  const unresolvedAlerts = alerts.map(serializeAlert);
+
+  const sections = {
+    pendingProposals: section(
+      proposalsResult.status === "fulfilled" ? "ok" : "unavailable",
+      pendingProposals.length,
+      proposalsResult.status === "rejected" ? "PROPOSALS_UNAVAILABLE" : undefined,
+    ),
+    pendingApprovals: section(
+      approvalsResult.status === "fulfilled" ? "ok" : "unavailable",
+      pendingApprovals.length,
+      approvalsResult.status === "rejected" ? "APPROVALS_UNAVAILABLE" : undefined,
+    ),
+    unresolvedAlerts: section(
+      alertsResult.status === "fulfilled" ? "ok" : "unavailable",
+      unresolvedAlerts.length,
+      alertsResult.status === "rejected" ? "ALERTS_UNAVAILABLE" : undefined,
+    ),
+  };
+
   res.json({
-    pendingProposals: proposals.map(serializeProposal),
-    pendingApprovals: approvals.map((a) => ({
-      generationId: a.id,
-      clientName: a.clientName,
-      workflowTitle: a.workflowTitle,
-      kind: parseDeliveryKind(a.pendingDelivery),
-      createdAt: a.createdAt.toISOString(),
-    })),
-    unresolvedAlerts: alerts.map(serializeAlert),
+    pendingProposals,
+    pendingApprovals,
+    unresolvedAlerts,
+    sections,
+    partial: Object.values(sections).some((s) => s.status === "unavailable"),
   });
 });
 

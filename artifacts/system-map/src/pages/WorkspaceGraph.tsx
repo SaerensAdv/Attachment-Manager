@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
-import { Activity, AlertTriangle, Bot, Boxes, FileText, History, Loader2, Map, MoreHorizontal, RefreshCw, Settings2 } from "lucide-react";
+import { Activity, AlertTriangle, Bot, Boxes, FileText, History, Loader2, Map as MapIcon, MoreHorizontal, RefreshCw, Settings2 } from "lucide-react";
 import {
   useGetGraphOverview,
   getGetGraphOverviewQueryKey,
@@ -25,8 +25,8 @@ export default function WorkspaceGraph() {
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [hiddenGroups, setHiddenGroups] = useState<Set<FilterGroupId>>(() => new Set());
   const [focusRequest, setFocusRequest] = useState<{ id: string; nonce: number } | null>(null);
-  const [expNodes, setExpNodes] = useState<Map<string, GraphNode>>(() => new Map());
-  const [expEdges, setExpEdges] = useState<Map<string, GraphEdge>>(() => new Map());
+  const [expNodes, setExpNodes] = useState<Map<string, GraphNode>>(() => new Map<string, GraphNode>());
+  const [expEdges, setExpEdges] = useState<Map<string, GraphEdge>>(() => new Map<string, GraphEdge>());
 
   const { data: overview, isLoading, isError, refetch } = useGetGraphOverview();
   const meta = overview?.meta;
@@ -57,8 +57,8 @@ export default function WorkspaceGraph() {
   useEffect(() => {
     const hash = meta?.contentHash ?? undefined;
     if (lastHash.current && hash !== lastHash.current) {
-      setExpNodes(new Map());
-      setExpEdges(new Map());
+      setExpNodes(new Map<string, GraphNode>());
+      setExpEdges(new Map<string, GraphEdge>());
     }
     lastHash.current = hash;
   }, [meta?.contentHash]);
@@ -104,7 +104,7 @@ export default function WorkspaceGraph() {
       <nav className="atlas-rail" aria-label="Werkruimte navigatie">
         <Link href="/" className="atlas-monogram" aria-label="Terug naar de Kaart">SA</Link>
         <div className="atlas-rail-items">
-          <Link href="/" className="atlas-rail-button" title="Kaart"><Map /></Link>
+          <Link href="/" className="atlas-rail-button" title="Kaart"><MapIcon /></Link>
           <span className="atlas-rail-button is-active" title="Workspace Graph"><Boxes /></span>
           <Link href="/history" className="atlas-rail-button" title="Runs"><History /></Link>
           <Link href="/team" className="atlas-rail-button" title="Agents"><Bot /></Link>
@@ -112,30 +112,23 @@ export default function WorkspaceGraph() {
         </div>
         <Link href="/controle" className="atlas-rail-button atlas-rail-bottom" title="Instellingen"><Settings2 /></Link>
       </nav>
-
       <header className="atlas-header">
         <div className="atlas-brand-lockup"><span className="atlas-brand-mark" aria-hidden="true" /><div><h1>Workspace Graph</h1><p>Saerens Operating System</p></div></div>
         <div className="atlas-header-actions">
           <span className={`atlas-live ${stale ? "is-stale" : ""}`}><i />{stale ? "STALE SNAPSHOT" : `LIVE SYNC · ${relativeTime(meta?.lastSyncedAt).replace(" geleden", "")}`}</span>
-          <button type="button" className="atlas-action" onClick={() => !isSyncing && sync.mutate()} disabled={isSyncing}>
-            <RefreshCw className={isSyncing ? "atlas-rotating" : ""} />{isSyncing ? "Syncing" : "Sync now"}
-          </button>
+          <button type="button" className="atlas-action" onClick={() => !isSyncing && sync.mutate()} disabled={isSyncing}><RefreshCw className={isSyncing ? "atlas-rotating" : ""} />{isSyncing ? "Syncing" : "Sync now"}</button>
           <button type="button" className="atlas-icon-action" aria-label="Meer opties"><MoreHorizontal /></button>
         </div>
       </header>
-
       <main className="atlas-stage">
         <div className="atlas-grid" aria-hidden="true" />
         {state === "loading" && <div className="atlas-state"><Loader2 className="atlas-rotating" /><span>Workspace laden</span></div>}
         {state === "error" && <div className="atlas-state is-error"><AlertTriangle /><strong>Workspace niet bereikbaar</strong><button onClick={() => refetch()}>Opnieuw proberen</button></div>}
         {state === "empty" && <div className="atlas-state"><Activity /><strong>Nog geen snapshot</strong><button onClick={() => sync.mutate()}>Eerste sync starten</button></div>}
-        {state === "ready" && overview && (
-          <WorkspaceGraphCanvas nodes={viewNodes} edges={viewEdges} hiddenGroups={hiddenGroups} selectedNodeId={selectedNodeId} onSelectNode={setSelectedNodeId} fitKey={meta?.contentHash ?? undefined} focusRequest={focusRequest} />
-        )}
+        {state === "ready" && overview && <WorkspaceGraphCanvas nodes={viewNodes} edges={viewEdges} hiddenGroups={hiddenGroups} selectedNodeId={selectedNodeId} onSelectNode={setSelectedNodeId} fitKey={meta?.contentHash ?? undefined} focusRequest={focusRequest} />}
         <GraphLegend hiddenGroups={hiddenGroups} onToggleGroup={toggleGroup} onPick={handlePick} />
         {overview?.truncated && <div className="atlas-truncated">{overview.nodes.length} van {overview.totalNodes} nodes geladen</div>}
       </main>
-
       <NodeDetailPanel node={selectedNode} onClose={() => setSelectedNodeId(null)} onSelectNode={handlePick} onExpand={handleExpand} />
     </div>
   );

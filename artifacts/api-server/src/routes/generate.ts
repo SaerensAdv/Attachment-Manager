@@ -3,6 +3,7 @@ import {
   resolveGenerationContext,
   runGeneration,
 } from "../lib/generate-engine";
+import { createGenerationEventEnvelope } from "../lib/generation-events";
 
 const router: IRouter = Router();
 
@@ -13,17 +14,16 @@ router.post("/generate", async (req, res) => {
     return;
   }
 
+  const envelope = createGenerationEventEnvelope();
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
+  res.setHeader("X-Correlation-Id", envelope.correlationId);
   res.flushHeaders?.();
 
-  // Stream engine events straight to the client as SSE.
-  const sink = (payload: unknown) =>
-    res.write(`data: ${JSON.stringify(payload)}\n\n`);
+  const sink = (payload: Parameters<typeof envelope.wrap>[0]) =>
+    res.write(`data: ${JSON.stringify(envelope.wrap(payload))}\n\n`);
 
-  // Abort the upstream Anthropic requests the moment the client disconnects or
-  // hits Stop, so we never keep burning tokens for a response nobody reads.
   const controller = new AbortController();
   const onClose = () => controller.abort();
   res.on("close", onClose);

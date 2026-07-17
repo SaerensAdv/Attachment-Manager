@@ -1,0 +1,53 @@
+# Additive OpenAPI fragment for Atlas v4 Backend Wave A.
+# Merge into openapi.yaml before the next Orval/Zod regeneration.
+paths:
+  /knowledge/item:
+    get:
+      operationId: getAtlasKnowledgeItem
+      parameters:
+        - in: query
+          name: nodeId
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Read-only knowledge item with provenance and relations
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AtlasKnowledgeItem' }
+components:
+  schemas:
+    AtlasSectionStatus:
+      type: object
+      required: [status, count, errorCode]
+      properties:
+        status: { type: string, enum: [ok, unavailable] }
+        count: { type: integer, minimum: 0 }
+        errorCode: { type: [string, 'null'] }
+    AtlasAgentLifecycle:
+      type: string
+      enum: [active, paused, deprecated]
+    AtlasKnowledgeRelation:
+      type: object
+      required: [source, target, kind]
+      properties:
+        source: { type: string }
+        target: { type: string }
+        kind: { type: string, enum: [reference, routing, flow, mention] }
+    AtlasKnowledgeItem:
+      type: object
+      required: [nodeId, path, title, category, content, source, canonicalUrl, updatedAt, editable, active, relations]
+      properties:
+        nodeId: { type: string }
+        path: { type: string }
+        title: { type: string }
+        category: { type: string }
+        content: { type: string }
+        source: { type: string, enum: [github, replit-cache] }
+        canonicalUrl: { type: [string, 'null'] }
+        updatedAt: { type: [string, 'null'], format: date-time }
+        editable: { type: boolean, enum: [false] }
+        active: { type: boolean }
+        relations:
+          type: array
+          items: { $ref: '#/components/schemas/AtlasKnowledgeRelation' }

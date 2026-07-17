@@ -45,3 +45,15 @@ First actually-built ClickUp feature. ClickUp CRM's **Companies list is the mast
 - **Report both sides' leftovers**: unmatched app clients AND unmatched ClickUp companies are surfaced for human review; populations legitimately diverge (was 16 app clients vs 9 companies).
 - **Error model**: upstream ClickUp failures degrade to `available:false` + a `warnings[]` entry (HTTP 200), only DB errors are 502. The UI must read `warnings` to distinguish an upstream outage from a missing-token config problem (don't hardcode a "check the token" message for every unavailable state).
 - User (Axel) stance: LINK-ONLY, never create/overwrite either side — confirm before broadening to any write-back or task creation.
+
+## Live workspace map (Fase 3 push targets)
+
+Discovered by read-only enumeration of the real ClickUp (team **9015913612 "Saerens Advertising"** — a second team "Dennis Geenen's Workspace" exists but is not ours). The workspace was purpose-built for this integration:
+- **Space "01 Saerens HQ"** → CRM folder: **Companies** (`901524400055`, the master ✓) + Opportunities; **Internal Operations** folder → **Internal Work** (`901524400063`) = the system-alert location.
+- **Space "02 Client Delivery"** → one folder per client named `CLI-00N <Company name>` (matches the Company task name), each with **Overview / Access / Delivery / Reporting & Billing** lists. Monthly reports belong in that client's **Reporting & Billing** list.
+- **Company → delivery bridge**: the Companies list has a **"Delivery folder" URL custom field** meant to point at the client's `02 Client Delivery` folder — the intended explicit bridge. **It is EMPTY on every company** (incl. all linked ones), so the canonical mapping is not usable until Axel populates it (or we name-match the `CLI-…` folder, which the brief discourages as inference).
+- **Reporting & Billing model is native**: custom fields **"Record type" = [Report, Billing Item, Cost, Credit Adjustment]**, **"Report type" = [Monthly, Quarterly, Annual, Project closeout]**, **Report URL**, **Period start/Period end**, **Company** (task relation). A monthly report = a task there with Record type=Report. There is NO native "Report" task type — "type Report" means the Record-type field.
+
+**Non-uniformity is a hard stop-condition:** only **CLI-006 Schrever** is fully modelled (rich reporting statuses `scheduled, collecting data, drafting, internal review, sent, discussed, ready to bill, invoiced, paid` + full field set). CLI-001..005 Reporting & Billing lists have only generic `to do / in progress / complete` and a reduced field set — so a literal **"Draft" / "Ready for review"** status does NOT uniformly exist.
+
+**How to apply:** never hardcode a status name — read each target list's live statuses at push time and map semantically (Draft→first drafting/scheduled-like status; review→internal-review-like). Skip-with-reason (never guess) when a client's location/status/fields aren't configured. The personal `pk_` token carries full account scope (read+write), so **no new secret is needed for Fase 3 writes**; Fase 4 webhooks will need a webhook secret stored server-side.

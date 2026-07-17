@@ -1,13 +1,11 @@
 import { z } from "zod";
-
 const nullableIso = z.string().datetime().nullable();
 export const atlasSystemCheckSchema = z.object({ key: z.string(), status: z.enum(["healthy", "degraded", "down", "unknown"]), checkedAt: z.string().datetime(), latencyMs: z.number().nonnegative().optional(), message: z.string().nullable().optional() }).passthrough();
 export const atlasSystemStatusSchema = z.object({ status: z.enum(["healthy", "degraded", "down"]), process: z.record(z.string(), z.unknown()), checks: z.array(atlasSystemCheckSchema) });
 export const atlasQueueSummarySchema = z.object({ retrying: z.number().int().nonnegative() }).catchall(z.unknown());
 export const atlasOperationsStatusSchema = z.object({
-  pendingApprovals: z.number().int().nonnegative(), pendingProposals: z.number().int().nonnegative(), unresolvedAlerts: z.number().int().nonnegative(),
-  pushQueue: atlasQueueSummarySchema,
-  scheduler: z.object({ heartbeatAt: nullableIso, healthy: z.boolean(), enabledSchedules: z.number().int().nonnegative(), nextRunAt: nullableIso }).passthrough(),
+  pendingApprovals: z.number().int().nonnegative(), pendingProposals: z.number().int().nonnegative(), unresolvedAlerts: z.number().int().nonnegative(), pushQueue: atlasQueueSummarySchema,
+  scheduler: z.object({ status: z.enum(["healthy", "degraded", "unknown"]), heartbeatAt: nullableIso, enabledSchedules: z.number().int().nonnegative(), nextRunAt: nullableIso }).passthrough(),
   graph: z.object({ lastSyncedAt: nullableIso, syncing: z.boolean() }),
   webhook: z.object({ status: z.string(), registered: z.boolean(), configured: z.boolean().optional(), lastEventAt: nullableIso, deadLetters: z.number().int().nonnegative() }).passthrough(),
 });

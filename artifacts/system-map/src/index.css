@@ -3,334 +3,44 @@
 @plugin "@tailwindcss/typography";
 
 @custom-variant dark (&:is(.dark *));
-
 @theme inline {
-  --color-background: hsl(var(--background));
-  --color-foreground: hsl(var(--foreground));
-  --color-border: hsl(var(--border));
-  --color-input: hsl(var(--input));
-  --color-ring: hsl(var(--ring));
-
-  --color-card: hsl(var(--card));
-  --color-card-foreground: hsl(var(--card-foreground));
-  --color-card-border: hsl(var(--card-border));
-
-  --color-popover: hsl(var(--popover));
-  --color-popover-foreground: hsl(var(--popover-foreground));
-  --color-popover-border: hsl(var(--popover-border));
-
-  --color-primary: hsl(var(--primary));
-  --color-primary-foreground: hsl(var(--primary-foreground));
-  --color-primary-border: var(--primary-border);
-
-  --color-secondary: hsl(var(--secondary));
-  --color-secondary-foreground: hsl(var(--secondary-foreground));
-  --color-secondary-border: var(--secondary-border);
-
-  --color-muted: hsl(var(--muted));
-  --color-muted-foreground: hsl(var(--muted-foreground));
-  --color-muted-border: var(--muted-border);
-
-  --color-accent: hsl(var(--accent));
-  --color-accent-foreground: hsl(var(--accent-foreground));
-  --color-accent-border: var(--accent-border);
-
-  --color-destructive: hsl(var(--destructive));
-  --color-destructive-foreground: hsl(var(--destructive-foreground));
-  --color-destructive-border: var(--destructive-border);
-
-  --color-cat-core: hsl(var(--cat-core));
-  --color-cat-agent: hsl(var(--cat-agent));
-  --color-cat-client: hsl(var(--cat-client));
-  --color-cat-workflow: hsl(var(--cat-workflow));
-  --color-cat-template: hsl(var(--cat-template));
-  --color-cat-knowledge: hsl(var(--cat-knowledge));
-
-  --font-sans: var(--app-font-sans);
-  --font-serif: var(--app-font-serif);
-  --font-mono: var(--app-font-mono);
-
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: hsl(var(--background)); --color-foreground: hsl(var(--foreground)); --color-border: hsl(var(--border)); --color-input: hsl(var(--input)); --color-ring: hsl(var(--ring));
+  --color-card: hsl(var(--card)); --color-card-foreground: hsl(var(--card-foreground)); --color-card-border: hsl(var(--card-border));
+  --color-popover: hsl(var(--popover)); --color-popover-foreground: hsl(var(--popover-foreground)); --color-popover-border: hsl(var(--popover-border));
+  --color-primary: hsl(var(--primary)); --color-primary-foreground: hsl(var(--primary-foreground)); --color-secondary: hsl(var(--secondary)); --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted)); --color-muted-foreground: hsl(var(--muted-foreground)); --color-accent: hsl(var(--accent)); --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-destructive: hsl(var(--destructive)); --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-cat-core: hsl(var(--cat-core)); --color-cat-agent: hsl(var(--cat-agent)); --color-cat-client: hsl(var(--cat-client)); --color-cat-workflow: hsl(var(--cat-workflow)); --color-cat-template: hsl(var(--cat-template)); --color-cat-knowledge: hsl(var(--cat-knowledge));
+  --font-sans: var(--app-font-sans); --font-serif: var(--app-font-serif); --font-mono: var(--app-font-mono);
+  --radius-sm: calc(var(--radius) - 4px); --radius-md: calc(var(--radius) - 2px); --radius-lg: var(--radius); --radius-xl: calc(var(--radius) + 4px);
 }
 
 :root {
-  /* Saerens editorial light theme — cream paper, ink, indigo accent */
-  --background: 60 14% 95%;          /* Cream paper #F4F4F0 */
-  --foreground: 0 0% 10%;            /* Ink #1A1A1A */
-  --card: 0 0% 100%;                 /* White */
-  --card-foreground: 0 0% 10%;
-  --card-border: 0 0% 84%;           /* Hairline */
-  --popover: 0 0% 100%;
-  --popover-foreground: 0 0% 10%;
-  --popover-border: 0 0% 84%;
-  --primary: 0 0% 10%;               /* Ink */
-  --primary-foreground: 60 14% 95%;  /* Cream */
-  --secondary: 60 8% 92%;
-  --secondary-foreground: 0 0% 10%;
-  --muted: 60 9% 91%;
-  --muted-foreground: 0 0% 42%;      /* Ink at ~58% */
-  --accent: 243 75% 67%;             /* Indigo #726CEA */
-  --accent-foreground: 0 0% 100%;
-  --destructive: 0 70% 45%;
-  --destructive-foreground: 0 0% 100%;
-  --border: 0 0% 84%;                /* Hairline */
-  --input: 0 0% 78%;
-  --ring: 243 75% 67%;               /* Indigo */
+  --background: 60 14% 95%; --foreground: 0 0% 10%; --card: 0 0% 100%; --card-foreground: 0 0% 10%; --card-border: 0 0% 84%;
+  --popover: 0 0% 100%; --popover-foreground: 0 0% 10%; --popover-border: 0 0% 84%; --primary: 0 0% 10%; --primary-foreground: 60 14% 95%;
+  --secondary: 60 8% 92%; --secondary-foreground: 0 0% 10%; --muted: 60 9% 91%; --muted-foreground: 0 0% 42%; --accent: 243 75% 67%; --accent-foreground: 0 0% 100%;
+  --destructive: 0 70% 45%; --destructive-foreground: 0 0% 100%; --border: 0 0% 84%; --input: 0 0% 78%; --ring: 243 75% 67%;
+  --cat-core: 243 75% 60%; --cat-agent: 188 90% 38%; --cat-client: 330 75% 50%; --cat-workflow: 24 90% 48%; --cat-template: 42 95% 42%; --cat-knowledge: 142 65% 36%;
+  --dept-direction: 243 75% 60%; --dept-paid-media: 24 90% 48%; --dept-seo-web: 188 90% 38%; --dept-content-creative: 330 75% 50%; --dept-client-growth: 142 65% 36%; --dept-quality: 42 95% 42%; --dept-other: 0 0% 45%;
+  --app-font-sans: 'Inter', sans-serif; --app-font-serif: 'Playfair Display', Georgia, serif; --app-font-mono: 'Space Mono', monospace; --radius: 0rem;
+}
+.dark { --background: 60 14% 95%; --foreground: 0 0% 10%; --card: 0 0% 100%; --card-foreground: 0 0% 10%; --border: 0 0% 84%; }
+@layer base { * { @apply border-border; } body { @apply font-sans antialiased bg-background text-foreground; } }
+::-webkit-scrollbar { width: 8px; height: 8px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: hsl(var(--border)); border-radius: 4px; }
+.prose pre { background-color: hsl(var(--muted)) !important; color: hsl(var(--foreground)) !important; } .prose code { color: hsl(var(--accent)) !important; background: hsl(var(--muted)); padding: .125rem .25rem; } .prose pre code { color: inherit !important; background: transparent; padding: 0; }
 
-  --cat-core: 243 75% 60%;      /* Indigo */
-  --cat-agent: 188 90% 38%;     /* Teal (darkened for light bg) */
-  --cat-client: 330 75% 50%;    /* Magenta */
-  --cat-workflow: 24 90% 48%;   /* Orange */
-  --cat-template: 42 95% 42%;   /* Amber */
-  --cat-knowledge: 142 65% 36%; /* Green */
-
-  /* Agency departments (the single org model). Stable per department id. */
-  --dept-direction: 243 75% 60%;       /* Indigo — direction */
-  --dept-paid-media: 24 90% 48%;       /* Orange — paid media */
-  --dept-seo-web: 188 90% 38%;         /* Teal — SEO & web */
-  --dept-content-creative: 330 75% 50%; /* Magenta — content & creative */
-  --dept-client-growth: 142 65% 36%;   /* Green — client & growth */
-  --dept-quality: 42 95% 42%;          /* Amber — quality & compliance */
-  --dept-other: 0 0% 45%;              /* Grey — catch-all */
-
-  /* Workspace Graph (Fase 3.5 §7.6) — node families + edge health. Tuned to read
-     on the dark graph canvas (.wg-canvas). Colour is one of three redundant
-     encodings; the per-type glyph and the Dutch label carry the same meaning. */
-  --wg-structure: 189 90% 55%;  /* Cyan   — ClickUp structure */
-  --wg-knowledge: 217 91% 66%;  /* Blue   — docs & versioned knowledge */
-  --wg-execution: 27 96% 61%;   /* Orange — agents, workflows, execution */
-  --wg-client: 330 82% 64%;     /* Magenta— client records */
-  --wg-flow: 152 66% 50%;       /* Green  — healthy live data stream */
-  --wg-error: 0 84% 63%;        /* Red    — broken relation / error only */
-  --wg-edge: 215 18% 52%;       /* Slate  — structural / reference wiring */
-
-  --app-font-sans: 'Inter', sans-serif;
-  --app-font-serif: 'Playfair Display', Georgia, serif;
-  --app-font-mono: 'Space Mono', monospace;
-  --radius: 0rem;
-}
-
-.dark {
-  --background: 60 14% 95%;
-  --foreground: 0 0% 10%;
-  --card: 0 0% 100%;
-  --card-foreground: 0 0% 10%;
-  --card-border: 0 0% 84%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 0 0% 10%;
-  --popover-border: 0 0% 84%;
-  --primary: 0 0% 10%;
-  --primary-foreground: 60 14% 95%;
-  --secondary: 60 8% 92%;
-  --secondary-foreground: 0 0% 10%;
-  --muted: 60 9% 91%;
-  --muted-foreground: 0 0% 42%;
-  --accent: 243 75% 67%;
-  --accent-foreground: 0 0% 100%;
-  --destructive: 0 70% 45%;
-  --destructive-foreground: 0 0% 100%;
-  --border: 0 0% 84%;
-  --input: 0 0% 78%;
-  --ring: 243 75% 67%;
-}
-
-/* Dark editorial "atlas at night" surface for the Workspace Graph (Fase 3.5
-   §7.6). A scoped override of the base tokens so every shadcn child (sheet,
-   button, badge, input) restyles for the dark canvas without touching the light
-   app chrome. The .dark class above is intentionally inert (mirrors :root);
-   THIS subtree cascade is the real dark theme. */
-.wg-canvas {
-  --background: 222 34% 8%;
-  --foreground: 210 22% 92%;
-  --card: 222 30% 12%;
-  --card-foreground: 210 22% 92%;
-  --card-border: 220 18% 24%;
-  --popover: 222 30% 12%;
-  --popover-foreground: 210 22% 92%;
-  --popover-border: 220 18% 24%;
-  --primary: 210 22% 92%;
-  --primary-foreground: 222 34% 8%;
-  --secondary: 220 22% 17%;
-  --secondary-foreground: 210 22% 92%;
-  --muted: 220 22% 16%;
-  --muted-foreground: 214 14% 62%;
-  --accent: 243 75% 70%;
-  --accent-foreground: 0 0% 100%;
-  --destructive: 0 72% 55%;
-  --destructive-foreground: 0 0% 100%;
-  --border: 220 18% 24%;
-  --input: 220 16% 28%;
-  --ring: 243 75% 70%;
-}
-
-@layer base {
-  * {
-    @apply border-border;
-  }
-  body {
-    @apply font-sans antialiased bg-background text-foreground;
-  }
-}
-
-/* Custom scrollbar for markdown panel */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: hsl(var(--border));
-  border-radius: 4px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--muted-foreground));
-}
-
-.prose pre {
-  background-color: hsl(var(--muted)) !important;
-  color: hsl(var(--foreground)) !important;
-}
-
-.prose code {
-  color: hsl(var(--accent)) !important;
-  background: hsl(var(--muted));
-  padding: 0.125rem 0.25rem;
-  border-radius: 0;
-}
-
-.prose pre code {
-  color: inherit !important;
-  background: transparent;
-  padding: 0;
-}
-
-/* Atlas "living pipeline" — light beads travelling along routing/flow edges in
-   the direction of the hand-off (source → target). */
-@keyframes atlas-flow {
-  to {
-    stroke-dashoffset: -16;
-  }
-}
-.atlas-flow-line {
-  animation: atlas-flow 1.6s linear infinite;
-}
-
-/* Live-run hand-off line — accent beads flowing from the previous agent to the
-   one currently writing. */
-.atlas-handoff-line {
-  animation: atlas-flow 0.9s linear infinite;
-}
-
-/* While the user is actively zooming/panning the Kaart, pause the streaming
-   bead animations so the interaction itself stays smooth; they resume the
-   moment the view is idle. Toggled via a class on the map container. */
-.atlas-interacting .atlas-flow-line,
-.atlas-interacting .atlas-handoff-line {
-  animation-play-state: paused;
-}
-
-/* Live-run active agent — a soft accent halo that breathes around the node that
-   is writing right now. */
-@keyframes atlas-node-pulse {
-  0%,
-  100% {
-    transform: scale(1);
-    opacity: 0.25;
-  }
-  50% {
-    transform: scale(1.22);
-    opacity: 0.08;
-  }
-}
-.atlas-node-pulse {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: atlas-node-pulse 2s ease-in-out infinite;
-}
-
-/* Live-run active agent — a sonar "ping": an accent frame that expands outward
-   and fades, reinforcing that this node is broadcasting work right now. */
-@keyframes atlas-node-ping {
-  0% {
-    transform: scale(0.96);
-    opacity: 0.38;
-  }
-  100% {
-    transform: scale(1.55);
-    opacity: 0;
-  }
-}
-.atlas-node-ping {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: atlas-node-ping 2.6s cubic-bezier(0.22, 1, 0.36, 1) infinite;
-}
-
-/* Live-run state frames easing in (active / queued / done / involved) so a node
-   changing state settles smoothly instead of snapping. The keyframe omits a
-   final opacity so each frame fades from 0 up to its own intended opacity. */
-@keyframes atlas-frame-in {
-  from {
-    opacity: 0;
-    transform: scale(0.94);
-  }
-}
-.atlas-frame-in {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: atlas-frame-in 0.4s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-@keyframes atlas-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.atlas-spin {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: atlas-spin 4s linear infinite;
-}
-
-.atlas-spin-slow {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: atlas-spin 12s linear infinite;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .atlas-flow-line,
-  .atlas-handoff-line,
-  .atlas-node-pulse,
-  .atlas-node-ping,
-  .atlas-frame-in,
-  .atlas-spin,
-  .atlas-spin-slow {
-    animation: none;
-  }
-}
-
-/* Lenis smooth scroll — recommended baseline so the rAF-driven scroll position
-   stays authoritative. Lenis is only initialised on the editorial routes. */
-html.lenis,
-html.lenis body {
-  height: auto;
-}
-.lenis.lenis-smooth {
-  scroll-behavior: auto !important;
-}
-.lenis.lenis-smooth [data-lenis-prevent] {
-  overscroll-behavior: contain;
-}
-.lenis.lenis-stopped {
-  overflow: hidden;
-}
+.wg-canvas { --background: 224 34% 7%; --foreground: 208 24% 93%; --card: 222 30% 11%; --card-foreground: 208 24% 93%; --card-border: 218 19% 23%; --popover: 222 30% 11%; --popover-foreground: 208 24% 93%; --popover-border: 218 19% 23%; --primary: 208 24% 93%; --primary-foreground: 224 34% 7%; --secondary: 220 22% 16%; --secondary-foreground: 208 24% 93%; --muted: 220 20% 16%; --muted-foreground: 214 14% 61%; --accent: 190 86% 56%; --accent-foreground: 224 34% 7%; --destructive: 0 72% 58%; --destructive-foreground: 0 0% 100%; --border: 218 19% 23%; --input: 218 17% 27%; --ring: 190 86% 56%; --wg-structure: 190 88% 57%; --wg-knowledge: 222 91% 68%; --wg-execution: 30 94% 62%; --wg-client: 330 76% 65%; --wg-flow: 154 65% 51%; --wg-error: 4 82% 61%; --wg-edge: 214 18% 46%; }
+.workspace-atlas { position: fixed; inset: 0; display: grid; grid-template-columns: 72px minmax(0,1fr) 340px; grid-template-rows: 72px minmax(0,1fr); overflow: hidden; background: hsl(var(--background)); color: hsl(var(--foreground)); font-family: var(--app-font-sans); }
+.atlas-rail { grid-row: 1 / 3; display: flex; flex-direction: column; align-items: center; padding: 18px 0; background: hsl(224 34% 6%); border-right: 1px solid hsl(var(--border)); z-index: 20; }
+.atlas-monogram { margin: 7px 0 38px; color: hsl(var(--wg-structure)); font: 700 .72rem var(--app-font-mono); letter-spacing: .08em; }
+.atlas-rail-items { display: flex; flex-direction: column; gap: 10px; }.atlas-rail-button { position: relative; width: 44px; height: 44px; display: grid; place-items: center; color: hsl(var(--muted-foreground)); border-radius: 10px; transition: color 140ms, background 140ms, transform 140ms; }.atlas-rail-button svg { width: 17px; height: 17px; }.atlas-rail-button:hover { color: hsl(var(--foreground)); background: hsl(var(--card)); }.atlas-rail-button:active { transform: scale(.95); }.atlas-rail-button.is-active { color: hsl(var(--wg-structure)); background: hsl(190 60% 18%); }.atlas-rail-button.is-active:before { content: ''; position: absolute; left: -14px; width: 3px; height: 18px; border-radius: 4px; background: hsl(var(--wg-structure)); }.atlas-rail-bottom { margin-top: auto; }
+.atlas-header { grid-column: 2 / 4; display: flex; align-items: center; justify-content: space-between; padding: 0 27px; background: hsl(var(--background)); border-bottom: 1px solid hsl(var(--border)); z-index: 15; }.atlas-brand-lockup { display: flex; align-items: center; gap: 14px; }.atlas-brand-mark { position: relative; width: 28px; height: 28px; }.atlas-brand-mark:before,.atlas-brand-mark:after { content: ''; position: absolute; inset: 3px; border: 1px solid hsl(var(--wg-structure)); transform: rotate(45deg); }.atlas-brand-mark:after { inset: 8px; border-color: hsl(var(--wg-execution)); }.atlas-brand-lockup h1 { margin: 0; font-size: 1rem; font-weight: 700; letter-spacing: -.025em; }.atlas-brand-lockup p { margin: 3px 0 0; color: hsl(var(--muted-foreground)); font: 400 .62rem var(--app-font-mono); letter-spacing: .1em; text-transform: uppercase; }.atlas-header-actions { display: flex; align-items: center; gap: 8px; }.atlas-live { display: flex; align-items: center; gap: 8px; margin-right: 12px; color: hsl(var(--wg-flow)); font: 400 .65rem var(--app-font-mono); }.atlas-live i { width: 7px; height: 7px; border-radius: 50%; background: currentColor; box-shadow: 0 0 14px currentColor; }.atlas-live.is-stale { color: hsl(var(--wg-execution)); }.atlas-action,.atlas-icon-action { height: 40px; border: 1px solid hsl(var(--border)); border-radius: 8px; background: hsl(var(--card)); color: hsl(var(--foreground)); display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; font-size: .78rem; transition: background 140ms, border-color 140ms, transform 140ms; }.atlas-action { padding: 0 14px; }.atlas-icon-action { width: 40px; }.atlas-action svg,.atlas-icon-action svg { width: 15px; height: 15px; }.atlas-action:hover,.atlas-icon-action:hover { background: hsl(var(--secondary)); border-color: hsl(var(--muted-foreground)); }.atlas-action:active,.atlas-icon-action:active { transform: scale(.96); }.atlas-action:disabled { opacity: .55; cursor: wait; }
+.atlas-stage { position: relative; overflow: hidden; background: radial-gradient(circle at 44% 44%, hsl(212 38% 14%), hsl(var(--background)) 52%); }.atlas-grid { position: absolute; inset: 0; pointer-events: none; opacity: .13; background-image: linear-gradient(hsl(var(--border)) 1px,transparent 1px),linear-gradient(90deg,hsl(var(--border)) 1px,transparent 1px); background-size: 52px 52px; mask-image: radial-gradient(circle at center,black,transparent 78%); }.atlas-canvas { position: absolute; inset: 0; }.atlas-canvas svg { overflow: visible; }.atlas-node { cursor: grab; outline: none; touch-action: none; }.atlas-node:active { cursor: grabbing; }.atlas-node:focus-visible circle { stroke-width: 3px; }.atlas-node-copy { pointer-events: none; font-family: var(--app-font-sans); font-size: 10px; font-weight: 650; }.atlas-node-copy .meta { fill: hsl(var(--muted-foreground)); font: 400 7px var(--app-font-mono); letter-spacing: .06em; }
+.atlas-search { position: absolute; top: 20px; left: 24px; z-index: 10; width: min(390px,calc(100% - 48px)); height: 44px; display: flex; align-items: center; gap: 10px; padding: 0 12px; border: 1px solid hsl(var(--border)); border-radius: 10px; background: hsl(var(--card)); }.atlas-search > svg { width: 16px; color: hsl(var(--muted-foreground)); }.atlas-search input { min-width: 0; flex: 1; border: 0; outline: 0; background: transparent; color: hsl(var(--foreground)); font-size: .82rem; }.atlas-search input::placeholder { color: hsl(var(--muted-foreground)); }.atlas-search kbd { padding: 3px 6px; border: 1px solid hsl(var(--border)); border-radius: 5px; color: hsl(var(--muted-foreground)); font: 400 .6rem var(--app-font-mono); }.atlas-search > button { color: hsl(var(--muted-foreground)); }.atlas-search > button svg { width: 14px; }.atlas-search-results { position: absolute; top: calc(100% + 7px); left: 0; right: 0; max-height: 330px; overflow: auto; border: 1px solid hsl(var(--border)); border-radius: 8px; background: hsl(var(--popover)); padding: 5px; }.atlas-search-results p { margin: 0; padding: 10px; color: hsl(var(--muted-foreground)); font-size: .75rem; }.atlas-search-results button { width: 100%; display: grid; grid-template-columns: 18px 1fr auto; gap: 8px; align-items: center; padding: 9px; border-radius: 5px; text-align: left; }.atlas-search-results button:hover { background: hsl(var(--secondary)); }.atlas-search-results svg { width: 14px; }.atlas-search-results span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .76rem; }.atlas-search-results small { color: hsl(var(--muted-foreground)); font: 400 .56rem var(--app-font-mono); text-transform: uppercase; }
+.atlas-modes { position: absolute; top: 20px; right: 22px; z-index: 9; display: flex; padding: 4px; border: 1px solid hsl(var(--border)); border-radius: 9px; background: hsl(var(--card)); }.atlas-modes button { padding: 8px 10px; border-radius: 6px; color: hsl(var(--muted-foreground)); font-size: .68rem; }.atlas-modes button:hover { color: hsl(var(--foreground)); }.atlas-modes button.is-active { color: hsl(var(--foreground)); background: hsl(var(--secondary)); }.atlas-legend { position: absolute; bottom: 22px; left: 24px; z-index: 9; display: flex; gap: 17px; align-items: center; padding: 10px 13px; border: 1px solid hsl(var(--border)); border-radius: 8px; background: hsl(var(--card)); }.atlas-legend span { display: flex; align-items: center; gap: 7px; color: hsl(var(--muted-foreground)); font: 400 .58rem var(--app-font-mono); }.atlas-legend i { width: 7px; height: 7px; border-radius: 50%; }.atlas-legend .structure { background: hsl(var(--wg-structure)); }.atlas-legend .knowledge { background: hsl(var(--wg-knowledge)); }.atlas-legend .agents { background: hsl(var(--wg-execution)); }.atlas-legend .live { background: hsl(var(--wg-flow)); }.atlas-zoom { position: absolute; right: 22px; bottom: 22px; z-index: 9; display: flex; flex-direction: column; overflow: hidden; border: 1px solid hsl(var(--border)); border-radius: 8px; }.atlas-zoom button { width: 38px; height: 36px; display: grid; place-items: center; color: hsl(var(--muted-foreground)); background: hsl(var(--card)); border-bottom: 1px solid hsl(var(--border)); }.atlas-zoom button:last-child { border: 0; }.atlas-zoom button:hover { color: hsl(var(--foreground)); background: hsl(var(--secondary)); }.atlas-zoom svg { width: 14px; }.atlas-truncated { position: absolute; bottom: 23px; left: 50%; transform: translateX(-50%); color: hsl(var(--muted-foreground)); font: 400 .58rem var(--app-font-mono); }
+.atlas-detail { grid-column: 3; grid-row: 2; position: relative; overflow-y: auto; padding: 24px 24px 30px; border-left: 1px solid hsl(var(--border)); background: hsl(var(--card)); z-index: 12; }.atlas-detail-close { position: absolute; top: 18px; right: 18px; width: 32px; height: 32px; display: grid; place-items: center; border-radius: 7px; color: hsl(var(--muted-foreground)); }.atlas-detail-close:hover { background: hsl(var(--secondary)); color: hsl(var(--foreground)); }.atlas-detail-close svg { width: 15px; }.atlas-eyebrow,.atlas-detail-section h3 { color: hsl(var(--wg-structure)); font: 700 .58rem var(--app-font-mono); letter-spacing: .12em; text-transform: uppercase; }.atlas-detail-identity { display: flex; align-items: flex-start; gap: 12px; margin-top: 14px; }.atlas-detail-identity > span { width: 35px; height: 35px; flex: 0 0 auto; display: grid; place-items: center; border: 1px solid; border-radius: 50%; }.atlas-detail-identity svg { width: 15px; }.atlas-detail h2 { margin: 0; max-width: 240px; font-size: 1.42rem; line-height: 1.22; letter-spacing: -.035em; text-wrap: balance; }.atlas-detail-identity p { margin: 6px 0 0; color: hsl(var(--muted-foreground)); font-size: .72rem; }.atlas-health { display: flex; align-items: center; gap: 7px; margin-top: 21px; padding-bottom: 21px; border-bottom: 1px solid hsl(var(--border)); color: hsl(var(--wg-flow)); font: 400 .62rem var(--app-font-mono); }.atlas-health i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }.atlas-detail-section { padding: 21px 0; border-bottom: 1px solid hsl(var(--border)); }.atlas-detail-section h3 { margin: 0 0 13px; color: hsl(var(--muted-foreground)); }.atlas-detail-section dl { display: flex; flex-direction: column; gap: 10px; margin: 0; }.atlas-detail-section dl div { display: grid; grid-template-columns: 1fr auto; gap: 12px; font-size: .74rem; }.atlas-detail-section dt { overflow: hidden; text-overflow: ellipsis; color: hsl(var(--muted-foreground)); }.atlas-detail-section dd { margin: 0; max-width: 150px; overflow: hidden; text-overflow: ellipsis; text-align: right; font: 600 .7rem var(--app-font-mono); }.atlas-relations > p { color: hsl(var(--muted-foreground)); font-size: .72rem; }.atlas-relations button { width: 100%; display: grid; grid-template-columns: 7px 1fr 13px; align-items: center; gap: 10px; padding: 8px 0; text-align: left; }.atlas-relations button:hover b { color: hsl(var(--wg-structure)); }.atlas-relations button > i { width: 7px; height: 7px; border-radius: 50%; }.atlas-relations span { display: flex; min-width: 0; flex-direction: column; gap: 2px; }.atlas-relations b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .72rem; font-weight: 600; }.atlas-relations small { color: hsl(var(--muted-foreground)); font: 400 .55rem var(--app-font-mono); text-transform: uppercase; }.atlas-relations button > svg { width: 12px; color: hsl(var(--muted-foreground)); }.atlas-relations .relation-type { display: none; }.atlas-detail-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 20px; }.atlas-detail-actions button,.atlas-detail-actions a { min-height: 42px; display: flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid hsl(var(--border)); border-radius: 8px; font-size: .72rem; font-weight: 650; }.atlas-detail-actions a { border-color: hsl(var(--wg-structure)); color: hsl(var(--wg-structure)); }.atlas-detail-actions svg { width: 14px; }.atlas-detail.is-empty { display: grid; place-items: center; }.atlas-empty-detail { max-width: 210px; text-align: center; color: hsl(var(--muted-foreground)); }.atlas-empty-detail > svg { width: 24px; margin: 0 auto 12px; }.atlas-empty-detail span { display: block; color: hsl(var(--foreground)); font-weight: 650; }.atlas-empty-detail p { font-size: .75rem; line-height: 1.55; }.atlas-state { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 11px; color: hsl(var(--muted-foreground)); font: 400 .7rem var(--app-font-mono); text-transform: uppercase; letter-spacing: .08em; }.atlas-state > svg { width: 25px; }.atlas-state button { margin-top: 5px; padding: 9px 12px; border: 1px solid hsl(var(--border)); border-radius: 7px; color: hsl(var(--foreground)); text-transform: none; letter-spacing: 0; }.atlas-state.is-error { color: hsl(var(--wg-error)); }
+@keyframes atlas-flow { to { stroke-dashoffset: -60; } } .atlas-flow-line { animation: atlas-flow 8s linear infinite; } @keyframes atlas-node-pulse { 50% { transform: scale(1.18); opacity: .32; } } .atlas-node-pulse { transform-box: fill-box; transform-origin: center; animation: atlas-node-pulse 2.4s ease-in-out infinite; } @keyframes atlas-rotate { to { transform: rotate(360deg); } } .atlas-rotating { animation: atlas-rotate 1s linear infinite; }
+html.lenis,html.lenis body { height: auto; }.lenis.lenis-smooth { scroll-behavior: auto !important; }.lenis.lenis-smooth [data-lenis-prevent] { overscroll-behavior: contain; }.lenis.lenis-stopped { overflow: hidden; }
+@media (prefers-reduced-motion: reduce) { .atlas-flow-line,.atlas-node-pulse,.atlas-rotating { animation: none; } }
+@media (max-width: 1100px) { .workspace-atlas { grid-template-columns: 60px minmax(0,1fr); grid-template-rows: 64px minmax(0,1fr); }.atlas-header { grid-column: 2; padding: 0 18px; }.atlas-detail { position: fixed; top: 64px; right: 0; bottom: 0; width: min(340px,calc(100vw - 60px)); }.atlas-detail.is-empty { display: none; }.atlas-live { display: none; }.atlas-modes { display: none; } }
+@media (max-width: 640px) { .workspace-atlas { grid-template-columns: 1fr; grid-template-rows: 60px minmax(0,1fr) 58px; }.atlas-header { grid-column: 1; grid-row: 1; padding: 0 14px; }.atlas-rail { grid-column: 1; grid-row: 3; flex-direction: row; justify-content: center; border-right: 0; border-top: 1px solid hsl(var(--border)); padding: 7px; }.atlas-monogram,.atlas-rail-bottom { display: none; }.atlas-rail-items { flex-direction: row; }.atlas-rail-button.is-active:before { display: none; }.atlas-stage { grid-row: 2; }.atlas-header-actions .atlas-icon-action { display: none; }.atlas-action { width: 40px; padding: 0; }.atlas-action { font-size: 0; }.atlas-search { top: 14px; left: 14px; width: calc(100% - 28px); }.atlas-legend,.atlas-truncated { display: none; }.atlas-zoom { right: 14px; bottom: 14px; }.atlas-detail { top: auto; left: 0; right: 0; bottom: 58px; width: 100%; max-height: 72vh; border-left: 0; border-top: 1px solid hsl(var(--border)); border-radius: 16px 16px 0 0; }.atlas-brand-lockup p { display: none; }.atlas-detail h2 { max-width: calc(100vw - 110px); } }

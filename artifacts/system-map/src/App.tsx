@@ -12,7 +12,7 @@ import Clients from "@/pages/Clients";
 import CrawlUpload from "@/pages/CrawlUpload";
 import Zoektermen from "@/pages/Zoektermen";
 import History from "@/pages/History";
-import Controle from "@/pages/Controle";
+import Knowledge from "@/pages/Knowledge";
 import Planning from "@/pages/Planning";
 import Todo from "@/pages/Todo";
 import VisualStudio from "@/pages/VisualStudio";
@@ -23,7 +23,6 @@ import AuthGate from "@/components/AuthGate";
 import { pageTransition } from "@/lib/motion";
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { retry: (count, error) => (error as { status?: number })?.status === 401 ? false : count < 2 } } });
-
 function Router() {
   return <Switch>
     <Route path="/" component={WorkspaceGraph} />
@@ -39,24 +38,14 @@ function Router() {
     <Route path="/history" component={History} />
     <Route path="/todo" component={Todo} />
     <Route path="/planning" component={Planning} />
-    <Route path="/controle" component={Controle} />
+    <Route path="/controle" component={Knowledge} />
+    <Route path="/knowledge"><Redirect to="/controle" /></Route>
     <Route path="/visuals" component={VisualStudio} />
     <Route component={NotFound} />
   </Switch>;
 }
-
-const atlasRoutes = new Set(["/", "/graph", "/atlas"]);
-function AppChrome() {
-  const [location] = useLocation();
-  if (atlasRoutes.has(location)) return null;
-  return <><TabNav /><CommandPalette /></>;
-}
-function AnimatedRoutes() {
-  const [location] = useLocation();
-  const reduce = useReducedMotion();
-  return <AnimatePresence mode="wait" initial={false}><motion.div key={location} initial={reduce ? false : { opacity: 0 }} animate={{ opacity: 1 }} exit={reduce ? { opacity: 1 } : { opacity: 0 }} transition={pageTransition}><Router /></motion.div></AnimatePresence>;
-}
-function App() {
-  return <QueryClientProvider client={queryClient}><TooltipProvider><AuthGate><WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}><SmoothScroll><AppChrome /><AnimatedRoutes /></SmoothScroll></WouterRouter></AuthGate><Toaster /></TooltipProvider></QueryClientProvider>;
-}
+const atlasRoutes = new Set(["/", "/graph", "/atlas", "/controle", "/knowledge"]);
+function AppChrome() { const [location] = useLocation(); if (atlasRoutes.has(location)) return null; return <><TabNav /><CommandPalette /></>; }
+function AnimatedRoutes() { const [location] = useLocation(); const reduce = useReducedMotion(); return <AnimatePresence mode="wait" initial={false}><motion.div key={location} initial={reduce ? false : { opacity: 0 }} animate={{ opacity: 1 }} exit={reduce ? { opacity: 1 } : { opacity: 0 }} transition={pageTransition}><Router /></motion.div></AnimatePresence>; }
+function App() { return <QueryClientProvider client={queryClient}><TooltipProvider><AuthGate><WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}><SmoothScroll><AppChrome /><AnimatedRoutes /></SmoothScroll></WouterRouter></AuthGate><Toaster /></TooltipProvider></QueryClientProvider>; }
 export default App;

@@ -6,6 +6,7 @@ export interface ClickUpListDetail { id: string; name: string; statuses?: ClickU
 export interface ClickUpFolder { id: string; name: string; lists?: { id: string; name: string }[]; }
 export interface ClickUpTaskRef {
   id: string; url?: string; name?: string; list?: { id?: string; name?: string };
+  status?: { status?: string; type?: string };
   custom_fields?: { id?: string; name?: string; type?: string; value?: unknown }[];
 }
 export type PushOutcome =

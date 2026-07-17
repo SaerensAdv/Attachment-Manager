@@ -62,8 +62,8 @@ export default function WorkspaceGraphCanvas({ nodes, edges, hiddenGroups, selec
     for (let index = 0; index < 260; index += 1) simulation.tick();
     nextNodes.forEach((node) => { if (node.x != null && node.y != null) positions.current.set(node.id, { x: node.x, y: node.y }); });
     setSimNodes([...nextNodes]); setSimEdges([...nextEdges]); setSettled((value) => value + 1);
-    return () => simulation.stop();
-  }, [signature, size.width, size.height]);
+    return () => { simulation.stop(); };
+  }, [signature, size.width, size.height, nodes, edges]);
 
   const fit = useCallback((duration = 380) => {
     if (!api.current || !simNodes.length || !size.width || !size.height) return;
@@ -74,7 +74,7 @@ export default function WorkspaceGraphCanvas({ nodes, edges, hiddenGroups, selec
     setScale(nextScale);
   }, [simNodes, size]);
   useEffect(() => { if (settled) fit(0); }, [settled, fit]);
-  useEffect(() => { if (!focusRequest || !api.current) return; const node = simNodes.find((item) => item.id === focusRequest.id); if (!node?.x || !node?.y) return; const nextScale = Math.max(scale, .9); api.current.setTransform(size.width / 2 - node.x * nextScale, size.height / 2 - node.y * nextScale, nextScale, 380); }, [focusRequest, simNodes, size, scale]);
+  useEffect(() => { if (!focusRequest || !api.current) return; const node = simNodes.find((item) => item.id === focusRequest.id); if (node?.x == null || node.y == null) return; const nextScale = Math.max(scale, .9); api.current.setTransform(size.width / 2 - node.x * nextScale, size.height / 2 - node.y * nextScale, nextScale, 380); }, [focusRequest, simNodes, size, scale]);
 
   const hidden = (node: GraphNode) => hiddenGroups.has(groupForNode(node));
   const connected = useMemo(() => {
@@ -90,7 +90,7 @@ export default function WorkspaceGraphCanvas({ nodes, edges, hiddenGroups, selec
         <svg width={size.width} height={size.height} role="img" aria-label="Interactieve workspace graph">
           <defs><marker id="atlas-arrow" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0 0L10 5L0 10Z" fill="context-stroke" /></marker></defs>
           <rect x={-size.width * 3} y={-size.height * 3} width={size.width * 7} height={size.height * 7} fill="transparent" onClick={() => onSelectNode(null)} />
-          <g>{simEdges.map((edge) => { const source = edge.source as SimNode, target = edge.target as SimNode; if (hidden(source) || hidden(target) || source.x == null || target.x == null) return null; const active = selectedNodeId === source.id || selectedNodeId === target.id || hovered === source.id || hovered === target.id; const dim = connected && (!connected.has(source.id) || !connected.has(target.id)); const mx = (source.x + target.x) / 2 + (target.y - source.y) * .08, my = (source.y + target.y) / 2 - (target.x - source.x) * .08; return <path key={edge.id} d={`M${source.x},${source.y} Q${mx},${my} ${target.x},${target.y}`} fill="none" stroke={edgeColorVar(edge)} strokeWidth={active ? 1.8 : 1} strokeDasharray={edge.weak ? "3 6" : isFlowRelation(edge.relation) ? "5 7" : undefined} markerEnd="url(#atlas-arrow)" opacity={dim ? .05 : active ? .94 : edge.weak ? .22 : .48} className={isFlowRelation(edge.relation) && edge.active !== false ? "atlas-flow-line" : undefined} />; })}</g>
+          <g>{simEdges.map((edge) => { const source = edge.source as SimNode, target = edge.target as SimNode; if (hidden(source) || hidden(target) || source.x == null || source.y == null || target.x == null || target.y == null) return null; const active = selectedNodeId === source.id || selectedNodeId === target.id || hovered === source.id || hovered === target.id; const dim = connected && (!connected.has(source.id) || !connected.has(target.id)); const mx = (source.x + target.x) / 2 + (target.y - source.y) * .08, my = (source.y + target.y) / 2 - (target.x - source.x) * .08; return <path key={edge.id} d={`M${source.x},${source.y} Q${mx},${my} ${target.x},${target.y}`} fill="none" stroke={edgeColorVar(edge)} strokeWidth={active ? 1.8 : 1} strokeDasharray={edge.weak ? "3 6" : isFlowRelation(edge.relation) ? "5 7" : undefined} markerEnd="url(#atlas-arrow)" opacity={dim ? .05 : active ? .94 : edge.weak ? .22 : .48} className={isFlowRelation(edge.relation) && edge.active !== false ? "atlas-flow-line" : undefined} />; })}</g>
           <g>{simNodes.map((node) => { if (hidden(node) || node.x == null || node.y == null) return null; const r = radius(node), selected = node.id === selectedNodeId, isHovered = node.id === hovered, dim = connected && !connected.has(node.id), showLabel = selected || isHovered || scale > .54 || r >= 12; return <g key={node.id} transform={`translate(${node.x},${node.y})`} role="button" tabIndex={0} aria-label={`${node.label}, ${node.sourceType}`} className="atlas-node" opacity={dim ? .12 : 1}
             onPointerDown={(event) => { event.stopPropagation(); event.currentTarget.setPointerCapture(event.pointerId); drag.current = { id: node.id, x: event.clientX, y: event.clientY, moved: false }; }}
             onPointerMove={(event) => { if (!drag.current || drag.current.id !== node.id) return; const dx = (event.clientX - drag.current.x) / scale, dy = (event.clientY - drag.current.y) / scale; node.x = (node.x ?? 0) + dx; node.y = (node.y ?? 0) + dy; drag.current.x = event.clientX; drag.current.y = event.clientY; drag.current.moved ||= Math.hypot(dx, dy) > 2; positions.current.set(node.id, { x: node.x, y: node.y }); redraw((value) => value + 1); }}

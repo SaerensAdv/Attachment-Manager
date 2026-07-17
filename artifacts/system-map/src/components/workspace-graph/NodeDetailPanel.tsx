@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { ArrowLeft, ArrowRight, ExternalLink, Network, X } from "lucide-react";
 import type { GraphNode, GraphEdge } from "@workspace/api-client-react";
-import { useGetGraphNeighbors } from "@workspace/api-client-react";
+import { getGetGraphNeighborsQueryKey, useGetGraphNeighbors } from "@workspace/api-client-react";
 import { nodeColorVar, relativeTime, SOURCE_TYPE_ICON, SOURCE_TYPE_LABEL, SOURCE_LABEL, RELATION_LABEL } from "./graph-model";
 
 export interface NodeDetailPanelProps {
@@ -12,7 +12,13 @@ export interface NodeDetailPanelProps {
 }
 
 export default function NodeDetailPanel({ node, onClose, onSelectNode, onExpand }: NodeDetailPanelProps) {
-  const { data, isLoading } = useGetGraphNeighbors(node?.id ?? "", { query: { enabled: Boolean(node) } });
+  const nodeId = node?.id ?? "";
+  const { data, isLoading } = useGetGraphNeighbors(nodeId, {
+    query: {
+      enabled: Boolean(node),
+      queryKey: getGetGraphNeighborsQueryKey(nodeId),
+    },
+  });
   const rows = useMemo(() => {
     if (!node || !data) return [];
     const byId = new Map(data.nodes.map((item) => [item.id, item]));

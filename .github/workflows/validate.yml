@@ -12,10 +12,7 @@ jobs:
     services:
       postgres:
         image: postgres:16
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: attachment_manager_test
+        env: { POSTGRES_USER: postgres, POSTGRES_PASSWORD: postgres, POSTGRES_DB: attachment_manager_test }
         ports: ["5432:5432"]
         options: >-
           --health-cmd "pg_isready -U postgres"
@@ -32,10 +29,9 @@ jobs:
       - uses: pnpm/action-setup@v4
         with: { version: 10 }
       - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
+        with: { node-version: 22, cache: pnpm }
       - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @workspace/api-spec codegen:check
       - run: pnpm typecheck
       - run: pnpm --filter @workspace/api-server test
       - run: pnpm --filter @workspace/system-map test

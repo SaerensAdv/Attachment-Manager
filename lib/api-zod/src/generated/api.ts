@@ -2263,55 +2263,11 @@ export const SetGenerationFeedbackResponse = zod.object({
 
 
 /**
- * @summary Approve a held client-facing report and send it to the client
+ * Atomically claims the held delivery and creates a Gmail draft. This endpoint never sends client email automatically.
+ * @summary Approve a held delivery and create a Gmail draft
  */
 export const ApproveGenerationParams = zod.object({
   "id": zod.coerce.number()
-})
-
-export const ApproveGenerationResponse = zod.object({
-  "id": zod.number(),
-  "clientName": zod.string(),
-  "workflowTitle": zod.string(),
-  "leadAgentTitle": zod.string(),
-  "teamTitles": zod.array(zod.string()),
-  "requestText": zod.string(),
-  "createdAt": zod.coerce.date(),
-  "clientPath": zod.string(),
-  "workflowPath": zod.string(),
-  "leadAgentPath": zod.string(),
-  "teamPaths": zod.array(zod.string()),
-  "finalMarkdown": zod.string(),
-  "status": zod.string(),
-  "triggerSource": zod.string(),
-  "durationMs": zod.number().nullable(),
-  "totalTokens": zod.number().nullable(),
-  "feedbackVerdict": zod.string().nullable(),
-  "feedbackNote": zod.string().nullable(),
-  "feedbackAt": zod.coerce.date().nullable(),
-  "approvalStatus": zod.string().nullable(),
-  "approvalNote": zod.string().nullable(),
-  "approvalAt": zod.coerce.date().nullable(),
-  "hasPendingDelivery": zod.boolean(),
-  "pendingDeliveryKind": zod.union([zod.literal('monthly-report'),zod.literal('email-reply'),zod.literal(null)]).nullable().describe('Which kind of drafted-but-unsent delivery is held on this run, or null when none is pending.'),
-  "pendingEmailReply": zod.object({
-  "recipient": zod.string(),
-  "subject": zod.string(),
-  "inboundText": zod.string(),
-  "replyBody": zod.string()
-}).nullable().describe('For a held inbound email reply (drafted autonomously, no live session), the reviewable content so a human can approve from the archive. Identity\/threading internals are intentionally omitted.'),
-  "clientFacing": zod.boolean().nullable().describe('The effective quality-gate flag this run resolved to (whether the output was client-facing text, which decides if the Humanizer ran). Internal audit signal. Null on runs that failed before the gate resolved.'),
-  "touchesLiveAccount": zod.boolean().nullable().describe('Whether this run\'s work touched live spend, bids or tracking, as resolved for the quality gate. Internal audit signal. Null on runs that failed before the gate resolved.'),
-  "fanoutCandidates": zod.object({
-  "rationale": zod.string(),
-  "candidates": zod.array(zod.object({
-  "variant": zod.number(),
-  "text": zod.string(),
-  "status": zod.string(),
-  "winner": zod.boolean(),
-  "reason": zod.string().optional().describe('Brief reason this variation lost (e.g. \"weaker hook\"). Empty for the winner and when no per-variant reason was captured.')
-}))
-}).nullable().describe('For a fan-out lead step, every usable creative variation that was generated plus the selector\'s rationale, with the winning variant flagged. Lets the archive show the alternatives, not just the auto-chosen winner. Null for runs that did not fan out.')
 })
 
 
@@ -3166,6 +3122,16 @@ export const GetGraphSyncStatusResponse = zod.object({
   "error": zod.string().nullish(),
   "syncing": zod.boolean().describe('True while a background sync holds the lock.')
 }).describe('Cache metadata for the active snapshot (freshness + size + sync state).')
+})
+
+
+export const RequeueAtlasClickUpPushParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+export const RequeueAtlasWebhookDeadLetterParams = zod.object({
+  "id": zod.coerce.number()
 })
 
 

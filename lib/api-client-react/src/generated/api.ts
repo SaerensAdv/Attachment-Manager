@@ -4531,11 +4531,12 @@ export const getApproveGenerationUrl = (id: number,) => {
 }
 
 /**
- * @summary Approve a held client-facing report and send it to the client
+ * Atomically claims the held delivery and creates a Gmail draft. This endpoint never sends client email automatically.
+ * @summary Approve a held delivery and create a Gmail draft
  */
-export const approveGeneration = async (id: number, options?: RequestInit): Promise<Generation> => {
+export const approveGeneration = async (id: number, options?: RequestInit): Promise<void> => {
 
-  return customFetch<Generation>(getApproveGenerationUrl(id),
+  return customFetch<void>(getApproveGenerationUrl(id),
   {
     ...options,
     method: 'POST'
@@ -4547,7 +4548,7 @@ export const approveGeneration = async (id: number, options?: RequestInit): Prom
 
 
 
-export const getApproveGenerationMutationOptions = <TError = ErrorType<ErrorResponse>,
+export const getApproveGenerationMutationOptions = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof approveGeneration>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof approveGeneration>>, TError,{id: number}, TContext> => {
 
@@ -4576,12 +4577,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type ApproveGenerationMutationResult = NonNullable<Awaited<ReturnType<typeof approveGeneration>>>
 
-    export type ApproveGenerationMutationError = ErrorType<ErrorResponse>
+    export type ApproveGenerationMutationError = ErrorType<void>
 
     /**
- * @summary Approve a held client-facing report and send it to the client
+ * @summary Approve a held delivery and create a Gmail draft
  */
-export const useApproveGeneration = <TError = ErrorType<ErrorResponse>,
+export const useApproveGeneration = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof approveGeneration>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof approveGeneration>>,
@@ -7045,4 +7046,575 @@ export function useGetGraphSyncStatus<TData = Awaited<ReturnType<typeof getGraph
 
 
 
+
+export const getGetAtlasSystemStatusUrl = () => {
+
+
+
+
+  return `/api/system/status`
+}
+
+/**
+ * @summary Truthful runtime and integration health
+ */
+export const getAtlasSystemStatus = async ( options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getGetAtlasSystemStatusUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAtlasSystemStatusQueryKey = () => {
+    return [
+    `/api/system/status`
+    ] as const;
+    }
+
+
+export const getGetAtlasSystemStatusQueryOptions = <TData = Awaited<ReturnType<typeof getAtlasSystemStatus>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAtlasSystemStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAtlasSystemStatusQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAtlasSystemStatus>>> = ({ signal }) => getAtlasSystemStatus({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAtlasSystemStatus>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAtlasSystemStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getAtlasSystemStatus>>>
+export type GetAtlasSystemStatusQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Truthful runtime and integration health
+ */
+
+export function useGetAtlasSystemStatus<TData = Awaited<ReturnType<typeof getAtlasSystemStatus>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAtlasSystemStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAtlasSystemStatusQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetAtlasOperationsStatusUrl = () => {
+
+
+
+
+  return `/api/operations/status`
+}
+
+/**
+ * @summary Operator queues, scheduler, graph and webhook health
+ */
+export const getAtlasOperationsStatus = async ( options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getGetAtlasOperationsStatusUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAtlasOperationsStatusQueryKey = () => {
+    return [
+    `/api/operations/status`
+    ] as const;
+    }
+
+
+export const getGetAtlasOperationsStatusQueryOptions = <TData = Awaited<ReturnType<typeof getAtlasOperationsStatus>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAtlasOperationsStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAtlasOperationsStatusQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAtlasOperationsStatus>>> = ({ signal }) => getAtlasOperationsStatus({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAtlasOperationsStatus>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAtlasOperationsStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getAtlasOperationsStatus>>>
+export type GetAtlasOperationsStatusQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Operator queues, scheduler, graph and webhook health
+ */
+
+export function useGetAtlasOperationsStatus<TData = Awaited<ReturnType<typeof getAtlasOperationsStatus>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAtlasOperationsStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAtlasOperationsStatusQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetAtlasCompaniesUrl = () => {
+
+
+
+
+  return `/api/clickup/companies`
+}
+
+/**
+ * @summary Read the local ClickUp Companies mirror and sync state
+ */
+export const getAtlasCompanies = async ( options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getGetAtlasCompaniesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAtlasCompaniesQueryKey = () => {
+    return [
+    `/api/clickup/companies`
+    ] as const;
+    }
+
+
+export const getGetAtlasCompaniesQueryOptions = <TData = Awaited<ReturnType<typeof getAtlasCompanies>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAtlasCompanies>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAtlasCompaniesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAtlasCompanies>>> = ({ signal }) => getAtlasCompanies({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAtlasCompanies>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAtlasCompaniesQueryResult = NonNullable<Awaited<ReturnType<typeof getAtlasCompanies>>>
+export type GetAtlasCompaniesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Read the local ClickUp Companies mirror and sync state
+ */
+
+export function useGetAtlasCompanies<TData = Awaited<ReturnType<typeof getAtlasCompanies>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAtlasCompanies>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAtlasCompaniesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetAtlasCompanySyncStatusUrl = () => {
+
+
+
+
+  return `/api/clickup/companies/sync-status`
+}
+
+export const getAtlasCompanySyncStatus = async ( options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getGetAtlasCompanySyncStatusUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAtlasCompanySyncStatusQueryKey = () => {
+    return [
+    `/api/clickup/companies/sync-status`
+    ] as const;
+    }
+
+
+export const getGetAtlasCompanySyncStatusQueryOptions = <TData = Awaited<ReturnType<typeof getAtlasCompanySyncStatus>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAtlasCompanySyncStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAtlasCompanySyncStatusQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAtlasCompanySyncStatus>>> = ({ signal }) => getAtlasCompanySyncStatus({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAtlasCompanySyncStatus>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAtlasCompanySyncStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getAtlasCompanySyncStatus>>>
+export type GetAtlasCompanySyncStatusQueryError = ErrorType<unknown>
+
+
+
+export function useGetAtlasCompanySyncStatus<TData = Awaited<ReturnType<typeof getAtlasCompanySyncStatus>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAtlasCompanySyncStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAtlasCompanySyncStatusQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getSyncAtlasCompaniesUrl = () => {
+
+
+
+
+  return `/api/clickup/companies/sync`
+}
+
+/**
+ * @summary Explicit owner-triggered Companies master sync
+ */
+export const syncAtlasCompanies = async ( options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getSyncAtlasCompaniesUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getSyncAtlasCompaniesMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof syncAtlasCompanies>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof syncAtlasCompanies>>, TError,void, TContext> => {
+
+const mutationKey = ['syncAtlasCompanies'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof syncAtlasCompanies>>, void> = () => {
+
+
+          return  syncAtlasCompanies(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SyncAtlasCompaniesMutationResult = NonNullable<Awaited<ReturnType<typeof syncAtlasCompanies>>>
+
+    export type SyncAtlasCompaniesMutationError = ErrorType<void>
+
+    /**
+ * @summary Explicit owner-triggered Companies master sync
+ */
+export const useSyncAtlasCompanies = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof syncAtlasCompanies>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof syncAtlasCompanies>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getSyncAtlasCompaniesMutationOptions(options));
+    }
+
+export const getGetAtlasClickUpPushesUrl = () => {
+
+
+
+
+  return `/api/clickup/pushes`
+}
+
+export const getAtlasClickUpPushes = async ( options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getGetAtlasClickUpPushesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAtlasClickUpPushesQueryKey = () => {
+    return [
+    `/api/clickup/pushes`
+    ] as const;
+    }
+
+
+export const getGetAtlasClickUpPushesQueryOptions = <TData = Awaited<ReturnType<typeof getAtlasClickUpPushes>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAtlasClickUpPushes>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAtlasClickUpPushesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAtlasClickUpPushes>>> = ({ signal }) => getAtlasClickUpPushes({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAtlasClickUpPushes>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAtlasClickUpPushesQueryResult = NonNullable<Awaited<ReturnType<typeof getAtlasClickUpPushes>>>
+export type GetAtlasClickUpPushesQueryError = ErrorType<unknown>
+
+
+
+export function useGetAtlasClickUpPushes<TData = Awaited<ReturnType<typeof getAtlasClickUpPushes>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAtlasClickUpPushes>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAtlasClickUpPushesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getRequeueAtlasClickUpPushUrl = (id: number,) => {
+
+
+
+
+  return `/api/clickup/pushes/${id}/requeue`
+}
+
+export const requeueAtlasClickUpPush = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getRequeueAtlasClickUpPushUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getRequeueAtlasClickUpPushMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requeueAtlasClickUpPush>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof requeueAtlasClickUpPush>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['requeueAtlasClickUpPush'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof requeueAtlasClickUpPush>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  requeueAtlasClickUpPush(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RequeueAtlasClickUpPushMutationResult = NonNullable<Awaited<ReturnType<typeof requeueAtlasClickUpPush>>>
+
+    export type RequeueAtlasClickUpPushMutationError = ErrorType<void>
+
+    export const useRequeueAtlasClickUpPush = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requeueAtlasClickUpPush>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof requeueAtlasClickUpPush>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getRequeueAtlasClickUpPushMutationOptions(options));
+    }
+
+export const getRequeueAtlasWebhookDeadLetterUrl = (id: number,) => {
+
+
+
+
+  return `/api/clickup/webhooks/${id}/requeue`
+}
+
+export const requeueAtlasWebhookDeadLetter = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getRequeueAtlasWebhookDeadLetterUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getRequeueAtlasWebhookDeadLetterMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requeueAtlasWebhookDeadLetter>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof requeueAtlasWebhookDeadLetter>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['requeueAtlasWebhookDeadLetter'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof requeueAtlasWebhookDeadLetter>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  requeueAtlasWebhookDeadLetter(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RequeueAtlasWebhookDeadLetterMutationResult = NonNullable<Awaited<ReturnType<typeof requeueAtlasWebhookDeadLetter>>>
+
+    export type RequeueAtlasWebhookDeadLetterMutationError = ErrorType<void>
+
+    export const useRequeueAtlasWebhookDeadLetter = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requeueAtlasWebhookDeadLetter>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof requeueAtlasWebhookDeadLetter>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getRequeueAtlasWebhookDeadLetterMutationOptions(options));
+    }
 

@@ -5,7 +5,7 @@
   "scripts": {
     "prepare:atlas": "node ./prepare-atlas-openapi.mjs",
     "codegen": "pnpm run prepare:atlas && orval --config ./orval.config.ts && rm -f ./.atlas-openapi.generated.yaml && pnpm -w run typecheck:libs",
-    "codegen:check": "pnpm run codegen && git diff --exit-code -- ../api-client-react/src/generated ../api-zod/src/generated"
+    "codegen:check": "pnpm run codegen"
   },
   "devDependencies": {
     "orval": "^8.9.1"

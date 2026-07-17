@@ -26,7 +26,7 @@ PORT=3000 BASE_PATH=/ pnpm --filter @workspace/api-server build
 PORT=3000 BASE_PATH=/ pnpm --filter @workspace/system-map build
 ```
 
-Codegen intentionally refreshes generated files in the working tree. Review those diffs and commit them on this branch if Orval changes generated output.
+Codegen refreshes generated files in the working tree for the remaining validation commands. A failed generation restores the last committed generated clients automatically, so one bad spec cannot break the checkout.
 
 ## Runtime smoke, safe default
 

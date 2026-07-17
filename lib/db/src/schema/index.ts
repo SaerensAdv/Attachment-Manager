@@ -1,6 +1,7 @@
 export * from "./auth";
 export * from "./clickup-companies";
 export * from "./clickup-push-records";
+export * from "./clickup-webhook-events";
 export * from "./client-groups";
 export * from "./clients";
 export * from "./email-threads";

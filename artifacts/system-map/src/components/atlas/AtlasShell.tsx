@@ -1,9 +1,9 @@
 import type { ReactNode } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Activity, Bot, Building2, FileText, History, Network, Settings2, ShieldCheck } from "lucide-react";
 
 const lenses = [
-  { href: "/", label: "Workspace", icon: Network, active: true },
+  { href: "/", label: "Workspace", icon: Network },
   { href: "/todo", label: "Operations", icon: Activity },
   { href: "/history", label: "Runs", icon: History },
   { href: "/clients", label: "Clients", icon: Building2 },
@@ -23,6 +23,7 @@ export default function AtlasShell({
   actions?: ReactNode;
   children: ReactNode;
 }) {
+  const [location] = useLocation();
   return (
     <div className="workspace-atlas wg-canvas">
       <nav className="atlas-rail" aria-label="Atlas lenses">
@@ -30,19 +31,22 @@ export default function AtlasShell({
           <span>SA</span>
         </Link>
         <div className="atlas-rail-items">
-          {lenses.map(({ href, label, icon: Icon, active }) => (
-            <Link
-              key={label}
-              href={href}
-              className={`atlas-rail-button${active ? " is-active" : ""}`}
-              aria-current={active ? "page" : undefined}
-              aria-label={label}
-              title={label}
-            >
-              <Icon />
-              <span className="atlas-rail-label">{label}</span>
-            </Link>
-          ))}
+          {lenses.map(({ href, label, icon: Icon }) => {
+            const active = href === "/" ? location === "/" || location === "/graph" || location === "/atlas" : location === href || location.startsWith(`${href}/`);
+            return (
+              <Link
+                key={label}
+                href={href}
+                className={`atlas-rail-button${active ? " is-active" : ""}`}
+                aria-current={active ? "page" : undefined}
+                aria-label={label}
+                title={label}
+              >
+                <Icon />
+                <span className="atlas-rail-label">{label}</span>
+              </Link>
+            );
+          })}
         </div>
         <Link href="/legacy" className="atlas-rail-button atlas-rail-bottom" title="Legacy interface" aria-label="Legacy interface">
           <Settings2 />

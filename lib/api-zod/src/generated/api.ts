@@ -1781,6 +1781,135 @@ export const ApplyClientsClickupLinksResponse = zod.object({
 
 
 /**
+ * Owner-only manual trigger for the ClickUp report push. Defaults to a dry-run that resolves + gates the target and returns a safe preview, writing nothing. Set dryRun=false for a real, idempotent push.
+
+ * @summary Manually push (or dry-run) a monthly report to ClickUp as a Draft task
+ */
+export const PushClickupReportBody = zod.object({
+  "clientId": zod.number(),
+  "period": zod.string().describe('Reporting month as YYYY-MM.'),
+  "dryRun": zod.boolean().optional().describe('Defaults to true; set false to perform a real push.'),
+  "clientReport": zod.string().optional().describe('Optional report markdown; a labelled test body is used when omitted.'),
+  "sourceRunId": zod.string().optional()
+})
+
+export const PushClickupReportResponse = zod.object({
+  "status": zod.enum(['pushed', 'duplicate', 'skipped', 'failed']),
+  "idempotencyKey": zod.string().nullish(),
+  "objectId": zod.string().nullish(),
+  "url": zod.string().nullish(),
+  "reason": zod.string().nullish(),
+  "dryRun": zod.boolean().nullish(),
+  "preview": zod.record(zod.string(), zod.unknown()).nullish(),
+  "code": zod.string().nullish(),
+  "message": zod.string().nullish()
+})
+
+
+/**
+ * Owner-only manual trigger for the ClickUp search-terms push into the central Internal Work list. Defaults to a dry-run that resolves the list + returns a safe preview, writing nothing. Set dryRun=false for a real, idempotent push with the analysis attached as a CSV.
+
+ * @summary Manually push (or dry-run) a weekly search-terms review task to ClickUp
+ */
+export const PushClickupSearchTermsBody = zod.object({
+  "customerId": zod.string().describe('Google Ads customer id (used for idempotency + naming).'),
+  "accountName": zod.string().optional(),
+  "weekStart": zod.string().describe('ISO Monday of the reporting week, as YYYY-MM-DD.'),
+  "rows": zod.array(zod.object({
+  "term": zod.string(),
+  "impressions": zod.number(),
+  "clicks": zod.number(),
+  "cost": zod.number(),
+  "classification": zod.string(),
+  "proposedAction": zod.string()
+})).optional().describe('Analysed search terms; a labelled test set is used when omitted.'),
+  "reportUrl": zod.string().optional(),
+  "dryRun": zod.boolean().optional().describe('Defaults to true; set false to perform a real push.'),
+  "sourceRunId": zod.string().optional()
+})
+
+export const PushClickupSearchTermsResponse = zod.object({
+  "status": zod.enum(['pushed', 'duplicate', 'skipped', 'failed']),
+  "idempotencyKey": zod.string().nullish(),
+  "objectId": zod.string().nullish(),
+  "url": zod.string().nullish(),
+  "reason": zod.string().nullish(),
+  "dryRun": zod.boolean().nullish(),
+  "preview": zod.record(zod.string(), zod.unknown()).nullish(),
+  "code": zod.string().nullish(),
+  "message": zod.string().nullish()
+})
+
+
+/**
+ * Owner-only manual trigger for one alert. Defaults to a dry-run that returns a safe preview, writing nothing. Creates a task in the central Internal Work list, or comments on targetTaskId when set. Idempotent per fingerprint + dedup window.
+
+ * @summary Manually push (or dry-run) a single operational alert to ClickUp
+ */
+export const PushClickupAlertBody = zod.object({
+  "type": zod.string(),
+  "severity": zod.string(),
+  "message": zod.string(),
+  "dedupeKey": zod.string().optional().describe('Stable dedup discriminator; defaults to type + client\/system context.'),
+  "clientId": zod.union([zod.number(),zod.string()]).nullish(),
+  "clientName": zod.string().optional(),
+  "companyTaskId": zod.string().optional(),
+  "evidence": zod.string().optional(),
+  "recommendedAction": zod.string().optional(),
+  "sourceRunId": zod.string().optional(),
+  "targetTaskId": zod.string().optional().describe('When set, comment on this task instead of creating one in Internal Work.'),
+  "windowMs": zod.number().optional().describe('Dedup window in ms (default 24h).'),
+  "dryRun": zod.boolean().optional().describe('Defaults to true; set false to perform a real push.')
+})
+
+export const PushClickupAlertResponse = zod.object({
+  "status": zod.enum(['pushed', 'duplicate', 'skipped', 'failed']),
+  "idempotencyKey": zod.string().nullish(),
+  "objectId": zod.string().nullish(),
+  "url": zod.string().nullish(),
+  "reason": zod.string().nullish(),
+  "dryRun": zod.boolean().nullish(),
+  "preview": zod.record(zod.string(), zod.unknown()).nullish(),
+  "code": zod.string().nullish(),
+  "message": zod.string().nullish()
+})
+
+
+/**
+ * Owner-only manual trigger that reads the app's open system alerts and pushes each to ClickUp. Defaults to a dry-run. Best-effort per alert; each push is idempotent per fingerprint + dedup window.
+
+ * @summary Push (or dry-run) all open system alerts to ClickUp, idempotently
+ */
+export const SweepClickupAlertsBody = zod.object({
+  "limit": zod.number().optional(),
+  "windowMs": zod.number().optional(),
+  "dryRun": zod.boolean().optional().describe('Defaults to true; set false to perform a real sweep.')
+})
+
+export const SweepClickupAlertsResponse = zod.object({
+  "scanned": zod.number(),
+  "pushed": zod.number(),
+  "duplicate": zod.number(),
+  "skipped": zod.number(),
+  "failed": zod.number(),
+  "results": zod.array(zod.object({
+  "alertId": zod.number(),
+  "outcome": zod.object({
+  "status": zod.enum(['pushed', 'duplicate', 'skipped', 'failed']),
+  "idempotencyKey": zod.string().nullish(),
+  "objectId": zod.string().nullish(),
+  "url": zod.string().nullish(),
+  "reason": zod.string().nullish(),
+  "dryRun": zod.boolean().nullish(),
+  "preview": zod.record(zod.string(), zod.unknown()).nullish(),
+  "code": zod.string().nullish(),
+  "message": zod.string().nullish()
+})
+}))
+})
+
+
+/**
  * @summary Refresh every configured integration for one client (best-effort)
  */
 export const ClientRefreshAllParams = zod.object({

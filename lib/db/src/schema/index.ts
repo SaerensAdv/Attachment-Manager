@@ -18,6 +18,7 @@
 //   export type Post = typeof postsTable.$inferSelect;
 
 export * from "./auth";
+export * from "./clickup-push-records";
 export * from "./client-groups";
 export * from "./clients";
 export * from "./email-threads";

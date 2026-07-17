@@ -40,6 +40,10 @@ import {
   listProposalsForGeneration,
 } from "../lib/proposals-store";
 import { generateProposals } from "../lib/improvements";
+import { eq } from "drizzle-orm";
+import { db, clientsTable } from "@workspace/db";
+import { brusselsParts } from "../lib/brussels";
+import { pushReport } from "../lib/clickup/push-report";
 
 const router: IRouter = Router();
 
@@ -502,6 +506,70 @@ router.post("/generations/:id/approve", async (req, res) => {
           200,
         )}`,
         context: { key: `worklist-send:${id}`, generationId: id },
+      });
+    }
+  }
+
+  // Best-effort: mirror the approved monthly report into ClickUp as a Draft task
+  // in the client's Reporting & Billing list (ClickUp is the source of truth for
+  // deliverables). The Gmail draft is already committed above, so a push failure
+  // must NEVER revert it — it becomes a "Te doen" alert instead. The push is
+  // idempotent per client+month, so a re-approval can't create a second task,
+  // and it self-skips for clients whose ClickUp reporting location isn't set up.
+  if (report) {
+    try {
+      const match = /clients\/db\/(\d+)\.md$/.exec(row.clientPath);
+      const clientId = match ? Number(match[1]) : null;
+      if (clientId !== null) {
+        const [client] = await db
+          .select()
+          .from(clientsTable)
+          .where(eq(clientsTable.id, clientId));
+        if (client) {
+          // Monthly reports cover the previous full month; anchor on Brussels.
+          const parts = brusselsParts(row.createdAt ?? new Date());
+          let year = parts.year;
+          let month = parts.month - 1;
+          if (month < 1) {
+            month = 12;
+            year -= 1;
+          }
+          const period = `${year}-${String(month).padStart(2, "0")}`;
+          const outcome = await pushReport({
+            sourceRunId: String(id),
+            clientId,
+            period,
+            companyTaskId: client.clickupCompanyId,
+            clientReport: report.clientReport,
+            clientName: client.name,
+            metrics: report.metrics,
+            reportUrl: null,
+            agent: report.headAgentPath ?? row.leadAgentPath,
+            approvalRequired: false,
+          });
+          if (outcome.status === "failed") {
+            await recordAlert({
+              source: "clickup-push",
+              severity: "warn",
+              message: `ClickUp-rapportpush mislukt (${outcome.code}): ${outcome.message.slice(
+                0,
+                200,
+              )}`,
+              context: { key: `clickup-report:${id}`, generationId: id },
+            });
+          }
+        }
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      await recordAlert({
+        source: "clickup-push",
+        severity: "warn",
+        message: `ClickUp-rapportpush kon niet worden uitgevoerd: ${message.slice(
+          0,
+          200,
+        )}`,
+        context: { key: `clickup-report:${id}`, generationId: id },
       });
     }
   }

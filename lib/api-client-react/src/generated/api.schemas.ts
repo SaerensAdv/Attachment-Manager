@@ -783,6 +783,105 @@ export interface ClickUpApplyResult {
   errors: string[];
 }
 
+export interface ClickUpPushReportInput {
+  clientId: number;
+  /** Reporting month as YYYY-MM. */
+  period: string;
+  /** Defaults to true; set false to perform a real push. */
+  dryRun?: boolean;
+  /** Optional report markdown; a labelled test body is used when omitted. */
+  clientReport?: string;
+  sourceRunId?: string;
+}
+
+export interface ClickUpSearchTermRow {
+  term: string;
+  impressions: number;
+  clicks: number;
+  cost: number;
+  classification: string;
+  proposedAction: string;
+}
+
+export interface ClickUpPushSearchTermsInput {
+  /** Google Ads customer id (used for idempotency + naming). */
+  customerId: string;
+  accountName?: string;
+  /** ISO Monday of the reporting week, as YYYY-MM-DD. */
+  weekStart: string;
+  /** Analysed search terms; a labelled test set is used when omitted. */
+  rows?: ClickUpSearchTermRow[];
+  reportUrl?: string;
+  /** Defaults to true; set false to perform a real push. */
+  dryRun?: boolean;
+  sourceRunId?: string;
+}
+
+export interface ClickUpPushAlertInput {
+  type: string;
+  severity: string;
+  message: string;
+  /** Stable dedup discriminator; defaults to type + client/system context. */
+  dedupeKey?: string;
+  clientId?: number | string | null;
+  clientName?: string;
+  companyTaskId?: string;
+  evidence?: string;
+  recommendedAction?: string;
+  sourceRunId?: string;
+  /** When set, comment on this task instead of creating one in Internal Work. */
+  targetTaskId?: string;
+  /** Dedup window in ms (default 24h). */
+  windowMs?: number;
+  /** Defaults to true; set false to perform a real push. */
+  dryRun?: boolean;
+}
+
+export interface ClickUpSweepAlertsInput {
+  limit?: number;
+  windowMs?: number;
+  /** Defaults to true; set false to perform a real sweep. */
+  dryRun?: boolean;
+}
+
+export type ClickUpPushOutcomeStatus = typeof ClickUpPushOutcomeStatus[keyof typeof ClickUpPushOutcomeStatus];
+
+
+export const ClickUpPushOutcomeStatus = {
+  pushed: 'pushed',
+  duplicate: 'duplicate',
+  skipped: 'skipped',
+  failed: 'failed',
+} as const;
+
+export type ClickUpPushOutcomePreview = { [key: string]: unknown } | null;
+
+export interface ClickUpPushOutcome {
+  status: ClickUpPushOutcomeStatus;
+  idempotencyKey?: string | null;
+  objectId?: string | null;
+  url?: string | null;
+  reason?: string | null;
+  dryRun?: boolean | null;
+  preview?: ClickUpPushOutcomePreview;
+  code?: string | null;
+  message?: string | null;
+}
+
+export type ClickUpSweepAlertsResultResultsItem = {
+  alertId: number;
+  outcome: ClickUpPushOutcome;
+};
+
+export interface ClickUpSweepAlertsResult {
+  scanned: number;
+  pushed: number;
+  duplicate: number;
+  skipped: number;
+  failed: number;
+  results: ClickUpSweepAlertsResultResultsItem[];
+}
+
 export type RefreshOutcomeStatus = typeof RefreshOutcomeStatus[keyof typeof RefreshOutcomeStatus];
 
 

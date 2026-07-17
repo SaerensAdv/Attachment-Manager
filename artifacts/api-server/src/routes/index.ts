@@ -20,6 +20,7 @@ import todoRouter from "./todo";
 import partnerKeysRouter from "./partner-keys";
 import visualsRouter from "./visuals";
 import shoppingNegativesRouter from "./shopping-negatives";
+import clickupPushRouter from "./clickup-push";
 
 const router: IRouter = Router();
 
@@ -44,5 +45,6 @@ router.use(todoRouter);
 router.use(partnerKeysRouter);
 router.use(visualsRouter);
 router.use(shoppingNegativesRouter);
+router.use(clickupPushRouter);
 
 export default router;

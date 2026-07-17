@@ -31,6 +31,12 @@ import type {
   BriefingSuggestResult,
   ClickUpApplyInput,
   ClickUpApplyResult,
+  ClickUpPushAlertInput,
+  ClickUpPushOutcome,
+  ClickUpPushReportInput,
+  ClickUpPushSearchTermsInput,
+  ClickUpSweepAlertsInput,
+  ClickUpSweepAlertsResult,
   ClickUpSyncResult,
   Client,
   ClientCoverageList,
@@ -3628,6 +3634,298 @@ export const useApplyClientsClickupLinks = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getApplyClientsClickupLinksMutationOptions(options));
+    }
+
+export const getPushClickupReportUrl = () => {
+
+
+
+
+  return `/api/clickup/push/report`
+}
+
+/**
+ * Owner-only manual trigger for the ClickUp report push. Defaults to a dry-run that resolves + gates the target and returns a safe preview, writing nothing. Set dryRun=false for a real, idempotent push.
+
+ * @summary Manually push (or dry-run) a monthly report to ClickUp as a Draft task
+ */
+export const pushClickupReport = async (clickUpPushReportInput: ClickUpPushReportInput, options?: RequestInit): Promise<ClickUpPushOutcome> => {
+
+  return customFetch<ClickUpPushOutcome>(getPushClickupReportUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      clickUpPushReportInput,)
+  }
+);}
+
+
+
+
+export const getPushClickupReportMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof pushClickupReport>>, TError,{data: BodyType<ClickUpPushReportInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof pushClickupReport>>, TError,{data: BodyType<ClickUpPushReportInput>}, TContext> => {
+
+const mutationKey = ['pushClickupReport'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof pushClickupReport>>, {data: BodyType<ClickUpPushReportInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  pushClickupReport(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PushClickupReportMutationResult = NonNullable<Awaited<ReturnType<typeof pushClickupReport>>>
+    export type PushClickupReportMutationBody = BodyType<ClickUpPushReportInput>
+    export type PushClickupReportMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Manually push (or dry-run) a monthly report to ClickUp as a Draft task
+ */
+export const usePushClickupReport = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof pushClickupReport>>, TError,{data: BodyType<ClickUpPushReportInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof pushClickupReport>>,
+        TError,
+        {data: BodyType<ClickUpPushReportInput>},
+        TContext
+      > => {
+      return useMutation(getPushClickupReportMutationOptions(options));
+    }
+
+export const getPushClickupSearchTermsUrl = () => {
+
+
+
+
+  return `/api/clickup/push/search-terms`
+}
+
+/**
+ * Owner-only manual trigger for the ClickUp search-terms push into the central Internal Work list. Defaults to a dry-run that resolves the list + returns a safe preview, writing nothing. Set dryRun=false for a real, idempotent push with the analysis attached as a CSV.
+
+ * @summary Manually push (or dry-run) a weekly search-terms review task to ClickUp
+ */
+export const pushClickupSearchTerms = async (clickUpPushSearchTermsInput: ClickUpPushSearchTermsInput, options?: RequestInit): Promise<ClickUpPushOutcome> => {
+
+  return customFetch<ClickUpPushOutcome>(getPushClickupSearchTermsUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      clickUpPushSearchTermsInput,)
+  }
+);}
+
+
+
+
+export const getPushClickupSearchTermsMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof pushClickupSearchTerms>>, TError,{data: BodyType<ClickUpPushSearchTermsInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof pushClickupSearchTerms>>, TError,{data: BodyType<ClickUpPushSearchTermsInput>}, TContext> => {
+
+const mutationKey = ['pushClickupSearchTerms'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof pushClickupSearchTerms>>, {data: BodyType<ClickUpPushSearchTermsInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  pushClickupSearchTerms(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PushClickupSearchTermsMutationResult = NonNullable<Awaited<ReturnType<typeof pushClickupSearchTerms>>>
+    export type PushClickupSearchTermsMutationBody = BodyType<ClickUpPushSearchTermsInput>
+    export type PushClickupSearchTermsMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Manually push (or dry-run) a weekly search-terms review task to ClickUp
+ */
+export const usePushClickupSearchTerms = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof pushClickupSearchTerms>>, TError,{data: BodyType<ClickUpPushSearchTermsInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof pushClickupSearchTerms>>,
+        TError,
+        {data: BodyType<ClickUpPushSearchTermsInput>},
+        TContext
+      > => {
+      return useMutation(getPushClickupSearchTermsMutationOptions(options));
+    }
+
+export const getPushClickupAlertUrl = () => {
+
+
+
+
+  return `/api/clickup/push/alert`
+}
+
+/**
+ * Owner-only manual trigger for one alert. Defaults to a dry-run that returns a safe preview, writing nothing. Creates a task in the central Internal Work list, or comments on targetTaskId when set. Idempotent per fingerprint + dedup window.
+
+ * @summary Manually push (or dry-run) a single operational alert to ClickUp
+ */
+export const pushClickupAlert = async (clickUpPushAlertInput: ClickUpPushAlertInput, options?: RequestInit): Promise<ClickUpPushOutcome> => {
+
+  return customFetch<ClickUpPushOutcome>(getPushClickupAlertUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      clickUpPushAlertInput,)
+  }
+);}
+
+
+
+
+export const getPushClickupAlertMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof pushClickupAlert>>, TError,{data: BodyType<ClickUpPushAlertInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof pushClickupAlert>>, TError,{data: BodyType<ClickUpPushAlertInput>}, TContext> => {
+
+const mutationKey = ['pushClickupAlert'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof pushClickupAlert>>, {data: BodyType<ClickUpPushAlertInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  pushClickupAlert(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PushClickupAlertMutationResult = NonNullable<Awaited<ReturnType<typeof pushClickupAlert>>>
+    export type PushClickupAlertMutationBody = BodyType<ClickUpPushAlertInput>
+    export type PushClickupAlertMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Manually push (or dry-run) a single operational alert to ClickUp
+ */
+export const usePushClickupAlert = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof pushClickupAlert>>, TError,{data: BodyType<ClickUpPushAlertInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof pushClickupAlert>>,
+        TError,
+        {data: BodyType<ClickUpPushAlertInput>},
+        TContext
+      > => {
+      return useMutation(getPushClickupAlertMutationOptions(options));
+    }
+
+export const getSweepClickupAlertsUrl = () => {
+
+
+
+
+  return `/api/clickup/push/alerts/sweep`
+}
+
+/**
+ * Owner-only manual trigger that reads the app's open system alerts and pushes each to ClickUp. Defaults to a dry-run. Best-effort per alert; each push is idempotent per fingerprint + dedup window.
+
+ * @summary Push (or dry-run) all open system alerts to ClickUp, idempotently
+ */
+export const sweepClickupAlerts = async (clickUpSweepAlertsInput?: ClickUpSweepAlertsInput, options?: RequestInit): Promise<ClickUpSweepAlertsResult> => {
+
+  return customFetch<ClickUpSweepAlertsResult>(getSweepClickupAlertsUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      clickUpSweepAlertsInput,)
+  }
+);}
+
+
+
+
+export const getSweepClickupAlertsMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sweepClickupAlerts>>, TError,{data?: BodyType<ClickUpSweepAlertsInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof sweepClickupAlerts>>, TError,{data?: BodyType<ClickUpSweepAlertsInput>}, TContext> => {
+
+const mutationKey = ['sweepClickupAlerts'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof sweepClickupAlerts>>, {data?: BodyType<ClickUpSweepAlertsInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  sweepClickupAlerts(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SweepClickupAlertsMutationResult = NonNullable<Awaited<ReturnType<typeof sweepClickupAlerts>>>
+    export type SweepClickupAlertsMutationBody = BodyType<ClickUpSweepAlertsInput> | undefined
+    export type SweepClickupAlertsMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Push (or dry-run) all open system alerts to ClickUp, idempotently
+ */
+export const useSweepClickupAlerts = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sweepClickupAlerts>>, TError,{data?: BodyType<ClickUpSweepAlertsInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof sweepClickupAlerts>>,
+        TError,
+        {data?: BodyType<ClickUpSweepAlertsInput>},
+        TContext
+      > => {
+      return useMutation(getSweepClickupAlertsMutationOptions(options));
     }
 
 export const getClientRefreshAllUrl = (id: number,) => {

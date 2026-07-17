@@ -1206,6 +1206,138 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ClickUpApplyResult"
+  /clickup/push/report:
+    post:
+      operationId: pushClickupReport
+      tags: [clickup]
+      summary: Manually push (or dry-run) a monthly report to ClickUp as a Draft task
+      description: >
+        Owner-only manual trigger for the ClickUp report push. Defaults to a
+        dry-run that resolves + gates the target and returns a safe preview,
+        writing nothing. Set dryRun=false for a real, idempotent push.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClickUpPushReportInput"
+      responses:
+        "200":
+          description: Push outcome (pushed / duplicate / skipped / dry-run preview)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClickUpPushOutcome"
+        "400":
+          description: Invalid clientId or period
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Client not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "502":
+          description: The push could not be executed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /clickup/push/search-terms:
+    post:
+      operationId: pushClickupSearchTerms
+      tags: [clickup]
+      summary: Manually push (or dry-run) a weekly search-terms review task to ClickUp
+      description: >
+        Owner-only manual trigger for the ClickUp search-terms push into the
+        central Internal Work list. Defaults to a dry-run that resolves the list
+        + returns a safe preview, writing nothing. Set dryRun=false for a real,
+        idempotent push with the analysis attached as a CSV.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClickUpPushSearchTermsInput"
+      responses:
+        "200":
+          description: Push outcome (pushed / duplicate / skipped / dry-run preview)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClickUpPushOutcome"
+        "400":
+          description: Invalid customerId or weekStart
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "502":
+          description: The push could not be executed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /clickup/push/alert:
+    post:
+      operationId: pushClickupAlert
+      tags: [clickup]
+      summary: Manually push (or dry-run) a single operational alert to ClickUp
+      description: >
+        Owner-only manual trigger for one alert. Defaults to a dry-run that
+        returns a safe preview, writing nothing. Creates a task in the central
+        Internal Work list, or comments on targetTaskId when set. Idempotent per
+        fingerprint + dedup window.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClickUpPushAlertInput"
+      responses:
+        "200":
+          description: Push outcome (pushed / duplicate / skipped / dry-run preview)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClickUpPushOutcome"
+        "502":
+          description: The push could not be executed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /clickup/push/alerts/sweep:
+    post:
+      operationId: sweepClickupAlerts
+      tags: [clickup]
+      summary: Push (or dry-run) all open system alerts to ClickUp, idempotently
+      description: >
+        Owner-only manual trigger that reads the app's open system alerts and
+        pushes each to ClickUp. Defaults to a dry-run. Best-effort per alert;
+        each push is idempotent per fingerprint + dedup window.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClickUpSweepAlertsInput"
+      responses:
+        "200":
+          description: A per-alert tally + outcomes
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClickUpSweepAlertsResult"
+        "502":
+          description: The sweep could not be executed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /clients/{id}/refresh-all:
     post:
       operationId: clientRefreshAll
@@ -3517,6 +3649,166 @@ components:
           type: array
           items:
             type: string
+    ClickUpPushReportInput:
+      type: object
+      required: [clientId, period]
+      properties:
+        clientId:
+          type: integer
+        period:
+          type: string
+          description: Reporting month as YYYY-MM.
+        dryRun:
+          type: boolean
+          description: Defaults to true; set false to perform a real push.
+        clientReport:
+          type: string
+          description: Optional report markdown; a labelled test body is used when omitted.
+        sourceRunId:
+          type: string
+    ClickUpSearchTermRow:
+      type: object
+      required: [term, impressions, clicks, cost, classification, proposedAction]
+      properties:
+        term:
+          type: string
+        impressions:
+          type: number
+        clicks:
+          type: number
+        cost:
+          type: number
+        classification:
+          type: string
+        proposedAction:
+          type: string
+    ClickUpPushSearchTermsInput:
+      type: object
+      required: [customerId, weekStart]
+      properties:
+        customerId:
+          type: string
+          description: Google Ads customer id (used for idempotency + naming).
+        accountName:
+          type: string
+        weekStart:
+          type: string
+          description: ISO Monday of the reporting week, as YYYY-MM-DD.
+        rows:
+          type: array
+          items:
+            $ref: "#/components/schemas/ClickUpSearchTermRow"
+          description: Analysed search terms; a labelled test set is used when omitted.
+        reportUrl:
+          type: string
+        dryRun:
+          type: boolean
+          description: Defaults to true; set false to perform a real push.
+        sourceRunId:
+          type: string
+    ClickUpPushAlertInput:
+      type: object
+      required: [type, severity, message]
+      properties:
+        type:
+          type: string
+        severity:
+          type: string
+        message:
+          type: string
+        dedupeKey:
+          type: string
+          description: Stable dedup discriminator; defaults to type + client/system context.
+        clientId:
+          oneOf:
+            - type: integer
+            - type: string
+          nullable: true
+        clientName:
+          type: string
+        companyTaskId:
+          type: string
+        evidence:
+          type: string
+        recommendedAction:
+          type: string
+        sourceRunId:
+          type: string
+        targetTaskId:
+          type: string
+          description: When set, comment on this task instead of creating one in Internal Work.
+        windowMs:
+          type: integer
+          description: Dedup window in ms (default 24h).
+        dryRun:
+          type: boolean
+          description: Defaults to true; set false to perform a real push.
+    ClickUpSweepAlertsInput:
+      type: object
+      properties:
+        limit:
+          type: integer
+        windowMs:
+          type: integer
+        dryRun:
+          type: boolean
+          description: Defaults to true; set false to perform a real sweep.
+    ClickUpSweepAlertsResult:
+      type: object
+      required: [scanned, pushed, duplicate, skipped, failed, results]
+      properties:
+        scanned:
+          type: integer
+        pushed:
+          type: integer
+        duplicate:
+          type: integer
+        skipped:
+          type: integer
+        failed:
+          type: integer
+        results:
+          type: array
+          items:
+            type: object
+            required: [alertId, outcome]
+            properties:
+              alertId:
+                type: integer
+              outcome:
+                $ref: "#/components/schemas/ClickUpPushOutcome"
+    ClickUpPushOutcome:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [pushed, duplicate, skipped, failed]
+        idempotencyKey:
+          type: string
+          nullable: true
+        objectId:
+          type: string
+          nullable: true
+        url:
+          type: string
+          nullable: true
+        reason:
+          type: string
+          nullable: true
+        dryRun:
+          type: boolean
+          nullable: true
+        preview:
+          type: object
+          additionalProperties: true
+          nullable: true
+        code:
+          type: string
+          nullable: true
+        message:
+          type: string
+          nullable: true
     RefreshOutcome:
       type: object
       required: [integration, status]

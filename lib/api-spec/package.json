@@ -3,7 +3,9 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "codegen": "orval --config ./orval.config.ts && pnpm -w run typecheck:libs"
+    "prepare:atlas": "node ./prepare-atlas-openapi.mjs",
+    "codegen": "node ./run-codegen.mjs",
+    "codegen:check": "pnpm run codegen"
   },
   "devDependencies": {
     "orval": "^8.9.1"

@@ -1,0 +1,51 @@
+openapi: 3.1.0
+info:
+  title: Workspace Atlas v4 additive contracts
+  version: 0.5.0
+  description: Migration-readiness overlay for backend Waves B-E. This file freezes new Atlas surfaces until the legacy monolithic spec is regenerated.
+paths:
+  /system/status:
+    get:
+      operationId: getAtlasSystemStatus
+      summary: Truthful runtime and integration health
+      responses: { '200': { description: Current system status } }
+  /operations/status:
+    get:
+      operationId: getAtlasOperationsStatus
+      summary: Operator queues, scheduler, graph and webhook health
+      responses: { '200': { description: Current operational status } }
+  /clickup/companies:
+    get:
+      operationId: getAtlasCompanies
+      summary: Read the local ClickUp Companies mirror and sync state
+      responses: { '200': { description: Companies mirror } }
+  /clickup/companies/sync-status:
+    get:
+      operationId: getAtlasCompanySyncStatus
+      responses: { '200': { description: Companies sync state } }
+  /clickup/companies/sync:
+    post:
+      operationId: syncAtlasCompanies
+      summary: Explicit owner-triggered Companies master sync
+      responses: { '200': { description: Sync completed }, '409': { description: Sync already running }, '502': { description: Sync failed, previous cache preserved } }
+  /clickup/pushes:
+    get:
+      operationId: getAtlasClickUpPushes
+      responses: { '200': { description: Push ledger } }
+  /clickup/pushes/{id}/requeue:
+    post:
+      operationId: requeueAtlasClickUpPush
+      parameters: [{ name: id, in: path, required: true, schema: { type: integer } }]
+      responses: { '200': { description: Requeued }, '409': { description: Not retryable } }
+  /clickup/webhooks/{id}/requeue:
+    post:
+      operationId: requeueAtlasWebhookDeadLetter
+      parameters: [{ name: id, in: path, required: true, schema: { type: integer } }]
+      responses: { '200': { description: Requeued }, '409': { description: Not a dead letter } }
+  /generations/{id}/approve:
+    post:
+      operationId: approveGenerationToGmailDraft
+      summary: Approve a held delivery and create a Gmail draft
+      description: Atomically claims the held delivery and creates a Gmail draft. This endpoint never sends client email automatically.
+      parameters: [{ name: id, in: path, required: true, schema: { type: integer } }]
+      responses: { '200': { description: Gmail draft created }, '409': { description: No pending delivery }, '422': { description: Snapshot unreadable }, '502': { description: Draft creation failed and approval remains retryable } }

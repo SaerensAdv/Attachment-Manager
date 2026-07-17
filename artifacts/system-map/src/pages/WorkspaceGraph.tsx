@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
-import { Activity, AlertTriangle, Bot, Boxes, FileText, History, Loader2, Map as MapIcon, MoreHorizontal, RefreshCw, Settings2 } from "lucide-react";
+import { Activity, AlertTriangle, Loader2, MoreHorizontal, RefreshCw } from "lucide-react";
 import {
   useGetGraphOverview,
   getGetGraphOverviewQueryKey,
@@ -18,6 +17,7 @@ import { deriveGraphState, indexById, isStale, mergeById, relativeTime, type Fil
 import WorkspaceGraphCanvas from "@/components/workspace-graph/WorkspaceGraphCanvas";
 import NodeDetailPanel from "@/components/workspace-graph/NodeDetailPanel";
 import GraphLegend from "@/components/workspace-graph/GraphLegend";
+import AtlasShell from "@/components/atlas/AtlasShell";
 
 export default function WorkspaceGraph() {
   const { toast } = useToast();
@@ -25,8 +25,8 @@ export default function WorkspaceGraph() {
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [hiddenGroups, setHiddenGroups] = useState<Set<FilterGroupId>>(() => new Set());
   const [focusRequest, setFocusRequest] = useState<{ id: string; nonce: number } | null>(null);
-  const [expNodes, setExpNodes] = useState<Map<string, GraphNode>>(() => new Map<string, GraphNode>());
-  const [expEdges, setExpEdges] = useState<Map<string, GraphEdge>>(() => new Map<string, GraphEdge>());
+  const [expNodes, setExpNodes] = useState<Map<string, GraphNode>>(() => new Map());
+  const [expEdges, setExpEdges] = useState<Map<string, GraphEdge>>(() => new Map());
 
   const { data: overview, isLoading, isError, refetch } = useGetGraphOverview();
   const meta = overview?.meta;
@@ -38,16 +38,12 @@ export default function WorkspaceGraph() {
     setExpNodes((prev) => mergeById(prev, data.nodes));
     setExpEdges((prev) => mergeById(prev, data.edges));
   };
-
   const handlePick = async (id: string) => {
     if (!viewNodes.some((node) => node.id === id)) {
       try {
-        const result = await queryClient.fetchQuery({
-          queryKey: getGetGraphNeighborsQueryKey(id),
-          queryFn: ({ signal }) => getGraphNeighbors(id, { signal }),
-        });
+        const result = await queryClient.fetchQuery({ queryKey: getGetGraphNeighborsQueryKey(id), queryFn: ({ signal }) => getGraphNeighbors(id, { signal }) });
         if (result) handleExpand({ nodes: [...result.nodes], edges: [...result.edges] });
-      } catch { /* selection still remains useful */ }
+      } catch { /* Global search can still focus a node removed during a sync. */ }
     }
     setSelectedNodeId(id);
     setFocusRequest((prev) => ({ id, nonce: (prev?.nonce ?? 0) + 1 }));
@@ -57,18 +53,14 @@ export default function WorkspaceGraph() {
   useEffect(() => {
     const hash = meta?.contentHash ?? undefined;
     if (lastHash.current && hash !== lastHash.current) {
-      setExpNodes(new Map<string, GraphNode>());
-      setExpEdges(new Map<string, GraphEdge>());
+      setExpNodes(new Map());
+      setExpEdges(new Map());
+      setSelectedNodeId(null);
     }
     lastHash.current = hash;
   }, [meta?.contentHash]);
 
-  const { data: syncStatus } = useGetGraphSyncStatus({
-    query: {
-      queryKey: getGetGraphSyncStatusQueryKey(),
-      refetchInterval: (query) => meta?.syncing || query.state.data?.meta.syncing ? 2500 : false,
-    },
-  });
+  const { data: syncStatus } = useGetGraphSyncStatus({ query: { queryKey: getGetGraphSyncStatusQueryKey(), refetchInterval: (query) => meta?.syncing || query.state.data?.meta.syncing ? 2500 : false } });
   const statusSyncing = syncStatus?.meta.syncing ?? false;
   const wasSyncing = useRef(false);
   useEffect(() => {
@@ -76,60 +68,43 @@ export default function WorkspaceGraph() {
     wasSyncing.current = statusSyncing;
   }, [statusSyncing, queryClient]);
 
-  const sync = useSyncGraph({
-    mutation: {
-      onSuccess: (result) => {
-        queryClient.invalidateQueries({ queryKey: getGetGraphOverviewQueryKey() });
-        queryClient.invalidateQueries({ queryKey: getGetGraphSyncStatusQueryKey() });
-        toast({ title: result.changed ? "Workspace opnieuw gesynchroniseerd" : "Workspace is al up-to-date", description: result.note ?? undefined });
-      },
-      onError: (error) => {
-        const status = (error as { status?: number } | null)?.status;
-        toast(status === 409 ? { title: "Synchronisatie loopt al" } : { variant: "destructive", title: "Synchroniseren mislukt" });
-      },
+  const sync = useSyncGraph({ mutation: {
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: getGetGraphOverviewQueryKey() });
+      queryClient.invalidateQueries({ queryKey: getGetGraphSyncStatusQueryKey() });
+      toast({ title: result.changed ? "Workspace synced" : "Workspace already current", description: result.note ?? undefined });
     },
-  });
+    onError: (error) => {
+      const status = (error as { status?: number } | null)?.status;
+      toast(status === 409 ? { title: "Sync already running" } : { variant: "destructive", title: "Sync failed", description: "The last valid snapshot is still active." });
+    },
+  } });
 
   const isSyncing = Boolean(meta?.syncing || statusSyncing || sync.isPending);
   const state = deriveGraphState({ isLoading, isError, hasNodes: (overview?.nodes.length ?? 0) > 0, metaStatus: meta?.status });
   const stale = state === "ready" && !isSyncing && isStale(meta?.lastSyncedAt);
-  const toggleGroup = (id: FilterGroupId) => setHiddenGroups((prev) => {
-    const next = new Set(prev);
-    next.has(id) ? next.delete(id) : next.add(id);
-    return next;
-  });
+  const toggleGroup = (id: FilterGroupId) => setHiddenGroups((prev) => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; });
+
+  const actions = <>
+    <span className={`atlas-live ${stale ? "is-stale" : ""}`}><i />{stale ? "STALE SNAPSHOT" : `LIVE · ${relativeTime(meta?.lastSyncedAt).replace(" geleden", "")}`}</span>
+    <button type="button" className="atlas-action" onClick={() => !isSyncing && sync.mutate()} disabled={isSyncing}>
+      <RefreshCw className={isSyncing ? "atlas-rotating" : ""} />{isSyncing ? "Syncing" : "Sync now"}
+    </button>
+    <button type="button" className="atlas-icon-action" aria-label="More workspace actions"><MoreHorizontal /></button>
+  </>;
 
   return (
-    <div className="workspace-atlas wg-canvas">
-      <nav className="atlas-rail" aria-label="Werkruimte navigatie">
-        <Link href="/" className="atlas-monogram" aria-label="Terug naar de Kaart">SA</Link>
-        <div className="atlas-rail-items">
-          <Link href="/" className="atlas-rail-button" title="Kaart"><MapIcon /></Link>
-          <span className="atlas-rail-button is-active" title="Workspace Graph"><Boxes /></span>
-          <Link href="/history" className="atlas-rail-button" title="Runs"><History /></Link>
-          <Link href="/team" className="atlas-rail-button" title="Agents"><Bot /></Link>
-          <Link href="/controle" className="atlas-rail-button" title="Knowledge"><FileText /></Link>
-        </div>
-        <Link href="/controle" className="atlas-rail-button atlas-rail-bottom" title="Instellingen"><Settings2 /></Link>
-      </nav>
-      <header className="atlas-header">
-        <div className="atlas-brand-lockup"><span className="atlas-brand-mark" aria-hidden="true" /><div><h1>Workspace Graph</h1><p>Saerens Operating System</p></div></div>
-        <div className="atlas-header-actions">
-          <span className={`atlas-live ${stale ? "is-stale" : ""}`}><i />{stale ? "STALE SNAPSHOT" : `LIVE SYNC · ${relativeTime(meta?.lastSyncedAt).replace(" geleden", "")}`}</span>
-          <button type="button" className="atlas-action" onClick={() => !isSyncing && sync.mutate()} disabled={isSyncing}><RefreshCw className={isSyncing ? "atlas-rotating" : ""} />{isSyncing ? "Syncing" : "Sync now"}</button>
-          <button type="button" className="atlas-icon-action" aria-label="Meer opties"><MoreHorizontal /></button>
-        </div>
-      </header>
+    <AtlasShell title="Workspace Atlas" subtitle="Saerens Operating System" actions={actions}>
       <main className="atlas-stage">
         <div className="atlas-grid" aria-hidden="true" />
-        {state === "loading" && <div className="atlas-state"><Loader2 className="atlas-rotating" /><span>Workspace laden</span></div>}
-        {state === "error" && <div className="atlas-state is-error"><AlertTriangle /><strong>Workspace niet bereikbaar</strong><button onClick={() => refetch()}>Opnieuw proberen</button></div>}
-        {state === "empty" && <div className="atlas-state"><Activity /><strong>Nog geen snapshot</strong><button onClick={() => sync.mutate()}>Eerste sync starten</button></div>}
+        {state === "loading" && <div className="atlas-state atlas-skeleton-state"><Loader2 className="atlas-rotating" /><span>Loading workspace</span></div>}
+        {state === "error" && <div className="atlas-state is-error"><AlertTriangle /><strong>Workspace unavailable</strong><p>The last valid snapshot was not reachable.</p><button onClick={() => refetch()}>Try again</button></div>}
+        {state === "empty" && <div className="atlas-state"><Activity /><strong>No graph snapshot yet</strong><p>Run the first read-only sync to map your workspace.</p><button onClick={() => sync.mutate()}>Start first sync</button></div>}
         {state === "ready" && overview && <WorkspaceGraphCanvas nodes={viewNodes} edges={viewEdges} hiddenGroups={hiddenGroups} selectedNodeId={selectedNodeId} onSelectNode={setSelectedNodeId} fitKey={meta?.contentHash ?? undefined} focusRequest={focusRequest} />}
         <GraphLegend hiddenGroups={hiddenGroups} onToggleGroup={toggleGroup} onPick={handlePick} />
-        {overview?.truncated && <div className="atlas-truncated">{overview.nodes.length} van {overview.totalNodes} nodes geladen</div>}
+        {overview?.truncated && <div className="atlas-truncated">{overview.nodes.length} of {overview.totalNodes} nodes loaded, search covers all</div>}
       </main>
       <NodeDetailPanel node={selectedNode} onClose={() => setSelectedNodeId(null)} onSelectNode={handlePick} onExpand={handleExpand} />
-    </div>
+    </AtlasShell>
   );
 }

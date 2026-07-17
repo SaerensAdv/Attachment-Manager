@@ -11,7 +11,15 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
  */
 
 const { queryMock } = vi.hoisted(() => ({ queryMock: vi.fn() }));
-vi.mock("@workspace/db", () => ({ pool: { query: queryMock } }));
+// The swap now runs in an explicit transaction on a pooled client. The client
+// delegates to the same routed queryMock so BEGIN/COMMIT/ROLLBACK and the two
+// ordered UPDATEs are all captured and routed exactly like pool.query.
+vi.mock("@workspace/db", () => ({
+  pool: {
+    query: queryMock,
+    connect: async () => ({ query: queryMock, release: () => {} }),
+  },
+}));
 vi.mock("../logger", () => ({
   logger: { warn: vi.fn(), error: vi.fn(), info: vi.fn(), debug: vi.fn() },
 }));
@@ -58,7 +66,7 @@ function routeQuery(opts: {
     if (/CREATE TABLE|CREATE UNIQUE INDEX/.test(sql)) return { rows: [] };
     if (/INSERT INTO graph_snapshots/.test(sql))
       return { rows: [{ id: opts.insertId ?? 20 }] };
-    if (/WITH deact/.test(sql)) return { rows: opts.swapped ?? [] };
+    if (/SET status = 'active'/.test(sql)) return { rows: opts.swapped ?? [] };
     if (/SET payload =/.test(sql)) return { rows: [] };
     if (/SET status = 'superseded'/.test(sql)) return { rows: [] };
     if (/SET status = 'failed'/.test(sql)) return { rows: [] };
@@ -126,7 +134,7 @@ describe("completeSync", () => {
     expect(store.isSyncing()).toBe(false);
     // The building row was discarded (superseded), not promoted.
     expect(queryMock.mock.calls.some((c) => /SET status = 'superseded'/.test(c[0] as string))).toBe(true);
-    expect(queryMock.mock.calls.some((c) => /WITH deact/.test(c[0] as string))).toBe(false);
+    expect(queryMock.mock.calls.some((c) => /SET status = 'active'/.test(c[0] as string))).toBe(false);
     // The freshness bump must target the active row BY ID: both params it passes
     // ($1 = id, $2 = source_updated_at) must be referenced or Postgres rejects
     // the statement at runtime ("could not determine data type of parameter $1").
@@ -150,7 +158,7 @@ describe("completeSync", () => {
     expect(res.meta?.id).toBe(51);
     expect(store.getActiveGraph()?.graph).toEqual(GRAPH);
     // The atomic swap statement carries the building id.
-    const swap = queryMock.mock.calls.find((c) => /WITH deact/.test(c[0] as string));
+    const swap = queryMock.mock.calls.find((c) => /SET status = 'active'/.test(c[0] as string));
     expect(swap?.[1]).toEqual([51]);
   });
 
@@ -159,7 +167,7 @@ describe("completeSync", () => {
     routeQuery({
       insertId: 52,
       active: [snapRow({ id: 7, content_hash: "OLDHASH" })],
-      throwOn: /WITH deact/,
+      throwOn: /SET status = 'active'/,
     });
     const id = await store.beginSync();
     const res = await store.completeSync(id!, GRAPH);
@@ -182,7 +190,7 @@ describe("failSync", () => {
     expect(failCall).toBeTruthy();
     expect((failCall?.[1] as unknown[])[0]).toBe(60);
     // Never promoted anything.
-    expect(queryMock.mock.calls.some((c) => /WITH deact/.test(c[0] as string))).toBe(false);
+    expect(queryMock.mock.calls.some((c) => /SET status = 'active'/.test(c[0] as string))).toBe(false);
   });
 });
 

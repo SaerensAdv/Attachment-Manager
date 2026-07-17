@@ -3,6 +3,8 @@ import {
   neighbors,
   reduceToOverview,
   searchNodes,
+  OVERVIEW_MAX_NODES,
+  OVERVIEW_MAX_EDGES,
 } from "./overview";
 import type { Graph, GraphEdge, GraphNode } from "./types";
 
@@ -117,7 +119,63 @@ describe("reduceToOverview", () => {
     const ov = reduceToOverview(graph);
     expect(ov.truncated).toBe(false);
   });
+
+  it("performance smoke: respects the ~250 node / ~500 edge budget on a large graph (§7.9)", () => {
+    // Build a graph well above the default overview budget: 30 lists, each with
+    // 40 open tasks (1230 nodes) fully wired (list→task + a task→task ring).
+    const nodes: GraphNode[] = [];
+    const edges: GraphEdge[] = [];
+    let e = 0;
+    for (let l = 0; l < 30; l++) {
+      const listId = `clickup:list:${l}`;
+      nodes.push(node(listId, "list"));
+      const taskIds: string[] = [];
+      for (let t = 0; t < 40; t++) {
+        const taskId = `clickup:task:${l}-${t}`;
+        taskIds.push(taskId);
+        nodes.push(
+          node(taskId, "task", {
+            parentId: listId,
+            metadata: { closed: false },
+            updatedAt: `2026-07-${String((t % 28) + 1).padStart(2, "0")}T00:00:00.000Z`,
+          }),
+        );
+        edges.push(edge(`e${e++}`, listId, taskId));
+      }
+      // Ring edges between tasks so the edge count comfortably exceeds 500.
+      for (let t = 0; t < taskIds.length; t++) {
+        edges.push(
+          edge(`e${e++}`, taskIds[t], taskIds[(t + 1) % taskIds.length]),
+        );
+      }
+    }
+    expect(nodes.length).toBeGreaterThan(250);
+    expect(edges.length).toBeGreaterThan(500);
+
+    const started = performance.now();
+    const ov = reduceToOverview(graph_(nodes, edges));
+    const elapsed = performance.now() - started;
+
+    // Budget is honoured and the honest totals survive.
+    expect(ov.nodes.length).toBeLessThanOrEqual(OVERVIEW_MAX_NODES);
+    expect(ov.edges.length).toBeLessThanOrEqual(OVERVIEW_MAX_EDGES);
+    expect(ov.truncated).toBe(true);
+    expect(ov.totalNodes).toBe(nodes.length);
+    expect(ov.totalEdges).toBe(edges.length);
+    // Every retained edge still has both endpoints in the retained node set.
+    const kept = new Set(ov.nodes.map((n) => n.id));
+    for (const edge of ov.edges) {
+      expect(kept.has(edge.sourceId)).toBe(true);
+      expect(kept.has(edge.targetId)).toBe(true);
+    }
+    // Smoke budget: the reduction is a pure pass, not a heavy computation.
+    expect(elapsed).toBeLessThan(250);
+  });
 });
+
+function graph_(nodes: GraphNode[], edges: GraphEdge[]): Graph {
+  return { nodes, edges };
+}
 
 describe("neighbors", () => {
   const graph: Graph = {
@@ -179,5 +237,37 @@ describe("searchNodes", () => {
 
   it("returns nothing for an empty query", () => {
     expect(searchNodes(graph, "  ")).toEqual({ results: [], total: 0 });
+  });
+
+  it("finds a node that the overview truncated away (§7.9 hidden nodes)", () => {
+    // A graph well over the overview budget so many nodes are hidden.
+    const nodes: GraphNode[] = [];
+    const edges: GraphEdge[] = [];
+    for (let l = 0; l < 30; l++) {
+      const listId = `clickup:list:${l}`;
+      nodes.push(node(listId, "list", { label: `List ${l}` }));
+      for (let t = 0; t < 40; t++) {
+        const taskId = `clickup:task:${l}-${t}`;
+        nodes.push(
+          node(taskId, "task", {
+            label: `Task ${l}-${t}`,
+            parentId: listId,
+            metadata: { closed: false },
+          }),
+        );
+        edges.push(edge(`e${l}-${t}`, listId, taskId));
+      }
+    }
+    const big: Graph = { nodes, edges };
+    const ov = reduceToOverview(big);
+    expect(ov.truncated).toBe(true);
+
+    // Pick a task that did NOT survive the overview slice, then prove search
+    // still surfaces it — search spans the whole graph, not the capped slice.
+    const kept = new Set(ov.nodes.map((n) => n.id));
+    const hidden = nodes.find((n) => !kept.has(n.id));
+    expect(hidden).toBeDefined();
+    const { results } = searchNodes(big, hidden!.label!);
+    expect(results.map((n) => n.id)).toContain(hidden!.id);
   });
 });

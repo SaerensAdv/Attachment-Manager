@@ -4,16 +4,17 @@ import { useLocation } from "wouter";
 import Lenis from "lenis";
 
 // Premium smooth-scroll layer for the editorial pages. Deliberately NOT active
-// on the Kaart route ("/") — that page is a full-screen, non-scrolling graph
-// with its own wheel-driven interactions, so smooth scroll adds nothing there
-// and could fight the canvas. Fully disabled under reduced-motion.
+// on the full-screen graph routes — the Kaart ("/") and the Workspace Graph
+// ("/graph"). Both are non-scrolling canvases with their own wheel-driven
+// zoom/pan (react-zoom-pan-pinch), so Lenis's rAF wheel-smoothing adds nothing
+// and actively fights the canvas. Fully disabled under reduced-motion.
 export default function SmoothScroll({ children }: { children: ReactNode }) {
   const lenisRef = useRef<Lenis | null>(null);
   const [location] = useLocation();
-  const isHome = location === "/";
+  const isFullscreenCanvas = location === "/" || location === "/graph";
 
   useEffect(() => {
-    if (isHome) return;
+    if (isFullscreenCanvas) return;
 
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
     if (mq.matches) return;
@@ -37,7 +38,7 @@ export default function SmoothScroll({ children }: { children: ReactNode }) {
       lenis.destroy();
       lenisRef.current = null;
     };
-  }, [isHome]);
+  }, [isFullscreenCanvas]);
 
   // Each route should open at its masthead, not wherever the previous page was
   // scrolled to. Reset instantly so it never looks like an animated jump.

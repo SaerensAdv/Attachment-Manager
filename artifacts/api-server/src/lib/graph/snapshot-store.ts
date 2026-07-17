@@ -12,7 +12,7 @@ import type { Graph } from "./types";
  *   3a. `completeSync()` — hashes the payload; if it equals the current active
  *       snapshot the building row is discarded and the active row's freshness is
  *       bumped (a no-op flip); otherwise the building row is filled and, in ONE
- *       atomic statement, flipped to `active` while the old active becomes
+ *       ordered transaction, flipped to `active` while the old active becomes
  *       `superseded`.
  *   3b. `failSync()`   — marks the building row `failed`; the current active is
  *       left completely untouched, so a partial/broken crawl never reaches the UI.
@@ -245,17 +245,37 @@ export async function completeSync(
         opts.sourceUpdatedAt ?? null,
       ],
     );
-    const swapped = await pool.query(
-      `WITH deact AS (
-         UPDATE graph_snapshots SET status = 'superseded', updated_at = now()
-          WHERE status = 'active' AND id <> $1
-       )
-       UPDATE graph_snapshots
-          SET status = 'active', last_synced_at = now(), updated_at = now()
-        WHERE id = $1
-      RETURNING *`,
-      [buildingId],
-    );
+    // Flip building -> active while the old active becomes superseded. This MUST
+    // be two ordered statements in ONE transaction, not a single data-modifying
+    // CTE: Postgres runs CTE sub-statements against one table snapshot with
+    // unpredictable ordering, so the partial unique index (WHERE status =
+    // 'active') can transiently see two active rows and throw a duplicate-key
+    // error. Superseding the old row FIRST removes it from that index before the
+    // new row claims 'active'; the transaction keeps the swap atomic so a
+    // concurrent read never sees a gap.
+    const client = await pool.connect();
+    let swapped;
+    try {
+      await client.query("BEGIN");
+      await client.query(
+        `UPDATE graph_snapshots SET status = 'superseded', updated_at = now()
+          WHERE status = 'active' AND id <> $1`,
+        [buildingId],
+      );
+      swapped = await client.query(
+        `UPDATE graph_snapshots
+            SET status = 'active', last_synced_at = now(), updated_at = now()
+          WHERE id = $1
+        RETURNING *`,
+        [buildingId],
+      );
+      await client.query("COMMIT");
+    } catch (err) {
+      await client.query("ROLLBACK").catch(() => {});
+      throw err;
+    } finally {
+      client.release();
+    }
     const meta = swapped.rows[0] ? mapMeta(swapped.rows[0]) : null;
     if (meta) activeIndex = { meta, graph };
     return { changed: true, meta };

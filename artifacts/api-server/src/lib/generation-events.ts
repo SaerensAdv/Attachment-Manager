@@ -25,6 +25,16 @@ export interface FanoutCandidateEventItem {
   reason: string;
 }
 
+/**
+ * The deliverable metadata object is intentionally structural and minimal.
+ * Concrete deliverables may carry more fields, while every UI can safely rely
+ * on the optional title. Avoiding a string index signature keeps existing typed
+ * metadata assignable without weakening it to `any`.
+ */
+export interface GenerationDeliverableMeta {
+  title?: string;
+}
+
 /** Stable union emitted by the engine. Add new shapes here before emitting. */
 export type GenerationEvent =
   | {
@@ -53,7 +63,7 @@ export type GenerationEvent =
     }
   | {
       type: "deliverable_start";
-      deliverable: { title?: string; [key: string]: unknown };
+      deliverable: GenerationDeliverableMeta;
     }
   | { type: "deliverable_delta"; content: string }
   | { type: "deliverable_done"; truncated: boolean }

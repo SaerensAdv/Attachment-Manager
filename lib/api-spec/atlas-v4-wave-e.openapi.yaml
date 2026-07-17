@@ -78,7 +78,7 @@ paths:
           description: Not a dead letter
   /generations/{id}/approve:
     post:
-      operationId: approveGenerationToGmailDraft
+      operationId: approveGeneration
       summary: Approve a held delivery and create a Gmail draft
       description: Atomically claims the held delivery and creates a Gmail draft. This endpoint never sends client email automatically.
       parameters:

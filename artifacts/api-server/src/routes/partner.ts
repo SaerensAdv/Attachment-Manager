@@ -14,18 +14,20 @@ import {
 import { partnerAuth } from "../middlewares/partnerAuth";
 
 /**
- * Versioned partner API (`/api/v1/partner/...`).
+ * Versioned integration API (`/api/v1/partner/...`), formerly the "partner API".
  *
  * Mounted ahead of the session `requireAuth` gate and self-authenticated with a
- * long-lived partner key (see `partnerAuth`). It gives a spun-off Replit project
- * a small, stable contract against the brain:
+ * long-lived integration key (see `partnerAuth`). It gives an external consumer
+ * (e.g. a ClickUp push, or another Replit project) a small, stable contract
+ * against the brain:
  *   - read a client's current state + latest deliverables,
  *   - write an event/result back as the client's new current state,
  *   - trigger a generation (reusing the autonomous generate engine), and
  *   - poll that generation's status/result.
  *
+ * The `/partner` path prefix and key naming are kept for backward compatibility.
  * Responses are deliberately curated: billing, VAT and integration secrets on
- * the client row are never exposed to a partner.
+ * the client row are never exposed to the consumer.
  */
 
 const router: IRouter = Router();

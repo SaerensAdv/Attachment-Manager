@@ -215,6 +215,7 @@ export function clientToDoc(client: Client): DocFile {
     category: "client",
     summary: firstParagraph(content),
     fanout: null,
+    active: true,
     content,
   };
 }

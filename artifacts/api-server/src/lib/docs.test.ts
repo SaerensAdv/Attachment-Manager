@@ -6,6 +6,8 @@ import {
   stripNonProse,
   deriveEdges,
   parseFanoutMarker,
+  splitFrontmatter,
+  parseActiveFlag,
   type DocFile,
 } from "./docs";
 import { clientToDoc } from "./clients-store";
@@ -19,6 +21,60 @@ function makeClientDoc(id: number, name: string): DocFile {
     updatedAt: new Date("2026-01-02T00:00:00.000Z"),
   } as Client);
 }
+
+describe("frontmatter lifecycle (active/paused)", () => {
+  const pausedRaw = [
+    "---",
+    "active: false",
+    "paused_date: 2026-07-17",
+    "reason: Niet in scope.",
+    "---",
+    "",
+    "# CRO Specialist",
+    "",
+    "Rolbeschrijving.",
+  ].join("\n");
+
+  it("splits a leading frontmatter block off the body", () => {
+    const { frontmatter, body } = splitFrontmatter(pausedRaw);
+    expect(frontmatter).toContain("active: false");
+    // The block (and its blank separator) must NOT leak into the body, or it
+    // would pollute the title/summary/embeddings and the reader.
+    expect(body.startsWith("# CRO Specialist")).toBe(true);
+    expect(body).not.toContain("active: false");
+    expect(body).not.toContain("---");
+  });
+
+  it("leaves ordinary markdown (no block) untouched", () => {
+    const plain = "# Title\n\nBody.";
+    const { frontmatter, body } = splitFrontmatter(plain);
+    expect(frontmatter).toBeNull();
+    expect(body).toBe(plain);
+  });
+
+  it("treats a doc as paused only on an explicit active: false", () => {
+    expect(parseActiveFlag(splitFrontmatter(pausedRaw).frontmatter)).toBe(false);
+    expect(parseActiveFlag(null)).toBe(true);
+    expect(parseActiveFlag("---\nreason: geen active-sleutel\n---")).toBe(true);
+    expect(parseActiveFlag("---\nactive: true\n---")).toBe(true);
+  });
+
+  it("keeps an agent paused after its body is rewritten and re-prepended", () => {
+    // Simulates writeDocFile's round-trip: an editor rewrites the STRIPPED body
+    // (no frontmatter), and the on-disk block is re-prepended. The agent must
+    // stay paused — this is the "never silently self-reactivates" invariant.
+    const onDisk = splitFrontmatter(pausedRaw).frontmatter as string;
+    const editedBody = "# CRO Specialist\n\nBijgewerkte rolbeschrijving.";
+    const incoming = splitFrontmatter(editedBody).frontmatter;
+    const toWrite =
+      onDisk && !incoming ? `${onDisk}\n\n${editedBody}` : editedBody;
+
+    const round = splitFrontmatter(toWrite);
+    expect(parseActiveFlag(round.frontmatter)).toBe(false);
+    expect(round.body.startsWith("# CRO Specialist")).toBe(true);
+    expect(round.body).toContain("Bijgewerkte rolbeschrijving.");
+  });
+});
 
 describe("getDocGraph with injected client docs", () => {
   it("merges an injected client into the graph as a client node", () => {
@@ -103,6 +159,7 @@ function makeDoc(
     title,
     summary: null,
     fanout: category === "workflow" ? parseFanoutMarker(content) : null,
+    active: true,
     content,
   };
 }

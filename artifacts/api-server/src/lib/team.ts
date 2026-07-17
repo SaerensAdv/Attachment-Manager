@@ -59,6 +59,12 @@ export interface TeamMember {
   department: TeamDepartment;
   /** True when this member is their department's owner (head). */
   isOwner: boolean;
+  /**
+   * Agent lifecycle flag (from the doc's frontmatter). false means the agent is
+   * paused: excluded from routing and greyed/hidden in the picker, but still
+   * shown on the team page. Defaults to true.
+   */
+  active: boolean;
 }
 
 /**
@@ -369,6 +375,7 @@ export async function getTeamRoster(): Promise<TeamMember[]> {
         : null,
       department,
       isOwner: department.ownerSlug === slug,
+      active: doc.active,
     };
   });
 

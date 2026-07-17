@@ -1,3 +1,9 @@
+---
+active: false
+paused_date: 2026-07-17
+reason: Onboarding verloopt voorlopig manueel; geen actieve opdrachten.
+---
+
 # Client Onboarding Agent
 
 > Inherits all global rules in `AGENTS.md`.

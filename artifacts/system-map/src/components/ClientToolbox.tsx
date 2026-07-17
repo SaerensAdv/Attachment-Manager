@@ -15,7 +15,6 @@ import { Input } from "@/components/ui/input";
 import {
   Loader2,
   RefreshCw,
-  RadarIcon,
   LayoutGrid,
   Check,
   AlertTriangle,
@@ -257,14 +256,11 @@ export default function ClientToolbox({
         >
           Alles verversen
         </TabButton>
-        <TabButton
-          active={tab === "discovery"}
-          onClick={() => setTab(tab === "discovery" ? null : "discovery")}
-          icon={<RadarIcon className="w-3.5 h-3.5" />}
-          testid="tab-discovery"
-        >
-          Klanten ontdekken
-        </TabButton>
+        {/*
+          "Klanten ontdekken" (client discovery) is hidden for now — the
+          endpoints and panel logic stay wired so it can be re-enabled in a
+          later phase without rework. See the Prune & Connect plan.
+        */}
       </div>
 
       {tab === "coverage" && (

@@ -108,7 +108,8 @@ export const GetDocGraphResponse = zod.object({
   "title": zod.string().describe('The document\'s first heading, or the filename if none.'),
   "category": zod.string().describe('One of core, agent, client, workflow, template, knowledge.'),
   "summary": zod.string().nullable().describe('First paragraph of the document, if any.'),
-  "fanout": zod.number().nullable().describe('For workflow docs: the default number of creative variations the lead agent fans out into (from the workflow\'s fanout marker), or 0 when the workflow does not opt into fan-out. null for every non-workflow doc.')
+  "fanout": zod.number().nullable().describe('For workflow docs: the default number of creative variations the lead agent fans out into (from the workflow\'s fanout marker), or 0 when the workflow does not opt into fan-out. null for every non-workflow doc.'),
+  "active": zod.boolean().describe('Agent lifecycle flag. false when the doc opts out via frontmatter (active: false); such agents are excluded from routing and hidden in the picker but stay in the graph so the map can show them as paused. Defaults to true for every doc without a flag.')
 })),
   "edges": zod.array(zod.object({
   "source": zod.string().describe('The id of the document the relationship starts from.'),
@@ -248,7 +249,8 @@ export const GetTeamResponse = zod.object({
   "handsTo": zod.array(zod.string()).describe('Department ids this department hands briefs \/ finished work to.'),
   "receivesFrom": zod.array(zod.string()).describe('Department ids this department receives work from (inverse of handsTo).')
 }).describe('The single department this member belongs to (the one org model).'),
-  "isOwner": zod.boolean().describe('True when this member is their department\'s owner (head).')
+  "isOwner": zod.boolean().describe('True when this member is their department\'s owner (head).'),
+  "active": zod.boolean().describe('Agent lifecycle flag. false when the agent is paused via frontmatter (active: false): excluded from routing and greyed\/hidden in the picker, but still shown on the team page. Defaults to true.')
 })),
   "departments": zod.array(zod.object({
   "id": zod.string().describe('Stable department identifier from the agency org model (e.g. paid-media).'),
@@ -407,7 +409,8 @@ export const UpdateAgentPersonaResponse = zod.object({
   "handsTo": zod.array(zod.string()).describe('Department ids this department hands briefs \/ finished work to.'),
   "receivesFrom": zod.array(zod.string()).describe('Department ids this department receives work from (inverse of handsTo).')
 }).describe('The single department this member belongs to (the one org model).'),
-  "isOwner": zod.boolean().describe('True when this member is their department\'s owner (head).')
+  "isOwner": zod.boolean().describe('True when this member is their department\'s owner (head).'),
+  "active": zod.boolean().describe('Agent lifecycle flag. false when the agent is paused via frontmatter (active: false): excluded from routing and greyed\/hidden in the picker, but still shown on the team page. Defaults to true.')
 })
 
 
@@ -448,7 +451,8 @@ export const UploadAgentPortraitResponse = zod.object({
   "handsTo": zod.array(zod.string()).describe('Department ids this department hands briefs \/ finished work to.'),
   "receivesFrom": zod.array(zod.string()).describe('Department ids this department receives work from (inverse of handsTo).')
 }).describe('The single department this member belongs to (the one org model).'),
-  "isOwner": zod.boolean().describe('True when this member is their department\'s owner (head).')
+  "isOwner": zod.boolean().describe('True when this member is their department\'s owner (head).'),
+  "active": zod.boolean().describe('Agent lifecycle flag. false when the agent is paused via frontmatter (active: false): excluded from routing and greyed\/hidden in the picker, but still shown on the team page. Defaults to true.')
 })
 
 

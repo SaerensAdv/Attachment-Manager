@@ -1,3 +1,9 @@
+---
+active: false
+paused_date: 2026-07-17
+reason: Demand Gen niet actief voor de huidige klanten.
+---
+
 # Demand Gen Specialist
 
 > Inherits all global rules in `AGENTS.md`.

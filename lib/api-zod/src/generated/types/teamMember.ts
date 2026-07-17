@@ -56,4 +56,6 @@ export interface TeamMember {
   department: TeamDepartment;
   /** True when this member is their department's owner (head). */
   isOwner: boolean;
+  /** Agent lifecycle flag. false when the agent is paused via frontmatter (active: false): excluded from routing and greyed/hidden in the picker, but still shown on the team page. Defaults to true. */
+  active: boolean;
 }

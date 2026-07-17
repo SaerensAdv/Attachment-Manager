@@ -131,6 +131,31 @@ These are planned but intentionally not built yet. They are listed so the system
 
 The CRO Specialist is now a specified agent (`agents/cro-specialist.md`): its experimentation-program scope grew distinct enough from the Landing Page / Web Design Specialist's single-page review to warrant its own role.
 
+## Agent lifecycle (active vs paused)
+
+An agent can be **paused** without deleting it. Pausing keeps the agent's file, persona, portrait and history intact but takes it out of active service, so the team stays focused on the agents that are actually doing work today.
+
+A paused agent is marked with a small YAML frontmatter block at the very top of its `agents/<agent>.md` file:
+
+```
+---
+active: false
+paused_date: 2026-07-17
+reason: Short reason why this agent is paused.
+---
+```
+
+Only an explicit `active: false` pauses an agent. A missing block — or a missing `active` key — means the agent is active (the default), so pausing is strictly opt-in. The orchestrator is always active regardless of its frontmatter.
+
+What changes when an agent is paused:
+
+- It is **excluded from routing**: the orchestrator will not hand work to it, and a request that names only paused agents is refused with a clear "agent is paused" message.
+- It is **hidden from the agent picker** in the app, so no new work can be started with it.
+- It is **not flagged** as an unrouted-agent gap in doc validation (being out of routing is expected).
+- It **still appears** on the team page and in the system map, so the agency's full roster and history remain visible.
+
+To reactivate an agent, remove the frontmatter block (or set `active: true`). Frontmatter is preserved automatically when the app rewrites an agent file (e.g. a persona edit), so a paused agent never silently reactivates itself.
+
 ## How an agent is invoked (today)
 
 An agent is given a combined context, in this order:

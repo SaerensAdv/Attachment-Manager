@@ -11,7 +11,6 @@ import {
   Bug,
   ListChecks,
   LogOut,
-  Palette,
   Search,
 } from "lucide-react";
 import { useAuth } from "@workspace/replit-auth-web";
@@ -28,7 +27,6 @@ const tabs = [
   { href: "/crawl", label: "Crawl", icon: Bug },
   { href: "/zoektermen", label: "Zoektermen", icon: Search },
   { href: "/history", label: "Archief", icon: Archive },
-  { href: "/visuals", label: "Visuals", icon: Palette },
   { href: "/todo", label: "Te doen", icon: ListChecks },
   { href: "/planning", label: "Planning", icon: CalendarClock },
   { href: "/controle", label: "Controle", icon: ShieldCheck },

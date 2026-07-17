@@ -25,4 +25,6 @@ export interface DocNode {
      * @nullable
      */
   fanout: number | null;
+  /** Agent lifecycle flag. false when the doc opts out via frontmatter (active: false); such agents are excluded from routing and hidden in the picker but stay in the graph so the map can show them as paused. Defaults to true for every doc without a flag. */
+  active: boolean;
 }

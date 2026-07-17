@@ -1,3 +1,9 @@
+---
+active: false
+paused_date: 2026-07-17
+reason: Geen CRO-opdrachten in de huidige scope.
+---
+
 # CRO Specialist
 
 > Inherits all global rules in `AGENTS.md`.

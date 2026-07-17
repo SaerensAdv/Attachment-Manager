@@ -1,3 +1,9 @@
+---
+active: false
+paused_date: 2026-07-17
+reason: Planning verloopt via de ingebouwde scheduler.
+---
+
 # Operations & Schedule Coordinator
 
 > Inherits all global rules in `AGENTS.md`.

@@ -1,3 +1,9 @@
+---
+active: false
+paused_date: 2026-07-17
+reason: Focus ligt op Google Ads; Meta niet actief.
+---
+
 # Meta Ads Strategist
 
 > Inherits all global rules in `AGENTS.md`.

@@ -78,6 +78,9 @@ export function validateDocs(extra: DocFile[] = []): ValidationReport {
       orchestrator.content;
     for (const node of graph.nodes) {
       if (node.category !== "agent" || node.id === orchestrator.id) continue;
+      // Paused agents are intentionally kept out of routing, so a missing entry
+      // in the routing table is expected — don't flag it as a coverage gap.
+      if (node.active === false) continue;
       if (!routing.includes(node.title)) {
         issues.push({
           severity: "warning",

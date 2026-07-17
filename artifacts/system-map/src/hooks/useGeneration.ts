@@ -142,8 +142,19 @@ export function useGeneration(
     return map;
   }, [nodes]);
 
+  // Paused agents (DocNode.active === false) are hidden from the picker so no
+  // new work can be started with them; the orchestrator never routes there.
   const allAgents = useMemo(
-    () => byCategory("agent").filter((a) => a.path !== "agents/orchestrator.md"),
+    () =>
+      (nodes ?? [])
+        .filter(
+          (n) =>
+            n.category === "agent" &&
+            n.path !== "agents/orchestrator.md" &&
+            n.active !== false,
+        )
+        .map((n) => ({ path: n.path, title: n.title }))
+        .sort((a, b) => a.title.localeCompare(b.title)),
     [nodes],
   );
 

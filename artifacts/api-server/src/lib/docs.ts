@@ -20,6 +20,14 @@ export interface DocNode {
    * Lets the UI surface and tune the count without reading the markdown.
    */
   fanout: number | null;
+  /**
+   * Agent lifecycle flag. false when a doc opts out via frontmatter
+   * (`active: false`); such agents are excluded from routing and hidden in the
+   * picker but stay in the graph so the map can still show them as paused.
+   * Defaults to true for every doc without a flag — pausing is strictly opt-in.
+   * The orchestrator is always active regardless of its frontmatter.
+   */
+  active: boolean;
 }
 
 export type DocEdgeKind = "reference" | "routing" | "flow" | "mention";
@@ -130,6 +138,47 @@ function firstParagraph(content: string): string | null {
   return collected.join(" ");
 }
 
+/**
+ * Split a doc's raw text into its leading frontmatter block (if any) and the
+ * body. A frontmatter block must begin on the very first line as a line
+ * containing only `---` and end at the next line containing only `---`. Returns
+ * frontmatter=null (and the original text as body) when there is no well-formed
+ * leading block, so ordinary markdown is untouched.
+ */
+export function splitFrontmatter(raw: string): {
+  frontmatter: string | null;
+  body: string;
+} {
+  const lines = raw.split(/\r?\n/);
+  if (lines.length === 0 || lines[0].trim() !== "---") {
+    return { frontmatter: null, body: raw };
+  }
+  let end = -1;
+  for (let i = 1; i < lines.length; i += 1) {
+    if (lines[i].trim() === "---") {
+      end = i;
+      break;
+    }
+  }
+  if (end === -1) return { frontmatter: null, body: raw };
+  const frontmatter = lines.slice(0, end + 1).join("\n");
+  let bodyStart = end + 1;
+  // Drop a single blank separator line between the block and the body.
+  if (lines[bodyStart] === "") bodyStart += 1;
+  return { frontmatter, body: lines.slice(bodyStart).join("\n") };
+}
+
+/**
+ * Read the `active` lifecycle flag from a frontmatter block. A missing block or
+ * a missing key means active (true); only an explicit `active: false` pauses a
+ * doc, so pausing is strictly opt-in.
+ */
+export function parseActiveFlag(frontmatter: string | null): boolean {
+  if (!frontmatter) return true;
+  const m = frontmatter.match(/^\s*active\s*:\s*(true|false)\b/im);
+  return m ? m[1].toLowerCase() !== "false" : true;
+}
+
 function listMarkdown(dir: string): string[] {
   if (!existsSync(dir)) return [];
   return readdirSync(dir, { withFileTypes: true })
@@ -180,16 +229,25 @@ function scanFiles(): DocFile[] {
   const add = (relPath: string, category: string) => {
     const abs = join(root, relPath);
     if (!existsSync(abs)) return;
-    const content = readFileSync(abs, "utf8");
+    const raw = readFileSync(abs, "utf8");
+    // Strip any leading frontmatter BEFORE deriving title/summary/fanout, so the
+    // lifecycle block never leaks into the routing prompt, embeddings or reader.
+    const { frontmatter, body } = splitFrontmatter(raw);
     const filename = relPath.split("/").pop() ?? relPath;
     files.push({
       id: relPath,
       path: relPath,
-      title: firstTitle(content, filename),
+      title: firstTitle(body, filename),
       category,
-      summary: firstParagraph(content),
-      fanout: category === "workflow" ? parseFanoutMarker(content) : null,
-      content,
+      summary: firstParagraph(body),
+      fanout: category === "workflow" ? parseFanoutMarker(body) : null,
+      // The orchestrator routes work and must never be pausable; every other doc
+      // honours its frontmatter flag (default active).
+      active:
+        relPath === "agents/orchestrator.md"
+          ? true
+          : parseActiveFlag(frontmatter),
+      content: body,
     });
   };
 
@@ -502,7 +560,17 @@ export function writeDocFile(path: string, content: string): DocFile | null {
   if (rel.startsWith("..") || isAbsolute(rel)) return null;
   if (!existsSync(abs)) return null;
 
-  writeFileSync(abs, content, "utf8");
+  // Preserve a leading frontmatter block. The doc editor and the persona editor
+  // both rebuild content from the stripped body (the frontmatter is never shown
+  // to them), so a save would otherwise delete the block and silently reactivate
+  // a paused agent. Re-prepend the on-disk block whenever the incoming content
+  // does not already carry one.
+  const currentFm = splitFrontmatter(readFileSync(abs, "utf8")).frontmatter;
+  const incomingFm = splitFrontmatter(content).frontmatter;
+  const toWrite =
+    currentFm && !incomingFm ? `${currentFm}\n\n${content}` : content;
+
+  writeFileSync(abs, toWrite, "utf8");
   invalidateDocsCache();
   return getDocFile(path);
 }

@@ -61,16 +61,34 @@ export async function resolveGenerationContext(
   ];
   const seen = new Set<string>();
   const teamPaths: string[] = [];
+  let pausedDropped = false;
   for (const p of rawTeam) {
     if (seen.has(p)) continue;
     seen.add(p);
     if (p === "agents/orchestrator.md") continue;
     // The QC agents are never executors — they run as the final quality gate.
     if (QC_PATHS.has(p)) continue;
-    if (isValidDoc(p, "agent")) teamPaths.push(p);
+    const doc = getDocFile(p);
+    if (!doc || doc.category !== "agent") continue;
+    // A paused agent (lifecycle `active: false`) can still reach here via a stale
+    // request or a schedule whose sole agent was later paused. Drop it silently
+    // and remember why, so an all-paused team surfaces a clear cause below rather
+    // than a misleading "unknown agent". The scheduler funnels this error into an
+    // operator alert.
+    if (doc.active === false) {
+      pausedDropped = true;
+      continue;
+    }
+    teamPaths.push(p);
   }
   if (teamPaths.length === 0) {
-    return { ok: false, status: 400, error: "Onbekende of ongeldige agent." };
+    return {
+      ok: false,
+      status: 400,
+      error: pausedDropped
+        ? "Deze agent is gepauzeerd en kan geen opdrachten meer uitvoeren."
+        : "Onbekende of ongeldige agent.",
+    };
   }
 
   const clientDocs = await loadClientDocs();

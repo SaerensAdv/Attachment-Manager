@@ -1,3 +1,9 @@
+---
+active: false
+paused_date: 2026-07-17
+reason: E-mailautomatisatie nog niet in scope.
+---
+
 # Email & Marketing Automation Specialist
 
 > Inherits all global rules in `AGENTS.md`.

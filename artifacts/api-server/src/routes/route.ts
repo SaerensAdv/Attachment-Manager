@@ -47,8 +47,13 @@ router.post("/route", async (req, res) => {
 
   const graph = getDocGraph();
   const workflows = graph.nodes.filter((n) => n.category === "workflow");
+  // Paused agents (lifecycle `active: false`) are never offered to the routing
+  // model, so Lotte can only pick from the live roster.
   const agents = graph.nodes.filter(
-    (n) => n.category === "agent" && n.path !== "agents/orchestrator.md",
+    (n) =>
+      n.category === "agent" &&
+      n.path !== "agents/orchestrator.md" &&
+      n.active !== false,
   );
 
   const system = buildRoutingPrompt({
@@ -94,9 +99,11 @@ router.post("/route", async (req, res) => {
     // The orchestrator routes work; it is never a valid specialist executor.
     if (category === "agent" && value === "agents/orchestrator.md") return null;
     const doc = getDocFile(value);
-    return doc && doc.category === category
-      ? { path: doc.path, title: doc.title }
-      : null;
+    if (!doc || doc.category !== category) return null;
+    // Never route to a paused agent, even if the model named one from the
+    // orchestrator's routing table (which is injected into the prompt verbatim).
+    if (category === "agent" && doc.active === false) return null;
+    return { path: doc.path, title: doc.title };
   };
 
   const needsClarification = parsed.needsClarification === true;

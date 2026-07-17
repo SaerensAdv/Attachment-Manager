@@ -12,6 +12,7 @@ type Doc = {
   title: string;
   content: string;
   category: string;
+  active?: boolean;
 };
 
 const docs: Record<string, Doc> = {
@@ -26,6 +27,13 @@ const docs: Record<string, Doc> = {
     title: "Strateeg",
     content: "strateeg-rol",
     category: "agent",
+  },
+  "agents/paused.md": {
+    path: "agents/paused.md",
+    title: "Gepauzeerd",
+    content: "gepauzeerde-rol",
+    category: "agent",
+    active: false,
   },
   "workflows/wf.md": {
     path: "workflows/wf.md",
@@ -105,6 +113,30 @@ describe("resolveGenerationContext — optional client", () => {
     expect((await resolveGenerationContext({ ...base, request: "" })).ok).toBe(
       false,
     );
+  });
+});
+
+describe("resolveGenerationContext — paused agents", () => {
+  it("refuses with a paused-specific message when the only agent is paused", async () => {
+    const res = await resolveGenerationContext({
+      ...base,
+      agentPath: "agents/paused.md",
+    });
+    expect(res.ok).toBe(false);
+    if (res.ok) return;
+    expect(res.status).toBe(400);
+    expect(res.error).toContain("gepauzeerd");
+  });
+
+  it("silently drops a paused agent but keeps the active team members", async () => {
+    const res = await resolveGenerationContext({
+      ...base,
+      agentPath: "agents/strategist.md",
+      additionalAgentPaths: ["agents/paused.md"],
+    });
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    expect(res.ctx.teamPaths).toEqual(["agents/strategist.md"]);
   });
 });
 

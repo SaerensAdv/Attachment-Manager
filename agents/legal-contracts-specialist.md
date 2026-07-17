@@ -1,3 +1,9 @@
+---
+active: false
+paused_date: 2026-07-17
+reason: Juridisch werk verloopt buiten de tool.
+---
+
 # Legal & Contracts Specialist
 
 > Inherits all global rules in `AGENTS.md`.

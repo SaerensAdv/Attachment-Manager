@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "prepare:atlas": "node ./prepare-atlas-openapi.mjs",
-    "codegen": "pnpm run prepare:atlas && orval --config ./orval.config.ts && rm -f ./.atlas-openapi.generated.yaml && pnpm -w run typecheck:libs",
+    "codegen": "node ./run-codegen.mjs",
     "codegen:check": "pnpm run codegen"
   },
   "devDependencies": {

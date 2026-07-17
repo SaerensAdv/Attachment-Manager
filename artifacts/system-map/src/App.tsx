@@ -28,10 +28,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
-      {/* The standalone Genereren page now lives as a command bar on the Kaart. */}
-      <Route path="/generate">
-        <Redirect to="/" />
-      </Route>
+      <Route path="/generate"><Redirect to="/" /></Route>
       <Route path="/graph" component={WorkspaceGraph} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/team" component={Team} />
@@ -48,21 +45,18 @@ function Router() {
   );
 }
 
-// Quick, opacity-only transition between routes. Keyed on location so each page
-// fades cleanly; reduced-motion users get an instant swap with no animation.
+function AppChrome() {
+  const [location] = useLocation();
+  if (location.startsWith("/graph")) return null;
+  return <><TabNav /><CommandPalette /></>;
+}
+
 function AnimatedRoutes() {
   const [location] = useLocation();
   const reduce = useReducedMotion();
-
   return (
     <AnimatePresence mode="wait" initial={false}>
-      <motion.div
-        key={location}
-        initial={reduce ? false : { opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={reduce ? { opacity: 1 } : { opacity: 0 }}
-        transition={pageTransition}
-      >
+      <motion.div key={location} initial={reduce ? false : { opacity: 0 }} animate={{ opacity: 1 }} exit={reduce ? { opacity: 1 } : { opacity: 0 }} transition={pageTransition}>
         <Router />
       </motion.div>
     </AnimatePresence>
@@ -75,11 +69,7 @@ function App() {
       <TooltipProvider>
         <AuthGate>
           <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-            <SmoothScroll>
-              <TabNav />
-              <CommandPalette />
-              <AnimatedRoutes />
-            </SmoothScroll>
+            <SmoothScroll><AppChrome /><AnimatedRoutes /></SmoothScroll>
           </WouterRouter>
         </AuthGate>
         <Toaster />

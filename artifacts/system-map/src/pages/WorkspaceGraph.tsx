@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
-import { Activity, AlertTriangle, Bot, Boxes, FileText, History, Loader2, Map, MoreHorizontal, RefreshCw, Search, Settings2 } from "lucide-react";
+import { Activity, AlertTriangle, Bot, Boxes, FileText, History, Loader2, Map, MoreHorizontal, RefreshCw, Settings2 } from "lucide-react";
 import {
   useGetGraphOverview,
   getGetGraphOverviewQueryKey,
@@ -53,7 +53,7 @@ export default function WorkspaceGraph() {
     setFocusRequest((prev) => ({ id, nonce: (prev?.nonce ?? 0) + 1 }));
   };
 
-  const lastHash = useRef<string>();
+  const lastHash = useRef<string | undefined>(undefined);
   useEffect(() => {
     const hash = meta?.contentHash ?? undefined;
     if (lastHash.current && hash !== lastHash.current) {

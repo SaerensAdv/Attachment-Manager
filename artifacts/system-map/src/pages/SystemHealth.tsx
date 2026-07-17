@@ -1,0 +1,37 @@
+import { useQuery } from "@tanstack/react-query";
+import { getAtlasOperationsStatus, getAtlasSystemStatus, type HealthState, type SystemCheck } from "@workspace/api-client-react";
+import { Activity, AlertTriangle, CheckCircle2, Clock3, Database, Loader2, RefreshCw, Server, ShieldCheck, Webhook, Workflow } from "lucide-react";
+import AtlasShell from "@/components/atlas/AtlasShell";
+import "./Operations.css";
+
+const iconFor = (key: string) => key.includes("database") || key === "db" ? <Database /> : key.includes("clickup") || key.includes("webhook") ? <Webhook /> : key.includes("scheduler") || key.includes("queue") ? <Workflow /> : <Server />;
+const labelFor = (key: string) => key.replaceAll("_", " ").replaceAll("-", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+const formatDate = (value: string | null | undefined) => value ? new Intl.DateTimeFormat("en-BE", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", second: "2-digit" }).format(new Date(value)) : "Not recorded";
+const tone = (state: HealthState | string) => state === "healthy" ? "healthy" : state === "degraded" ? "attention" : state === "down" ? "danger" : "unknown";
+
+function CheckRow({ check }: { check: SystemCheck }) {
+  return <div className="health-check-row" data-tone={tone(check.status)}><i>{iconFor(check.key)}</i><span><small>{check.key}</small><b>{labelFor(check.key)}</b><p>{check.message || `Checked ${formatDate(check.checkedAt)}`}</p></span><time>{typeof check.latencyMs === "number" ? `${check.latencyMs} ms` : check.status}</time></div>;
+}
+
+export default function SystemHealth() {
+  const system = useQuery({ queryKey: ["atlas-system-status"], queryFn: ({ signal }) => getAtlasSystemStatus(signal), refetchInterval: 30_000 });
+  const operations = useQuery({ queryKey: ["atlas-operations-status"], queryFn: ({ signal }) => getAtlasOperationsStatus(signal), refetchInterval: 30_000 });
+  const refresh = () => { void system.refetch(); void operations.refetch(); };
+  const actions = <button type="button" className="atlas-action" onClick={refresh} disabled={system.isFetching || operations.isFetching}><RefreshCw className={system.isFetching || operations.isFetching ? "atlas-rotating" : ""} />Refresh checks</button>;
+  const overall = system.data?.status ?? "unknown";
+  const checkedAt = system.data?.checks.map((check) => check.checkedAt).sort().at(-1);
+
+  return <AtlasShell title="System Health" subtitle="Truthful runtime status, no vanity uptime" actions={actions}>
+    <main className="health-stage" data-lenis-prevent>
+      <header className="health-overview" data-tone={tone(overall)}><div><p>Current state</p><h2>{overall === "healthy" ? "All critical systems operational" : overall === "degraded" ? "Service is degraded" : overall === "down" ? "Critical service interruption" : "Health has not been verified"}</h2><span><Clock3 />Last verified {formatDate(checkedAt)}</span></div><i>{overall === "healthy" ? <CheckCircle2 /> : overall === "unknown" ? <Activity /> : <AlertTriangle />}</i></header>
+      {(system.isLoading || operations.isLoading) && <div className="health-loading"><Loader2 className="atlas-rotating" /><p>Running independent checks</p></div>}
+      {system.isError && <div className="operations-error"><AlertTriangle /><span><b>System status unavailable</b><p>This is unknown health, not healthy. Check the API process directly before relying on automation.</p></span><button type="button" onClick={() => system.refetch()}>Try again</button></div>}
+      {system.data && <section className="health-checks"><header><p>Independent checks</p><h2>Runtime services</h2><span>{system.data.checks.length} checks</span></header><div>{system.data.checks.map((check) => <CheckRow key={check.key} check={check} />)}</div></section>}
+      <section className="health-runtime"><header><p>Operational heartbeat</p><h2>Automation layer</h2></header><div className="health-runtime-grid">
+        <article data-tone={tone(operations.data?.scheduler.status ?? "unknown")}><Workflow /><small>Scheduler</small><b>{operations.data?.scheduler.status ?? "Unknown"}</b><p>{operations.data?.scheduler.enabledSchedules ?? 0} enabled schedules</p><span>Heartbeat {formatDate(operations.data?.scheduler.heartbeatAt)}</span></article>
+        <article data-tone={operations.data?.webhook.registered ? (operations.data.webhook.deadLetters > 0 ? "danger" : "healthy") : "unknown"}><Webhook /><small>ClickUp webhook</small><b>{operations.data?.webhook.registered ? "Registered" : "Not registered"}</b><p>{operations.data?.webhook.deadLetters ?? 0} dead letters</p><span>Last event {formatDate(operations.data?.webhook.lastEventAt)}</span></article>
+        <article data-tone={(operations.data?.pushQueue.deadLetters ?? operations.data?.pushQueue.failed ?? 0) > 0 ? "danger" : (operations.data?.pushQueue.retrying ?? 0) > 0 ? "attention" : "healthy"}><ShieldCheck /><small>Delivery queue</small><b>{operations.data?.pushQueue.retrying ?? 0} retrying</b><p>{operations.data?.pushQueue.deadLetters ?? operations.data?.pushQueue.failed ?? 0} terminal failures</p><span>{operations.data?.pushQueue.pending ?? operations.data?.pushQueue.queued ?? 0} waiting</span></article>
+      </div></section>
+    </main>
+  </AtlasShell>;
+}

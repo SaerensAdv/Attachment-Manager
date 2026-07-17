@@ -56,3 +56,19 @@ channel = "stable-25_05"
 [userenv.shared]
 OWNER_EMAIL = "axel@saerensadvertising.com"
 AGENT_EMAIL_DOMAIN = "saerensadvertising.com"
+
+# Workspace Atlas graph scope. These are public ClickUp object identifiers, not
+# credentials. The operational graph deliberately includes only canonical HQ
+# work plus the two authoritative Docs; active GitHub agents/workflows/knowledge
+# and Replit clients/runs/flows are added independently by the collector.
+GRAPH_WORKSPACE_ID = "9015913612"
+GRAPH_ALLOWED_SPACE_IDS = "901511402568"
+GRAPH_ALLOWED_LIST_IDS = "901524400055,901524400063"
+GRAPH_ALLOWED_DOC_IDS = "8cp7v4c-71935,8cp7v4c-73895"
+GRAPH_TASK_LOOKBACK_DAYS = "90"
+GRAPH_MAX_TASKS_PER_LIST = "25"
+GRAPH_MAX_TASKS_TOTAL = "100"
+GRAPH_MAX_DOCS = "2"
+GRAPH_MAX_PAGES_PER_DOC = "150"
+GRAPH_MAX_PAGES_TOTAL = "250"
+GRAPH_MAX_PUSH_RECORDS = "100"

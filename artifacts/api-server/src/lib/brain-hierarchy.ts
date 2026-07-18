@@ -13,7 +13,7 @@ const nodeSchema = z.object({
   aliases: z.array(stableIdSchema).optional().default([]),
 });
 const mappingSchema = z.object({ pattern: z.string().min(1), parent: stableIdSchema, canonicalOwner: ownerSchema });
-const sourceAliasSchema = z.object({ canonicalPath: sourcePathSchema, aliases: z.array(sourcePathSchema).min(1) });
+const sourceAliasSchema = z.object({ canonicalPath: sourcePathSchema, runtimeId: sourcePathSchema.optional(), aliases: z.array(sourcePathSchema).min(1) });
 const manifestSchema = z.object({ version: z.literal(1), rootId: stableIdSchema, nodes: z.array(nodeSchema), mappings: z.array(mappingSchema), sourceAliases: z.array(sourceAliasSchema).optional() });
 
 export type BrainHierarchyNode = z.infer<typeof nodeSchema>;
@@ -57,10 +57,17 @@ export function validateBrainHierarchy(manifest: BrainHierarchyManifest, sources
 
   const sourceAliasOwner = new Map<string, string>();
   const aliasesByCanonical = new Map<string, string[]>();
+  const runtimeByCanonical = new Map<string, string>();
+  const runtimeOwner = new Map<string, string>();
   for (const record of manifest.sourceAliases ?? []) {
     if (!sourceSet.has(record.canonicalPath)) pushUnique(issues, { code: "alias_target_missing", message: `Source alias target does not exist: ${record.canonicalPath}`, source: record.canonicalPath });
     if (aliasesByCanonical.has(record.canonicalPath)) pushUnique(issues, { code: "duplicate_alias_target", message: `Source alias target declared twice: ${record.canonicalPath}`, source: record.canonicalPath });
     aliasesByCanonical.set(record.canonicalPath, record.aliases);
+    const runtimeId = record.runtimeId ?? record.canonicalPath;
+    runtimeByCanonical.set(record.canonicalPath, runtimeId);
+    if (runtimeId !== record.canonicalPath && !record.aliases.includes(runtimeId)) pushUnique(issues, { code: "runtime_id_not_aliased", message: `Runtime ID must be canonical or an alias: ${runtimeId}`, source: runtimeId });
+    if (runtimeOwner.has(runtimeId)) pushUnique(issues, { code: "runtime_id_collision", message: `Runtime ID collides: ${runtimeId}`, source: runtimeId });
+    else runtimeOwner.set(runtimeId, record.canonicalPath);
     for (const alias of record.aliases) {
       if (alias === record.canonicalPath || sourceSet.has(alias) || sourceAliasOwner.has(alias)) pushUnique(issues, { code: "source_alias_collision", message: `Source alias collides: ${alias}`, source: alias });
       else sourceAliasOwner.set(alias, record.canonicalPath);
@@ -68,11 +75,17 @@ export function validateBrainHierarchy(manifest: BrainHierarchyManifest, sources
   }
 
   const sourceNodes: Array<BrainHierarchyNode & { source: string; runtimeId: string; sourceAliases: string[] }> = [];
+  const generatedIds = new Set<string>();
   for (const source of uniqueSources) {
     const candidates = manifest.mappings.filter((mapping) => matches(mapping.pattern, source));
     if (candidates.length === 0) { pushUnique(issues, { code: "unmapped_source", message: `No hierarchy mapping for ${source}`, source }); continue; }
     if (candidates.length > 1) { pushUnique(issues, { code: "ambiguous_source", message: `Multiple hierarchy mappings for ${source}`, source }); continue; }
-    const mapping = candidates[0]; sourceNodes.push({ id: `source:${source}`, kind: "source", label: source.split("/").pop()?.replace(/\.md$/, "") ?? source, parent: mapping.parent, order: 100, canonicalOwner: mapping.canonicalOwner, status: "active", visibility: "default", aliases: [], source, runtimeId: source, sourceAliases: aliasesByCanonical.get(source) ?? [] });
+    const mapping = candidates[0];
+    const runtimeId = runtimeByCanonical.get(source) ?? source;
+    const id = `source:${runtimeId}`;
+    if (generatedIds.has(id)) pushUnique(issues, { code: "source_id_collision", message: `Stable source ID collides: ${id}`, source });
+    generatedIds.add(id);
+    sourceNodes.push({ id, kind: "source", label: source.split("/").pop()?.replace(/\.md$/, "") ?? source, parent: mapping.parent, order: 100, canonicalOwner: mapping.canonicalOwner, status: "active", visibility: "default", aliases: [], source, runtimeId, sourceAliases: aliasesByCanonical.get(source) ?? [] });
   }
   for (const mapping of manifest.mappings) if (!uniqueSources.some((source) => matches(mapping.pattern, source))) pushUnique(issues, { code: "unused_mapping", message: `Mapping matches no source: ${mapping.pattern}`, source: mapping.pattern });
   return { manifest, nodes: [...manifest.nodes, ...sourceNodes], issues, sourceCount: uniqueSources.length, mappedSourceCount: sourceNodes.length };

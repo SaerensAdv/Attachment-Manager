@@ -13,12 +13,14 @@ import {
   type GraphEdge,
 } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
-import { deriveGraphState, FILTER_GROUPS, groupForNode, indexById, isStale, mergeById, relativeTime, type FilterGroupId } from "@/components/workspace-graph/graph-model";
+import { deriveGraphState, groupForNode, indexById, isStale, mergeById, relativeTime, type FilterGroupId } from "@/components/workspace-graph/graph-model";
 import WorkspaceGraphCanvas from "@/components/workspace-graph/WorkspaceGraphCanvas";
 import NodeDetailPanel from "@/components/workspace-graph/NodeDetailPanel";
 import GraphLegend from "@/components/workspace-graph/GraphLegend";
 import AtlasShell from "@/components/atlas/AtlasShell";
 import { useAtlasGeneration } from "@/components/atlas/AtlasGenerationProvider";
+
+const NO_HIDDEN_GROUPS = new Set<FilterGroupId>();
 
 export default function WorkspaceGraph() {
   const { toast } = useToast();
@@ -29,19 +31,21 @@ export default function WorkspaceGraph() {
   const [focusRequest, setFocusRequest] = useState<{ id: string; nonce: number } | null>(null);
   const [expNodes, setExpNodes] = useState<Map<string, GraphNode>>(() => new Map());
   const [expEdges, setExpEdges] = useState<Map<string, GraphEdge>>(() => new Map());
-  const hiddenGroups = useMemo(() => new Set<FilterGroupId>(FILTER_GROUPS.map((group) => group.id).filter((id) => activeGroup !== null && id !== activeGroup)), [activeGroup]);
 
   const { data: overview, isLoading, isError, refetch } = useGetGraphOverview();
   const meta = overview?.meta;
   const viewNodes = useMemo(() => [...mergeById(indexById(overview?.nodes ?? []), [...expNodes.values()]).values()], [overview, expNodes]);
   const viewEdges = useMemo(() => [...mergeById(indexById(overview?.edges ?? []), [...expEdges.values()]).values()], [overview, expEdges]);
+  const lensNodes = useMemo(() => activeGroup ? viewNodes.filter((node) => groupForNode(node) === activeGroup) : viewNodes, [activeGroup, viewNodes]);
+  const lensNodeIds = useMemo(() => new Set(lensNodes.map((node) => node.id)), [lensNodes]);
+  const lensEdges = useMemo(() => viewEdges.filter((edge) => lensNodeIds.has(edge.sourceId) && lensNodeIds.has(edge.targetId)), [lensNodeIds, viewEdges]);
   const selectedNode = useMemo(() => viewNodes.find((node) => node.id === selectedNodeId) ?? null, [viewNodes, selectedNodeId]);
   const activeAgentNodeId = useMemo(() => {
     if (!generation.activePath) return null;
     const slug = generation.activePath.replace(/^agents\//, "").replace(/\.md$/, "");
     const id = `github:agent:${slug}`;
-    return viewNodes.some((node) => node.id === id) ? id : null;
-  }, [generation.activePath, viewNodes]);
+    return lensNodeIds.has(id) ? id : null;
+  }, [generation.activePath, lensNodeIds]);
 
   const handleExpand = (data: { nodes: GraphNode[]; edges: GraphEdge[] }) => {
     setExpNodes((prev) => mergeById(prev, data.nodes));
@@ -61,10 +65,7 @@ export default function WorkspaceGraph() {
   const selectGroup = (group: FilterGroupId | null) => {
     setActiveGroup(group);
     setSelectedNodeId(null);
-    if (!group) return;
-    const candidates = viewNodes.filter((node) => groupForNode(node) === group);
-    const anchor = candidates.find((node) => node.sourceType === "agent" || node.sourceType === "integration" || node.sourceType === "client") ?? candidates[0];
-    if (anchor) setFocusRequest((prev) => ({ id: anchor.id, nonce: (prev?.nonce ?? 0) + 1 }));
+    setFocusRequest(null);
   };
 
   const lastHash = useRef<string | undefined>(undefined);
@@ -116,7 +117,8 @@ export default function WorkspaceGraph() {
         {state === "loading" && <div className="atlas-state atlas-skeleton-state"><Loader2 className="atlas-rotating" /><span>Loading workspace</span></div>}
         {state === "error" && <div className="atlas-state is-error"><AlertTriangle /><strong>Workspace unavailable</strong><p>The last valid snapshot was not reachable.</p><button onClick={() => refetch()}>Try again</button></div>}
         {state === "empty" && <div className="atlas-state"><Activity /><strong>No graph snapshot yet</strong><p>Run the first read-only sync to map your workspace.</p><button onClick={() => sync.mutate()}>Start first sync</button></div>}
-        {state === "ready" && overview && <WorkspaceGraphCanvas nodes={viewNodes} edges={viewEdges} hiddenGroups={hiddenGroups} selectedNodeId={selectedNodeId} activeNodeId={activeAgentNodeId} onSelectNode={setSelectedNodeId} fitKey={meta?.contentHash ?? undefined} focusRequest={focusRequest} />}
+        {state === "ready" && overview && lensNodes.length > 0 && <WorkspaceGraphCanvas key={`${meta?.contentHash ?? "none"}:${activeGroup ?? "all"}`} nodes={lensNodes} edges={lensEdges} hiddenGroups={NO_HIDDEN_GROUPS} selectedNodeId={selectedNodeId} activeNodeId={activeAgentNodeId} onSelectNode={setSelectedNodeId} fitKey={`${meta?.contentHash ?? "none"}:${activeGroup ?? "all"}`} focusRequest={focusRequest} />}
+        {state === "ready" && activeGroup && lensNodes.length === 0 && <div className="atlas-state"><Activity /><strong>No {activeGroup} nodes in this snapshot</strong><p>The filter works, but this source did not produce nodes during the latest sync.</p><button onClick={() => sync.mutate()}>Sync again</button></div>}
         <GraphLegend activeGroup={activeGroup} onSelectGroup={selectGroup} onPick={handlePick} />
         {overview?.truncated && <div className="atlas-truncated">Search and expand to explore the full workspace</div>}
       </main>

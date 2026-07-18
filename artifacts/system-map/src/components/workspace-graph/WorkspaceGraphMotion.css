@@ -1,0 +1,34 @@
+@keyframes atlas-idle-drift {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  28% { transform: translate3d(1.4px, -1px, 0); }
+  62% { transform: translate3d(-1px, 1.3px, 0); }
+}
+
+.atlas-node-idle-drift {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: atlas-idle-drift 7.2s cubic-bezier(.65, 0, .35, 1) var(--atlas-drift-delay, 0ms) infinite;
+}
+
+@keyframes atlas-active-agent {
+  0% { transform: scale(.92); opacity: .72; }
+  72%, 100% { transform: scale(1.65); opacity: 0; }
+}
+
+.atlas-active-agent-pulse {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: atlas-active-agent 1.9s cubic-bezier(.16, 1, .3, 1) infinite;
+}
+
+.atlas-interacting .atlas-node-idle-drift,
+.atlas-interacting .atlas-active-agent-pulse {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .atlas-node-idle-drift,
+  .atlas-active-agent-pulse {
+    animation: none;
+  }
+}

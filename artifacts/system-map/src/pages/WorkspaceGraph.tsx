@@ -13,7 +13,7 @@ import {
   type GraphEdge,
 } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
-import { deriveGraphState, indexById, isStale, mergeById, relativeTime, type FilterGroupId } from "@/components/workspace-graph/graph-model";
+import { deriveGraphState, FILTER_GROUPS, indexById, isStale, mergeById, relativeTime, type FilterGroupId } from "@/components/workspace-graph/graph-model";
 import WorkspaceGraphCanvas from "@/components/workspace-graph/WorkspaceGraphCanvas";
 import NodeDetailPanel from "@/components/workspace-graph/NodeDetailPanel";
 import GraphLegend from "@/components/workspace-graph/GraphLegend";
@@ -25,10 +25,11 @@ export default function WorkspaceGraph() {
   const generation = useAtlasGeneration();
   const queryClient = useQueryClient();
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-  const [hiddenGroups, setHiddenGroups] = useState<Set<FilterGroupId>>(() => new Set());
+  const [activeGroup, setActiveGroup] = useState<FilterGroupId | null>(null);
   const [focusRequest, setFocusRequest] = useState<{ id: string; nonce: number } | null>(null);
   const [expNodes, setExpNodes] = useState<Map<string, GraphNode>>(() => new Map());
   const [expEdges, setExpEdges] = useState<Map<string, GraphEdge>>(() => new Map());
+  const hiddenGroups = useMemo(() => new Set<FilterGroupId>(FILTER_GROUPS.map((group) => group.id).filter((id) => activeGroup !== null && id !== activeGroup)), [activeGroup]);
 
   const { data: overview, isLoading, isError, refetch } = useGetGraphOverview();
   const meta = overview?.meta;
@@ -53,6 +54,7 @@ export default function WorkspaceGraph() {
         if (result) handleExpand({ nodes: [...result.nodes], edges: [...result.edges] });
       } catch { /* Global search can still focus a node removed during a sync. */ }
     }
+    setActiveGroup(null);
     setSelectedNodeId(id);
     setFocusRequest((prev) => ({ id, nonce: (prev?.nonce ?? 0) + 1 }));
   };
@@ -91,8 +93,6 @@ export default function WorkspaceGraph() {
   const isSyncing = Boolean(meta?.syncing || statusSyncing || sync.isPending);
   const state = deriveGraphState({ isLoading, isError, hasNodes: (overview?.nodes.length ?? 0) > 0, metaStatus: meta?.status });
   const stale = state === "ready" && !isSyncing && isStale(meta?.lastSyncedAt);
-  const toggleGroup = (id: FilterGroupId) => setHiddenGroups((prev) => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; });
-
   const actions = <>
     <span className={`atlas-live ${stale ? "is-stale" : ""}`}><i />{stale ? "STALE SNAPSHOT" : `LIVE · ${relativeTime(meta?.lastSyncedAt).replace(" geleden", "")}`}</span>
     <button type="button" className="atlas-action" onClick={() => !isSyncing && sync.mutate()} disabled={isSyncing}>
@@ -109,8 +109,8 @@ export default function WorkspaceGraph() {
         {state === "error" && <div className="atlas-state is-error"><AlertTriangle /><strong>Workspace unavailable</strong><p>The last valid snapshot was not reachable.</p><button onClick={() => refetch()}>Try again</button></div>}
         {state === "empty" && <div className="atlas-state"><Activity /><strong>No graph snapshot yet</strong><p>Run the first read-only sync to map your workspace.</p><button onClick={() => sync.mutate()}>Start first sync</button></div>}
         {state === "ready" && overview && <WorkspaceGraphCanvas nodes={viewNodes} edges={viewEdges} hiddenGroups={hiddenGroups} selectedNodeId={selectedNodeId} activeNodeId={activeAgentNodeId} onSelectNode={setSelectedNodeId} fitKey={meta?.contentHash ?? undefined} focusRequest={focusRequest} />}
-        <GraphLegend hiddenGroups={hiddenGroups} onToggleGroup={toggleGroup} onPick={handlePick} />
-        {overview?.truncated && <div className="atlas-truncated">{overview.nodes.length} of {overview.totalNodes} nodes loaded, search covers all</div>}
+        <GraphLegend activeGroup={activeGroup} onSelectGroup={(group) => { setActiveGroup(group); setSelectedNodeId(null); }} onPick={handlePick} />
+        {overview?.truncated && <div className="atlas-truncated">Search and expand to explore the full workspace</div>}
       </main>
       <NodeDetailPanel node={selectedNode} onClose={() => setSelectedNodeId(null)} onSelectNode={handlePick} onExpand={handleExpand} />
     </AtlasShell>

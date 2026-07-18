@@ -12,6 +12,7 @@ const router: IRouter = Router();
 const EMPTY_GRAPH: Graph = { nodes: [], edges: [] };
 const SEARCH_LIMIT_DEFAULT = 30;
 const SEARCH_LIMIT_MAX = 100;
+const unlimitedOverviewEnabled = () => process.env.GRAPH_OVERVIEW_UNLIMITED === "true";
 function metaFrom(m: SnapshotMeta | null | undefined) {
   if (!m) return { status: "none", nodeCount: 0, edgeCount: 0, contentHash: null, sourceUpdatedAt: null, lastSyncedAt: null, error: null, syncing: isSyncing() };
   return { status: m.status === "active" ? "active" : "none", nodeCount: m.nodeCount, edgeCount: m.edgeCount, contentHash: m.contentHash, sourceUpdatedAt: m.sourceUpdatedAt, lastSyncedAt: m.lastSyncedAt, error: m.error, syncing: isSyncing() };
@@ -23,7 +24,11 @@ function exclusionCount(report: GraphCollectionReport | undefined): number {
 }
 
 router.get("/graph/overview", async (_req, res): Promise<void> => {
-  const active = await readActive(); const graph = active?.graph ?? EMPTY_GRAPH; const overview = reduceToOverview(graph);
+  const active = await readActive();
+  const graph = active?.graph ?? EMPTY_GRAPH;
+  const overview = unlimitedOverviewEnabled()
+    ? { nodes: graph.nodes, edges: graph.edges, truncated: false, totalNodes: graph.nodes.length, totalEdges: graph.edges.length }
+    : reduceToOverview(graph);
   res.json(GetGraphOverviewResponse.parse({ nodes: overview.nodes, edges: overview.edges, meta: metaFrom(active?.meta), truncated: overview.truncated, totalNodes: overview.totalNodes, totalEdges: overview.totalEdges }));
 });
 router.get("/graph/neighbors/:nodeId", async (req, res): Promise<void> => {

@@ -28,5 +28,7 @@
     { "pattern": "knowledge/*.md", "parent": "knowledge.registry", "canonicalOwner": "github" },
     { "pattern": "templates/*.md", "parent": "templates.registry", "canonicalOwner": "github" }
   ],
-  "sourceAliases": []
+  "sourceAliases": [
+    { "canonicalPath": "knowledge/portrait-direction.md", "runtimeId": "knowledge/portrait-art-direction.md", "aliases": ["knowledge/portrait-art-direction.md"] }
+  ]
 }

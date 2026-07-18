@@ -3,12 +3,13 @@ import { loadBrainHierarchy, parseBrainHierarchy, validateBrainHierarchy, type B
 import { listDocFiles } from "./docs";
 
 describe("brain hierarchy validation", () => {
-  it("maps every active repository source without changing runtime paths", () => {
+  it("maps every active repository source while preserving canary runtime identity", () => {
     const sources = listDocFiles().map((file) => file.path);
     const result = loadBrainHierarchy(sources);
     expect(result.issues).toEqual([]);
     expect(result.mappedSourceCount).toBe(result.sourceCount);
     expect(result.nodes.find((node) => node.id === "source:agents/orchestrator.md")?.runtimeId).toBe("agents/orchestrator.md");
+    expect(result.nodes.find((node) => node.id === "source:knowledge/portrait-art-direction.md")).toMatchObject({ source: "knowledge/portrait-direction.md", runtimeId: "knowledge/portrait-art-direction.md", sourceAliases: ["knowledge/portrait-art-direction.md"] });
   });
   it("rejects malformed stable IDs at schema boundary", () => {
     expect(() => parseBrainHierarchy({ version: 1, rootId: "Brain Root", nodes: [], mappings: [] })).toThrow();

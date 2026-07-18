@@ -14,7 +14,7 @@ describe("governance graph projection", () => {
     const agents = result.nodes.filter((node) => node.source === "clickup" && node.sourceType === "agent");
     expect(agents.map((node) => node.label).sort()).toEqual(["Briefing Blair", "Partner Paige", "Sync Sage", "Wiki Warden"]);
     expect(agents.every((node) => node.url?.includes("/ai/agents/"))).toBe(true);
-    expect(result.edges.filter((edge) => edge.relation === "governed_by" && edge.sourceId.startsWith("clickup:agent:")).toHaveLength(4);
+    expect(result.edges.filter((edge) => edge.relation === "governed_by" && edge.sourceId.startsWith("clickup:agent:"))).toHaveLength(4);
     expect(result.nodes.find((node) => node.id === "clickup:page:8cp7v4c-72035")?.sourceType).toBe("page");
   });
   it("keeps explicit project and integration relationships", () => {

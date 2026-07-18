@@ -2,6 +2,7 @@ export * from "./generated/api";
 export * from "./generated/api.schemas";
 export * from "./custom-fetch";
 export * from "./atlas-wave-a";
+export * from "./brain-hierarchy";
 export {
   ATLAS_APPROVAL_COPY,
   getAtlasSystemStatus,

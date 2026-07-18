@@ -2,16 +2,17 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { z } from "zod";
 
+const stableIdSchema = z.string().regex(/^[a-z0-9][a-z0-9._:-]*$/, "Hierarchy IDs must be stable lowercase slugs");
 const ownerSchema = z.enum(["clickup", "github", "replit", "mixed"]);
 const nodeSchema = z.object({
-  id: z.string().regex(/^[a-z0-9][a-z0-9._:-]*$/, "Hierarchy IDs must be stable lowercase slugs"),
+  id: stableIdSchema,
   kind: z.enum(["master", "hub", "registry", "object", "source", "runtime"]),
-  label: z.string().min(1), parent: z.string().nullable(), order: z.number().int(), canonicalOwner: ownerSchema,
+  label: z.string().min(1), parent: stableIdSchema.nullable(), order: z.number().int(), canonicalOwner: ownerSchema,
   status: z.enum(["active", "paused", "deprecated", "archived"]), visibility: z.enum(["default", "advanced", "hidden"]),
-  aliases: z.array(z.string().min(1)).optional().default([]),
+  aliases: z.array(stableIdSchema).optional().default([]),
 });
-const mappingSchema = z.object({ pattern: z.string().min(1), parent: z.string().min(1), canonicalOwner: ownerSchema });
-const manifestSchema = z.object({ version: z.literal(1), rootId: z.string().min(1), nodes: z.array(nodeSchema), mappings: z.array(mappingSchema) });
+const mappingSchema = z.object({ pattern: z.string().min(1), parent: stableIdSchema, canonicalOwner: ownerSchema });
+const manifestSchema = z.object({ version: z.literal(1), rootId: stableIdSchema, nodes: z.array(nodeSchema), mappings: z.array(mappingSchema) });
 
 export type BrainHierarchyNode = z.infer<typeof nodeSchema>;
 export type BrainHierarchyManifest = z.infer<typeof manifestSchema>;

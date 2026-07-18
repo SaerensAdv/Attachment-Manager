@@ -26,7 +26,7 @@ describe("GET /graph/search", () => {
   it("clamps limit", async () => { expect((await request(await makeApp()).get("/graph/search?q=do&limit=5000")).status).toBe(200); });
 });
 describe("POST /graph/sync", () => {
-  it("rebuilds on happy path", async () => { const res = await request(await makeApp()).post("/graph/sync"); expect(res.status).toBe(200); expect(res.body.ok).toBe(true); expect(res.body.note).toBeNull(); });
+  it("rebuilds with runtime and lens diagnostics", async () => { const res = await request(await makeApp()).post("/graph/sync"); expect(res.status).toBe(200); expect(res.body.ok).toBe(true); expect(res.body.note).toContain("Build"); expect(res.body.note).toContain("lenses S1 K0 A0 W1 F0"); });
   it("reports intentional policy exclusions", async () => { collectGraphInputMock.mockResolvedValue({ ok: true, input: {}, sourceUpdatedAt: null, errors: [], report: { ...REPORT, tasks: { ...REPORT.tasks, discovered: 101, included: 1, excludedByAge: 100 } } }); const res = await request(await makeApp()).post("/graph/sync"); expect(res.body.note).toContain("Begrensd"); expect(res.body.note).toContain("100 bronitems uitgesloten"); });
   it("notes partial crawl and still activates", async () => { collectGraphInputMock.mockResolvedValue({ ok: true, input: {}, sourceUpdatedAt: null, errors: ["docs:timeout"], report: REPORT }); const res = await request(await makeApp()).post("/graph/sync"); expect(res.body.note).toContain("Gedeeltelijk"); });
   it("rejects non-owner", async () => { isOwnerMock.mockReturnValue(false); const res = await request(await makeApp()).post("/graph/sync"); expect(res.status).toBe(403); expect(beginSyncMock).not.toHaveBeenCalled(); });

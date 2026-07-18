@@ -17,6 +17,14 @@ describe("hierarchy graph projection", () => {
     expect(result.nodes.find((node) => node.id === "github:sop:hierarchy:knowledge")?.metadata.hierarchyKind).toBe("hub");
     expect(result.edges.some((edge) => edge.relation === "contains" && edge.targetId === "github:sop:ads")).toBe(true);
   });
+  it("preserves the old graph ID and rewrites existing edges after a physical move", () => {
+    const moved: BrainHierarchyResult = { ...hierarchy, nodes: hierarchy.nodes.map((node) => node.kind === "source" ? { ...node, id: "source:knowledge/portrait-art-direction.md", source: "knowledge/portrait-direction.md", runtimeId: "knowledge/portrait-art-direction.md", sourceAliases: ["knowledge/portrait-art-direction.md"] } : node) };
+    const graph: Graph = { nodes: [{ id: "github:sop:portrait-direction", source: "github", sourceType: "sop", label: "Portrait", metadata: {} }, { id: "github:workflow:x", source: "github", sourceType: "workflow", label: "X", metadata: {} }], edges: [{ id: "references:github:workflow:x->github:sop:portrait-direction", sourceId: "github:workflow:x", targetId: "github:sop:portrait-direction", relation: "references", direction: "directed" }] };
+    const result = applyHierarchyProjection(graph, moved);
+    expect(result.nodes.some((node) => node.id === "github:sop:portrait-art-direction")).toBe(true);
+    expect(result.nodes.some((node) => node.id === "github:sop:portrait-direction")).toBe(false);
+    expect(result.edges.some((edge) => edge.targetId === "github:sop:portrait-art-direction" && edge.relation === "references")).toBe(true);
+  });
   it("does not rewrite reference or execution semantics", () => {
     const graph: Graph = { nodes: [], edges: [{ id: "executes:a->b", sourceId: "a", targetId: "b", relation: "executes", direction: "directed" }] };
     expect(applyHierarchyProjection(graph, hierarchy).edges.some((edge) => edge.relation === "executes")).toBe(true);

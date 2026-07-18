@@ -4,8 +4,8 @@ import { useSearchGraph, getSearchGraphQueryKey } from "@workspace/api-client-re
 import { FILTER_GROUPS, SOURCE_TYPE_ICON, nodeColorVar, type FilterGroupId } from "./graph-model";
 
 export interface GraphLegendProps {
-  hiddenGroups: ReadonlySet<FilterGroupId>;
-  onToggleGroup: (id: FilterGroupId) => void;
+  activeGroup: FilterGroupId | null;
+  onSelectGroup: (id: FilterGroupId | null) => void;
   onPick: (nodeId: string) => void;
 }
 
@@ -15,7 +15,7 @@ function useDebounced<T>(value: T, delay: number): T {
   return debounced;
 }
 
-export default function GraphLegend({ hiddenGroups, onToggleGroup, onPick }: GraphLegendProps) {
+export default function GraphLegend({ activeGroup, onSelectGroup, onPick }: GraphLegendProps) {
   const [term, setTerm] = useState("");
   const [open, setOpen] = useState(false);
   const debounced = useDebounced(term.trim(), 220);
@@ -44,9 +44,9 @@ export default function GraphLegend({ hiddenGroups, onToggleGroup, onPick }: Gra
         </div>}
       </div>
 
-      <div className="atlas-modes" aria-label="Graph filters">
-        <button type="button" className={hiddenGroups.size === 0 ? "is-active" : ""} onClick={() => FILTER_GROUPS.filter((group) => hiddenGroups.has(group.id)).forEach((group) => onToggleGroup(group.id))}>All</button>
-        {FILTER_GROUPS.map((group) => <button key={group.id} type="button" className={!hiddenGroups.has(group.id) && hiddenGroups.size > 0 ? "is-active" : ""} onClick={() => onToggleGroup(group.id)} title={group.help}>{group.label.replace("Actief werk", "Active").replace("Live-flows", "Flows")}</button>)}
+      <div className="atlas-modes" aria-label="Graph lenses">
+        <button type="button" className={activeGroup === null ? "is-active" : ""} aria-pressed={activeGroup === null} onClick={() => onSelectGroup(null)}>All</button>
+        {FILTER_GROUPS.map((group) => <button key={group.id} type="button" className={activeGroup === group.id ? "is-active" : ""} aria-pressed={activeGroup === group.id} onClick={() => onSelectGroup(group.id)} title={group.help}>{group.label.replace("Actief werk", "Active").replace("Live-flows", "Flows")}</button>)}
       </div>
 
       <div className="atlas-legend" aria-label="Graph legend">

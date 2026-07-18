@@ -4,10 +4,12 @@ import { isOwner } from "../middlewares/requireAuth";
 import { buildGraph } from "../lib/graph/build";
 import { collectGraphInput } from "../lib/graph/collect";
 import { diagnoseGraph } from "../lib/graph/diagnostics";
+import { applyGovernanceProjection } from "../lib/graph/governance-projection";
 import { applyHierarchyProjection } from "../lib/graph/hierarchy-projection";
 import { neighbors, reduceToOverview, searchNodes } from "../lib/graph/overview";
 import { beginSync, completeSync, failSync, getActiveGraph, isSyncing, loadActiveIntoMemory, type SnapshotMeta } from "../lib/graph/snapshot-store";
 import { getRuntimeProvenance } from "../lib/runtime-provenance";
+import { loadBrainGovernance } from "../lib/brain-governance";
 import { loadBrainHierarchy } from "../lib/brain-hierarchy";
 import { listDocFiles } from "../lib/docs";
 import type { Graph } from "../lib/graph/types";
@@ -31,6 +33,9 @@ router.post("/graph/sync", async (req, res): Promise<void> => {
       const hierarchy = loadBrainHierarchy(listDocFiles().map((file) => file.path));
       if (hierarchy.issues.length) throw new Error(`hierarchy invalid: ${hierarchy.issues.map((issue) => issue.code).join(",")}`);
       graph = applyHierarchyProjection(baseGraph, hierarchy);
+      const governance = loadBrainGovernance();
+      if (governance.issues.length) throw new Error(`governance invalid: ${governance.issues.map((issue) => issue.code).join(",")}`);
+      graph = applyGovernanceProjection(graph, governance);
     }
     const runtime = getRuntimeProvenance(); const candidate = diagnoseGraph(graph, runtime); if (candidate.invariantFailures.length) throw new Error(`graph invariants: ${candidate.invariantFailures.join(",")}`);
     const { changed, meta } = await completeSync(buildingId, graph, { sourceUpdatedAt: collected.sourceUpdatedAt }); const active = getActiveGraph(); const activeDiagnostics = diagnoseGraph(active?.graph ?? EMPTY_GRAPH, runtime);

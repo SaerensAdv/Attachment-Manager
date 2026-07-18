@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "objects": [
+    { "id": "sop-002", "kind": "sop", "label": "SOP-002 Produce monthly client report", "owner": "clickup", "lifecycle": "draft", "graph": { "id": "clickup:page:8cp7v4c-72315", "source": "clickup", "sourceType": "page" } },
+    { "id": "sop-003", "kind": "sop", "label": "SOP-003 Optimize Google Ads accounts weekly", "owner": "clickup", "lifecycle": "draft", "graph": { "id": "clickup:page:8cp7v4c-72335", "source": "clickup", "sourceType": "page" } },
+    { "id": "sop-005", "kind": "sop", "label": "SOP-005 Audit Google Ads account", "owner": "clickup", "lifecycle": "draft", "graph": { "id": "clickup:page:8cp7v4c-72375", "source": "clickup", "sourceType": "page" } },
+    { "id": "workflow-monthly-reporting", "kind": "workflow", "label": "Monthly reporting workflow", "owner": "github", "lifecycle": "active", "graph": { "id": "github:workflow:monthly-reporting", "source": "github", "sourceType": "workflow" } },
+    { "id": "workflow-account-optimization", "kind": "workflow", "label": "Account optimization workflow", "owner": "github", "lifecycle": "active", "graph": { "id": "github:workflow:account-optimization", "source": "github", "sourceType": "workflow" } },
+    { "id": "workflow-account-audit", "kind": "workflow", "label": "Account audit workflow", "owner": "github", "lifecycle": "active", "graph": { "id": "github:workflow:account-audit", "source": "github", "sourceType": "workflow" } },
+    { "id": "agt-008-record", "kind": "super-agent-record", "label": "AGT-008 Sync Sage", "owner": "clickup", "lifecycle": "testing", "graph": { "id": "clickup:page:8cp7v4c-72555", "source": "clickup", "sourceType": "page" } },
+    { "id": "agt-008-runtime", "kind": "super-agent", "label": "Sync Sage", "owner": "clickup", "lifecycle": "testing", "graph": { "id": "clickup:agent:8cp7v4c-74635", "source": "clickup", "sourceType": "agent" } },
+    { "id": "int-001", "kind": "integration-record", "label": "INT-001 GitHub to ClickUp Docs Sync", "owner": "clickup", "lifecycle": "proposed", "graph": { "id": "clickup:page:8cp7v4c-72575", "source": "clickup", "sourceType": "page" } },
+    { "id": "github-source-runtime", "kind": "integration", "label": "GitHub versioned sources", "owner": "replit", "lifecycle": "active", "graph": { "id": "replit:integration:github-source", "source": "replit", "sourceType": "integration" } },
+    { "id": "project-saerens-brain", "kind": "project", "label": "Project: AI Agency Team (Saerens Brain)", "owner": "clickup", "lifecycle": "active", "graph": { "id": "clickup:page:8cp7v4c-67195", "source": "clickup", "sourceType": "page" } },
+    { "id": "repository-attachment-manager", "kind": "repository", "label": "SaerensAdv/Attachment-Manager", "owner": "github", "lifecycle": "active", "graph": { "id": "github:sop:repository:attachment-manager", "source": "github", "sourceType": "sop" } }
+  ],
+  "links": [
+    { "from": "workflow-monthly-reporting", "to": "sop-002", "relation": "governed_by" },
+    { "from": "workflow-account-optimization", "to": "sop-003", "relation": "governed_by" },
+    { "from": "workflow-account-audit", "to": "sop-005", "relation": "governed_by" },
+    { "from": "agt-008-runtime", "to": "agt-008-record", "relation": "governed_by" },
+    { "from": "agt-008-runtime", "to": "github-source-runtime", "relation": "reads_from" },
+    { "from": "github-source-runtime", "to": "int-001", "relation": "governed_by" },
+    { "from": "agt-008-record", "to": "int-001", "relation": "related_to", "direction": "undirected" },
+    { "from": "repository-attachment-manager", "to": "project-saerens-brain", "relation": "governed_by" }
+  ]
+}

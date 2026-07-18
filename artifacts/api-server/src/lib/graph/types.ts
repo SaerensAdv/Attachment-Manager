@@ -8,6 +8,7 @@ export interface Graph { nodes: GraphNode[]; edges: GraphEdge[] }
 export const ALLOWED_METADATA_KEYS = new Set<string>([
   "orphan", "closed", "taskCount", "kind", "category", "fanout", "active",
   "hierarchyId", "hierarchyKind", "canonicalOwner", "runtimeId",
+  "governanceId", "governanceKind", "lifecycle",
 ]);
 export function nsId(source: GraphSource, sourceType: GraphSourceType, rawId: string): string { return `${source}:${sourceType}:${rawId}`; }
 export function edgeId(relation: GraphRelation, sourceId: string, targetId: string): string { return `${relation}:${sourceId}->${targetId}`; }

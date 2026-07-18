@@ -9,7 +9,7 @@
     "start": "node --enable-source-maps ./dist/index.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
-    "validate:hierarchy": "vitest run src/lib/brain-hierarchy.test.ts"
+    "validate:hierarchy": "vitest run src/lib/brain-hierarchy.test.ts src/lib/brain-governance.test.ts"
   },
   "dependencies": {
     "@google-cloud/storage": "^7.19.0",
@@ -23,7 +23,7 @@
     "@workspace/integrations-anthropic-ai": "workspace:*",
     "@workspace/integrations-openai-ai-server": "workspace:*",
     "cookie-parser": "^1.4.7",
-    "cors": "^2.8.6",
+    "cors": "^2.8.5",
     "croner": "^10.0.1",
     "docx": "^9.7.1",
     "drizzle-orm": "catalog:",
@@ -31,8 +31,8 @@
     "express-rate-limit": "^7.4.1",
     "helmet": "^8.0.0",
     "jspdf": "^4.2.1",
-    "openid-client": "^6.8.4",
-    "pdfkit": "^0.18.0",
+    "openid-client": "^6.8.1",
+    "pdfkit": "^0.17.2",
     "pino": "^9.14.0",
     "pino-http": "^10.5.0",
     "sharp": "^0.34.5",

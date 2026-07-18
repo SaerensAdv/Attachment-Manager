@@ -2,30 +2,23 @@ import { describe, expect, it } from "vitest";
 import { loadBrainGovernance, parseBrainGovernance, validateBrainGovernance } from "./brain-governance";
 
 describe("brain governance manifest", () => {
-  it("keeps the canonical Phase 5 mappings valid", () => {
+  it("keeps Phase 5 mappings and all verified Super Agents valid", () => {
     const result = loadBrainGovernance();
     expect(result.issues).toEqual([]);
-    expect(result.manifest.links.filter((link) => link.relation === "governed_by")).toHaveLength(6);
+    expect(result.manifest.links.filter((link) => link.relation === "governed_by")).toHaveLength(9);
+    const agents = result.manifest.objects.filter((object) => object.kind === "super-agent");
+    expect(agents.map((agent) => agent.id).sort()).toEqual(["agt-001-runtime", "agt-003-runtime", "agt-004-runtime", "agt-008-runtime"]);
+    expect(agents.every((agent) => agent.graph.url?.includes("/ai/agents/"))).toBe(true);
   });
-
   it("rejects a technical object without a ClickUp governance owner", () => {
-    const manifest = parseBrainGovernance({
-      version: 1,
-      objects: [{ id: "runtime", kind: "integration", label: "Runtime", owner: "replit", lifecycle: "active", graph: { id: "replit:integration:runtime", source: "replit", sourceType: "integration" } }],
-      links: [],
-    });
+    const manifest = parseBrainGovernance({ version: 1, objects: [{ id: "runtime", kind: "integration", label: "Runtime", owner: "replit", lifecycle: "active", graph: { id: "replit:integration:runtime", source: "replit", sourceType: "integration" } }], links: [] });
     expect(validateBrainGovernance(manifest).issues.map((issue) => issue.code)).toEqual(expect.arrayContaining(["technical_object_without_governance", "no_cross_system_links"]));
   });
-
   it("rejects duplicate graph ownership and broken references", () => {
-    const manifest = parseBrainGovernance({
-      version: 1,
-      objects: [
-        { id: "one", kind: "sop", label: "One", owner: "clickup", lifecycle: "draft", graph: { id: "clickup:page:x", source: "clickup", sourceType: "page" } },
-        { id: "two", kind: "project", label: "Two", owner: "clickup", lifecycle: "active", graph: { id: "clickup:page:x", source: "clickup", sourceType: "page" } },
-      ],
-      links: [{ from: "one", to: "missing", relation: "related_to" }],
-    });
+    const manifest = parseBrainGovernance({ version: 1, objects: [
+      { id: "one", kind: "sop", label: "One", owner: "clickup", lifecycle: "draft", graph: { id: "clickup:page:x", source: "clickup", sourceType: "page" } },
+      { id: "two", kind: "project", label: "Two", owner: "clickup", lifecycle: "active", graph: { id: "clickup:page:x", source: "clickup", sourceType: "page" } },
+    ], links: [{ from: "one", to: "missing", relation: "related_to" }] });
     expect(validateBrainGovernance(manifest).issues.map((issue) => issue.code)).toEqual(expect.arrayContaining(["duplicate_graph_id", "missing_link_target"]));
   });
 });

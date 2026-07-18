@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "gitSha": "a4b941f90d5926cc9190c6663e416805d03485a5",
+  "capturedAt": "2026-07-18T21:07:00+02:00",
+  "counts": {
+    "core": 2,
+    "agent": 26,
+    "client": 2,
+    "workflow": 31,
+    "template": 10,
+    "knowledge": 14,
+    "total": 85
+  },
+  "note": "Phase 6 pre-move baseline. DB-backed client projections are excluded."
+}

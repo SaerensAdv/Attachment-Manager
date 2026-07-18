@@ -27,5 +27,6 @@
     { "pattern": "workflows/*.md", "parent": "workflows.registry", "canonicalOwner": "github" },
     { "pattern": "knowledge/*.md", "parent": "knowledge.registry", "canonicalOwner": "github" },
     { "pattern": "templates/*.md", "parent": "templates.registry", "canonicalOwner": "github" }
-  ]
+  ],
+  "sourceAliases": []
 }

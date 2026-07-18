@@ -11,19 +11,16 @@ globalThis.require = createRequire(import.meta.url);
 const artifactDir = path.dirname(fileURLToPath(import.meta.url));
 const workspaceDir = path.resolve(artifactDir, "../..");
 const runtimeFolders = ["agents", "clients", "workflows", "templates", "knowledge"];
+const runtimeRootFiles = ["AGENTS.md", "ARCHITECTURE.md", "brain-hierarchy.json", "brain-governance.json", "brain-source-baseline.json"];
 async function markdownFiles(root, folder) { const entries = await readdir(path.join(root, folder), { withFileTypes: true }); return entries.filter((entry) => entry.isFile() && entry.name.endsWith(".md")).map((entry) => `${folder}/${entry.name}`).sort(); }
 async function packageRuntimeDocs(distDir) {
-  await Promise.all([
-    copyFile(path.join(workspaceDir, "AGENTS.md"), path.join(distDir, "AGENTS.md")),
-    copyFile(path.join(workspaceDir, "ARCHITECTURE.md"), path.join(distDir, "ARCHITECTURE.md")),
-    copyFile(path.join(workspaceDir, "brain-hierarchy.json"), path.join(distDir, "brain-hierarchy.json")),
-  ]);
+  await Promise.all(runtimeRootFiles.map((file) => copyFile(path.join(workspaceDir, file), path.join(distDir, file))));
   for (const folder of runtimeFolders) await cp(path.join(workspaceDir, folder), path.join(distDir, folder), { recursive: true, force: true });
-  const files = ["AGENTS.md", "ARCHITECTURE.md", "brain-hierarchy.json"]; const counts = {};
+  const files = [...runtimeRootFiles]; const counts = {};
   for (const folder of runtimeFolders) { const found = await markdownFiles(workspaceDir, folder); counts[folder] = found.length; files.push(...found); }
   const hash = createHash("sha256"); for (const file of files.sort()) hash.update(file).update("\0").update(await readFile(path.join(workspaceDir, file))).update("\0");
   let gitSha = process.env.GITHUB_SHA || process.env.REPLIT_GIT_COMMIT || null; if (!gitSha) { try { gitSha = execFileSync("git", ["rev-parse", "HEAD"], { cwd: workspaceDir, encoding: "utf8" }).trim(); } catch { gitSha = null; } }
-  await writeFile(path.join(distDir, "runtime-manifest.json"), JSON.stringify({ version: 1, gitSha, builtAt: new Date().toISOString(), docsHash: hash.digest("hex"), counts }, null, 2));
+  await writeFile(path.join(distDir, "runtime-manifest.json"), JSON.stringify({ version: 2, gitSha, builtAt: new Date().toISOString(), docsHash: hash.digest("hex"), counts, rootFiles: runtimeRootFiles }, null, 2));
 }
 async function buildAll() {
   const distDir = path.resolve(artifactDir, "dist"); await rm(distDir, { recursive: true, force: true }); await mkdir(distDir, { recursive: true });

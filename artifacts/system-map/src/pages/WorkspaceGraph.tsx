@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { AnimatePresence } from "framer-motion";
 import { useQueryClient } from "@tanstack/react-query";
 import { Activity, AlertTriangle, Loader2, MoreHorizontal, RefreshCw } from "lucide-react";
 import {
@@ -122,7 +123,9 @@ export default function WorkspaceGraph() {
         <GraphLegend activeGroup={activeGroup} onSelectGroup={selectGroup} onPick={handlePick} />
         {overview?.truncated && <div className="atlas-truncated">Search and expand to explore the full workspace</div>}
       </main>
-      <NodeDetailPanel node={selectedNode} onClose={() => setSelectedNodeId(null)} onSelectNode={handlePick} onExpand={handleExpand} />
+      <AnimatePresence initial={false}>
+        {selectedNode && <NodeDetailPanel key="atlas-node-detail" node={selectedNode} onClose={() => setSelectedNodeId(null)} onSelectNode={handlePick} onExpand={handleExpand} />}
+      </AnimatePresence>
     </AtlasShell>
   );
 }

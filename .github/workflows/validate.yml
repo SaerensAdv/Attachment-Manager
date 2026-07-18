@@ -24,8 +24,6 @@ jobs:
       PORT: 3000
       BASE_PATH: /
       NODE_ENV: test
-      # Several test modules import the Anthropic client at module load. These
-      # inert values satisfy boot validation; tests mock calls and never reach it.
       AI_INTEGRATIONS_ANTHROPIC_BASE_URL: http://127.0.0.1:9
       AI_INTEGRATIONS_ANTHROPIC_API_KEY: ci-test-key-never-used
     steps:
@@ -37,6 +35,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Generate API contracts
         run: pnpm --filter @workspace/api-spec codegen:check
+      - name: Validate brain hierarchy
+        run: pnpm --filter @workspace/api-server validate:hierarchy
       - name: Typecheck workspace
         run: pnpm typecheck
       - name: Provision isolated test schema

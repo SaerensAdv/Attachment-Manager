@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
-import { clientsTable, db, pool } from "@workspace/db";
+import { clientsTable, db, generationsTable, pool } from "@workspace/db";
+import { desc } from "drizzle-orm";
 import { getDocGraph } from "../docs";
 import { loadClientDocs } from "../clients-store";
 import { logger } from "../logger";
@@ -8,7 +9,7 @@ import type { GraphBuildInput } from "./build";
 import { allowsList, allowsSpace, boundPageTree, boundTasksByList, emptyCollectionReport, readGraphCollectionPolicy, selectDocs, selectWorkspace, type GraphCollectionReport } from "./collection-policy";
 
 export interface CollectResult { ok: boolean; input: GraphBuildInput; sourceUpdatedAt: Date | null; errors: string[]; report: GraphCollectionReport }
-const EMPTY_INPUT: GraphBuildInput = { workspace: null, spaces: [], tasksByList: [], docs: [], docGraph: { nodes: [], edges: [], categories: [] }, clients: [], pushRecords: [] };
+const EMPTY_INPUT: GraphBuildInput = { workspace: null, spaces: [], tasksByList: [], docs: [], docGraph: { nodes: [], edges: [], categories: [] }, clients: [], runs: [], pushRecords: [] };
 
 export async function collectGraphInput(): Promise<CollectResult> {
   const correlationId = `graph-sync-${randomUUID()}`;
@@ -51,12 +52,8 @@ export async function collectGraphInput(): Promise<CollectResult> {
     const includedLists = folders.reduce((sum, folder) => sum + folder.lists.length, 0) + folderlessLists.length;
     report.lists.included += includedLists;
     report.lists.excluded += discoveredLists - includedLists;
-    if (!policy.allowedListIds || includedLists > 0) {
-      spaces.push({ space, folders, folderlessLists });
-      report.spaces.included += 1;
-    } else {
-      report.spaces.excluded += 1;
-    }
+    if (!policy.allowedListIds || includedLists > 0) { spaces.push({ space, folders, folderlessLists }); report.spaces.included += 1; }
+    else report.spaces.excluded += 1;
     for (const folder of folders) for (const list of folder.lists) listIds.push(list.id);
     for (const list of folderlessLists) listIds.push(list.id);
   }
@@ -94,9 +91,6 @@ export async function collectGraphInput(): Promise<CollectResult> {
     }
   }
 
-  // Paused/deprecated agents remain in GitHub as configuration history but are
-  // not imported into the operational graph. Other repo categories retain the
-  // existing builder rules.
   const fullDocGraph = getDocGraph(await loadClientDocs());
   const docNodes = fullDocGraph.nodes.filter((node) => node.category !== "agent" || node.active !== false);
   const docIds = new Set(docNodes.map((node) => node.id));
@@ -108,6 +102,12 @@ export async function collectGraphInput(): Promise<CollectResult> {
     clients = rows.map((client) => { track(client.updatedAt instanceof Date ? client.updatedAt.toISOString() : null); return { id: client.id, name: client.name, clickupCompanyId: client.clickupCompanyId ?? null }; });
     report.clients.included = clients.length;
   } catch (error) { errors.push("clients:db"); logger.warn({ scope: "graph:collect", err: error instanceof Error ? error.message : String(error) }, "clients crawl failed (best-effort)"); }
+
+  let runs: GraphBuildInput["runs"] = [];
+  try {
+    const rows = await db.select({ id: generationsTable.id, workflowTitle: generationsTable.workflowTitle, status: generationsTable.status, createdAt: generationsTable.createdAt }).from(generationsTable).orderBy(desc(generationsTable.createdAt)).limit(100);
+    runs = rows.map((run) => { const updatedAt = run.createdAt.toISOString(); track(updatedAt); return { id: String(run.id), label: run.workflowTitle || `Generation ${run.id}`, status: run.status, updatedAt }; });
+  } catch (error) { errors.push("runs:db"); logger.warn({ scope: "graph:collect", err: error instanceof Error ? error.message : String(error) }, "generation runs crawl failed (best-effort)"); }
 
   let pushRecords: GraphBuildInput["pushRecords"] = [];
   try {
@@ -123,7 +123,6 @@ export async function collectGraphInput(): Promise<CollectResult> {
     report.pushRecords.excluded = Math.max(0, report.pushRecords.discovered - pushRecords.length);
   } catch (error) { errors.push("push:db"); logger.warn({ scope: "graph:collect", err: error instanceof Error ? error.message : String(error) }, "push ledger crawl failed (best-effort)"); }
 
-  logger.info({ scope: "graph:collect", policy: { workspaceId: policy.workspaceId, spaceAllowlist: policy.allowedSpaceIds?.size ?? 0, listAllowlist: policy.allowedListIds?.size ?? 0, docAllowlist: policy.allowedDocIds?.size ?? 0, taskLookbackDays: policy.taskLookbackDays, maxTasksPerList: policy.maxTasksPerList, maxTasksTotal: policy.maxTasksTotal, maxDocs: policy.maxDocs, maxPagesTotal: policy.maxPagesTotal, maxPushRecords: policy.maxPushRecords }, report }, "bounded graph collection completed");
-
-  return { ok: true, input: { workspace: { id: ws.id, name: ws.name }, spaces, tasksByList: boundedTasks.tasksByList, docs, docGraph, clients, pushRecords }, sourceUpdatedAt: sourceMax > 0 ? new Date(sourceMax) : null, errors, report };
+  logger.info({ scope: "graph:collect", sourceCounts: { agents: docGraph.nodes.filter((node) => node.category === "agent").length, workflows: docGraph.nodes.filter((node) => node.category === "workflow").length, clients: clients.length, tasks: boundedTasks.counts.included, runs: runs.length, pushes: pushRecords.length }, report }, "bounded graph collection completed");
+  return { ok: true, input: { workspace: { id: ws.id, name: ws.name }, spaces, tasksByList: boundedTasks.tasksByList, docs, docGraph, clients, runs, pushRecords }, sourceUpdatedAt: sourceMax > 0 ? new Date(sourceMax) : null, errors, report };
 }

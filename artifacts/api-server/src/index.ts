@@ -1,5 +1,16 @@
+import { existsSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { logger } from "./lib/logger";
 import { validateEnv } from "./lib/env";
+
+// Production deploys execute the bundled server without the repository tree.
+// The build copies canonical agent/workflow/knowledge markdown beside this file;
+// use that packaged tree as cwd so the existing document scanner can find it.
+const runtimeDir = dirname(fileURLToPath(import.meta.url));
+if (existsSync(join(runtimeDir, "AGENTS.md")) && existsSync(join(runtimeDir, "agents"))) {
+  process.chdir(runtimeDir);
+}
 
 const env = validateEnv();
 const port = env.PORT;

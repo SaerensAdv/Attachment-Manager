@@ -3,16 +3,27 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { build as esbuild } from "esbuild";
 import esbuildPluginPino from "esbuild-plugin-pino";
-import { rm } from "node:fs/promises";
+import { cp, copyFile, mkdir, rm } from "node:fs/promises";
 
-// Plugins (e.g. 'esbuild-plugin-pino') may use `require` to resolve dependencies
 globalThis.require = createRequire(import.meta.url);
 
 const artifactDir = path.dirname(fileURLToPath(import.meta.url));
+const workspaceDir = path.resolve(artifactDir, "../..");
+
+async function packageRuntimeDocs(distDir) {
+  await Promise.all([
+    copyFile(path.join(workspaceDir, "AGENTS.md"), path.join(distDir, "AGENTS.md")),
+    copyFile(path.join(workspaceDir, "ARCHITECTURE.md"), path.join(distDir, "ARCHITECTURE.md")),
+  ]);
+  for (const folder of ["agents", "clients", "workflows", "templates", "knowledge"]) {
+    await cp(path.join(workspaceDir, folder), path.join(distDir, folder), { recursive: true, force: true });
+  }
+}
 
 async function buildAll() {
   const distDir = path.resolve(artifactDir, "dist");
   await rm(distDir, { recursive: true, force: true });
+  await mkdir(distDir, { recursive: true });
 
   await esbuild({
     entryPoints: [path.resolve(artifactDir, "src/index.ts")],
@@ -22,108 +33,22 @@ async function buildAll() {
     outdir: distDir,
     outExtension: { ".js": ".mjs" },
     logLevel: "info",
-    // Some packages may not be bundleable, so we externalize them, we can add more here as needed.
-    // Some of the packages below may not be imported or installed, but we're adding them in case they are in the future.
-    // Examples of unbundleable packages:
-    // - uses native modules and loads them dynamically (e.g. sharp)
-    // - use path traversal to read files (e.g. @google-cloud/secret-manager loads sibling .proto files)
     external: [
-      "*.node",
-      // pdfkit (and its dep fontkit) load font-metric data files (e.g.
-      // data/Helvetica.afm) by path at runtime, relative to their package dir.
-      // Bundling drops those files, so we resolve them from node_modules.
-      "pdfkit",
-      "fontkit",
-      "sharp",
-      "better-sqlite3",
-      "sqlite3",
-      "canvas",
-      "bcrypt",
-      "argon2",
-      "fsevents",
-      "re2",
-      "farmhash",
-      "xxhash-addon",
-      "bufferutil",
-      "utf-8-validate",
-      "ssh2",
-      "cpu-features",
-      "dtrace-provider",
-      "isolated-vm",
-      "lightningcss",
-      "pg-native",
-      "oracledb",
-      "mongodb-client-encryption",
-      "nodemailer",
-      "handlebars",
-      "knex",
-      "typeorm",
-      "protobufjs",
-      "onnxruntime-node",
-      "@huggingface/transformers",
-      "@tensorflow/*",
-      "@prisma/client",
-      "@mikro-orm/*",
-      "@grpc/*",
-      "@swc/*",
-      "@aws-sdk/*",
-      "@azure/*",
-      "@opentelemetry/*",
-      "@google-cloud/*",
-      "@google/*",
-      "googleapis",
-      "firebase-admin",
-      "@parcel/watcher",
-      "@sentry/profiling-node",
-      "@tree-sitter/*",
-      "aws-sdk",
-      "classic-level",
-      "dd-trace",
-      "ffi-napi",
-      "grpc",
-      "hiredis",
-      "kerberos",
-      "leveldown",
-      "miniflare",
-      "mysql2",
-      "newrelic",
-      "odbc",
-      "piscina",
-      "realm",
-      "ref-napi",
-      "rocksdb",
-      "sass-embedded",
-      "sequelize",
-      "serialport",
-      "snappy",
-      "tinypool",
-      "usb",
-      "workerd",
-      "wrangler",
-      "zeromq",
-      "zeromq-prebuilt",
-      "playwright",
-      "puppeteer",
-      "puppeteer-core",
-      "electron",
+      "*.node", "pdfkit", "fontkit", "sharp", "better-sqlite3", "sqlite3", "canvas", "bcrypt", "argon2", "fsevents", "re2", "farmhash", "xxhash-addon", "bufferutil", "utf-8-validate", "ssh2", "cpu-features", "dtrace-provider", "isolated-vm", "lightningcss", "pg-native", "oracledb", "mongodb-client-encryption", "nodemailer", "handlebars", "knex", "typeorm", "protobufjs", "onnxruntime-node", "@huggingface/transformers", "@tensorflow/*", "@prisma/client", "@mikro-orm/*", "@grpc/*", "@swc/*", "@aws-sdk/*", "@azure/*", "@opentelemetry/*", "@google-cloud/*", "@google/*", "googleapis", "firebase-admin", "@parcel/watcher", "@sentry/profiling-node", "aws-sdk", "classic-level", "dd-trace", "ffi-napi", "grpc", "hiredis", "kerberos", "leveldown", "miniflare", "mysql2", "newrelic", "odbc", "piscina", "realm", "ref-napi", "rocksdb", "sass-embedded", "sequelize", "serialport", "snappy", "tinypool", "usb", "workerd", "wrangler", "zeromq", "zeromq-prebuilt", "playwright", "puppeteer", "puppeteer-core", "electron",
     ],
     sourcemap: "linked",
-    plugins: [
-      // pino relies on workers to handle logging, instead of externalizing it we use a plugin to handle it
-      esbuildPluginPino({ transports: ["pino-pretty"] })
-    ],
-    // Make sure packages that are cjs only (e.g. express) but are bundled continue to work in our esm output file
+    plugins: [esbuildPluginPino({ transports: ["pino-pretty"] })],
     banner: {
       js: `import { createRequire as __bannerCrReq } from 'node:module';
 import __bannerPath from 'node:path';
 import __bannerUrl from 'node:url';
-
 globalThis.require = __bannerCrReq(import.meta.url);
 globalThis.__filename = __bannerUrl.fileURLToPath(import.meta.url);
-globalThis.__dirname = __bannerPath.dirname(globalThis.__filename);
-    `,
+globalThis.__dirname = __bannerPath.dirname(globalThis.__filename);`,
     },
   });
+
+  await packageRuntimeDocs(distDir);
 }
 
 buildAll().catch((err) => {

@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "rootId": "brain",
+  "nodes": [
+    { "id": "brain", "kind": "master", "label": "Saerens Brain", "parent": null, "order": 0, "canonicalOwner": "github", "status": "active", "visibility": "default" },
+    { "id": "constitution", "kind": "hub", "label": "01 Constitution & Organisation", "parent": "brain", "order": 10, "canonicalOwner": "github", "status": "active", "visibility": "default" },
+    { "id": "constitution.agents", "kind": "registry", "label": "Agent Registry", "parent": "constitution", "order": 10, "canonicalOwner": "github", "status": "active", "visibility": "default" },
+    { "id": "architecture", "kind": "hub", "label": "02 Architecture & Runtime", "parent": "brain", "order": 20, "canonicalOwner": "github", "status": "active", "visibility": "default" },
+    { "id": "clients", "kind": "hub", "label": "03 Clients & Context", "parent": "brain", "order": 30, "canonicalOwner": "clickup", "status": "active", "visibility": "default" },
+    { "id": "clients.registry", "kind": "registry", "label": "Client Context Projections", "parent": "clients", "order": 10, "canonicalOwner": "clickup", "status": "active", "visibility": "advanced" },
+    { "id": "workflows", "kind": "hub", "label": "04 Workflows & SOPs", "parent": "brain", "order": 40, "canonicalOwner": "mixed", "status": "active", "visibility": "default" },
+    { "id": "workflows.registry", "kind": "registry", "label": "Workflow Registry", "parent": "workflows", "order": 10, "canonicalOwner": "github", "status": "active", "visibility": "default" },
+    { "id": "knowledge", "kind": "hub", "label": "05 Knowledge & Standards", "parent": "brain", "order": 50, "canonicalOwner": "github", "status": "active", "visibility": "default" },
+    { "id": "knowledge.registry", "kind": "registry", "label": "Knowledge Registry", "parent": "knowledge", "order": 10, "canonicalOwner": "github", "status": "active", "visibility": "default" },
+    { "id": "templates", "kind": "hub", "label": "06 Templates & Deliverables", "parent": "brain", "order": 60, "canonicalOwner": "github", "status": "active", "visibility": "default" },
+    { "id": "templates.registry", "kind": "registry", "label": "Template Registry", "parent": "templates", "order": 10, "canonicalOwner": "github", "status": "active", "visibility": "default" },
+    { "id": "runs", "kind": "hub", "label": "07 Runs, Learning & Audit", "parent": "brain", "order": 70, "canonicalOwner": "replit", "status": "active", "visibility": "default" },
+    { "id": "integrations", "kind": "hub", "label": "08 Integrations & Automations", "parent": "brain", "order": 80, "canonicalOwner": "mixed", "status": "active", "visibility": "default" },
+    { "id": "product", "kind": "hub", "label": "09 Product & Roadmap", "parent": "brain", "order": 90, "canonicalOwner": "mixed", "status": "active", "visibility": "default" },
+    { "id": "archive", "kind": "hub", "label": "99 Archive", "parent": "brain", "order": 990, "canonicalOwner": "mixed", "status": "active", "visibility": "hidden" }
+  ],
+  "mappings": [
+    { "pattern": "AGENTS.md", "parent": "constitution", "canonicalOwner": "github" },
+    { "pattern": "agents/*.md", "parent": "constitution.agents", "canonicalOwner": "github" },
+    { "pattern": "ARCHITECTURE.md", "parent": "architecture", "canonicalOwner": "github" },
+    { "pattern": "clients/*.md", "parent": "clients.registry", "canonicalOwner": "clickup" },
+    { "pattern": "workflows/*.md", "parent": "workflows.registry", "canonicalOwner": "github" },
+    { "pattern": "knowledge/*.md", "parent": "knowledge.registry", "canonicalOwner": "github" },
+    { "pattern": "templates/*.md", "parent": "templates.registry", "canonicalOwner": "github" }
+  ]
+}

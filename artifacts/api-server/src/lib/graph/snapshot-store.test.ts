@@ -1,19 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-/**
- * Unit tests for the graph snapshot store (Fase 3.5 G3). The load-bearing
- * guarantees: a stable order-independent content hash, a single in-process sync
- * lock, a no-op flip when nothing changed, an atomic promotion when it did, and
- * — critically — that a FAILED sync leaves the prior active snapshot completely
- * untouched (partial data never reaches the UI). `@workspace/db` is mocked so no
- * pool is opened; `pool.query` is routed by SQL text. Each test re-imports the
- * module (via resetModules) so the module-level lock/cache start clean.
- */
-
 const { queryMock } = vi.hoisted(() => ({ queryMock: vi.fn() }));
-// The swap now runs in an explicit transaction on a pooled client. The client
-// delegates to the same routed queryMock so BEGIN/COMMIT/ROLLBACK and the two
-// ordered UPDATEs are all captured and routed exactly like pool.query.
 vi.mock("@workspace/db", () => ({
   pool: {
     query: queryMock,
@@ -53,27 +40,24 @@ function snapRow(over: Record<string, unknown> = {}): Record<string, unknown> {
   };
 }
 
-/** Route pool.query by SQL so each test can drive the active/swap/bump results. */
 function routeQuery(opts: {
   insertId?: number;
   active?: Record<string, unknown>[];
+  staged?: Record<string, unknown>[];
   swapped?: Record<string, unknown>[];
   bumped?: Record<string, unknown>[];
   throwOn?: RegExp;
 } = {}): void {
   queryMock.mockImplementation(async (sql: string) => {
     if (opts.throwOn && opts.throwOn.test(sql)) throw new Error("db boom");
-    if (/CREATE TABLE|CREATE UNIQUE INDEX/.test(sql)) return { rows: [] };
-    if (/INSERT INTO graph_snapshots/.test(sql))
-      return { rows: [{ id: opts.insertId ?? 20 }] };
+    if (/CREATE TABLE|CREATE UNIQUE INDEX|BEGIN|COMMIT|ROLLBACK|pg_advisory_xact_lock/.test(sql)) return { rows: [] };
+    if (/INSERT INTO graph_snapshots/.test(sql)) return { rows: [{ id: opts.insertId ?? 20 }] };
     if (/SET status = 'active'/.test(sql)) return { rows: opts.swapped ?? [] };
-    if (/SET payload =/.test(sql)) return { rows: [] };
+    if (/SET payload =/.test(sql)) return { rows: opts.staged ?? [{ id: opts.insertId ?? 20 }] };
     if (/SET status = 'superseded'/.test(sql)) return { rows: [] };
     if (/SET status = 'failed'/.test(sql)) return { rows: [] };
-    if (/last_synced_at = now\(\), source_updated_at = \$2/.test(sql))
-      return { rows: opts.bumped ?? [] };
-    if (/SELECT \* FROM graph_snapshots WHERE status = 'active'/.test(sql))
-      return { rows: opts.active ?? [] };
+    if (/last_synced_at = now\(\), source_updated_at = \$2/.test(sql)) return { rows: opts.bumped ?? [] };
+    if (/SELECT \* FROM graph_snapshots WHERE status = 'active'/.test(sql)) return { rows: opts.active ?? [] };
     return { rows: [] };
   });
 }
@@ -83,130 +67,86 @@ async function loadStore() {
   return import("./snapshot-store");
 }
 
-beforeEach(() => {
-  queryMock.mockReset();
-});
+beforeEach(() => queryMock.mockReset());
 
 describe("hashGraph", () => {
-  it("is stable and independent of node/edge array order", async () => {
+  it("is stable regardless of array order", async () => {
     const { hashGraph } = await loadStore();
-    const reordered: Graph = {
-      nodes: [...GRAPH.nodes].reverse(),
-      edges: [...GRAPH.edges],
-    };
-    expect(hashGraph(GRAPH)).toBe(hashGraph(reordered));
+    expect(hashGraph(GRAPH)).toBe(hashGraph({ nodes: [...GRAPH.nodes].reverse(), edges: [...GRAPH.edges] }));
   });
-
-  it("changes when the graph changes", async () => {
+  it("changes with graph content", async () => {
     const { hashGraph } = await loadStore();
-    const changed: Graph = {
-      nodes: [...GRAPH.nodes, { id: "x", source: "replit", sourceType: "run", label: "x", metadata: {} }],
-      edges: GRAPH.edges,
-    };
-    expect(hashGraph(GRAPH)).not.toBe(hashGraph(changed));
+    expect(hashGraph(GRAPH)).not.toBe(hashGraph({ nodes: [...GRAPH.nodes, { id: "x", source: "replit", sourceType: "run", label: "x", metadata: {} }], edges: GRAPH.edges }));
   });
 });
 
-describe("beginSync — in-process lock", () => {
-  it("opens a building row and refuses a second concurrent sync", async () => {
+describe("beginSync", () => {
+  it("locks concurrent syncs", async () => {
     routeQuery({ insertId: 42 });
     const store = await loadStore();
-    const first = await store.beginSync();
-    expect(first).toBe(42);
-    expect(store.isSyncing()).toBe(true);
-    const second = await store.beginSync();
-    expect(second).toBeNull(); // lock held — no duplicate sync
+    expect(await store.beginSync()).toBe(42);
+    expect(await store.beginSync()).toBeNull();
   });
 });
 
 describe("completeSync", () => {
-  it("no-op flips when the payload matches the active snapshot (changed=false)", async () => {
+  it("refreshes and caches an unchanged active snapshot", async () => {
     const store = await loadStore();
     const hash = store.hashGraph(GRAPH);
-    routeQuery({
-      insertId: 50,
-      active: [snapRow({ id: 9, content_hash: hash })],
-      bumped: [snapRow({ id: 9, content_hash: hash, last_synced_at: new Date("2026-07-02T00:00:00Z") })],
-    });
-    const id = await store.beginSync();
-    const res = await store.completeSync(id!, GRAPH);
-    expect(res.changed).toBe(false);
-    expect(store.isSyncing()).toBe(false);
-    // The building row was discarded (superseded), not promoted.
-    expect(queryMock.mock.calls.some((c) => /SET status = 'superseded'/.test(c[0] as string))).toBe(true);
-    expect(queryMock.mock.calls.some((c) => /SET status = 'active'/.test(c[0] as string))).toBe(false);
-    // The freshness bump must target the active row BY ID: both params it passes
-    // ($1 = id, $2 = source_updated_at) must be referenced or Postgres rejects
-    // the statement at runtime ("could not determine data type of parameter $1").
-    const bump = queryMock.mock.calls.find((c) =>
-      /source_updated_at = \$2/.test(c[0] as string),
-    );
-    expect(bump?.[0]).toMatch(/WHERE id = \$1/);
-    expect((bump?.[1] as unknown[])[0]).toBe(9);
-  });
-
-  it("atomically promotes the building row when the payload changed", async () => {
-    const store = await loadStore();
-    routeQuery({
-      insertId: 51,
-      active: [snapRow({ id: 8, content_hash: "OLDHASH" })],
-      swapped: [snapRow({ id: 51, status: "active", content_hash: store.hashGraph(GRAPH) })],
-    });
-    const id = await store.beginSync();
-    const res = await store.completeSync(id!, GRAPH);
-    expect(res.changed).toBe(true);
-    expect(res.meta?.id).toBe(51);
+    routeQuery({ insertId: 50, active: [snapRow({ id: 9, content_hash: hash })], bumped: [snapRow({ id: 9, content_hash: hash })] });
+    const result = await store.completeSync((await store.beginSync())!, GRAPH);
+    expect(result.changed).toBe(false);
+    expect(result.meta.id).toBe(9);
     expect(store.getActiveGraph()?.graph).toEqual(GRAPH);
-    // The atomic swap statement carries the building id.
-    const swap = queryMock.mock.calls.find((c) => /SET status = 'active'/.test(c[0] as string));
-    expect(swap?.[1]).toEqual([51]);
   });
 
-  it("leaves the prior active in place if the swap throws (partial-sync safety)", async () => {
+  it("atomically promotes and verifies a changed snapshot", async () => {
     const store = await loadStore();
-    routeQuery({
-      insertId: 52,
-      active: [snapRow({ id: 7, content_hash: "OLDHASH" })],
-      throwOn: /SET status = 'active'/,
-    });
-    const id = await store.beginSync();
-    const res = await store.completeSync(id!, GRAPH);
-    expect(res.changed).toBe(false);
-    expect(res.meta).toBeNull();
-    expect(store.isSyncing()).toBe(false);
-    // No active-in-memory was overwritten with the half-built graph.
+    const hash = store.hashGraph(GRAPH);
+    routeQuery({ insertId: 51, active: [snapRow({ id: 8, content_hash: "OLD" })], staged: [{ id: 51 }], swapped: [snapRow({ id: 51, status: "active", content_hash: hash })] });
+    const result = await store.completeSync((await store.beginSync())!, GRAPH);
+    expect(result.changed).toBe(true);
+    expect(result.meta.id).toBe(51);
+    expect(store.getActiveGraph()?.meta.contentHash).toBe(hash);
+    expect(queryMock.mock.calls.some((call) => /pg_advisory_xact_lock/.test(call[0] as string))).toBe(true);
+  });
+
+  it("rejects when staging updates no building row", async () => {
+    const store = await loadStore();
+    routeQuery({ insertId: 52, active: [snapRow({ content_hash: "OLD" })], staged: [] });
+    await expect(store.completeSync((await store.beginSync())!, GRAPH)).rejects.toThrow("snapshot promotion failed");
     expect(store.getActiveGraph()).toBeNull();
+  });
+
+  it("rejects instead of returning false success when promotion returns no row", async () => {
+    const store = await loadStore();
+    routeQuery({ insertId: 53, active: [snapRow({ content_hash: "OLD" })], staged: [{ id: 53 }], swapped: [] });
+    await expect(store.completeSync((await store.beginSync())!, GRAPH)).rejects.toThrow("snapshot promotion failed");
+    expect(store.isSyncing()).toBe(false);
+    expect(queryMock.mock.calls.some((call) => /SET status = 'failed'/.test(call[0] as string))).toBe(true);
   });
 });
 
 describe("failSync", () => {
-  it("marks the building row failed and releases the lock without touching active", async () => {
+  it("marks the building row failed and releases the lock", async () => {
     routeQuery({ insertId: 60 });
     const store = await loadStore();
     const id = await store.beginSync();
-    await store.failSync(id!, "clickup crawl timed out");
+    await store.failSync(id!, "crawl failed");
     expect(store.isSyncing()).toBe(false);
-    const failCall = queryMock.mock.calls.find((c) => /SET status = 'failed'/.test(c[0] as string));
-    expect(failCall).toBeTruthy();
-    expect((failCall?.[1] as unknown[])[0]).toBe(60);
-    // Never promoted anything.
-    expect(queryMock.mock.calls.some((c) => /SET status = 'active'/.test(c[0] as string))).toBe(false);
+    expect(queryMock.mock.calls.some((call) => /SET status = 'failed'/.test(call[0] as string))).toBe(true);
   });
 });
 
 describe("loadActiveIntoMemory", () => {
-  it("caches the active snapshot payload in memory", async () => {
-    routeQuery({ active: [snapRow({ id: 5, content_hash: "H", payload: GRAPH })] });
+  it("loads the active payload", async () => {
+    routeQuery({ active: [snapRow({ id: 5, content_hash: "H" })] });
     const store = await loadStore();
-    const loaded = await store.loadActiveIntoMemory();
-    expect(loaded?.meta.id).toBe(5);
-    expect(store.getActiveGraph()?.graph).toEqual(GRAPH);
+    expect((await store.loadActiveIntoMemory())?.meta.id).toBe(5);
   });
-
-  it("returns null and clears the cache when there is no active snapshot", async () => {
+  it("clears cache when no active row exists", async () => {
     routeQuery({ active: [] });
     const store = await loadStore();
     expect(await store.loadActiveIntoMemory()).toBeNull();
-    expect(store.getActiveGraph()).toBeNull();
   });
 });

@@ -3,6 +3,7 @@ import { dirname, join } from "node:path";
 import { z } from "zod";
 
 const stableIdSchema = z.string().regex(/^[a-z0-9][a-z0-9._:-]*$/, "Hierarchy IDs must be stable lowercase slugs");
+const sourcePathSchema = z.string().min(1).refine((value) => !value.startsWith("/") && !value.includes("..") && !value.includes("\\"), "Source paths must be safe repository-relative paths");
 const ownerSchema = z.enum(["clickup", "github", "replit", "mixed"]);
 const nodeSchema = z.object({
   id: stableIdSchema,
@@ -12,12 +13,13 @@ const nodeSchema = z.object({
   aliases: z.array(stableIdSchema).optional().default([]),
 });
 const mappingSchema = z.object({ pattern: z.string().min(1), parent: stableIdSchema, canonicalOwner: ownerSchema });
-const manifestSchema = z.object({ version: z.literal(1), rootId: stableIdSchema, nodes: z.array(nodeSchema), mappings: z.array(mappingSchema) });
+const sourceAliasSchema = z.object({ canonicalPath: sourcePathSchema, aliases: z.array(sourcePathSchema).min(1) });
+const manifestSchema = z.object({ version: z.literal(1), rootId: stableIdSchema, nodes: z.array(nodeSchema), mappings: z.array(mappingSchema), sourceAliases: z.array(sourceAliasSchema).optional() });
 
 export type BrainHierarchyNode = z.infer<typeof nodeSchema>;
 export type BrainHierarchyManifest = z.infer<typeof manifestSchema>;
 export interface BrainHierarchyIssue { code: string; message: string; nodeId?: string; source?: string }
-export interface BrainHierarchyResult { manifest: BrainHierarchyManifest; nodes: Array<BrainHierarchyNode & { source?: string; runtimeId?: string }>; issues: BrainHierarchyIssue[]; sourceCount: number; mappedSourceCount: number }
+export interface BrainHierarchyResult { manifest: BrainHierarchyManifest; nodes: Array<BrainHierarchyNode & { source?: string; runtimeId?: string; sourceAliases?: string[] }>; issues: BrainHierarchyIssue[]; sourceCount: number; mappedSourceCount: number }
 const REQUIRED_HUBS = ["constitution", "architecture", "clients", "workflows", "knowledge", "templates", "runs", "integrations", "product", "archive"] as const;
 
 export function findBrainHierarchyRoot(start = process.cwd()): string { let dir = start; while (true) { if (existsSync(join(dir, "brain-hierarchy.json"))) return dir; const parent = dirname(dir); if (parent === dir) throw new Error("Could not locate brain-hierarchy.json"); dir = parent; } }
@@ -26,6 +28,8 @@ function pushUnique(issues: BrainHierarchyIssue[], issue: BrainHierarchyIssue): 
 
 export function validateBrainHierarchy(manifest: BrainHierarchyManifest, sources: readonly string[]): BrainHierarchyResult {
   const issues: BrainHierarchyIssue[] = [];
+  const uniqueSources = [...new Set(sources)].sort();
+  const sourceSet = new Set(uniqueSources);
   const allIds = new Set(manifest.nodes.map((node) => node.id));
   const byId = new Map<string, BrainHierarchyNode>();
   const aliasOwner = new Map<string, string>();
@@ -50,15 +54,28 @@ export function validateBrainHierarchy(manifest: BrainHierarchyManifest, sources
   }
   const siblingOrders = new Map<string, Set<number>>();
   for (const node of manifest.nodes) { if (!node.parent) continue; const orders = siblingOrders.get(node.parent) ?? new Set<number>(); if (orders.has(node.order)) pushUnique(issues, { code: "duplicate_sibling_order", message: `Duplicate order ${node.order} under ${node.parent}`, nodeId: node.id }); orders.add(node.order); siblingOrders.set(node.parent, orders); }
-  const sourceNodes: Array<BrainHierarchyNode & { source: string; runtimeId: string }> = [];
-  for (const source of [...new Set(sources)].sort()) {
+
+  const sourceAliasOwner = new Map<string, string>();
+  const aliasesByCanonical = new Map<string, string[]>();
+  for (const record of manifest.sourceAliases ?? []) {
+    if (!sourceSet.has(record.canonicalPath)) pushUnique(issues, { code: "alias_target_missing", message: `Source alias target does not exist: ${record.canonicalPath}`, source: record.canonicalPath });
+    if (aliasesByCanonical.has(record.canonicalPath)) pushUnique(issues, { code: "duplicate_alias_target", message: `Source alias target declared twice: ${record.canonicalPath}`, source: record.canonicalPath });
+    aliasesByCanonical.set(record.canonicalPath, record.aliases);
+    for (const alias of record.aliases) {
+      if (alias === record.canonicalPath || sourceSet.has(alias) || sourceAliasOwner.has(alias)) pushUnique(issues, { code: "source_alias_collision", message: `Source alias collides: ${alias}`, source: alias });
+      else sourceAliasOwner.set(alias, record.canonicalPath);
+    }
+  }
+
+  const sourceNodes: Array<BrainHierarchyNode & { source: string; runtimeId: string; sourceAliases: string[] }> = [];
+  for (const source of uniqueSources) {
     const candidates = manifest.mappings.filter((mapping) => matches(mapping.pattern, source));
     if (candidates.length === 0) { pushUnique(issues, { code: "unmapped_source", message: `No hierarchy mapping for ${source}`, source }); continue; }
     if (candidates.length > 1) { pushUnique(issues, { code: "ambiguous_source", message: `Multiple hierarchy mappings for ${source}`, source }); continue; }
-    const mapping = candidates[0]; sourceNodes.push({ id: `source:${source}`, kind: "source", label: source.split("/").pop()?.replace(/\.md$/, "") ?? source, parent: mapping.parent, order: 100, canonicalOwner: mapping.canonicalOwner, status: "active", visibility: "default", aliases: [], source, runtimeId: source });
+    const mapping = candidates[0]; sourceNodes.push({ id: `source:${source}`, kind: "source", label: source.split("/").pop()?.replace(/\.md$/, "") ?? source, parent: mapping.parent, order: 100, canonicalOwner: mapping.canonicalOwner, status: "active", visibility: "default", aliases: [], source, runtimeId: source, sourceAliases: aliasesByCanonical.get(source) ?? [] });
   }
-  for (const mapping of manifest.mappings) if (!sources.some((source) => matches(mapping.pattern, source))) pushUnique(issues, { code: "unused_mapping", message: `Mapping matches no source: ${mapping.pattern}`, source: mapping.pattern });
-  return { manifest, nodes: [...manifest.nodes, ...sourceNodes], issues, sourceCount: new Set(sources).size, mappedSourceCount: sourceNodes.length };
+  for (const mapping of manifest.mappings) if (!uniqueSources.some((source) => matches(mapping.pattern, source))) pushUnique(issues, { code: "unused_mapping", message: `Mapping matches no source: ${mapping.pattern}`, source: mapping.pattern });
+  return { manifest, nodes: [...manifest.nodes, ...sourceNodes], issues, sourceCount: uniqueSources.length, mappedSourceCount: sourceNodes.length };
 }
 export function parseBrainHierarchy(raw: unknown): BrainHierarchyManifest { return manifestSchema.parse(raw); }
 export function loadBrainHierarchy(sources: readonly string[], start = process.cwd()): BrainHierarchyResult { const root = findBrainHierarchyRoot(start); return validateBrainHierarchy(parseBrainHierarchy(JSON.parse(readFileSync(join(root, "brain-hierarchy.json"), "utf8"))), sources); }

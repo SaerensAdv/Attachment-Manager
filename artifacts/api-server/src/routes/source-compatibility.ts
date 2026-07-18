@@ -2,7 +2,8 @@ import { Router, type IRouter } from "express";
 import { isOwner } from "../middlewares/requireAuth";
 import { loadBrainHierarchy } from "../lib/brain-hierarchy";
 import { listDocFiles } from "../lib/docs";
-import { resolveBrainSource } from "../lib/source-resolver";
+import { auditStoredHistoricalSources } from "../lib/historical-source-compatibility";
+import { getSourceResolutionTelemetry, resolveBrainSource } from "../lib/source-resolver";
 import { buildSourceInventory } from "../lib/source-inventory";
 
 const router: IRouter = Router();
@@ -21,5 +22,14 @@ router.get("/docs/source-inventory", (req, res): void => {
   if (!isOwner(req)) { res.status(403).json({ error: "Owner access required" }); return; }
   const inventory = buildSourceInventory(listDocFiles());
   res.status(inventory.drift.length ? 409 : 200).json(inventory);
+});
+router.get("/docs/historical-compatibility", async (req, res): Promise<void> => {
+  if (!isOwner(req)) { res.status(403).json({ error: "Owner access required" }); return; }
+  const audit = await auditStoredHistoricalSources();
+  res.status(audit.unresolved ? 409 : 200).json({ ...audit, telemetry: getSourceResolutionTelemetry() });
+});
+router.get("/docs/source-resolution-telemetry", (req, res): void => {
+  if (!isOwner(req)) { res.status(403).json({ error: "Owner access required" }); return; }
+  res.json(getSourceResolutionTelemetry());
 });
 export default router;

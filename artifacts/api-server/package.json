@@ -9,7 +9,7 @@
     "start": "node --enable-source-maps ./dist/index.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
-    "validate:hierarchy": "vitest run src/lib/brain-hierarchy.test.ts"
+    "validate:hierarchy": "vitest run src/lib/brain-hierarchy.test.ts src/lib/brain-governance.test.ts"
   },
   "dependencies": {
     "@google-cloud/storage": "^7.19.0",

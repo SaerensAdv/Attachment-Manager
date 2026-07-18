@@ -18,7 +18,7 @@ describe("brain hierarchy validation", () => {
     const nodes: BrainHierarchyManifest["nodes"] = [
       { id: "root", kind: "master", label: "Root", parent: "child", order: 0, canonicalOwner: "github", status: "active", visibility: "default", aliases: ["child"] },
       { id: "child", kind: "hub", label: "Child", parent: "root", order: 1, canonicalOwner: "github", status: "active", visibility: "default", aliases: [] },
-      { id: "detached", kind: "hub", label: "Detached", parent: null, order: 1, canonicalOwner: "github", status: "active", visibility: "default", aliases: [] },
+      { id: "detached", kind: "master", label: "Detached", parent: null, order: 1, canonicalOwner: "github", status: "active", visibility: "default", aliases: [] },
       ...required.map((id) => ({ id, kind: "hub" as const, label: id, parent: "root", order: 10, canonicalOwner: "github" as const, status: "active" as const, visibility: "default" as const, aliases: [] })),
     ];
     const result = validateBrainHierarchy({ version: 1, rootId: "root", nodes, mappings: [{ pattern: "agents/*.md", parent: "child", canonicalOwner: "github" }, { pattern: "agents/orchestrator.md", parent: "child", canonicalOwner: "github" }, { pattern: "unused/*.md", parent: "child", canonicalOwner: "github" }] }, ["agents/orchestrator.md", "knowledge/test.md"]);

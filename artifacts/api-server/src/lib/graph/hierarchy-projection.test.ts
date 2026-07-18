@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { applyHierarchyProjection } from "./hierarchy-projection";
 import type { BrainHierarchyResult } from "../brain-hierarchy";
 import type { Graph } from "./types";
-const base = { canonicalOwner: "github", status: "active", visibility: "default", aliases: [] } as const;
+const base = { canonicalOwner: "github", status: "active", visibility: "default", aliases: [] as string[] } as const;
 const hierarchy: BrainHierarchyResult = { manifest: { version: 1, rootId: "brain", nodes: [], mappings: [] }, issues: [], sourceCount: 1, mappedSourceCount: 1, nodes: [
   { ...base, id: "brain", kind: "master", label: "Brain", parent: null, order: 0 },
   { ...base, id: "knowledge", kind: "hub", label: "Knowledge", parent: "brain", order: 10 },

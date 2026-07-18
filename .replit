@@ -72,3 +72,8 @@ GRAPH_MAX_DOCS = "2"
 GRAPH_MAX_PAGES_PER_DOC = "150"
 GRAPH_MAX_PAGES_TOTAL = "250"
 GRAPH_MAX_PUSH_RECORDS = "100"
+
+# Temporary product trial requested by the owner: return the full active graph
+# snapshot from /graph/overview without the normal 500-node/1,200-edge slice.
+# The collector allowlists above still bound which source objects enter a sync.
+GRAPH_OVERVIEW_UNLIMITED = "true"

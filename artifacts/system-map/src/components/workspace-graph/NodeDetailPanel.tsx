@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { ArrowLeft, ArrowRight, ExternalLink, Network, X } from "lucide-react";
 import type { GraphNode, GraphEdge } from "@workspace/api-client-react";
 import { getGetGraphNeighborsQueryKey, useGetGraphNeighbors } from "@workspace/api-client-react";
-import { iconForNode, nodeColorVar, nodeSemanticLabel, relativeTime, SOURCE_TYPE_LABEL, SOURCE_LABEL, RELATION_LABEL, edgeSemantic } from "./graph-model";
+import { iconForNode, nodeColorVar, nodeSemanticLabel, relativeTime, SOURCE_LABEL, RELATION_LABEL, edgeSemantic } from "./graph-model";
 export interface NodeDetailPanelProps { node: GraphNode | null; onClose: () => void; onSelectNode: (id: string) => void; onExpand?: (data: { nodes: GraphNode[]; edges: GraphEdge[] }) => void }
 export default function NodeDetailPanel({ node, onClose, onSelectNode, onExpand }: NodeDetailPanelProps) {
   const nodeId=node?.id??"";const{data,isLoading}=useGetGraphNeighbors(nodeId,{query:{enabled:Boolean(node),queryKey:getGetGraphNeighborsQueryKey(nodeId)}});

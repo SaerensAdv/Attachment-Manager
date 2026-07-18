@@ -14,7 +14,7 @@ const objectSchema = z.object({
   label: z.string().min(1),
   owner: sourceSchema,
   lifecycle: lifecycleSchema,
-  graph: z.object({ id: z.string().min(1), source: sourceSchema, sourceType: sourceTypeSchema }),
+  graph: z.object({ id: z.string().min(1), source: sourceSchema, sourceType: sourceTypeSchema, url: z.string().url().optional() }),
 });
 const linkSchema = z.object({ from: stableIdSchema, to: stableIdSchema, relation: relationSchema, direction: z.enum(["directed", "undirected"]).optional().default("directed") });
 const manifestSchema = z.object({ version: z.literal(1), objects: z.array(objectSchema).min(1), links: z.array(linkSchema) });
@@ -24,29 +24,19 @@ export type BrainGovernanceManifest = z.infer<typeof manifestSchema>;
 export interface BrainGovernanceIssue { code: string; message: string; objectId?: string }
 export interface BrainGovernanceResult { manifest: BrainGovernanceManifest; issues: BrainGovernanceIssue[] }
 
-export function findBrainGovernanceRoot(start = process.cwd()): string {
-  let dir = start;
-  while (true) {
-    if (existsSync(join(dir, "brain-governance.json"))) return dir;
-    const parent = dirname(dir);
-    if (parent === dir) throw new Error("Could not locate brain-governance.json");
-    dir = parent;
-  }
-}
-function addIssue(issues: BrainGovernanceIssue[], issue: BrainGovernanceIssue): void {
-  if (!issues.some((current) => current.code === issue.code && current.objectId === issue.objectId && current.message === issue.message)) issues.push(issue);
-}
+export function findBrainGovernanceRoot(start = process.cwd()): string { let dir = start; while (true) { if (existsSync(join(dir, "brain-governance.json"))) return dir; const parent = dirname(dir); if (parent === dir) throw new Error("Could not locate brain-governance.json"); dir = parent; } }
+function addIssue(issues: BrainGovernanceIssue[], issue: BrainGovernanceIssue): void { if (!issues.some((current) => current.code === issue.code && current.objectId === issue.objectId && current.message === issue.message)) issues.push(issue); }
 export function validateBrainGovernance(manifest: BrainGovernanceManifest): BrainGovernanceResult {
   const issues: BrainGovernanceIssue[] = [];
   const byId = new Map<string, BrainGovernanceObject>();
   const graphIds = new Set<string>();
   for (const object of manifest.objects) {
-    if (byId.has(object.id)) addIssue(issues, { code: "duplicate_object_id", message: `Duplicate governance object: ${object.id}`, objectId: object.id });
-    else byId.set(object.id, object);
+    if (byId.has(object.id)) addIssue(issues, { code: "duplicate_object_id", message: `Duplicate governance object: ${object.id}`, objectId: object.id }); else byId.set(object.id, object);
     if (graphIds.has(object.graph.id)) addIssue(issues, { code: "duplicate_graph_id", message: `Graph node is owned by multiple governance objects: ${object.graph.id}`, objectId: object.id });
     graphIds.add(object.graph.id);
     if (object.owner !== object.graph.source) addIssue(issues, { code: "owner_source_mismatch", message: `${object.id} owner must match its canonical graph source`, objectId: object.id });
     if (!object.graph.id.startsWith(`${object.graph.source}:${object.graph.sourceType}:`)) addIssue(issues, { code: "invalid_graph_namespace", message: `${object.id} graph id does not match source and type`, objectId: object.id });
+    if (object.kind === "super-agent" && (object.graph.source !== "clickup" || object.graph.sourceType !== "agent" || !object.graph.url)) addIssue(issues, { code: "invalid_super_agent_runtime", message: `${object.id} must identify a clickable ClickUp agent`, objectId: object.id });
   }
   const linkKeys = new Set<string>();
   for (const link of manifest.links) {
@@ -72,7 +62,4 @@ export function validateBrainGovernance(manifest: BrainGovernanceManifest): Brai
   return { manifest, issues };
 }
 export function parseBrainGovernance(raw: unknown): BrainGovernanceManifest { return manifestSchema.parse(raw); }
-export function loadBrainGovernance(start = process.cwd()): BrainGovernanceResult {
-  const root = findBrainGovernanceRoot(start);
-  return validateBrainGovernance(parseBrainGovernance(JSON.parse(readFileSync(join(root, "brain-governance.json"), "utf8"))));
-}
+export function loadBrainGovernance(start = process.cwd()): BrainGovernanceResult { const root = findBrainGovernanceRoot(start); return validateBrainGovernance(parseBrainGovernance(JSON.parse(readFileSync(join(root, "brain-governance.json"), "utf8")))); }

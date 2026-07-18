@@ -12,7 +12,8 @@ export interface GraphBuildInput {
   docs: Array<{ doc: CuDoc; pages: CuDocPage[] }>;
   docGraph: DocGraph;
   clients: GraphClientInput[];
-  runs: GraphRunInput[];
+  /** Optional keeps older fixtures/callers compatible; the collector supplies it. */
+  runs?: GraphRunInput[];
   pushRecords: GraphPushInput[];
 }
 
@@ -31,6 +32,7 @@ function safeMetadata(meta: Record<string, unknown>): Record<string, unknown> { 
 export function buildGraph(input: GraphBuildInput): Graph {
   const nodes = new Map<string, GraphNode>();
   const edges = new Map<string, GraphEdge>();
+  const runs = input.runs ?? [];
   function addNode(node: GraphNode): GraphNode {
     node.metadata = safeMetadata(node.metadata);
     const existing = nodes.get(node.id);
@@ -87,7 +89,7 @@ export function buildGraph(input: GraphBuildInput): Graph {
   if (docIdToGraphId.size > 0) integrationNode(GITHUB_SOURCE_ID, "GitHub versioned sources");
   for (const de of input.docGraph.edges) { const s = docIdToGraphId.get(de.source); const t = docIdToGraphId.get(de.target); if (s && t) addEdge(docRelation(de.kind), s, t, { direction: "directed" }); }
 
-  if (input.clients.length || input.runs.length || input.pushRecords.length) integrationNode(RUNTIME_SOURCE_ID, "Replit runtime");
+  if (input.clients.length || runs.length || input.pushRecords.length) integrationNode(RUNTIME_SOURCE_ID, "Replit runtime");
   for (const c of input.clients) {
     const cn = addNode({ id: nsId("replit", "client", String(c.id)), source: "replit", sourceType: "client", label: c.name, metadata: {} });
     const companyId = (c.clickupCompanyId ?? "").trim(); if (!companyId) continue;
@@ -96,7 +98,7 @@ export function buildGraph(input: GraphBuildInput): Graph {
     addEdge("related_to", cn.id, companyNodeId, { direction: "undirected" });
   }
 
-  for (const run of input.runs) addNode({ id: nsId("replit", "run", run.id), source: "replit", sourceType: "run", label: run.label, status: run.status, updatedAt: run.updatedAt ?? undefined, metadata: { kind: "generation" } });
+  for (const run of runs) addNode({ id: nsId("replit", "run", run.id), source: "replit", sourceType: "run", label: run.label, status: run.status, updatedAt: run.updatedAt ?? undefined, metadata: { kind: "generation" } });
 
   for (const p of input.pushRecords) {
     const objId = (p.clickupObjectId ?? "").trim(); if (!objId) continue;

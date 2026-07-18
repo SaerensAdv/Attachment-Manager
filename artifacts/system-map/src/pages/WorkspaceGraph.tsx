@@ -13,7 +13,7 @@ import {
   type GraphEdge,
 } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
-import { deriveGraphState, FILTER_GROUPS, indexById, isStale, mergeById, relativeTime, type FilterGroupId } from "@/components/workspace-graph/graph-model";
+import { deriveGraphState, FILTER_GROUPS, groupForNode, indexById, isStale, mergeById, relativeTime, type FilterGroupId } from "@/components/workspace-graph/graph-model";
 import WorkspaceGraphCanvas from "@/components/workspace-graph/WorkspaceGraphCanvas";
 import NodeDetailPanel from "@/components/workspace-graph/NodeDetailPanel";
 import GraphLegend from "@/components/workspace-graph/GraphLegend";
@@ -57,6 +57,14 @@ export default function WorkspaceGraph() {
     setActiveGroup(null);
     setSelectedNodeId(id);
     setFocusRequest((prev) => ({ id, nonce: (prev?.nonce ?? 0) + 1 }));
+  };
+  const selectGroup = (group: FilterGroupId | null) => {
+    setActiveGroup(group);
+    setSelectedNodeId(null);
+    if (!group) return;
+    const candidates = viewNodes.filter((node) => groupForNode(node) === group);
+    const anchor = candidates.find((node) => node.sourceType === "agent" || node.sourceType === "integration" || node.sourceType === "client") ?? candidates[0];
+    if (anchor) setFocusRequest((prev) => ({ id: anchor.id, nonce: (prev?.nonce ?? 0) + 1 }));
   };
 
   const lastHash = useRef<string | undefined>(undefined);
@@ -109,7 +117,7 @@ export default function WorkspaceGraph() {
         {state === "error" && <div className="atlas-state is-error"><AlertTriangle /><strong>Workspace unavailable</strong><p>The last valid snapshot was not reachable.</p><button onClick={() => refetch()}>Try again</button></div>}
         {state === "empty" && <div className="atlas-state"><Activity /><strong>No graph snapshot yet</strong><p>Run the first read-only sync to map your workspace.</p><button onClick={() => sync.mutate()}>Start first sync</button></div>}
         {state === "ready" && overview && <WorkspaceGraphCanvas nodes={viewNodes} edges={viewEdges} hiddenGroups={hiddenGroups} selectedNodeId={selectedNodeId} activeNodeId={activeAgentNodeId} onSelectNode={setSelectedNodeId} fitKey={meta?.contentHash ?? undefined} focusRequest={focusRequest} />}
-        <GraphLegend activeGroup={activeGroup} onSelectGroup={(group) => { setActiveGroup(group); setSelectedNodeId(null); }} onPick={handlePick} />
+        <GraphLegend activeGroup={activeGroup} onSelectGroup={selectGroup} onPick={handlePick} />
         {overview?.truncated && <div className="atlas-truncated">Search and expand to explore the full workspace</div>}
       </main>
       <NodeDetailPanel node={selectedNode} onClose={() => setSelectedNodeId(null)} onSelectNode={handlePick} onExpand={handleExpand} />

@@ -18,9 +18,11 @@ import WorkspaceGraphCanvas from "@/components/workspace-graph/WorkspaceGraphCan
 import NodeDetailPanel from "@/components/workspace-graph/NodeDetailPanel";
 import GraphLegend from "@/components/workspace-graph/GraphLegend";
 import AtlasShell from "@/components/atlas/AtlasShell";
+import { useAtlasGeneration } from "@/components/atlas/AtlasGenerationProvider";
 
 export default function WorkspaceGraph() {
   const { toast } = useToast();
+  const generation = useAtlasGeneration();
   const queryClient = useQueryClient();
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [hiddenGroups, setHiddenGroups] = useState<Set<FilterGroupId>>(() => new Set());
@@ -33,6 +35,12 @@ export default function WorkspaceGraph() {
   const viewNodes = useMemo(() => [...mergeById(indexById(overview?.nodes ?? []), [...expNodes.values()]).values()], [overview, expNodes]);
   const viewEdges = useMemo(() => [...mergeById(indexById(overview?.edges ?? []), [...expEdges.values()]).values()], [overview, expEdges]);
   const selectedNode = useMemo(() => viewNodes.find((node) => node.id === selectedNodeId) ?? null, [viewNodes, selectedNodeId]);
+  const activeAgentNodeId = useMemo(() => {
+    if (!generation.activePath) return null;
+    const slug = generation.activePath.replace(/^agents\//, "").replace(/\.md$/, "");
+    const id = `github:agent:${slug}`;
+    return viewNodes.some((node) => node.id === id) ? id : null;
+  }, [generation.activePath, viewNodes]);
 
   const handleExpand = (data: { nodes: GraphNode[]; edges: GraphEdge[] }) => {
     setExpNodes((prev) => mergeById(prev, data.nodes));
@@ -100,7 +108,7 @@ export default function WorkspaceGraph() {
         {state === "loading" && <div className="atlas-state atlas-skeleton-state"><Loader2 className="atlas-rotating" /><span>Loading workspace</span></div>}
         {state === "error" && <div className="atlas-state is-error"><AlertTriangle /><strong>Workspace unavailable</strong><p>The last valid snapshot was not reachable.</p><button onClick={() => refetch()}>Try again</button></div>}
         {state === "empty" && <div className="atlas-state"><Activity /><strong>No graph snapshot yet</strong><p>Run the first read-only sync to map your workspace.</p><button onClick={() => sync.mutate()}>Start first sync</button></div>}
-        {state === "ready" && overview && <WorkspaceGraphCanvas nodes={viewNodes} edges={viewEdges} hiddenGroups={hiddenGroups} selectedNodeId={selectedNodeId} onSelectNode={setSelectedNodeId} fitKey={meta?.contentHash ?? undefined} focusRequest={focusRequest} />}
+        {state === "ready" && overview && <WorkspaceGraphCanvas nodes={viewNodes} edges={viewEdges} hiddenGroups={hiddenGroups} selectedNodeId={selectedNodeId} activeNodeId={activeAgentNodeId} onSelectNode={setSelectedNodeId} fitKey={meta?.contentHash ?? undefined} focusRequest={focusRequest} />}
         <GraphLegend hiddenGroups={hiddenGroups} onToggleGroup={toggleGroup} onPick={handlePick} />
         {overview?.truncated && <div className="atlas-truncated">{overview.nodes.length} of {overview.totalNodes} nodes loaded, search covers all</div>}
       </main>

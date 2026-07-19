@@ -15,6 +15,6 @@ describe("SA brand logo", () => {
 
   it("uses the real logo in auth loading and login branding", () => {
     expect(auth).toContain('import saLogo from "@/assets/sa-logo.webp"');
-    expect(auth.match(/src={saLogo}/g)?.length).toBe(2);
+    expect(auth.split("src={saLogo}").length - 1).toBe(2);
   });
 });

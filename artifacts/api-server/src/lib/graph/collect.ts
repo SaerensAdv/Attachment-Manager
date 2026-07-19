@@ -8,6 +8,7 @@ import { listDocPages, listDocs, listFolderlessLists, listFolders, listSpaces, l
 import type { GraphBuildInput } from "./build";
 import { allowsList, allowsSpace, boundPageTree, boundTasksByList, emptyCollectionReport, readGraphCollectionPolicy, requiresCompletePageTree, selectDocs, selectWorkspace, type GraphCollectionReport } from "./collection-policy";
 import { listPortfolioGraphClients } from "./portfolio-clients";
+import { listClientLinkedGraphRuns } from "./client-linked-runs";
 
 export interface CollectResult { ok: boolean; input: GraphBuildInput; sourceUpdatedAt: Date | null; errors: string[]; report: GraphCollectionReport }
 const EMPTY_INPUT: GraphBuildInput = { workspace: null, spaces: [], tasksByList: [], docs: [], docGraph: { nodes: [], edges: [], categories: [] }, clients: [], runs: [], pushRecords: [] };
@@ -41,15 +42,11 @@ export async function collectGraphInput(): Promise<CollectResult> {
   }
   const fullDocGraph = getDocGraph(await loadClientDocs()); const docNodes = fullDocGraph.nodes.filter((node) => node.category !== "agent" || node.active !== false); const docIds = new Set(docNodes.map((node) => node.id)); const docGraph = { ...fullDocGraph, nodes: docNodes, edges: fullDocGraph.edges.filter((edge) => docIds.has(edge.source) && docIds.has(edge.target)) };
   let clients: GraphBuildInput["clients"] = [];
-  try {
-    const rows = await listPortfolioGraphClients();
-    clients = rows.map(({ updatedAt, ...client }) => { track(updatedAt); return client; });
-    report.clients.included = clients.length;
-  } catch (error) {
-    errors.push("clients:db");
-    logger.warn({ scope: "graph:collect", err: error instanceof Error ? error.message : String(error) }, "portfolio clients crawl failed (best-effort)");
-  }
-  let runs: GraphBuildInput["runs"] = []; try { const rows = await db.select({ id: generationsTable.id, workflowTitle: generationsTable.workflowTitle, status: generationsTable.status, createdAt: generationsTable.createdAt }).from(generationsTable).orderBy(desc(generationsTable.createdAt)).limit(100); runs = rows.map((run) => { const updatedAt = run.createdAt.toISOString(); track(updatedAt); return { id: String(run.id), label: run.workflowTitle || `Generation ${run.id}`, status: run.status, updatedAt }; }); } catch (error) { errors.push("runs:db"); logger.warn({ scope: "graph:collect", err: error instanceof Error ? error.message : String(error) }, "generation runs crawl failed (best-effort)"); }
+  try { const rows = await listPortfolioGraphClients(); clients = rows.map(({ updatedAt, ...client }) => { track(updatedAt); return client; }); report.clients.included = clients.length; }
+  catch (error) { errors.push("clients:db"); logger.warn({ scope: "graph:collect", err: error instanceof Error ? error.message : String(error) }, "portfolio clients crawl failed (best-effort)"); }
+  let runs: GraphBuildInput["runs"] = [];
+  try { runs = await listClientLinkedGraphRuns(); for (const run of runs) track(run.updatedAt); }
+  catch (error) { errors.push("runs:db"); logger.warn({ scope: "graph:collect", err: error instanceof Error ? error.message : String(error) }, "client-linked runs crawl failed (best-effort)"); }
   let pushRecords: GraphBuildInput["pushRecords"] = []; try { const countResult = await pool.query(`SELECT count(*)::int count FROM clickup_push_records WHERE clickup_object_id IS NOT NULL`); report.pushRecords.discovered = Number(countResult.rows[0]?.count ?? 0); const result = await pool.query(`SELECT source_run_id, clickup_object_id, clickup_url, kind, status, updated_at FROM clickup_push_records WHERE clickup_object_id IS NOT NULL ORDER BY updated_at DESC LIMIT $1`, [policy.maxPushRecords]); pushRecords = result.rows.map((row: Record<string, unknown>) => { const updatedAt = row.updated_at == null ? null : row.updated_at instanceof Date ? row.updated_at.toISOString() : new Date(String(row.updated_at)).toISOString(); track(updatedAt); return { sourceRunId: row.source_run_id == null ? null : String(row.source_run_id), clickupObjectId: row.clickup_object_id == null ? null : String(row.clickup_object_id), clickupUrl: row.clickup_url == null ? null : String(row.clickup_url), kind: String(row.kind ?? ""), status: String(row.status ?? ""), updatedAt }; }); report.pushRecords.included = pushRecords.length; report.pushRecords.excluded = Math.max(0, report.pushRecords.discovered - pushRecords.length); } catch (error) { errors.push("push:db"); logger.warn({ scope: "graph:collect", err: error instanceof Error ? error.message : String(error) }, "push ledger crawl failed (best-effort)"); }
   logger.info({ scope: "graph:collect", sourceCounts: { agents: docGraph.nodes.filter((node) => node.category === "agent").length, workflows: docGraph.nodes.filter((node) => node.category === "workflow").length, clients: clients.length, tasks: boundedTasks.counts.included, runs: runs.length, pushes: pushRecords.length }, report }, "bounded graph collection completed");
   return { ok: true, input: { workspace: { id: ws.id, name: ws.name }, spaces, tasksByList: boundedTasks.tasksByList, docs, docGraph, clients, clientFolderCompanyLinks: policy.clientFolderCompanyLinks, runs, pushRecords }, sourceUpdatedAt: sourceMax > 0 ? new Date(sourceMax) : null, errors, report };

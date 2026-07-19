@@ -10,10 +10,10 @@ if (existsSync(join(runtimeDir, "AGENTS.md")) && existsSync(join(runtimeDir, "ag
 const env = validateEnv();
 const port = env.PORT;
 
-// Apply the reviewed, idempotent Company -> technical profile data migration
-// before any route or worker can read the legacy flat client cache.
 const { reconcileCanonicalClientPortfolio } = await import("./lib/client-portfolio-migration");
 await reconcileCanonicalClientPortfolio();
+const { ensureRunGraphPolicy } = await import("./lib/run-graph-policy");
+await ensureRunGraphPolicy();
 
 const { default: app } = await import("./app");
 const { warmSemanticIndex } = await import("./lib/semantic");

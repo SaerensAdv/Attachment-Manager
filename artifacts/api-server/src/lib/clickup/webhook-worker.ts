@@ -4,7 +4,67 @@ import { touchWorkerHeartbeat } from "../worker-heartbeats";
 import { authorizeClickUpEvent, parseClickUpStatusEvents, readClickUpWebhookPolicy } from "./webhook-security";
 import { claimNextClickUpWebhookEvent, failClickUpWebhookEvent, finishClickUpWebhookEvent } from "./webhook-store";
 import { createApprovedGmailDraft, resolveAuthorizedGeneration, WebhookProcessingError } from "./webhook-approval";
-let timer:NodeJS.Timeout|null=null;let busy=false;
-export async function processNextClickUpWebhookEvent(now=new Date()):Promise<boolean>{const claimed=await claimNextClickUpWebhookEvent();if(!claimed)return false;try{const policy=readClickUpWebhookPolicy();if(!policy)throw new WebhookProcessingError("WEBHOOK_POLICY_NOT_CONFIGURED",false);const parsed=parseClickUpStatusEvents(Buffer.from(JSON.stringify(claimed.payload)));const event=parsed.find((item)=>claimed.historyId?item.historyId===claimed.historyId:item.taskId===claimed.taskId);if(!event)throw new WebhookProcessingError("STATUS_HISTORY_NOT_FOUND",false);event.idempotencyKey=claimed.idempotencyKey;event.payloadHash=claimed.payloadHash;const denial=authorizeClickUpEvent(event,policy,now);if(denial){await finishClickUpWebhookEvent(claimed.id,"ignored",denial);return true}const generationId=await resolveAuthorizedGeneration(claimed.taskId,policy,claimed.idempotencyKey);await createApprovedGmailDraft(generationId);await finishClickUpWebhookEvent(claimed.id,"succeeded")}catch(error){const retryable=error instanceof WebhookProcessingError?error.retryable:true;const message=error instanceof Error?error.message:String(error);const state=await failClickUpWebhookEvent(claimed.id,claimed.attempts,message,retryable);if(state==="dead_letter")await recordAlert({source:"clickup-webhook",severity:"warn",message:`ClickUp-webhook naar dead letter: ${message.slice(0,200)}`,context:{key:`clickup-webhook:${claimed.idempotencyKey}`}}).catch(()=>undefined)}return true}
-async function tick():Promise<void>{if(busy)return;busy=true;void touchWorkerHeartbeat("clickup-webhook","running");let processed=0;try{for(let i=0;i<10&&await processNextClickUpWebhookEvent();i+=1)processed+=1;void touchWorkerHeartbeat("clickup-webhook","healthy",{success:true,metadata:{processed}})}catch(error){void touchWorkerHeartbeat("clickup-webhook","failed",{errorCode:"WEBHOOK_WORKER_TICK_FAILED",force:true});logger.warn({err:error,scope:"clickup:webhook"},"Webhook-worker tick mislukt")}finally{busy=false}}
-export function startClickUpWebhookWorker():void{if(timer)return;void touchWorkerHeartbeat("clickup-webhook","starting",{force:true});timer=setInterval(()=>void tick(),2_000);timer.unref();void tick()}
+
+let timer: NodeJS.Timeout | null = null;
+let busy = false;
+
+export function clickUpWebhookConfigured(env: NodeJS.ProcessEnv = process.env): boolean {
+  return Boolean(env.CLICKUP_WEBHOOK_SECRET?.trim() && readClickUpWebhookPolicy(env));
+}
+
+export async function processNextClickUpWebhookEvent(now = new Date()): Promise<boolean> {
+  const claimed = await claimNextClickUpWebhookEvent();
+  if (!claimed) return false;
+  try {
+    const policy = readClickUpWebhookPolicy();
+    if (!policy) throw new WebhookProcessingError("WEBHOOK_POLICY_NOT_CONFIGURED", false);
+    const parsed = parseClickUpStatusEvents(Buffer.from(JSON.stringify(claimed.payload)));
+    const event = parsed.find((item) => claimed.historyId ? item.historyId === claimed.historyId : item.taskId === claimed.taskId);
+    if (!event) throw new WebhookProcessingError("STATUS_HISTORY_NOT_FOUND", false);
+    event.idempotencyKey = claimed.idempotencyKey;
+    event.payloadHash = claimed.payloadHash;
+    const denial = authorizeClickUpEvent(event, policy, now);
+    if (denial) { await finishClickUpWebhookEvent(claimed.id, "ignored", denial); return true; }
+    const generationId = await resolveAuthorizedGeneration(claimed.taskId, policy, claimed.idempotencyKey);
+    await createApprovedGmailDraft(generationId);
+    await finishClickUpWebhookEvent(claimed.id, "succeeded");
+  } catch (error) {
+    const retryable = error instanceof WebhookProcessingError ? error.retryable : true;
+    const message = error instanceof Error ? error.message : String(error);
+    const state = await failClickUpWebhookEvent(claimed.id, claimed.attempts, message, retryable);
+    if (state === "dead_letter") await recordAlert({ source:"clickup-webhook",severity:"warn",message:`ClickUp-webhook naar dead letter: ${message.slice(0,200)}`,context:{key:`clickup-webhook:${claimed.idempotencyKey}`} }).catch(()=>undefined);
+  }
+  return true;
+}
+
+async function tick(): Promise<void> {
+  if (busy) return;
+  busy = true;
+  const configured = clickUpWebhookConfigured();
+  void touchWorkerHeartbeat("clickup-webhook", configured ? "running" : "idle", { metadata: { configured } });
+  let processed = 0;
+  try {
+    // No configured policy means there is deliberately no autonomous approval
+    // consumer. Keep truthful idle health and avoid polling a disabled feature.
+    if (!configured) {
+      void touchWorkerHeartbeat("clickup-webhook", "idle", { success: true, force: true, metadata: { configured: false, processed: 0 } });
+      return;
+    }
+    for (let i=0; i<10 && await processNextClickUpWebhookEvent(); i+=1) processed+=1;
+    void touchWorkerHeartbeat("clickup-webhook", "healthy", { success:true, force:true, metadata:{configured:true,processed} });
+  } catch (error) {
+    const errorCode = error instanceof Error ? error.message.slice(0,120) : "WEBHOOK_WORKER_TICK_FAILED";
+    void touchWorkerHeartbeat("clickup-webhook", "failed", { errorCode, force:true, metadata:{configured,processed} });
+    logger.warn({ err:error, errorCode, scope:"clickup:webhook" }, "Webhook-worker tick mislukt");
+  } finally {
+    busy=false;
+  }
+}
+
+export function startClickUpWebhookWorker(): void {
+  if (timer) return;
+  void touchWorkerHeartbeat("clickup-webhook", "starting", { force:true, metadata:{configured:clickUpWebhookConfigured()} });
+  timer=setInterval(()=>void tick(),2_000);
+  timer.unref();
+  void tick();
+}

@@ -3,14 +3,8 @@
   72%, 100% { transform: scale(1.65); opacity: 0; }
 }
 
-@keyframes atlas-flow-drift {
-  to { stroke-dashoffset: -24; }
-}
-
-@keyframes atlas-particle-breathe {
-  0%, 100% { opacity: .42; }
-  50% { opacity: 1; }
-}
+@keyframes atlas-flow-drift { to { stroke-dashoffset: -24; } }
+@keyframes atlas-particle-breathe { 0%, 100% { opacity: .42; } 50% { opacity: 1; } }
 
 .atlas-canvas {
   position: relative;
@@ -18,6 +12,7 @@
   background:
     radial-gradient(circle at 50% 46%, hsl(var(--wg-accent) / .09), transparent 42%),
     radial-gradient(circle at 50% 50%, hsl(var(--card)), hsl(var(--background)) 76%);
+  transition: background 420ms cubic-bezier(.16, 1, .3, 1);
 }
 
 .atlas-canvas::before {
@@ -31,66 +26,42 @@
   background-size: 34px 34px;
   mask-image: radial-gradient(circle at center, black, transparent 78%);
   transform: translate3d(var(--atlas-parallax-x, 0), var(--atlas-parallax-y, 0), 0);
-  transition: transform 700ms cubic-bezier(.16, 1, .3, 1);
+  transition: transform 520ms cubic-bezier(.16, 1, .3, 1), opacity 320ms cubic-bezier(.16, 1, .3, 1);
 }
 
 .atlas-graph-world {
   transform-box: fill-box;
   transform-origin: center;
   filter: saturate(1.04);
+  transition: transform 520ms cubic-bezier(.16, 1, .3, 1), filter 320ms cubic-bezier(.16, 1, .3, 1);
 }
 
-.atlas-edge {
-  transition: opacity 220ms cubic-bezier(.16, 1, .3, 1), stroke-width 220ms cubic-bezier(.16, 1, .3, 1);
+.atlas-explore {
+  background:
+    radial-gradient(circle at 50% 46%, hsl(var(--wg-accent) / .18), transparent 48%),
+    radial-gradient(circle at 50% 50%, hsl(var(--card)), hsl(var(--background)) 82%);
+}
+.atlas-explore::before { opacity: .72; }
+.atlas-explore .atlas-graph-world {
+  transform: perspective(1200px) rotateX(var(--atlas-tilt-y, 0deg)) rotateY(var(--atlas-tilt-x, 0deg)) scale(.985);
+  filter: saturate(1.18) drop-shadow(0 16px 24px hsl(var(--background) / .32));
 }
 
-.atlas-flow-line {
-  animation: atlas-flow-drift 1.35s linear infinite;
-}
-
-.atlas-flow-particle {
-  animation: atlas-particle-breathe 1.2s cubic-bezier(.16, 1, .3, 1) infinite;
-  filter: drop-shadow(0 0 5px hsl(var(--wg-flow)));
-  pointer-events: none;
-}
-
-.atlas-node {
-  transform-box: fill-box;
-  transform-origin: center;
-  transition: opacity 220ms cubic-bezier(.16, 1, .3, 1), filter 220ms cubic-bezier(.16, 1, .3, 1);
-  will-change: opacity;
-}
-
-.atlas-node:hover,
-.atlas-node:focus-visible,
-.atlas-node-selected {
-  filter: drop-shadow(0 0 9px hsl(var(--wg-accent) / .5));
-}
-
-.atlas-node-core {
-  transition: r 180ms cubic-bezier(.16, 1, .3, 1), stroke-width 180ms cubic-bezier(.16, 1, .3, 1);
-}
-
-.atlas-depth-far { opacity: .76; }
-.atlas-depth-mid { opacity: .9; }
-.atlas-depth-near { opacity: 1; }
-
-.atlas-active-agent-pulse {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: atlas-active-agent 1.9s cubic-bezier(.16, 1, .3, 1) infinite;
-}
-
-.atlas-interacting .atlas-active-agent-pulse,
-.atlas-interacting .atlas-flow-particle {
-  animation-play-state: paused;
-}
+.atlas-edge { transition: opacity 220ms cubic-bezier(.16, 1, .3, 1), stroke-width 220ms cubic-bezier(.16, 1, .3, 1); }
+.atlas-flow-line { animation: atlas-flow-drift 1.35s linear infinite; }
+.atlas-flow-particle { animation: atlas-particle-breathe 1.2s cubic-bezier(.16, 1, .3, 1) infinite; filter: drop-shadow(0 0 5px hsl(var(--wg-flow))); pointer-events: none; }
+.atlas-node { transform-box: fill-box; transform-origin: center; transition: opacity 220ms cubic-bezier(.16, 1, .3, 1), filter 220ms cubic-bezier(.16, 1, .3, 1); will-change: opacity; }
+.atlas-node:hover,.atlas-node:focus-visible,.atlas-node-selected { filter: drop-shadow(0 0 9px hsl(var(--wg-accent) / .5)); }
+.atlas-node-core { transition: r 180ms cubic-bezier(.16, 1, .3, 1), stroke-width 180ms cubic-bezier(.16, 1, .3, 1); }
+.atlas-depth-far { opacity: .76; }.atlas-depth-mid { opacity: .9; }.atlas-depth-near { opacity: 1; }
+.atlas-active-agent-pulse { transform-box: fill-box; transform-origin: center; animation: atlas-active-agent 1.9s cubic-bezier(.16, 1, .3, 1) infinite; }
+.atlas-interacting .atlas-active-agent-pulse,.atlas-interacting .atlas-flow-particle { animation-play-state: paused; }
 
 .atlas-explore-toggle {
   position: absolute;
-  top: 18px;
-  right: 18px;
-  z-index: 3;
+  top: 72px;
+  right: 22px;
+  z-index: 12;
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -102,30 +73,18 @@
   color: hsl(var(--muted-foreground));
   box-shadow: 0 14px 34px hsl(var(--background) / .35);
   cursor: pointer;
-  transition: color 180ms cubic-bezier(.16, 1, .3, 1), background 180ms cubic-bezier(.16, 1, .3, 1), transform 120ms cubic-bezier(.16, 1, .3, 1);
+  transition: color 180ms cubic-bezier(.16, 1, .3, 1), background 180ms cubic-bezier(.16, 1, .3, 1), border-color 180ms cubic-bezier(.16, 1, .3, 1), box-shadow 180ms cubic-bezier(.16, 1, .3, 1), transform 120ms cubic-bezier(.16, 1, .3, 1);
 }
-
-.atlas-explore-toggle:hover,
-.atlas-explore-toggle[aria-pressed="true"] {
-  color: hsl(var(--foreground));
-  background: hsl(var(--secondary));
-}
-
+.atlas-explore-toggle:hover { color: hsl(var(--foreground)); background: hsl(var(--secondary)); }
+.atlas-explore-toggle[aria-pressed="true"] { color: hsl(var(--foreground)); background: hsl(var(--wg-accent) / .2); border-color: hsl(var(--wg-accent) / .72); box-shadow: 0 0 0 1px hsl(var(--wg-accent) / .18), 0 0 26px hsl(var(--wg-accent) / .22); }
 .atlas-explore-toggle:active { transform: scale(.96); }
 .atlas-explore-toggle svg { width: 15px; height: 15px; }
 .atlas-explore-toggle span { font: 600 11px/1 var(--font-mono, monospace); letter-spacing: .06em; text-transform: uppercase; }
 
+@media (max-width:1100px) { .atlas-explore-toggle { top: 18px; right: 18px; } }
+@media (max-width:640px) { .atlas-explore-toggle { top: 72px; right: 14px; } }
 @media (prefers-reduced-motion: reduce) {
-  .atlas-active-agent-pulse,
-  .atlas-flow-line,
-  .atlas-flow-particle {
-    animation: none;
-  }
-  .atlas-node,
-  .atlas-node-core,
-  .atlas-edge,
-  .atlas-canvas::before,
-  .atlas-explore-toggle {
-    transition: none;
-  }
+  .atlas-active-agent-pulse,.atlas-flow-line,.atlas-flow-particle { animation: none; }
+  .atlas-node,.atlas-node-core,.atlas-edge,.atlas-canvas,.atlas-canvas::before,.atlas-graph-world,.atlas-explore-toggle { transition: none; }
+  .atlas-explore .atlas-graph-world { transform: none; }
 }

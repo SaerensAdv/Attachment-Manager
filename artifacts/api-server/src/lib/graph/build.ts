@@ -4,143 +4,27 @@ import type { ClientFolderCompanyLink } from "./collection-policy";
 import { ALLOWED_METADATA_KEYS, edgeId, nsId, type Graph, type GraphDirection, type GraphEdge, type GraphNode, type GraphRelation, type GraphSourceType } from "./types";
 
 export interface GraphClientInput { id: number; name: string; companyName?: string; clickupCompanyId: string | null }
-export interface GraphRunInput { id: string; label: string; status: string; updatedAt: string | null }
+export interface GraphRunInput { id: string; label: string; status: string; updatedAt: string | null; clientId?: number }
 export interface GraphPushInput { sourceRunId: string | null; clickupObjectId: string | null; clickupUrl: string | null; kind: string; status: string; updatedAt: string | null }
-export interface GraphBuildInput {
-  workspace: { id: string; name: string } | null;
-  spaces: Array<{ space: CuSpace; folders: CuFolder[]; folderlessLists: CuList[] }>;
-  tasksByList: Array<{ listId: string; tasks: CuTask[] }>;
-  docs: Array<{ doc: CuDoc; pages: CuDocPage[] }>;
-  docGraph: DocGraph;
-  clients: GraphClientInput[];
-  clientFolderCompanyLinks?: readonly ClientFolderCompanyLink[];
-  runs?: GraphRunInput[];
-  pushRecords: GraphPushInput[];
-}
-
-const CLICKUP_TASK_URL = (id: string) => `https://app.clickup.com/t/${id}`;
-const PUSH_INTEGRATION_ID = nsId("replit", "integration", "clickup-push");
-const CLICKUP_SOURCE_ID = nsId("replit", "integration", "clickup-source");
-const GITHUB_SOURCE_ID = nsId("replit", "integration", "github-source");
-const RUNTIME_SOURCE_ID = nsId("replit", "integration", "runtime");
-const DOC_CATEGORY_MAP: Record<string, { sourceType: GraphSourceType; prefix: string }> = {
-  agent: { sourceType: "agent", prefix: "agents/" }, workflow: { sourceType: "workflow", prefix: "workflows/" }, knowledge: { sourceType: "sop", prefix: "knowledge/" },
-};
-const docRelation = (kind: string): GraphRelation => kind === "routing" ? "executes" : "references";
-function docSlug(path: string, prefix: string): string { let s = path.startsWith(prefix) ? path.slice(prefix.length) : path; if (s.endsWith(".md")) s = s.slice(0, -3); return s; }
-function safeMetadata(meta: Record<string, unknown>): Record<string, unknown> { const out: Record<string, unknown> = {}; for (const [k, v] of Object.entries(meta)) if (ALLOWED_METADATA_KEYS.has(k) && v !== undefined) out[k] = v; return out; }
-
-export function buildGraph(input: GraphBuildInput): Graph {
-  const nodes = new Map<string, GraphNode>();
-  const edges = new Map<string, GraphEdge>();
-  const runs = input.runs ?? [];
-  function addNode(node: GraphNode): GraphNode {
-    node.metadata = safeMetadata(node.metadata);
-    const existing = nodes.get(node.id);
-    if (existing) { if (existing.metadata.orphan && !node.metadata.orphan) { nodes.set(node.id, node); return node; } return existing; }
-    nodes.set(node.id, node); return node;
-  }
-  function addEdge(relation: GraphRelation, sourceId: string, targetId: string, opts: { direction: GraphDirection; active?: boolean; weight?: number } = { direction: "directed" }): void {
-    if (sourceId === targetId) return;
-    const id = edgeId(relation, sourceId, targetId);
-    const existing = edges.get(id);
-    if (existing) { if (opts.weight) existing.weight = (existing.weight ?? 0) + opts.weight; if (opts.active === false) existing.active = false; return; }
-    const edge: GraphEdge = { id, sourceId, targetId, relation, direction: opts.direction };
-    if (opts.active !== undefined) edge.active = opts.active;
-    if (opts.weight !== undefined) edge.weight = opts.weight;
-    edges.set(id, edge);
-  }
-  function contain(parentId: string | null, child: GraphNode): void {
-    if (parentId && nodes.has(parentId)) { child.parentId = parentId; addEdge("contains", parentId, child.id, { direction: "directed" }); }
-    else if (parentId) child.metadata = safeMetadata({ ...child.metadata, orphan: true });
-  }
-  function reparent(parentId: string, child: GraphNode): void {
-    for (const [id, edge] of edges) if (edge.relation === "contains" && edge.targetId === child.id) edges.delete(id);
-    child.parentId = parentId;
-    child.metadata = safeMetadata({ ...child.metadata, orphan: undefined });
-    addEdge("contains", parentId, child.id, { direction: "directed" });
-  }
-  const cuNode = (sourceType: GraphSourceType, rawId: string, label: string, extra: Partial<GraphNode> = {}): GraphNode => addNode({ id: nsId("clickup", sourceType, rawId), source: "clickup", sourceType, label, metadata: {}, ...extra });
-  const integrationNode = (id: string, label: string): GraphNode => addNode({ id, source: "replit", sourceType: "integration", label, metadata: {} });
-
-  if (input.workspace) {
-    const ws = cuNode("workspace", input.workspace.id, input.workspace.name);
-    integrationNode(CLICKUP_SOURCE_ID, "ClickUp workspace source");
-    for (const { space, folders, folderlessLists } of input.spaces) {
-      const sp = cuNode("space", space.id, space.name); contain(ws.id, sp);
-      for (const folder of folders) {
-        const fo = cuNode("folder", folder.id, folder.name); contain(sp.id, fo);
-        for (const list of folder.lists) { const li = cuNode("list", list.id, list.name, { metadata: { taskCount: list.taskCount ?? undefined } }); contain(fo.id, li); }
-      }
-      for (const list of folderlessLists) { const li = cuNode("list", list.id, list.name, { metadata: { taskCount: list.taskCount ?? undefined } }); contain(sp.id, li); }
-    }
-    for (const { doc, pages } of input.docs) {
-      const dn = cuNode("doc", doc.id, doc.name, { url: `https://app.clickup.com/${input.workspace.id}/docs/${doc.id}`, updatedAt: doc.updatedAt ?? undefined }); contain(ws.id, dn);
-      const seen = new Set<string>();
-      const walkPages = (parentId: string, list: CuDocPage[]): void => { for (const p of list) { if (seen.has(p.id)) continue; seen.add(p.id); const pn = cuNode("page", p.id, p.name); contain(parentId, pn); if (p.children.length) walkPages(pn.id, p.children); } };
-      walkPages(dn.id, pages);
-    }
-  }
-
-  for (const { listId, tasks } of input.tasksByList) for (const t of tasks) {
-    const tn = cuNode("task", t.id, t.name, { url: t.url ?? CLICKUP_TASK_URL(t.id), status: t.status ?? undefined, updatedAt: t.updatedAt ?? undefined, metadata: { closed: t.closed } });
-    contain(nsId("clickup", "list", listId), tn);
-  }
-
-  const docIdToGraphId = new Map<string, string>();
-  for (const dn of input.docGraph.nodes) {
-    const map = DOC_CATEGORY_MAP[dn.category]; if (!map) continue;
-    const gid = nsId("github", map.sourceType, docSlug(dn.path, map.prefix)); docIdToGraphId.set(dn.id, gid);
-    addNode({ id: gid, source: "github", sourceType: map.sourceType, label: dn.title, metadata: { category: dn.category, active: dn.active, ...(dn.fanout ? { fanout: dn.fanout } : {}) } });
-  }
-  if (docIdToGraphId.size > 0) integrationNode(GITHUB_SOURCE_ID, "GitHub versioned sources");
-  for (const de of input.docGraph.edges) { const s = docIdToGraphId.get(de.source); const t = docIdToGraphId.get(de.target); if (s && t) addEdge(docRelation(de.kind), s, t, { direction: "directed" }); }
-
-  if (input.clients.length || runs.length || input.pushRecords.length) integrationNode(RUNTIME_SOURCE_ID, "Replit runtime");
-  const canonicalComposition = input.clientFolderCompanyLinks !== undefined;
-  for (const c of input.clients) {
-    const companyTaskId = (c.clickupCompanyId ?? "").trim();
-    if (!canonicalComposition) {
-      const client = addNode({ id: nsId("replit", "client", String(c.id)), source: "replit", sourceType: "client", label: c.name, metadata: {} });
-      if (!companyTaskId) continue;
-      const companyNodeId = nsId("clickup", "task", companyTaskId);
-      if (!nodes.has(companyNodeId)) cuNode("task", companyTaskId, "CRM-bedrijf", { url: CLICKUP_TASK_URL(companyTaskId), metadata: { orphan: true } });
-      addEdge("related_to", client.id, companyNodeId, { direction: "undirected" });
-      continue;
-    }
-    const profile = addNode({ id: nsId("replit", "client", String(c.id)), source: "replit", sourceType: "client", label: c.name, metadata: { kind: "technical_profile", canonicalOwner: "clickup" } });
-    if (!companyTaskId) {
-      profile.metadata = safeMetadata({ ...profile.metadata, orphan: true, lifecycle: "unmapped" });
-      continue;
-    }
-    const companyNodeId = nsId("clickup", "task", companyTaskId);
-    const company = nodes.get(companyNodeId) ?? cuNode("task", companyTaskId, c.companyName || "CRM-bedrijf", { url: CLICKUP_TASK_URL(companyTaskId), metadata: { orphan: true, canonicalOwner: "clickup" } });
-    company.metadata = safeMetadata({ ...company.metadata, canonicalOwner: "clickup" });
-    profile.metadata = safeMetadata({ ...profile.metadata, canonicalOwner: company.id });
-    contain(company.id, profile);
-  }
-
-  for (const link of input.clientFolderCompanyLinks ?? []) {
-    const folder = nodes.get(nsId("clickup", "folder", link.folderId));
-    if (!folder) continue;
-    const companyId = nsId("clickup", "task", link.companyTaskId);
-    const company = nodes.get(companyId) ?? cuNode("task", link.companyTaskId, "CRM-bedrijf", { url: CLICKUP_TASK_URL(link.companyTaskId), metadata: { orphan: true, canonicalOwner: "clickup" } });
-    company.metadata = safeMetadata({ ...company.metadata, canonicalOwner: "clickup" });
-    folder.metadata = safeMetadata({ ...folder.metadata, canonicalOwner: company.id });
-    reparent(company.id, folder);
-  }
-
-  for (const run of runs) addNode({ id: nsId("replit", "run", run.id), source: "replit", sourceType: "run", label: run.label, status: run.status, updatedAt: run.updatedAt ?? undefined, metadata: { kind: "generation" } });
-
-  for (const p of input.pushRecords) {
-    const objId = (p.clickupObjectId ?? "").trim(); if (!objId) continue;
-    const taskNodeId = nsId("clickup", "task", objId);
-    if (!nodes.has(taskNodeId)) cuNode("task", objId, `Push: ${p.kind}`, { url: p.clickupUrl ?? CLICKUP_TASK_URL(objId), metadata: { orphan: true, kind: p.kind } });
-    const healthy = p.status !== "failed";
-    integrationNode(PUSH_INTEGRATION_ID, "Replit → ClickUp push");
-    addEdge("writes_to", PUSH_INTEGRATION_ID, taskNodeId, { direction: "directed", active: healthy, weight: 1 });
-    const runId = (p.sourceRunId ?? "").trim();
-    if (runId) { const rn = addNode({ id: nsId("replit", "run", runId), source: "replit", sourceType: "run", label: `Run ${runId.slice(0, 8)}`, status: p.status, updatedAt: p.updatedAt ?? undefined, metadata: { kind: p.kind } }); addEdge("generated", rn.id, taskNodeId, { direction: "directed", active: healthy }); }
-  }
-  return { nodes: [...nodes.values()], edges: [...edges.values()] };
-}
+export interface GraphBuildInput { workspace: { id: string; name: string } | null; spaces: Array<{ space: CuSpace; folders: CuFolder[]; folderlessLists: CuList[] }>; tasksByList: Array<{ listId: string; tasks: CuTask[] }>; docs: Array<{ doc: CuDoc; pages: CuDocPage[] }>; docGraph: DocGraph; clients: GraphClientInput[]; clientFolderCompanyLinks?: readonly ClientFolderCompanyLink[]; runs?: GraphRunInput[]; pushRecords: GraphPushInput[] }
+const CLICKUP_TASK_URL=(id:string)=>`https://app.clickup.com/t/${id}`,PUSH_INTEGRATION_ID=nsId("replit","integration","clickup-push"),CLICKUP_SOURCE_ID=nsId("replit","integration","clickup-source"),GITHUB_SOURCE_ID=nsId("replit","integration","github-source"),RUNTIME_SOURCE_ID=nsId("replit","integration","runtime");
+const DOC_CATEGORY_MAP:Record<string,{sourceType:GraphSourceType;prefix:string}>={agent:{sourceType:"agent",prefix:"agents/"},workflow:{sourceType:"workflow",prefix:"workflows/"},knowledge:{sourceType:"sop",prefix:"knowledge/"}};
+const docRelation=(kind:string):GraphRelation=>kind==="routing"?"executes":"references";
+function docSlug(path:string,prefix:string){let s=path.startsWith(prefix)?path.slice(prefix.length):path;if(s.endsWith(".md"))s=s.slice(0,-3);return s}
+function safeMetadata(meta:Record<string,unknown>){const out:Record<string,unknown>={};for(const[k,v]of Object.entries(meta))if(ALLOWED_METADATA_KEYS.has(k)&&v!==undefined)out[k]=v;return out}
+export function buildGraph(input:GraphBuildInput):Graph{
+ const nodes=new Map<string,GraphNode>(),edges=new Map<string,GraphEdge>(),runs=input.runs??[];
+ function addNode(node:GraphNode){node.metadata=safeMetadata(node.metadata);const existing=nodes.get(node.id);if(existing){if(existing.metadata.orphan&&!node.metadata.orphan){nodes.set(node.id,node);return node}return existing}nodes.set(node.id,node);return node}
+ function addEdge(relation:GraphRelation,sourceId:string,targetId:string,opts:{direction:GraphDirection;active?:boolean;weight?:number}={direction:"directed"}){if(sourceId===targetId)return;const id=edgeId(relation,sourceId,targetId),existing=edges.get(id);if(existing){if(opts.weight)existing.weight=(existing.weight??0)+opts.weight;if(opts.active===false)existing.active=false;return}const edge:GraphEdge={id,sourceId,targetId,relation,direction:opts.direction};if(opts.active!==undefined)edge.active=opts.active;if(opts.weight!==undefined)edge.weight=opts.weight;edges.set(id,edge)}
+ function contain(parentId:string|null,child:GraphNode){if(parentId&&nodes.has(parentId)){child.parentId=parentId;addEdge("contains",parentId,child.id,{direction:"directed"})}else if(parentId)child.metadata=safeMetadata({...child.metadata,orphan:true})}
+ function reparent(parentId:string,child:GraphNode){for(const[id,edge]of edges)if(edge.relation==="contains"&&edge.targetId===child.id)edges.delete(id);child.parentId=parentId;child.metadata=safeMetadata({...child.metadata,orphan:undefined});addEdge("contains",parentId,child.id,{direction:"directed"})}
+ const cuNode=(sourceType:GraphSourceType,rawId:string,label:string,extra:Partial<GraphNode>={})=>addNode({id:nsId("clickup",sourceType,rawId),source:"clickup",sourceType,label,metadata:{},...extra});
+ const integrationNode=(id:string,label:string)=>addNode({id,source:"replit",sourceType:"integration",label,metadata:{}});
+ if(input.workspace){const ws=cuNode("workspace",input.workspace.id,input.workspace.name);integrationNode(CLICKUP_SOURCE_ID,"ClickUp workspace source");for(const{space,folders,folderlessLists}of input.spaces){const sp=cuNode("space",space.id,space.name);contain(ws.id,sp);for(const folder of folders){const fo=cuNode("folder",folder.id,folder.name);contain(sp.id,fo);for(const list of folder.lists){const li=cuNode("list",list.id,list.name,{metadata:{taskCount:list.taskCount??undefined}});contain(fo.id,li)}}for(const list of folderlessLists){const li=cuNode("list",list.id,list.name,{metadata:{taskCount:list.taskCount??undefined}});contain(sp.id,li)}}for(const{doc,pages}of input.docs){const dn=cuNode("doc",doc.id,doc.name,{url:`https://app.clickup.com/${input.workspace.id}/docs/${doc.id}`,updatedAt:doc.updatedAt??undefined});contain(ws.id,dn);const seen=new Set<string>();const walkPages=(parentId:string,list:CuDocPage[])=>{for(const p of list){if(seen.has(p.id))continue;seen.add(p.id);const pn=cuNode("page",p.id,p.name);contain(parentId,pn);if(p.children.length)walkPages(pn.id,p.children)}};walkPages(dn.id,pages)}}
+ for(const{listId,tasks}of input.tasksByList)for(const t of tasks){const tn=cuNode("task",t.id,t.name,{url:t.url??CLICKUP_TASK_URL(t.id),status:t.status??undefined,updatedAt:t.updatedAt??undefined,metadata:{closed:t.closed}});contain(nsId("clickup","list",listId),tn)}
+ const docIdToGraphId=new Map<string,string>();for(const dn of input.docGraph.nodes){const map=DOC_CATEGORY_MAP[dn.category];if(!map)continue;const gid=nsId("github",map.sourceType,docSlug(dn.path,map.prefix));docIdToGraphId.set(dn.id,gid);addNode({id:gid,source:"github",sourceType:map.sourceType,label:dn.title,metadata:{category:dn.category,active:dn.active,...(dn.fanout?{fanout:dn.fanout}:{})}})}if(docIdToGraphId.size>0)integrationNode(GITHUB_SOURCE_ID,"GitHub versioned sources");for(const de of input.docGraph.edges){const s=docIdToGraphId.get(de.source),t=docIdToGraphId.get(de.target);if(s&&t)addEdge(docRelation(de.kind),s,t,{direction:"directed"})}
+ if(input.clients.length||runs.length||input.pushRecords.length)integrationNode(RUNTIME_SOURCE_ID,"Replit runtime");const canonicalComposition=input.clientFolderCompanyLinks!==undefined;for(const c of input.clients){const companyTaskId=(c.clickupCompanyId??"").trim();if(!canonicalComposition){const client=addNode({id:nsId("replit","client",String(c.id)),source:"replit",sourceType:"client",label:c.name,metadata:{}});if(!companyTaskId)continue;const companyNodeId=nsId("clickup","task",companyTaskId);if(!nodes.has(companyNodeId))cuNode("task",companyTaskId,"CRM-bedrijf",{url:CLICKUP_TASK_URL(companyTaskId),metadata:{orphan:true}});addEdge("related_to",client.id,companyNodeId,{direction:"undirected"});continue}const profile=addNode({id:nsId("replit","client",String(c.id)),source:"replit",sourceType:"client",label:c.name,metadata:{kind:"technical_profile",canonicalOwner:"clickup"}});if(!companyTaskId){profile.metadata=safeMetadata({...profile.metadata,orphan:true,lifecycle:"unmapped"});continue}const companyNodeId=nsId("clickup","task",companyTaskId),company=nodes.get(companyNodeId)??cuNode("task",companyTaskId,c.companyName||"CRM-bedrijf",{url:CLICKUP_TASK_URL(companyTaskId),metadata:{orphan:true,canonicalOwner:"clickup"}});company.metadata=safeMetadata({...company.metadata,canonicalOwner:"clickup"});profile.metadata=safeMetadata({...profile.metadata,canonicalOwner:company.id});contain(company.id,profile)}
+ for(const link of input.clientFolderCompanyLinks??[]){const folder=nodes.get(nsId("clickup","folder",link.folderId));if(!folder)continue;const companyId=nsId("clickup","task",link.companyTaskId),company=nodes.get(companyId)??cuNode("task",link.companyTaskId,"CRM-bedrijf",{url:CLICKUP_TASK_URL(link.companyTaskId),metadata:{orphan:true,canonicalOwner:"clickup"}});company.metadata=safeMetadata({...company.metadata,canonicalOwner:"clickup"});folder.metadata=safeMetadata({...folder.metadata,canonicalOwner:company.id});reparent(company.id,folder)}
+ for(const run of runs){const rn=addNode({id:nsId("replit","run",run.id),source:"replit",sourceType:"run",label:run.label,status:run.status,updatedAt:run.updatedAt??undefined,metadata:{kind:"generation"}});if(run.clientId)contain(nsId("replit","client",String(run.clientId)),rn)}
+ for(const p of input.pushRecords){const objId=(p.clickupObjectId??"").trim();if(!objId)continue;const taskNodeId=nsId("clickup","task",objId);if(!nodes.has(taskNodeId))cuNode("task",objId,`Push: ${p.kind}`,{url:p.clickupUrl??CLICKUP_TASK_URL(objId),metadata:{orphan:true,kind:p.kind}});const healthy=p.status!=="failed";integrationNode(PUSH_INTEGRATION_ID,"Replit → ClickUp push");addEdge("writes_to",PUSH_INTEGRATION_ID,taskNodeId,{direction:"directed",active:healthy,weight:1});const runId=(p.sourceRunId??"").trim();if(runId){const rn=nodes.get(nsId("replit","run",runId));if(rn)addEdge("generated",rn.id,taskNodeId,{direction:"directed",active:healthy})}}
+ return{nodes:[...nodes.values()],edges:[...edges.values()]}}

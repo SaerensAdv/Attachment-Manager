@@ -18,7 +18,6 @@ export async function ensureRunGraphPolicy(): Promise<void> {
     await db.query(`SELECT pg_advisory_xact_lock(hashtext('run_graph_policy_migration'))`);
     const done = await db.query(`SELECT 1 FROM run_graph_policy_migrations WHERE version=$1`, [POLICY_VERSION]);
     if (!done.rowCount) {
-      // Everything before this policy is audit archive only. Nothing is deleted.
       await db.query(`UPDATE generations SET graph_visible=false, graph_client_id=NULL`);
       await db.query(`INSERT INTO run_graph_policy_migrations (version) VALUES ($1)`, [POLICY_VERSION]);
       logger.info({ scope: "runs:graph-policy", version: POLICY_VERSION }, "historical RUN nodes archived from graph");
@@ -30,31 +29,36 @@ export async function ensureRunGraphPolicy(): Promise<void> {
   } finally {
     db.release();
   }
-}
 
-function normalized(value: string): string {
-  return value.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "");
-}
-
-/** Automatically expose a newly saved run only when the command bar selected a client. */
-export async function autoLinkRunToClient(runId: number, clientPath: string, clientName: string): Promise<number | null> {
-  if (!clientPath.trim()) return null;
-  await ensureRunGraphPolicy();
-  const result = await pool.query(`
-    SELECT c.id, c.name
-      FROM clients c
-     WHERE COALESCE(c.portfolio_visible, true)=true
-     ORDER BY c.id
+  // New command-bar runs opt into the graph only when a real client was selected.
+  // The selected title is persisted as client_name, so the trigger resolves it
+  // against the reviewed visible portfolio at insert time.
+  await pool.query(`
+    CREATE OR REPLACE FUNCTION link_new_generation_to_graph_client()
+    RETURNS trigger AS $$
+    DECLARE matched_client_id integer;
+    BEGIN
+      IF NEW.client_path IS NULL OR btrim(NEW.client_path) = '' THEN
+        NEW.graph_client_id := NULL;
+        NEW.graph_visible := false;
+        RETURN NEW;
+      END IF;
+      SELECT c.id INTO matched_client_id
+        FROM clients c
+       WHERE COALESCE(c.portfolio_visible, true)=true
+         AND lower(btrim(c.name))=lower(btrim(NEW.client_name))
+       ORDER BY c.id
+       LIMIT 1;
+      NEW.graph_client_id := matched_client_id;
+      NEW.graph_visible := matched_client_id IS NOT NULL;
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql;
+    DROP TRIGGER IF EXISTS generations_graph_client_link ON generations;
+    CREATE TRIGGER generations_graph_client_link
+      BEFORE INSERT ON generations
+      FOR EACH ROW EXECUTE FUNCTION link_new_generation_to_graph_client();
   `);
-  const wanted = normalized(clientName);
-  const exact = result.rows.filter((row) => normalized(String(row.name)) === wanted);
-  if (exact.length !== 1) {
-    logger.warn({ scope: "runs:graph-policy", runId, clientPath, clientName, matches: exact.length }, "selected client could not be mapped uniquely; RUN remains archive-only");
-    return null;
-  }
-  const clientId = Number(exact[0].id);
-  await pool.query(`UPDATE generations SET graph_client_id=$2, graph_visible=true WHERE id=$1`, [runId, clientId]);
-  return clientId;
 }
 
 export async function setRunGraphClient(runId: number, clientId: number | null): Promise<boolean> {

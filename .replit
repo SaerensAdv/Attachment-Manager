@@ -60,8 +60,14 @@ ATLAS_DEPLOYMENT_MODE = "reserved-vm"
 
 # Workspace Atlas graph scope. Public ClickUp object identifiers, never secrets.
 GRAPH_WORKSPACE_ID = "9015913612"
-GRAPH_ALLOWED_SPACE_IDS = "901511402568"
+GRAPH_ALLOWED_SPACE_IDS = "901511402568,901511402422"
 GRAPH_ALLOWED_LIST_IDS = "901524400055,901524400063"
+# Client Delivery is a bounded semantic projection: include every live list in
+# this one Space while the HQ Space remains restricted to the explicit lists.
+GRAPH_FULL_SPACE_IDS = "901511402422"
+# Explicit Company task -> client Folder ownership. Never infer customer truth
+# from labels: these public ClickUp ids are the reviewed composition contract.
+GRAPH_CLIENT_FOLDER_COMPANY_MAP = "901516752267:86carekxv,901516752271:86carekxu,901516752272:86carekxw,901516751785:86carekxx,901516752275:86careky0,901516752284:86carekxz"
 GRAPH_ALLOWED_DOC_IDS = "8cp7v4c-71935,8cp7v4c-73895"
 GRAPH_TASK_LOOKBACK_DAYS = "90"
 GRAPH_MAX_TASKS_PER_LIST = "25"

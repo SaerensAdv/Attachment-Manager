@@ -1,5 +1,6 @@
 import type { DocGraph } from "../docs";
 import type { CuDoc, CuDocPage, CuFolder, CuList, CuSpace, CuTask } from "./clickup-structure";
+import type { ClientFolderCompanyLink } from "./collection-policy";
 import { ALLOWED_METADATA_KEYS, edgeId, nsId, type Graph, type GraphDirection, type GraphEdge, type GraphNode, type GraphRelation, type GraphSourceType } from "./types";
 
 export interface GraphClientInput { id: number; name: string; clickupCompanyId: string | null }
@@ -12,6 +13,7 @@ export interface GraphBuildInput {
   docs: Array<{ doc: CuDoc; pages: CuDocPage[] }>;
   docGraph: DocGraph;
   clients: GraphClientInput[];
+  clientFolderCompanyLinks?: readonly ClientFolderCompanyLink[];
   /** Optional keeps older fixtures/callers compatible; the collector supplies it. */
   runs?: GraphRunInput[];
   pushRecords: GraphPushInput[];
@@ -53,6 +55,12 @@ export function buildGraph(input: GraphBuildInput): Graph {
     if (parentId && nodes.has(parentId)) { child.parentId = parentId; addEdge("contains", parentId, child.id, { direction: "directed" }); }
     else if (parentId) child.metadata = safeMetadata({ ...child.metadata, orphan: true });
   }
+  function reparent(parentId: string, child: GraphNode): void {
+    for (const [id, edge] of edges) if (edge.relation === "contains" && edge.targetId === child.id) edges.delete(id);
+    child.parentId = parentId;
+    child.metadata = safeMetadata({ ...child.metadata, orphan: undefined });
+    addEdge("contains", parentId, child.id, { direction: "directed" });
+  }
   const cuNode = (sourceType: GraphSourceType, rawId: string, label: string, extra: Partial<GraphNode> = {}): GraphNode => addNode({ id: nsId("clickup", sourceType, rawId), source: "clickup", sourceType, label, metadata: {}, ...extra });
   const integrationNode = (id: string, label: string): GraphNode => addNode({ id, source: "replit", sourceType: "integration", label, metadata: {} });
 
@@ -91,11 +99,24 @@ export function buildGraph(input: GraphBuildInput): Graph {
 
   if (input.clients.length || runs.length || input.pushRecords.length) integrationNode(RUNTIME_SOURCE_ID, "Replit runtime");
   for (const c of input.clients) {
-    const cn = addNode({ id: nsId("replit", "client", String(c.id)), source: "replit", sourceType: "client", label: c.name, metadata: {} });
-    const companyId = (c.clickupCompanyId ?? "").trim(); if (!companyId) continue;
+    const companyId = (c.clickupCompanyId ?? "").trim();
+    if (!companyId) {
+      addNode({ id: nsId("replit", "client", String(c.id)), source: "replit", sourceType: "client", label: c.name, metadata: { orphan: true, lifecycle: "unmapped", canonicalOwner: "clickup" } });
+      continue;
+    }
     const companyNodeId = nsId("clickup", "task", companyId);
-    if (!nodes.has(companyNodeId)) cuNode("task", companyId, "CRM-bedrijf", { url: CLICKUP_TASK_URL(companyId), metadata: { orphan: true } });
-    addEdge("related_to", cn.id, companyNodeId, { direction: "undirected" });
+    const company = nodes.get(companyNodeId) ?? cuNode("task", companyId, c.name, { url: CLICKUP_TASK_URL(companyId), metadata: { orphan: true } });
+    company.metadata = safeMetadata({ ...company.metadata, runtimeId: String(c.id), canonicalOwner: "clickup" });
+  }
+
+  for (const link of input.clientFolderCompanyLinks ?? []) {
+    const folder = nodes.get(nsId("clickup", "folder", link.folderId));
+    if (!folder) continue;
+    const companyId = nsId("clickup", "task", link.companyTaskId);
+    const company = nodes.get(companyId) ?? cuNode("task", link.companyTaskId, "CRM-bedrijf", { url: CLICKUP_TASK_URL(link.companyTaskId), metadata: { orphan: true, canonicalOwner: "clickup" } });
+    company.metadata = safeMetadata({ ...company.metadata, canonicalOwner: "clickup" });
+    folder.metadata = safeMetadata({ ...folder.metadata, canonicalOwner: company.id });
+    reparent(company.id, folder);
   }
 
   for (const run of runs) addNode({ id: nsId("replit", "run", run.id), source: "replit", sourceType: "run", label: run.label, status: run.status, updatedAt: run.updatedAt ?? undefined, metadata: { kind: "generation" } });

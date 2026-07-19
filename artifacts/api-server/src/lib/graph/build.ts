@@ -98,8 +98,17 @@ export function buildGraph(input: GraphBuildInput): Graph {
   for (const de of input.docGraph.edges) { const s = docIdToGraphId.get(de.source); const t = docIdToGraphId.get(de.target); if (s && t) addEdge(docRelation(de.kind), s, t, { direction: "directed" }); }
 
   if (input.clients.length || runs.length || input.pushRecords.length) integrationNode(RUNTIME_SOURCE_ID, "Replit runtime");
+  const canonicalComposition = input.clientFolderCompanyLinks !== undefined;
   for (const c of input.clients) {
     const companyId = (c.clickupCompanyId ?? "").trim();
+    if (!canonicalComposition) {
+      const client = addNode({ id: nsId("replit", "client", String(c.id)), source: "replit", sourceType: "client", label: c.name, metadata: {} });
+      if (!companyId) continue;
+      const companyNodeId = nsId("clickup", "task", companyId);
+      if (!nodes.has(companyNodeId)) cuNode("task", companyId, "CRM-bedrijf", { url: CLICKUP_TASK_URL(companyId), metadata: { orphan: true } });
+      addEdge("related_to", client.id, companyNodeId, { direction: "undirected" });
+      continue;
+    }
     if (!companyId) {
       addNode({ id: nsId("replit", "client", String(c.id)), source: "replit", sourceType: "client", label: c.name, metadata: { orphan: true, lifecycle: "unmapped", canonicalOwner: "clickup" } });
       continue;

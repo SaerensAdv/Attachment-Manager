@@ -1,73 +1,76 @@
-# Saerens Advertising — AI Team
+# Workspace Atlas and Saerens Integration Runtime
 
-This repository is the **AI brain** for **Saerens Advertising**, a Belgian, Google Partner–certified advertising agency specializing in Google Ads, analytics, conversion tracking, web design and SEO — together with the **application** that runs on top of it.
+This repository contains two deliberately separate products:
 
-The main principle is that each AI agent should behave like a **specialized agency team member**, not a generic chatbot. Agents have:
+1. **Workspace Atlas**, the read-only visual digital twin of the Saerens Operating System.
+2. **Thin technical services** for proven gaps such as provider APIs, webhooks, retries, batch processing, reporting renderers and deterministic transformations.
 
-- A clear role
-- Clear responsibilities
-- Clear limitations
-- Required input before they produce final work
-- Structured output formats
-- Access to agency standards (`knowledge/`)
-- Access to client context (`clients/`)
-- Access to workflow instructions (`workflows/`)
+ClickUp is the operating system and canonical owner of work, clients, business knowledge, approvals, Skills, Super Agents, Automations and reporting memory. GitHub owns source code, tests, schemas and implementation-specific technical configuration. Replit runs only the visualization and retained technical services.
 
-## What this is
+## Workspace Atlas
 
-There are two halves, kept deliberately separate:
+Atlas preserves the immersive system map:
 
-1. **The brain (documentation).** The root markdown — `agents/`, `workflows/`, `knowledge/`, `templates/`, `clients/`, plus `AGENTS.md` — defines who the agents are, how they behave, and the agency's quality bar. This is the configuration.
-2. **The app (`artifacts/` + `lib/`).** A running system that reads that markdown at runtime: an Express API ("the brain" engine) that routes requests, assembles prompts, calls the AI model, and produces reviewable deliverables, plus a React "Operations Atlas" frontend to see and drive it all. See `ARCHITECTURE.md`.
+- bounded ClickUp, GitHub and runtime projections;
+- Structure, Knowledge, Agents, Active and Flows lenses;
+- 45 FPS Explore mode with reduced-motion support;
+- contextual inspector, source links, provenance and diagnostics;
+- read-only Agents and Knowledge projections;
+- Health evidence for build identity, workers, graph snapshots and connectors.
 
-The app connects to **read-only** live data sources (Google Ads, GA4, Search Console, PageSpeed, Places, Business Profile, competitor ads, Bing Webmaster, Gmail, and a Screaming Frog crawl intake) to enrich its work. It does **not** make live changes to ad accounts on its own — anything that would touch live spend or reach a client passes through a **human approval** step first. See `ROADMAP.md` for what is shipped and what remains.
+Atlas must never become a second writable ClickUp. Node movement is viewport-only. Business configuration opens in its canonical ClickUp source.
 
-## The core idea
+## Retained technical capabilities
 
-Every request is answered by combining five layers:
+Custom code remains only where ClickUp cannot reliably provide the capability, including:
 
+- external marketing and analytics APIs;
+- signed webhooks, idempotency, retries and dead letters;
+- Google Ads safety gates and bounded provider mutations;
+- report/PDF/email packaging required for month-end reporting;
+- technical logs, runtime health and deterministic rendering.
+
+Client communication, live account changes, finance and destructive actions remain human-gated.
+
+## Repository map
+
+- `artifacts/api-server`: Express API, connectors, workers, reporting and observability.
+- `artifacts/system-map`: Workspace Atlas frontend.
+- `lib/api-spec`, `lib/api-zod`, `lib/api-client-react`: browser API contracts.
+- `lib/db`: technical persistence schemas.
+- `agents/`, `workflows/`, `knowledge/`, `templates/`: temporary or implementation-specific runtime sources under active ClickUp migration. They are not the business system of record.
+- `scripts/src/atlas-smoke.ts`: authenticated production smoke test.
+
+## Validate
+
+```bash
+pnpm install --frozen-lockfile
+pnpm typecheck
+pnpm --filter @workspace/api-server test
+pnpm --filter @workspace/system-map test
+pnpm run build
 ```
-Global rules (AGENTS.md)
-+ Selected agent instructions (agents/)
-+ Selected client context (clients/)
-+ Selected workflow (workflows/)
-+ The user's request
-= Structured, reviewable output (templates/)
+
+After deployment:
+
+```bash
+ATLAS_BASE_URL=https://your-deployment \
+ATLAS_SESSION_TOKEN=... \
+ATLAS_EXPECTED_SHA=$(git rev-parse HEAD) \
+pnpm --filter @workspace/scripts atlas:smoke
 ```
 
-On top of that structured markdown, a workflow can declare a **deliverable** — the concrete end product the work becomes (a Replit build prompt, a Google Ads / negative-keyword CSV, a monthly report email, a branded PDF, an invoice or proposal). This keeps agent roles, client data, and processes separate and reusable. See `ARCHITECTURE.md` for the full picture.
+The production graph must use `GRAPH_OVERVIEW_UNLIMITED=false`. Search and neighbor expansion still reach the complete active snapshot.
 
-## How the docs are organized
+## Production readiness
 
-| Folder / file | Purpose |
-|---|---|
-| `README.md` | This file — what the system is and how it's organized |
-| `AGENTS.md` | The constitution: global rules and the agency organisation (departments + owners) |
-| `ROADMAP.md` | What is shipped and what remains, plus longer-term direction notes |
-| `ARCHITECTURE.md` | How the layers combine, the folder/artifact map, and the runtime flow |
-| `agents/` | One role file per AI agent (role, character, responsibilities, limits, input, output) |
-| `clients/` | A reusable client template plus example client context files |
-| `workflows/` | Repeatable agency processes (campaign setup, audit, reporting, email, …) |
-| `templates/` | Reusable structured output formats |
-| `knowledge/` | Agency standards: principles, tone of voice, agent personas, Google Ads, Meta Ads, SEO, landing page/conversion, analytics, reporting, naming, and more |
-| `artifacts/` | The running app: the API server, the Operations Atlas frontend, and slide-deck artifacts |
-| `lib/` | Shared workspace libraries (OpenAPI spec, Zod schemas, React client, brand, DB schema, AI integration) |
+A release is ready only when:
 
-## The team
+- frontend and API report the expected Git SHA;
+- `/api/system/status` is not down and reports independent checks;
+- the graph has an active bounded snapshot and diagnostics;
+- scheduler and webhook heartbeat evidence is current where enabled;
+- backup evidence is fresh and a restore rehearsal is recorded;
+- one Google Ads and one SEO month-reporting run pass before reporting runtime is reduced further.
 
-The team has grown well beyond the original MVP — `AGENTS.md` (`## Agency organisation`) is the source of truth for the current agents, their departments, and department owners. Each agent is a distinct team member with its own character (see `knowledge/agent-personas.md`); the Orchestrator routes each request to the right specialist and prepares clean briefs.
-
-## How it works (today)
-
-1. A request enters the API, where the **Orchestrator** decides the client, workflow, agent(s), and what (if anything) is missing.
-2. The chosen specialist agent receives the combined context (global rules + agent + client dossier + workflow + request) and follows its workflow, using the matching template and the `knowledge/` standards.
-3. Live read-only account data is pulled in where relevant to ground the work.
-4. A closing quality gate runs automatically (QA & Compliance Reviewer always; Humanizer when the output is client-facing).
-5. If the workflow declares one, the result is turned into a concrete **deliverable**.
-6. A human reviews before anything is used in real work; anything touching live spend or the client is held for approval.
-
-## The bar
-
-> Saerens Advertising can select a client, a workflow, and an agent (or just describe the request and let the Orchestrator route it), and receive consistent, high-quality, agency-standard output that a human reviews and uses in real work.
-
-Not "the AI does everything automatically" — but "the AI produces work like a trained specialist who understands how we work," with the human as the single quality-control gate.
+See ClickUp for the current architecture decision, operating procedures and migration status. Historical repository docs remain evidence, not governing business truth.

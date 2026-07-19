@@ -1,9 +1,14 @@
 import type { CuDoc, CuDocPage, CuTask, CuWorkspace } from "./clickup-structure";
 
+export interface ClientFolderCompanyLink { folderId: string; companyTaskId: string }
 export interface GraphCollectionPolicy {
   workspaceId: string | null;
   allowedSpaceIds: ReadonlySet<string> | null;
   allowedListIds: ReadonlySet<string> | null;
+  /** Spaces whose complete live list tree is included despite the global list allowlist. */
+  fullSpaceIds: ReadonlySet<string>;
+  /** Reviewed semantic ownership links. Labels are never used as customer identity. */
+  clientFolderCompanyLinks: readonly ClientFolderCompanyLink[];
   allowedDocIds: ReadonlySet<string> | null;
   completeDocIds: ReadonlySet<string>;
   taskLookbackDays: number;
@@ -28,10 +33,23 @@ export interface GraphCollectionReport {
 const CANONICAL_OS_DOC_ID = "8cp7v4c-71935";
 const csv = (value: string | undefined): ReadonlySet<string> | null => { const values = (value ?? "").split(",").map((item) => item.trim()).filter(Boolean); return values.length ? new Set(values) : null; };
 const boundedInt = (value: string | undefined, fallback: number, min: number, max: number): number => { const parsed = Number(value); return Number.isInteger(parsed) ? Math.min(max, Math.max(min, parsed)) : fallback; };
+function readClientFolderCompanyLinks(value: string | undefined): ClientFolderCompanyLink[] {
+  const links = new Map<string, ClientFolderCompanyLink>();
+  for (const entry of (value ?? "").split(",")) {
+    const [folderId = "", companyTaskId = "", ...extra] = entry.split(":").map((part) => part.trim());
+    if (!folderId || !companyTaskId || extra.length) continue;
+    links.set(folderId, { folderId, companyTaskId });
+  }
+  return [...links.values()];
+}
 export function readGraphCollectionPolicy(env: NodeJS.ProcessEnv = process.env): GraphCollectionPolicy {
   return {
     workspaceId: (env.GRAPH_WORKSPACE_ID ?? env.CLICKUP_WORKSPACE_ID ?? "").trim() || null,
-    allowedSpaceIds: csv(env.GRAPH_ALLOWED_SPACE_IDS), allowedListIds: csv(env.GRAPH_ALLOWED_LIST_IDS), allowedDocIds: csv(env.GRAPH_ALLOWED_DOC_IDS),
+    allowedSpaceIds: csv(env.GRAPH_ALLOWED_SPACE_IDS),
+    allowedListIds: csv(env.GRAPH_ALLOWED_LIST_IDS),
+    fullSpaceIds: csv(env.GRAPH_FULL_SPACE_IDS) ?? new Set(),
+    clientFolderCompanyLinks: readClientFolderCompanyLinks(env.GRAPH_CLIENT_FOLDER_COMPANY_MAP),
+    allowedDocIds: csv(env.GRAPH_ALLOWED_DOC_IDS),
     completeDocIds: csv(env.GRAPH_COMPLETE_DOC_IDS) ?? new Set([CANONICAL_OS_DOC_ID]),
     taskLookbackDays: boundedInt(env.GRAPH_TASK_LOOKBACK_DAYS, 90, 1, 3650), maxTasksPerList: boundedInt(env.GRAPH_MAX_TASKS_PER_LIST, 25, 0, 500), maxTasksTotal: boundedInt(env.GRAPH_MAX_TASKS_TOTAL, 500, 0, 5000),
     maxDocs: boundedInt(env.GRAPH_MAX_DOCS, 75, 0, 1000), maxPagesPerDoc: boundedInt(env.GRAPH_MAX_PAGES_PER_DOC, 100, 0, 1000), maxPagesTotal: boundedInt(env.GRAPH_MAX_PAGES_TOTAL, 500, 0, 5000), maxPushRecords: boundedInt(env.GRAPH_MAX_PUSH_RECORDS, 250, 0, 5000),
@@ -39,7 +57,7 @@ export function readGraphCollectionPolicy(env: NodeJS.ProcessEnv = process.env):
 }
 export function selectWorkspace(workspaces: CuWorkspace[], policy: GraphCollectionPolicy): CuWorkspace | null { if (policy.workspaceId) return workspaces.find((workspace) => workspace.id === policy.workspaceId) ?? null; return workspaces[0] ?? null; }
 export const allowsSpace = (id: string, policy: GraphCollectionPolicy) => !policy.allowedSpaceIds || policy.allowedSpaceIds.has(id);
-export const allowsList = (id: string, policy: GraphCollectionPolicy) => !policy.allowedListIds || policy.allowedListIds.has(id);
+export const allowsList = (id: string, policy: GraphCollectionPolicy, spaceId?: string) => (spaceId ? policy.fullSpaceIds.has(spaceId) : false) || !policy.allowedListIds || policy.allowedListIds.has(id);
 export const allowsDoc = (id: string, policy: GraphCollectionPolicy) => !policy.allowedDocIds || policy.allowedDocIds.has(id);
 export const requiresCompletePageTree = (id: string, policy: GraphCollectionPolicy) => policy.completeDocIds.has(id);
 const taskTime = (task: CuTask): number => task.updatedAt ? Date.parse(task.updatedAt) || 0 : 0;

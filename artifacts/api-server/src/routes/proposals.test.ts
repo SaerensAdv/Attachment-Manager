@@ -1,142 +1,88 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import express, { type Express } from "express";
 import request from "supertest";
 
-/**
- * HTTP-contract tests for the proposal accept/reject routes through Express +
- * supertest. The store and the apply/verify helpers are mocked so we can assert
- * the accept response now carries the verified apply result ({ proposal, changed,
- * verified }) the UI shows, and that an apply failure still reverts the claim and
- * returns a 502 with a detail message.
- */
-
 const getProposalMock = vi.hoisted(() => vi.fn());
+const claimProposalForReviewMock = vi.hoisted(() => vi.fn());
+const completeProposalReviewRequestMock = vi.hoisted(() => vi.fn());
+const revertProposalReviewToPendingMock = vi.hoisted(() => vi.fn());
 const claimProposalStatusMock = vi.hoisted(() => vi.fn());
-const revertProposalToPendingMock = vi.hoisted(() => vi.fn());
 vi.mock("../lib/proposals-store", () => ({
   getProposal: getProposalMock,
+  claimProposalForReview: claimProposalForReviewMock,
+  completeProposalReviewRequest: completeProposalReviewRequestMock,
+  revertProposalReviewToPending: revertProposalReviewToPendingMock,
   claimProposalStatus: claimProposalStatusMock,
-  revertProposalToPending: revertProposalToPendingMock,
 }));
 
-const applyProposalMock = vi.hoisted(() => vi.fn());
-const verifyProposalAppliedMock = vi.hoisted(() => vi.fn());
-vi.mock("../lib/improvements", () => ({
-  applyProposal: applyProposalMock,
-  verifyProposalApplied: verifyProposalAppliedMock,
-}));
+const createProposalPullRequestMock = vi.hoisted(() => vi.fn());
+vi.mock("../lib/github-change-request", () => ({ createProposalPullRequest: createProposalPullRequestMock }));
+const recordActionEventMock = vi.hoisted(() => vi.fn());
+vi.mock("../lib/action-events", () => ({ recordActionEvent: recordActionEventMock }));
+vi.mock("./generations", () => ({ serializeProposal: (proposal: unknown) => proposal }));
 
-vi.mock("./generations", () => ({
-  serializeProposal: (p: unknown) => p,
-}));
-
-async function makeApp(): Promise<Express> {
-  vi.resetModules();
-  const { default: proposalsRouter } = await import("./proposals");
-  const app = express();
-  app.use(proposalsRouter);
-  return app;
-}
-
-const CLAIMED = { id: 4, status: "accepted", targetLabel: "Replit Builds" };
+async function makeApp(): Promise<Express> { vi.resetModules(); const { default: router } = await import("./proposals"); const app = express(); app.use(router); return app; }
+const PENDING = { id: 4, generationId: 12, status: "pending", targetType: "knowledge", targetPath: "knowledge/replit-builds.md", targetLabel: "Replit Builds", rationale: "Make approvals explicit", proposedText: "Gebruik expliciete approvals." };
+const PROCESSING = { ...PENDING, status: "processing" };
+const REVIEW_REQUESTED = { ...PENDING, status: "review_requested" };
+const CHANGE = { changed: true, verified: true, branch: "atlas/learning-proposal-4", pullRequestUrl: "https://github.com/SaerensAdv/Attachment-Manager/pull/99", fileUrl: "https://github.com/SaerensAdv/Attachment-Manager/blob/x/knowledge/replit-builds.md", commitSha: "abc123" };
 
 beforeEach(() => {
-  getProposalMock.mockReset();
-  claimProposalStatusMock.mockReset();
-  revertProposalToPendingMock.mockReset();
-  revertProposalToPendingMock.mockResolvedValue(undefined);
-  applyProposalMock.mockReset();
-  verifyProposalAppliedMock.mockReset();
+  for (const mock of [getProposalMock, claimProposalForReviewMock, completeProposalReviewRequestMock, revertProposalReviewToPendingMock, claimProposalStatusMock, createProposalPullRequestMock, recordActionEventMock]) mock.mockReset();
+  getProposalMock.mockResolvedValue(PENDING); claimProposalForReviewMock.mockResolvedValue(PROCESSING); completeProposalReviewRequestMock.mockResolvedValue(REVIEW_REQUESTED); revertProposalReviewToPendingMock.mockResolvedValue(undefined); createProposalPullRequestMock.mockResolvedValue(CHANGE); recordActionEventMock.mockResolvedValue(undefined);
 });
 
 describe("POST /proposals/:id/accept", () => {
-  it("returns the proposal with a verified apply result on success", async () => {
-    claimProposalStatusMock.mockResolvedValue(CLAIMED);
-    applyProposalMock.mockResolvedValue({ changed: true });
-    verifyProposalAppliedMock.mockResolvedValue({ present: true });
-    const app = await makeApp();
-
-    const res = await request(app).post("/proposals/4/accept");
-
+  it("creates a reviewed GitHub change request instead of writing canonical content", async () => {
+    const res = await request(await makeApp()).post("/proposals/4/accept");
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({
-      proposal: CLAIMED,
-      changed: true,
-      verified: true,
-    });
-    expect(applyProposalMock).toHaveBeenCalledWith(CLAIMED);
-    expect(revertProposalToPendingMock).not.toHaveBeenCalled();
+    expect(res.body).toMatchObject({ proposal: REVIEW_REQUESTED, changed: true, verified: true, governance: { mode: "github_pull_request", status: "review_requested", pullRequestUrl: CHANGE.pullRequestUrl, branch: CHANGE.branch, commitSha: CHANGE.commitSha } });
+    expect(createProposalPullRequestMock).toHaveBeenCalledWith(PROCESSING);
+    expect(completeProposalReviewRequestMock).toHaveBeenCalledWith(4);
+    expect(recordActionEventMock).toHaveBeenCalled();
   });
 
-  it("reports changed=false / verified=true when the rule was already present", async () => {
-    claimProposalStatusMock.mockResolvedValue(CLAIMED);
-    applyProposalMock.mockResolvedValue({ changed: false });
-    verifyProposalAppliedMock.mockResolvedValue({ present: true });
-    const app = await makeApp();
-
-    const res = await request(app).post("/proposals/4/accept");
-
-    expect(res.status).toBe(200);
-    expect(res.body.changed).toBe(false);
-    expect(res.body.verified).toBe(true);
+  it("reports an idempotent already-present rule as verified", async () => {
+    createProposalPullRequestMock.mockResolvedValue({ ...CHANGE, changed: false });
+    const res = await request(await makeApp()).post("/proposals/4/accept");
+    expect(res.status).toBe(200); expect(res.body.changed).toBe(false); expect(res.body.verified).toBe(true);
   });
 
-  it("reverts the claim and returns 502 with a detail when apply fails", async () => {
-    claimProposalStatusMock.mockResolvedValue(CLAIMED);
-    applyProposalMock.mockRejectedValue(new Error("Doeldocument bestaat niet meer."));
-    const app = await makeApp();
-
-    const res = await request(app).post("/proposals/4/accept");
-
-    expect(res.status).toBe(502);
-    expect(res.body.detail).toContain("Doeldocument bestaat niet meer.");
-    expect(revertProposalToPendingMock).toHaveBeenCalledWith(4);
-    expect(verifyProposalAppliedMock).not.toHaveBeenCalled();
+  it("reverts to pending and returns a retryable 502 when PR creation fails", async () => {
+    createProposalPullRequestMock.mockRejectedValue(new Error("GitHub unavailable"));
+    const res = await request(await makeApp()).post("/proposals/4/accept");
+    expect(res.status).toBe(502); expect(res.body.code).toBe("GITHUB_CHANGE_REQUEST_FAILED"); expect(res.body.detail).toContain("GitHub unavailable"); expect(res.body.retryable).toBe(true); expect(revertProposalReviewToPendingMock).toHaveBeenCalledWith(4);
   });
 
-  it("still returns the 502 detail when the rollback itself throws", async () => {
-    claimProposalStatusMock.mockResolvedValue(CLAIMED);
-    applyProposalMock.mockRejectedValue(new Error("Doeldocument bestaat niet meer."));
-    revertProposalToPendingMock.mockRejectedValue(new Error("DB down"));
-    const app = await makeApp();
-
-    const res = await request(app).post("/proposals/4/accept");
-
-    expect(res.status).toBe(502);
-    expect(res.body.detail).toContain("Doeldocument bestaat niet meer.");
+  it("still returns the original 502 when rollback itself fails", async () => {
+    createProposalPullRequestMock.mockRejectedValue(new Error("GitHub unavailable")); revertProposalReviewToPendingMock.mockRejectedValue(new Error("DB down"));
+    const res = await request(await makeApp()).post("/proposals/4/accept");
+    expect(res.status).toBe(502); expect(res.body.detail).toContain("GitHub unavailable");
   });
 
-  it("returns 409 when the proposal was already decided", async () => {
-    claimProposalStatusMock.mockResolvedValue(null);
-    getProposalMock.mockResolvedValue({ id: 4, status: "accepted" });
-    const app = await makeApp();
+  it("blocks ClickUp-owned client targets from mutating the local cache", async () => {
+    getProposalMock.mockResolvedValue({ ...PENDING, targetType: "client", targetPath: "clients/db/2.md" });
+    const res = await request(await makeApp()).post("/proposals/4/accept");
+    expect(res.status).toBe(409); expect(res.body.code).toBe("CLICKUP_OWNED_TARGET"); expect(claimProposalForReviewMock).not.toHaveBeenCalled(); expect(createProposalPullRequestMock).not.toHaveBeenCalled();
+  });
 
-    const res = await request(app).post("/proposals/4/accept");
-
-    expect(res.status).toBe(409);
-    expect(applyProposalMock).not.toHaveBeenCalled();
+  it("returns 409 when the proposal is already being reviewed or decided", async () => {
+    claimProposalForReviewMock.mockResolvedValue(null);
+    const res = await request(await makeApp()).post("/proposals/4/accept");
+    expect(res.status).toBe(409); expect(res.body.code).toBe("PROPOSAL_ALREADY_DECIDED");
   });
 
   it("returns 404 when the proposal does not exist", async () => {
-    claimProposalStatusMock.mockResolvedValue(null);
     getProposalMock.mockResolvedValue(null);
-    const app = await makeApp();
-
-    const res = await request(app).post("/proposals/999/accept");
-
-    expect(res.status).toBe(404);
+    const res = await request(await makeApp()).post("/proposals/999/accept");
+    expect(res.status).toBe(404); expect(res.body.code).toBe("PROPOSAL_NOT_FOUND");
   });
 });
 
 describe("POST /proposals/:id/reject", () => {
-  it("returns the rejected proposal", async () => {
-    claimProposalStatusMock.mockResolvedValue({ id: 4, status: "rejected" });
-    const app = await makeApp();
-
-    const res = await request(app).post("/proposals/4/reject");
-
-    expect(res.status).toBe(200);
-    expect(res.body).toEqual({ id: 4, status: "rejected" });
-    expect(applyProposalMock).not.toHaveBeenCalled();
+  it("records the rejected decision without applying a source change", async () => {
+    claimProposalStatusMock.mockResolvedValue({ ...PENDING, status: "rejected" });
+    const res = await request(await makeApp()).post("/proposals/4/reject");
+    expect(res.status).toBe(200); expect(res.body.status).toBe("rejected"); expect(createProposalPullRequestMock).not.toHaveBeenCalled(); expect(recordActionEventMock).toHaveBeenCalled();
   });
 });

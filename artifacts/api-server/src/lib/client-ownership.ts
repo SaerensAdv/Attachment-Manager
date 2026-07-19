@@ -1,0 +1,7 @@
+import { CLICKUP_OWNED_CLIENT_FIELDS } from "./clickup-company-master";
+export const TECHNICAL_CONFIG_FIELDS = ["googleAdsCustomerId","competitorAdvertisers","searchConsoleSiteUrl","bingSiteUrl","ga4PropertyId","placesQuery","placesCompetitors","pagespeedUrls","businessProfileLocationId","landingPages","reportEmail","brandTerms"] as const;
+export const DERIVED_CLIENT_FIELDS = ["websiteIntake","googleAdsLive","competitorAdsLive","searchConsoleLive","bingLive","ga4Live","placesLive","pagespeedLive","businessProfileLive","crawlLive"] as const;
+export const LEGACY_LOCAL_FIELDS = ["business","world","services","audience","locations","languages","mainGoal","conversionAction","kpis","budget","toneOfVoice","channels","restrictions","monthlyFee","groupId","billingName","billingAddress","billingCountry","vatNumber","btwMode"] as const;
+export type TechnicalConfigField = typeof TECHNICAL_CONFIG_FIELDS[number];
+export function clientOwnershipContract(linked:boolean){return{linked,canonicalMaster:linked?"clickup":"unlinked",clickupOwned:linked?[...CLICKUP_OWNED_CLIENT_FIELDS]:[],replitTechnical:[...TECHNICAL_CONFIG_FIELDS],derived:[...DERIVED_CLIENT_FIELDS],legacyLocal:[...LEGACY_LOCAL_FIELDS],policy:{clickupOwned:"read_only",replitTechnical:"editable",derived:"read_only",legacyLocal:"read_only_until_mapped"}as const}}
+export function selectTechnicalConfig(record:Record<string,unknown>){return Object.fromEntries(TECHNICAL_CONFIG_FIELDS.map(field=>[field,record[field]??null])) as Record<TechnicalConfigField,unknown>}

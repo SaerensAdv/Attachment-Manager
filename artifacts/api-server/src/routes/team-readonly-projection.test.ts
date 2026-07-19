@@ -1,10 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const root = process.cwd();
-const routeSource = readFileSync(join(root, "artifacts/api-server/src/routes/team.ts"), "utf8");
-const atlasSource = readFileSync(join(root, "artifacts/system-map/src/pages/AtlasAgents.tsx"), "utf8");
+const routesDir = dirname(fileURLToPath(import.meta.url));
+const routeSource = readFileSync(join(routesDir, "team.ts"), "utf8");
+const atlasSource = readFileSync(
+  join(routesDir, "../../../system-map/src/pages/AtlasAgents.tsx"),
+  "utf8",
+);
 
 describe("ClickUp-native agent projection", () => {
   it("keeps the API projection explicitly read-only", () => {

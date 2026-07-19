@@ -1,4 +1,4 @@
-import { Router, type IRouter } from "express";
+import { Router, type IRouter, type RequestHandler } from "express";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { Generation } from "@workspace/db";
@@ -123,7 +123,7 @@ router.get("/team/:slug/runs", async (req, res): Promise<void> => {
   res.json({ runs: runs.map((g) => serializeAgentRun(g, agentPath)) });
 });
 
-const rejectAtlasAgentWrite = (_req: unknown, res: { status: (code: number) => { json: (body: unknown) => void } }): void => {
+const rejectAtlasAgentWrite: RequestHandler = (_req, res) => {
   res.status(405).json({
     error: "Atlas is a read-only agent projection",
     code: "ATLAS_AGENT_WRITE_DISABLED",

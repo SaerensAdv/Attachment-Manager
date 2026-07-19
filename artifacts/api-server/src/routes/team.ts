@@ -1,23 +1,16 @@
 import { Router, type IRouter } from "express";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import sharp from "sharp";
 import type { Generation } from "@workspace/db";
-import { UpdateAgentPersonaBody, UploadAgentPortraitBody } from "@workspace/api-zod";
-import { getDocFile, getDocsRoot, splitFrontmatter } from "../lib/docs";
+import { getDocsRoot, splitFrontmatter } from "../lib/docs";
 import {
   getTeamDepartments,
   getTeamRoster,
-  updateAgentPersona,
-  type PersonaEdits,
   type TeamMember,
 } from "../lib/team";
-import { savePortrait } from "../lib/portraits";
 import { getAgentStats, getTeamStats, listAgentRuns } from "../lib/generations-store";
 
-const MAX_PORTRAIT_WIDTH = 1024;
 const router: IRouter = Router();
-
 type AgentLifecycle = "active" | "paused" | "deprecated";
 
 function frontmatterValue(frontmatter: string | null, key: string): string | null {
@@ -35,12 +28,7 @@ function lifecycleFor(member: TeamMember) {
     const raw = readFileSync(join(getDocsRoot(), member.path), "utf8");
     const frontmatter = splitFrontmatter(raw).frontmatter;
     const explicit = frontmatterValue(frontmatter, "lifecycle")?.toLowerCase();
-    const lifecycle: AgentLifecycle =
-      explicit === "deprecated"
-        ? "deprecated"
-        : member.active
-          ? "active"
-          : "paused";
+    const lifecycle: AgentLifecycle = explicit === "deprecated" ? "deprecated" : member.active ? "active" : "paused";
     return {
       active: lifecycle === "active",
       lifecycle,
@@ -58,7 +46,13 @@ function lifecycleFor(member: TeamMember) {
 }
 
 function serializeMember(member: TeamMember) {
-  return { ...member, ...lifecycleFor(member) };
+  return {
+    ...member,
+    ...lifecycleFor(member),
+    canonicalOwner: "github" as const,
+    projectionMode: "read-only" as const,
+    canonicalUrl: `https://github.com/SaerensAdv/Attachment-Manager/blob/main/${member.path}`,
+  };
 }
 
 function agentPathFromSlug(slug: string): string {
@@ -68,9 +62,7 @@ function agentPathFromSlug(slug: string): string {
 function parseList(value: string): string[] {
   try {
     const parsed = JSON.parse(value);
-    return Array.isArray(parsed)
-      ? parsed.filter((x): x is string => typeof x === "string")
-      : [];
+    return Array.isArray(parsed) ? parsed.filter((x): x is string => typeof x === "string") : [];
   } catch {
     return [];
   }
@@ -96,6 +88,12 @@ router.get("/team", async (_req, res): Promise<void> => {
   res.json({
     employees: employees.map(serializeMember),
     departments: getTeamDepartments(),
+    projection: {
+      mode: "read-only",
+      businessAgentOwner: "clickup",
+      softwareAgentOwner: "github",
+      verifiedAt: new Date().toISOString(),
+    },
   });
 });
 
@@ -125,55 +123,15 @@ router.get("/team/:slug/runs", async (req, res): Promise<void> => {
   res.json({ runs: runs.map((g) => serializeAgentRun(g, agentPath)) });
 });
 
-router.put("/team/:slug/persona", async (req, res): Promise<void> => {
-  const parsed = UpdateAgentPersonaBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: "Invalid persona payload" });
-    return;
-  }
-  const updated = await updateAgentPersona(req.params.slug, parsed.data as PersonaEdits);
-  if (!updated) {
-    res.status(404).json({ error: "Agent not found" });
-    return;
-  }
-  res.json(serializeMember(updated));
-});
+const rejectAtlasAgentWrite = (_req: unknown, res: { status: (code: number) => { json: (body: unknown) => void } }): void => {
+  res.status(405).json({
+    error: "Atlas is a read-only agent projection",
+    code: "ATLAS_AGENT_WRITE_DISABLED",
+    canonicalOwner: "clickup-or-github",
+  });
+};
 
-router.post("/team/:slug/portrait", async (req, res): Promise<void> => {
-  const { slug } = req.params;
-  if (!getDocFile(agentPathFromSlug(slug))) {
-    res.status(404).json({ error: "Agent not found" });
-    return;
-  }
-  const parsed = UploadAgentPortraitBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: "Invalid portrait payload" });
-    return;
-  }
-  const base64 = parsed.data.imageBase64.replace(/^data:[^;]+;base64,/, "");
-  const raw = Buffer.from(base64, "base64");
-  if (raw.length === 0) {
-    res.status(400).json({ error: "Empty image payload" });
-    return;
-  }
-  let png: Buffer;
-  try {
-    png = await sharp(raw)
-      .rotate()
-      .resize({ width: MAX_PORTRAIT_WIDTH, withoutEnlargement: true })
-      .png()
-      .toBuffer();
-  } catch {
-    res.status(400).json({ error: "Unsupported or corrupt image" });
-    return;
-  }
-  await savePortrait(slug, png);
-  const member = (await getTeamRoster()).find((m) => m.slug === slug);
-  if (!member) {
-    res.status(404).json({ error: "Agent not found" });
-    return;
-  }
-  res.json(serializeMember(member));
-});
+router.put("/team/:slug/persona", rejectAtlasAgentWrite);
+router.post("/team/:slug/portrait", rejectAtlasAgentWrite);
 
 export default router;

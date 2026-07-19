@@ -1,0 +1,4 @@
+html[data-theme="dark"] .wg-canvas{--atlas-surface-0:oklch(18% .026 278);--atlas-canvas-center:oklch(26% .047 248);--wg-edge:218 30% 66%}
+html[data-theme="dark"] .atlas-stage{background:radial-gradient(circle at 44% 44%,var(--atlas-canvas-center),var(--atlas-surface-0) 64%)!important}
+html[data-theme="dark"] .atlas-canvas{background:radial-gradient(circle at 50% 46%,hsl(var(--wg-accent)/.145),transparent 45%),radial-gradient(circle at 50% 50%,var(--atlas-canvas-center),var(--atlas-surface-0) 80%)!important}
+html[data-theme="dark"] .atlas-edge{stroke-width:1.38px}

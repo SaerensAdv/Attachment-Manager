@@ -21,6 +21,7 @@ import { AtlasThemeProvider } from "@/components/atlas/AtlasThemeProvider";
 import { pageTransition } from "@/lib/motion";
 import "@/components/atlas/AtlasTheme.css";
 import "@/components/atlas/AtlasDarkPolish.css";
+import "@/components/atlas/AtlasBrandLogo.css";
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { retry: (count, error) => (error as { status?: number })?.status === 401 ? false : count < 2 } } });
 const CrawlTool = () => <ClientToolRoute tool="crawl" />;

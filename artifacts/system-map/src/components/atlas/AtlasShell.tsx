@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import { Activity, Bot, Building2, FileText, History, Network, ShieldCheck } from "lucide-react";
+import saLogo from "@/assets/sa-logo.webp";
 import { AtlasThemeToggle } from "./AtlasThemeProvider";
 
 const lenses = [
@@ -17,7 +18,7 @@ export default function AtlasShell({ title, subtitle, actions, children }: { tit
   const [location] = useLocation();
   return <div className="workspace-atlas wg-canvas">
     <nav className="atlas-rail" aria-label="Atlas lenses">
-      <Link href="/" className="atlas-monogram" aria-label="Workspace Atlas home"><span>SA</span></Link>
+      <Link href="/" className="atlas-monogram" aria-label="Workspace Atlas home"><img src={saLogo} alt="Saerens Advertising" /></Link>
       <div className="atlas-rail-items">
         {lenses.map(({ href, label, icon: Icon }) => {
           const active = href === "/" ? location === "/" || location === "/graph" || location === "/atlas" : location === href || location.startsWith(`${href}/`);

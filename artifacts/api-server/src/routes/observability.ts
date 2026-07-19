@@ -15,6 +15,7 @@ import { actionResult, apiProblem } from "../lib/http-contract";
 import { diagnoseGraph } from "../lib/graph/diagnostics";
 import { getGraphDiagnosticEvidence } from "../lib/graph/diagnostic-state";
 import { checkRuntimeStores, classifyHeartbeat, readWorkerHeartbeats, type WorkerHeartbeat } from "../lib/worker-heartbeats";
+import { deploymentEvidence, recoveryEvidence, PRODUCTION_BUDGETS } from "../lib/production-hardening";
 
 const router: IRouter = Router();
 const iso = (date: Date | null | undefined) => date ? date.toISOString() : null;
@@ -35,7 +36,7 @@ router.get("/system/status", async (req, res) => {
   const graphEvidence = getGraphDiagnosticEvidence();
   const graphDiagnostics = graphEvidence?.active ?? (active ? diagnoseGraph(active.graph, getRuntimeProvenance()) : null);
   const graphStatus = !active ? "degraded" : graphEvidence?.state === "failed" || graphDiagnostics?.invariantFailures.length ? "down" : graphEvidence?.state === "degraded" ? "degraded" : "healthy";
-  checks.push({ key: "graph", status: graphStatus, checkedAt: new Date().toISOString(), message: !active ? "NO_ACTIVE_SNAPSHOT" : graphEvidence?.sourceErrors.length ? `GRAPH_SOURCE_ERRORS:${graphEvidence.sourceErrors.length}` : graphDiagnostics?.invariantFailures.length ? graphDiagnostics.invariantFailures.join(",") : "GRAPH_VERIFIED", lastSyncedAt: active?.meta.lastSyncedAt ?? null, syncing: isSyncing(), lensCounts: graphDiagnostics?.nodesByLens ?? null, parity: graphEvidence?.parity ?? null });
+  checks.push({ key: "graph", status: graphStatus, checkedAt: new Date().toISOString(), message: !active ? "NO_ACTIVE_SNAPSHOT" : graphEvidence?.sourceErrors.length ? `GRAPH_SOURCE_ERRORS:${graphEvidence.sourceErrors.length}` : graphDiagnostics?.invariantFailures.length ? graphDiagnostics.invariantFailures.join(",") : "GRAPH_VERIFIED", lastSyncedAt: active?.meta.lastSyncedAt ?? null, syncing: isSyncing(), lensCounts: graphDiagnostics?.nodesByLens ?? null, parity: graphEvidence?.parity ?? null, budgets: PRODUCTION_BUDGETS });
 
   const schedulerHeartbeat = heartbeats.find((heartbeat) => heartbeat.name === "scheduler");
   const webhookHeartbeat = heartbeats.find((heartbeat) => heartbeat.name === "clickup-webhook");
@@ -45,6 +46,11 @@ router.get("/system/status", async (req, res) => {
   checks.push({ key: "webhook_worker", status: webhookDurable.status, checkedAt: new Date().toISOString(), message: webhookDurable.message, heartbeatAt: webhookHeartbeat?.heartbeatAt ?? null, heartbeatAgeMs: webhookDurable.ageMs, lastSuccessAt: webhookHeartbeat?.lastSuccessAt ?? null, lastErrorAt: webhookHeartbeat?.lastErrorAt ?? null });
   checks.push({ key: "runtime_stores", status: stores?.status ?? "unknown", checkedAt: stores?.checkedAt ?? new Date().toISOString(), message: stores ? stores.missingRequired.length ? `MISSING_REQUIRED_STORES:${stores.missingRequired.join(",")}` : stores.status === "degraded" ? "OPTIONAL_STORES_NOT_READY" : "RUNTIME_STORES_READY" : "STORE_READINESS_UNAVAILABLE", required: stores?.required ?? null, optional: stores?.optional ?? null });
 
+  const deployment = deploymentEvidence();
+  checks.push({ key: "deployment_supervision", status: deployment.status, checkedAt: new Date().toISOString(), message: deployment.message, mode: deployment.mode, persistent: deployment.persistent, restartCount: deployment.restartCount, deploymentIdPresent: deployment.deploymentIdPresent });
+  const recovery = recoveryEvidence();
+  checks.push({ key: "backup_restore", status: recovery.status, checkedAt: new Date().toISOString(), message: recovery.message, backupAt: recovery.backupAt, restoreRehearsalAt: recovery.restoreRehearsalAt, backupAgeHours: recovery.backupAgeHours, restoreAgeDays: recovery.restoreAgeDays });
+
   checks.push({ key: "clickup", status: process.env.CLICKUP_API_TOKEN?.trim() ? "healthy" : "unknown", checkedAt: new Date().toISOString(), message: process.env.CLICKUP_API_TOKEN?.trim() ? "CONFIGURED" : "NOT_CONFIGURED" });
   const webhookConfigured = Boolean(process.env.CLICKUP_WEBHOOK_SECRET?.trim() && readClickUpWebhookPolicy());
   checks.push({ key: "clickup_webhook", status: webhookConfigured ? "healthy" : "unknown", checkedAt: new Date().toISOString(), message: webhookConfigured ? "CONFIGURED" : "NOT_CONFIGURED" });
@@ -53,7 +59,7 @@ router.get("/system/status", async (req, res) => {
   checks.push({ key: "build_compatibility", status: compatibility.status === "mismatch" ? "down" : compatibility.status === "match" ? "healthy" : "unknown", checkedAt: new Date().toISOString(), message: compatibility.status === "mismatch" ? "FRONTEND_API_VERSION_MISMATCH" : compatibility.status === "match" ? "BUILDS_MATCH" : "BUILD_IDENTITY_INCOMPLETE" });
   const overall = checks.some((check) => check.status === "down") ? "down" : checks.some((check) => check.status === "degraded" || check.status === "unknown") ? "degraded" : "healthy";
   res.setHeader("x-atlas-api-sha", provenance.gitSha ?? "unknown");
-  res.json({ status: overall, process: processStatus(), provenance, compatibility, checks });
+  res.json({ status: overall, process: { ...processStatus(), restartCount: deployment.restartCount }, provenance, compatibility, checks, budgets: PRODUCTION_BUDGETS });
 });
 
 router.get("/operations/status", async (_req, res) => {

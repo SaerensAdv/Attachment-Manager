@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { clientsTable, db, generationsTable, pool } from "@workspace/db";
+import { db, generationsTable, pool } from "@workspace/db";
 import { desc } from "drizzle-orm";
 import { getDocGraph } from "../docs";
 import { loadClientDocs } from "../clients-store";
@@ -7,6 +7,7 @@ import { logger } from "../logger";
 import { listDocPages, listDocs, listFolderlessLists, listFolders, listSpaces, listTasks, listWorkspaces } from "./clickup-structure";
 import type { GraphBuildInput } from "./build";
 import { allowsList, allowsSpace, boundPageTree, boundTasksByList, emptyCollectionReport, readGraphCollectionPolicy, requiresCompletePageTree, selectDocs, selectWorkspace, type GraphCollectionReport } from "./collection-policy";
+import { listPortfolioGraphClients } from "./portfolio-clients";
 
 export interface CollectResult { ok: boolean; input: GraphBuildInput; sourceUpdatedAt: Date | null; errors: string[]; report: GraphCollectionReport }
 const EMPTY_INPUT: GraphBuildInput = { workspace: null, spaces: [], tasksByList: [], docs: [], docGraph: { nodes: [], edges: [], categories: [] }, clients: [], runs: [], pushRecords: [] };
@@ -39,7 +40,15 @@ export async function collectGraphInput(): Promise<CollectResult> {
     for (const doc of chosen.docs) { track(doc.updatedAt); const complete = requiresCompletePageTree(doc.id, policy); if (!complete && pageBudget === 0) { docs.push({ doc, pages: [] }); continue; } const pagesRes = await listDocPages(ws.id, doc.id, correlationId); if (!pagesRes.ok) { errors.push(`pages:${doc.id}:${pagesRes.error.code}`); docs.push({ doc, pages: [] }); continue; } const limit = complete ? Number.MAX_SAFE_INTEGER : Math.min(policy.maxPagesPerDoc, pageBudget); const bounded = boundPageTree(pagesRes.data, limit); report.pages.discovered += bounded.discovered; report.pages.included += bounded.included; report.pages.excluded += bounded.excluded; if (!complete) pageBudget = Math.max(0, pageBudget - bounded.included); docs.push({ doc, pages: bounded.pages }); }
   }
   const fullDocGraph = getDocGraph(await loadClientDocs()); const docNodes = fullDocGraph.nodes.filter((node) => node.category !== "agent" || node.active !== false); const docIds = new Set(docNodes.map((node) => node.id)); const docGraph = { ...fullDocGraph, nodes: docNodes, edges: fullDocGraph.edges.filter((edge) => docIds.has(edge.source) && docIds.has(edge.target)) };
-  let clients: GraphBuildInput["clients"] = []; try { const rows = await db.select({ id: clientsTable.id, name: clientsTable.name, clickupCompanyId: clientsTable.clickupCompanyId, updatedAt: clientsTable.updatedAt }).from(clientsTable); clients = rows.map((client) => { track(client.updatedAt instanceof Date ? client.updatedAt.toISOString() : null); return { id: client.id, name: client.name, clickupCompanyId: client.clickupCompanyId ?? null }; }); report.clients.included = clients.length; } catch (error) { errors.push("clients:db"); logger.warn({ scope: "graph:collect", err: error instanceof Error ? error.message : String(error) }, "clients crawl failed (best-effort)"); }
+  let clients: GraphBuildInput["clients"] = [];
+  try {
+    const rows = await listPortfolioGraphClients();
+    clients = rows.map(({ updatedAt, ...client }) => { track(updatedAt); return client; });
+    report.clients.included = clients.length;
+  } catch (error) {
+    errors.push("clients:db");
+    logger.warn({ scope: "graph:collect", err: error instanceof Error ? error.message : String(error) }, "portfolio clients crawl failed (best-effort)");
+  }
   let runs: GraphBuildInput["runs"] = []; try { const rows = await db.select({ id: generationsTable.id, workflowTitle: generationsTable.workflowTitle, status: generationsTable.status, createdAt: generationsTable.createdAt }).from(generationsTable).orderBy(desc(generationsTable.createdAt)).limit(100); runs = rows.map((run) => { const updatedAt = run.createdAt.toISOString(); track(updatedAt); return { id: String(run.id), label: run.workflowTitle || `Generation ${run.id}`, status: run.status, updatedAt }; }); } catch (error) { errors.push("runs:db"); logger.warn({ scope: "graph:collect", err: error instanceof Error ? error.message : String(error) }, "generation runs crawl failed (best-effort)"); }
   let pushRecords: GraphBuildInput["pushRecords"] = []; try { const countResult = await pool.query(`SELECT count(*)::int count FROM clickup_push_records WHERE clickup_object_id IS NOT NULL`); report.pushRecords.discovered = Number(countResult.rows[0]?.count ?? 0); const result = await pool.query(`SELECT source_run_id, clickup_object_id, clickup_url, kind, status, updated_at FROM clickup_push_records WHERE clickup_object_id IS NOT NULL ORDER BY updated_at DESC LIMIT $1`, [policy.maxPushRecords]); pushRecords = result.rows.map((row: Record<string, unknown>) => { const updatedAt = row.updated_at == null ? null : row.updated_at instanceof Date ? row.updated_at.toISOString() : new Date(String(row.updated_at)).toISOString(); track(updatedAt); return { sourceRunId: row.source_run_id == null ? null : String(row.source_run_id), clickupObjectId: row.clickup_object_id == null ? null : String(row.clickup_object_id), clickupUrl: row.clickup_url == null ? null : String(row.clickup_url), kind: String(row.kind ?? ""), status: String(row.status ?? ""), updatedAt }; }); report.pushRecords.included = pushRecords.length; report.pushRecords.excluded = Math.max(0, report.pushRecords.discovered - pushRecords.length); } catch (error) { errors.push("push:db"); logger.warn({ scope: "graph:collect", err: error instanceof Error ? error.message : String(error) }, "push ledger crawl failed (best-effort)"); }
   logger.info({ scope: "graph:collect", sourceCounts: { agents: docGraph.nodes.filter((node) => node.category === "agent").length, workflows: docGraph.nodes.filter((node) => node.category === "workflow").length, clients: clients.length, tasks: boundedTasks.counts.included, runs: runs.length, pushes: pushRecords.length }, report }, "bounded graph collection completed");

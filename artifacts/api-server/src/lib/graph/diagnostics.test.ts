@@ -14,7 +14,18 @@ describe("diagnoseGraph", () => {
     expect(result.nodesByLens).toEqual({ structure: 1, knowledge: 0, agents: 1, active: 1, flows: 1 });
   });
   it("flags impossible missing canonical sources", () => {
-    const result = diagnoseGraph(graph([{ id: "w", source: "clickup", sourceType: "workspace", label: "W", metadata: {} }]), { version: 1, gitSha: "sha", builtAt: null, docsHash: "h", counts: { agents: 2, workflows: 1 }, processStartedAt: "now", docsMode: "packaged", manifestPresent: true });
+    const result = diagnoseGraph(graph([{ id: "w", source: "clickup", sourceType: "workspace", label: "W", metadata: {} }]), {
+      version: 2,
+      gitSha: "sha",
+      builtAt: null,
+      docsHash: "h",
+      counts: { agents: 2, workflows: 1 },
+      processStartedAt: "now",
+      docsMode: "packaged",
+      deploymentMode: "local",
+      manifestPresent: true,
+      manifestHash: "manifest-hash",
+    });
     expect(result.invariantFailures).toEqual(expect.arrayContaining(["workspace_without_integration", "packaged_agents_missing_from_graph", "packaged_workflows_missing_from_graph"]));
   });
 });

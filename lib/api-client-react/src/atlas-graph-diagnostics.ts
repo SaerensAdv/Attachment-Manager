@@ -1,0 +1,5 @@
+import { customFetch } from "./custom-fetch";
+export type GraphLensId = "structure" | "knowledge" | "agents" | "active" | "flows";
+export interface GraphDiagnosticsContract { totalNodes: number; totalEdges: number; nodesBySource: Record<string, number>; nodesByType: Record<string, number>; nodesByLens: Record<GraphLensId, number>; edgesByRelation: Record<string, number>; invariantFailures: string[] }
+export interface GraphDiagnosticEvidenceContract { state: "healthy" | "degraded" | "failed" | "unknown"; checkedAt: string; snapshotId: number | null; contentHash: string | null; buildSha: string | null; manifestHash: string | null; candidate: GraphDiagnosticsContract | null; active: GraphDiagnosticsContract | null; serialized: GraphDiagnosticsContract | null; sourceErrors: string[]; parity: { candidateToActive: boolean | null; activeToSerialized: boolean | null } }
+export const getAtlasGraphDiagnostics = (signal?: AbortSignal) => customFetch<GraphDiagnosticEvidenceContract>("/api/graph/diagnostics", { method: "GET", responseType: "json", signal });

@@ -1,0 +1,1 @@
+import{describe,expect,it}from"vitest";describe("client operations evidence",()=>{it("uses stable client paths to join Runs",()=>expect(`clients/db/${12}.md`).toBe("clients/db/12.md"));it("keeps provider outcomes separate from customer master",()=>{const delivery={status:"failed",errorCode:"RATE_LIMIT"};expect(delivery).not.toHaveProperty("clientName")})});

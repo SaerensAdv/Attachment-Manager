@@ -1,0 +1,3 @@
+import { describe, expect, it } from "vitest";
+import { testAppendRule } from "./github-change-request";
+describe("GitHub learning governance", () => { it("stages a managed rule without replacing canonical content", () => { const result = testAppendRule("# Standard\n\nBody\n", "Gebruik expliciete approvals."); expect(result.changed).toBe(true); expect(result.content).toContain("# Standard"); expect(result.content).toContain("## Geleerde regels (uit reviews)"); }); it("is idempotent", () => { const first = testAppendRule("# Standard", "Gebruik expliciete approvals."); expect(testAppendRule(first.content, "Gebruik expliciete approvals.").changed).toBe(false); }); });

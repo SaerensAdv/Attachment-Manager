@@ -56,11 +56,9 @@ channel = "stable-25_05"
 [userenv.shared]
 OWNER_EMAIL = "axel@saerensadvertising.com"
 AGENT_EMAIL_DOMAIN = "saerensadvertising.com"
+ATLAS_DEPLOYMENT_MODE = "reserved-vm"
 
-# Workspace Atlas graph scope. These are public ClickUp object identifiers, not
-# credentials. The operational graph deliberately includes only canonical HQ
-# work plus the two authoritative Docs; active GitHub agents/workflows/knowledge
-# and Replit clients/runs/flows are added independently by the collector.
+# Workspace Atlas graph scope. Public ClickUp object identifiers, never secrets.
 GRAPH_WORKSPACE_ID = "9015913612"
 GRAPH_ALLOWED_SPACE_IDS = "901511402568"
 GRAPH_ALLOWED_LIST_IDS = "901524400055,901524400063"
@@ -73,7 +71,6 @@ GRAPH_MAX_PAGES_PER_DOC = "150"
 GRAPH_MAX_PAGES_TOTAL = "250"
 GRAPH_MAX_PUSH_RECORDS = "100"
 
-# Temporary product trial requested by the owner: return the full active graph
-# snapshot from /graph/overview without the normal 500-node/1,200-edge slice.
-# The collector allowlists above still bound which source objects enter a sync.
-GRAPH_OVERVIEW_UNLIMITED = "true"
+# Production uses the bounded overview. Search and neighbor expansion still reach
+# the complete active snapshot without shipping the entire graph on first load.
+GRAPH_OVERVIEW_UNLIMITED = "false"

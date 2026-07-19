@@ -16,6 +16,11 @@ export {
 } from "./atlas-wave-e";
 export type {
   HealthState,
+  BuildCompatibilityState,
+  ApiProblem,
+  ActionResult,
+  RuntimeProvenance,
+  BuildCompatibility,
   SystemCheck,
   AtlasSystemStatus,
   QueueSummary,

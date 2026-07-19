@@ -3,7 +3,7 @@ import type { CuDoc, CuDocPage, CuFolder, CuList, CuSpace, CuTask } from "./clic
 import type { ClientFolderCompanyLink } from "./collection-policy";
 import { ALLOWED_METADATA_KEYS, edgeId, nsId, type Graph, type GraphDirection, type GraphEdge, type GraphNode, type GraphRelation, type GraphSourceType } from "./types";
 
-export interface GraphClientInput { id: number; name: string; clickupCompanyId: string | null }
+export interface GraphClientInput { id: number; name: string; companyName?: string; clickupCompanyId: string | null }
 export interface GraphRunInput { id: string; label: string; status: string; updatedAt: string | null }
 export interface GraphPushInput { sourceRunId: string | null; clickupObjectId: string | null; clickupUrl: string | null; kind: string; status: string; updatedAt: string | null }
 export interface GraphBuildInput {
@@ -14,7 +14,6 @@ export interface GraphBuildInput {
   docGraph: DocGraph;
   clients: GraphClientInput[];
   clientFolderCompanyLinks?: readonly ClientFolderCompanyLink[];
-  /** Optional keeps older fixtures/callers compatible; the collector supplies it. */
   runs?: GraphRunInput[];
   pushRecords: GraphPushInput[];
 }
@@ -100,22 +99,25 @@ export function buildGraph(input: GraphBuildInput): Graph {
   if (input.clients.length || runs.length || input.pushRecords.length) integrationNode(RUNTIME_SOURCE_ID, "Replit runtime");
   const canonicalComposition = input.clientFolderCompanyLinks !== undefined;
   for (const c of input.clients) {
-    const companyId = (c.clickupCompanyId ?? "").trim();
+    const companyTaskId = (c.clickupCompanyId ?? "").trim();
     if (!canonicalComposition) {
       const client = addNode({ id: nsId("replit", "client", String(c.id)), source: "replit", sourceType: "client", label: c.name, metadata: {} });
-      if (!companyId) continue;
-      const companyNodeId = nsId("clickup", "task", companyId);
-      if (!nodes.has(companyNodeId)) cuNode("task", companyId, "CRM-bedrijf", { url: CLICKUP_TASK_URL(companyId), metadata: { orphan: true } });
+      if (!companyTaskId) continue;
+      const companyNodeId = nsId("clickup", "task", companyTaskId);
+      if (!nodes.has(companyNodeId)) cuNode("task", companyTaskId, "CRM-bedrijf", { url: CLICKUP_TASK_URL(companyTaskId), metadata: { orphan: true } });
       addEdge("related_to", client.id, companyNodeId, { direction: "undirected" });
       continue;
     }
-    if (!companyId) {
-      addNode({ id: nsId("replit", "client", String(c.id)), source: "replit", sourceType: "client", label: c.name, metadata: { orphan: true, lifecycle: "unmapped", canonicalOwner: "clickup" } });
+    const profile = addNode({ id: nsId("replit", "client", String(c.id)), source: "replit", sourceType: "client", label: c.name, metadata: { kind: "technical_profile", canonicalOwner: "clickup" } });
+    if (!companyTaskId) {
+      profile.metadata = safeMetadata({ ...profile.metadata, orphan: true, lifecycle: "unmapped" });
       continue;
     }
-    const companyNodeId = nsId("clickup", "task", companyId);
-    const company = nodes.get(companyNodeId) ?? cuNode("task", companyId, c.name, { url: CLICKUP_TASK_URL(companyId), metadata: { orphan: true } });
-    company.metadata = safeMetadata({ ...company.metadata, runtimeId: String(c.id), canonicalOwner: "clickup" });
+    const companyNodeId = nsId("clickup", "task", companyTaskId);
+    const company = nodes.get(companyNodeId) ?? cuNode("task", companyTaskId, c.companyName || "CRM-bedrijf", { url: CLICKUP_TASK_URL(companyTaskId), metadata: { orphan: true, canonicalOwner: "clickup" } });
+    company.metadata = safeMetadata({ ...company.metadata, canonicalOwner: "clickup" });
+    profile.metadata = safeMetadata({ ...profile.metadata, canonicalOwner: company.id });
+    contain(company.id, profile);
   }
 
   for (const link of input.clientFolderCompanyLinks ?? []) {

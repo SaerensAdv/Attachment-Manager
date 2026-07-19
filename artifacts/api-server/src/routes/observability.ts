@@ -14,10 +14,11 @@ import { compareBuilds, getRuntimeProvenance } from "../lib/runtime-provenance";
 import { actionResult, apiProblem } from "../lib/http-contract";
 import { diagnoseGraph } from "../lib/graph/diagnostics";
 import { getGraphDiagnosticEvidence } from "../lib/graph/diagnostic-state";
-import { checkRuntimeStores, classifyHeartbeat, readWorkerHeartbeats } from "../lib/worker-heartbeats";
+import { checkRuntimeStores, classifyHeartbeat, readWorkerHeartbeats, type WorkerHeartbeat } from "../lib/worker-heartbeats";
 
 const router: IRouter = Router();
 const iso = (date: Date | null | undefined) => date ? date.toISOString() : null;
+const noHeartbeats = (): WorkerHeartbeat[] => [];
 
 router.get("/system/status", async (req, res) => {
   const checks: Record<string, unknown>[] = [];
@@ -25,14 +26,19 @@ router.get("/system/status", async (req, res) => {
   try { await pool.query("SELECT 1"); checks.push({ key: "database", status: "healthy", checkedAt: new Date().toISOString(), latencyMs: Date.now()-dbStart }); }
   catch { checks.push({ key: "database", status: "down", checkedAt: new Date().toISOString(), message: "DATABASE_UNAVAILABLE" }); }
 
-  const [active, heartbeats, stores] = await Promise.all([getActiveGraph() ? Promise.resolve(getActiveGraph()) : loadActiveIntoMemory(), readWorkerHeartbeats().catch(() => []), checkRuntimeStores().catch(() => null)]);
+  const existingActive = getActiveGraph();
+  const [active, heartbeats, stores] = await Promise.all([
+    existingActive ? Promise.resolve(existingActive) : loadActiveIntoMemory(),
+    readWorkerHeartbeats().catch(noHeartbeats),
+    checkRuntimeStores().catch(() => null),
+  ]);
   const graphEvidence = getGraphDiagnosticEvidence();
   const graphDiagnostics = graphEvidence?.active ?? (active ? diagnoseGraph(active.graph, getRuntimeProvenance()) : null);
   const graphStatus = !active ? "degraded" : graphEvidence?.state === "failed" || graphDiagnostics?.invariantFailures.length ? "down" : graphEvidence?.state === "degraded" ? "degraded" : "healthy";
   checks.push({ key: "graph", status: graphStatus, checkedAt: new Date().toISOString(), message: !active ? "NO_ACTIVE_SNAPSHOT" : graphEvidence?.sourceErrors.length ? `GRAPH_SOURCE_ERRORS:${graphEvidence.sourceErrors.length}` : graphDiagnostics?.invariantFailures.length ? graphDiagnostics.invariantFailures.join(",") : "GRAPH_VERIFIED", lastSyncedAt: active?.meta.lastSyncedAt ?? null, syncing: isSyncing(), lensCounts: graphDiagnostics?.nodesByLens ?? null, parity: graphEvidence?.parity ?? null });
 
-  const schedulerHeartbeat = heartbeats.find((item) => item.name === "scheduler");
-  const webhookHeartbeat = heartbeats.find((item) => item.name === "clickup-webhook");
+  const schedulerHeartbeat = heartbeats.find((heartbeat) => heartbeat.name === "scheduler");
+  const webhookHeartbeat = heartbeats.find((heartbeat) => heartbeat.name === "clickup-webhook");
   const schedulerDurable = classifyHeartbeat(schedulerHeartbeat);
   const webhookDurable = classifyHeartbeat(webhookHeartbeat, Date.now(), 60_000);
   checks.push({ key: "scheduler_worker", status: schedulerDurable.status, checkedAt: new Date().toISOString(), message: schedulerDurable.message, heartbeatAt: schedulerHeartbeat?.heartbeatAt ?? null, heartbeatAgeMs: schedulerDurable.ageMs, lastSuccessAt: schedulerHeartbeat?.lastSuccessAt ?? null, lastErrorAt: schedulerHeartbeat?.lastErrorAt ?? null });
@@ -51,9 +57,12 @@ router.get("/system/status", async (req, res) => {
 });
 
 router.get("/operations/status", async (_req, res) => {
-  const [approvals, proposals, alerts, schedules, pushes, webhooks, heartbeats] = await Promise.all([listPendingApprovals().catch(() => []), listPendingProposals().catch(() => []), listAlerts({ unresolvedOnly: true }).catch(() => []), listSchedules().catch((): Schedule[] => []), pushQueueSummary(), clickUpWebhookSummary().catch(() => null), readWorkerHeartbeats().catch(() => [])]);
+  const [approvals, proposals, alerts, schedules, pushes, webhooks, heartbeats] = await Promise.all([
+    listPendingApprovals().catch(() => []), listPendingProposals().catch(() => []), listAlerts({ unresolvedOnly: true }).catch(() => []),
+    listSchedules().catch((): Schedule[] => []), pushQueueSummary(), clickUpWebhookSummary().catch(() => null), readWorkerHeartbeats().catch(noHeartbeats),
+  ]);
   const enabled = schedules.filter((schedule) => schedule.enabled); const next = enabled.map((schedule) => schedule.nextRunAt).filter((date): date is Date => Boolean(date)).sort((a,b) => a.getTime()-b.getTime())[0] ?? null;
-  const schedulerHeartbeat = heartbeats.find((item) => item.name === "scheduler"); const webhookHeartbeat = heartbeats.find((item) => item.name === "clickup-webhook");
+  const schedulerHeartbeat = heartbeats.find((heartbeat) => heartbeat.name === "scheduler"); const webhookHeartbeat = heartbeats.find((heartbeat) => heartbeat.name === "clickup-webhook");
   const graph = getActiveGraph();
   res.json({ pendingApprovals: approvals.length, pendingProposals: proposals.length, unresolvedAlerts: alerts.length, pushQueue: pushes,
     scheduler: { ...getSchedulerStatus(), enabledSchedules: enabled.length, nextRunAt: iso(next), durable: classifyHeartbeat(schedulerHeartbeat), durableHeartbeatAt: schedulerHeartbeat?.heartbeatAt ?? null },
